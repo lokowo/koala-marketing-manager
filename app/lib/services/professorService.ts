@@ -75,11 +75,25 @@ export async function listProfessors(filters?: {
   university?: string;
   verificationStatus?: string;
   researchArea?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
 }): Promise<Professor[]> {
-  let query = supabaseAdmin.from('professors').select('*').order('created_at', { ascending: false });
+  const limit = filters?.limit ?? 20;
+  const offset = filters?.offset ?? 0;
+  let query = supabaseAdmin
+    .from('professors')
+    .select('*')
+    .order('opportunity_score', { ascending: false, nullsFirst: false })
+    .range(offset, offset + limit - 1);
   if (filters?.university) query = query.eq('university', filters.university);
   if (filters?.verificationStatus) query = query.eq('verification_status', filters.verificationStatus);
   if (filters?.researchArea) query = query.contains('research_areas', [filters.researchArea]);
+  if (filters?.search) {
+    query = query.or(
+      `name.ilike.%${filters.search}%,university.ilike.%${filters.search}%`
+    );
+  }
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data ?? []).map(fromRow);

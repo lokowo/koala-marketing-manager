@@ -6,18 +6,32 @@ import { useRouter } from 'next/navigation';
 import type { Professor } from '../../../lib/types';
 import { OPPORTUNITY_LABELS } from '../../../lib/constants';
 
+interface Paper {
+  id: string;
+  title: string;
+  year: number | null;
+  citation_count: number;
+  journal: string | null;
+  doi: string | null;
+  doi_url: string | null;
+  ss_url: string | null;
+}
+
 export default function ProfessorDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const [professor, setProfessor] = useState<Professor | null>(null);
+  const [papers, setPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/professors/${id}`)
-      .then(r => r.json())
-      .then(d => setProfessor(d.data ?? null))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch(`/api/professors/${id}`).then(r => r.json()),
+      fetch(`/api/professors/${id}/papers`).then(r => r.json()),
+    ]).then(([pd, pp]) => {
+      setProfessor(pd.data ?? null);
+      setPapers(pp.papers ?? []);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [id]);
 
   if (loading) {
@@ -198,6 +212,36 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
                 <span>📚</span><span>Google Scholar</span>
               </a>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Papers */}
+      {papers.length > 0 && (
+        <div className="mx-4 mt-3 rounded-2xl p-4" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+          <h2 className="text-xs font-semibold mb-3" style={{ color: '#1a2332' }}>
+            代表论文 <span className="font-normal" style={{ color: '#907858' }}>via Semantic Scholar</span>
+          </h2>
+          <div className="space-y-3">
+            {papers.map(p => (
+              <div key={p.id} className="border-b last:border-0 pb-3 last:pb-0" style={{ borderColor: '#e8dcc8' }}>
+                <a
+                  href={p.doi_url ?? p.ss_url ?? undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-medium leading-snug block mb-1 no-underline"
+                  style={{ color: p.doi_url || p.ss_url ? '#7d6340' : '#1a2332' }}
+                >
+                  {p.title}
+                  {(p.doi_url || p.ss_url) && <span className="ml-1" style={{ color: '#c4a050' }}>↗</span>}
+                </a>
+                <div className="flex gap-2 text-[10px]" style={{ color: '#907858' }}>
+                  {p.year && <span>{p.year}</span>}
+                  {p.journal && <span>· {p.journal}</span>}
+                  {p.citation_count > 0 && <span>· 引用 {p.citation_count}</span>}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
