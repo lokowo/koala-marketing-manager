@@ -71,32 +71,70 @@ function toInsert(data: Omit<Professor, 'id' | 'createdAt' | 'updatedAt'>) {
   };
 }
 
-export async function listProfessors(filters?: {
+// Maps UI category tabs to research_areas array overlap keywords
+const CATEGORY_RESEARCH_AREAS: Record<string, string[]> = {
+  cs: ['Machine Learning', 'Artificial Intelligence', 'Computer Science', 'Deep Learning', 'Natural Language Processing', 'Computer Vision', 'Data Science', 'Software Engineering', 'Cybersecurity', 'Reinforcement Learning', 'Neural Networks', 'Information Technology'],
+  bio: ['Biology', 'Biomedical Engineering', 'Genomics', 'Neuroscience', 'Biochemistry', 'Medicine', 'Pharmacology', 'Public Health', 'Bioinformatics', 'Molecular Biology', 'Immunology', 'Microbiology', 'Epidemiology', 'Oncology'],
+  biz: ['Business', 'Finance', 'Economics', 'Management', 'Marketing', 'Accounting', 'Commerce', 'Supply Chain', 'Entrepreneurship', 'International Business', 'Organisational Behaviour'],
+  eng: ['Engineering', 'Robotics', 'Mechanical Engineering', 'Electrical Engineering', 'Civil Engineering', 'Materials Science', 'Chemical Engineering', 'Aerospace', 'Nanotechnology', 'Structural Engineering', 'Environmental Engineering'],
+  soc: ['Social Science', 'Psychology', 'Sociology', 'Education', 'Anthropology', 'History', 'Political Science', 'Law', 'Linguistics', 'Philosophy', 'Geography', 'Public Policy'],
+};
+
+type ProfessorFilters = {
   university?: string;
   verificationStatus?: string;
   researchArea?: string;
+  category?: string;
   search?: string;
+  acceptingStudents?: string;
+  grantStatus?: string;
+  hIndexMin?: number;
+  sortBy?: string;
   limit?: number;
   offset?: number;
-}): Promise<Professor[]> {
+};
+
+export async function listProfessors(filters?: ProfessorFilters): Promise<Professor[]> {
   const limit = filters?.limit ?? 20;
   const offset = filters?.offset ?? 0;
-  let query = supabaseAdmin
+  const sortField = filters?.sortBy ?? 'opportunity_score';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q: any = supabaseAdmin
     .from('professors')
     .select('*')
-    .order('opportunity_score', { ascending: false, nullsFirst: false })
+    .order(sortField, { ascending: false, nullsFirst: false })
     .range(offset, offset + limit - 1);
-  if (filters?.university) query = query.eq('university', filters.university);
-  if (filters?.verificationStatus) query = query.eq('verification_status', filters.verificationStatus);
-  if (filters?.researchArea) query = query.contains('research_areas', [filters.researchArea]);
-  if (filters?.search) {
-    query = query.or(
-      `name.ilike.%${filters.search}%,university.ilike.%${filters.search}%`
-    );
+  if (filters?.university) q = q.eq('university', filters.university);
+  if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
+  if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
+  if (filters?.category && filters.category !== 'all' && CATEGORY_RESEARCH_AREAS[filters.category]) {
+    q = q.overlaps('research_areas', CATEGORY_RESEARCH_AREAS[filters.category]);
   }
-  const { data, error } = await query;
+  if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
+  if (filters?.grantStatus) q = q.eq('grant_status', filters.grantStatus);
+  if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
+  if (filters?.search) q = q.or(`name.ilike.%${filters.search}%,university.ilike.%${filters.search}%`);
+  const { data, error } = await q;
   if (error) throw new Error(error.message);
   return (data ?? []).map(fromRow);
+}
+
+export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' | 'offset' | 'sortBy'>): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q: any = supabaseAdmin.from('professors').select('*', { count: 'exact', head: true });
+  if (filters?.university) q = q.eq('university', filters.university);
+  if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
+  if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
+  if (filters?.category && filters.category !== 'all' && CATEGORY_RESEARCH_AREAS[filters.category]) {
+    q = q.overlaps('research_areas', CATEGORY_RESEARCH_AREAS[filters.category]);
+  }
+  if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
+  if (filters?.grantStatus) q = q.eq('grant_status', filters.grantStatus);
+  if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
+  if (filters?.search) q = q.or(`name.ilike.%${filters.search}%,university.ilike.%${filters.search}%`);
+  const { count, error } = await q;
+  if (error) throw new Error(error.message);
+  return count ?? 0;
 }
 
 export async function getProfessor(id: string): Promise<Professor | null> {
