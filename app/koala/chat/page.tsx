@@ -443,6 +443,10 @@ function ChatPageInner() {
     setMode(newMode);
     setMessages([{ id: msgId(), role: 'assistant', content: cfg.welcome, timestamp: new Date() }]);
     setInput('');
+    if (newMode !== 'write') {
+      setPendingProfessorId(null);
+      setPendingProfessorName(null);
+    }
   }
 
   // Core API call, optionally with a professorId for outreach context
