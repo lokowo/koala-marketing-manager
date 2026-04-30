@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -100,6 +100,18 @@ async function apiFetch(f: Filters) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ProfessorsPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ background: '#faf6ec', minHeight: '100vh' }} className="flex items-center justify-center">
+        <p className="text-sm" style={{ color: '#907858' }}>加载中…</p>
+      </div>
+    }>
+      <ProfessorsPageInner />
+    </Suspense>
+  );
+}
+
+function ProfessorsPageInner() {
   const searchParams = useSearchParams();
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [total, setTotal] = useState<number | null>(null);

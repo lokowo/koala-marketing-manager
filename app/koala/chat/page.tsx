@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Settings, Plus, Send, Sparkles, PawPrint } from 'lucide-react';
 import Link from 'next/link';
@@ -344,6 +344,18 @@ function msgId() { return Math.random().toString(36).slice(2); }
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center" style={{ height: '100dvh', background: '#faf6ec' }}>
+        <p className="text-sm" style={{ color: '#907858' }}>加载中…</p>
+      </div>
+    }>
+      <ChatPageInner />
+    </Suspense>
+  );
+}
+
+function ChatPageInner() {
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<AIMode>(() => {
     const action = searchParams.get('action');
