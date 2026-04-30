@@ -9,6 +9,7 @@ import type { ProfessorMatch, ScoreCard } from '../../lib/types';
 import { ExtendedReadingPanel } from '../components/ai/ExtendedReadingPanel';
 import type { PaperData } from '../components/ai/PaperCitationCard';
 import { EmailPackage } from '../components/outreach/EmailPackage';
+import { BatchEmailFlow } from '../components/outreach/BatchEmailFlow';
 import { AchievementBadge } from '../components/ai/AchievementBadge';
 import { MiniStats } from '../components/ai/MiniStats';
 import { ConfidenceBadge, type ConfidenceLevel } from '../components/ai/ConfidenceBadge';
@@ -409,6 +410,7 @@ function ChatPageInner() {
   const [tonePref, setTonePref] = useState<TonePref>('casual');
   const [langPref, setLangPref] = useState<LangPref>('zh');
   const [parsedFile, setParsedFile] = useState<string | null>(null);
+  const [batchProfessors, setBatchProfessors] = useState<{ id: string; name: string; institution?: string; matchScore?: number }[] | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autoSentRef = useRef(false);
@@ -523,6 +525,23 @@ function ChatPageInner() {
   const sendMessage = useCallback(async (text?: string) => {
     const txt = (text ?? input).trim();
     if (!txt || loading) return;
+
+    // Detect batch intent: "批量" or "多位" or "所有教授" + email keywords
+    const isBatchRequest = mode === 'write' && /批量|多位|所有教授|多封|多个教授/i.test(txt);
+    if (isBatchRequest) {
+      // Extract matched professors from latest AI message if available
+      const lastAiMsg = [...messages].reverse().find(m => m.role === 'assistant' && m.matchedProfessors?.length);
+      const profs = lastAiMsg?.matchedProfessors?.map(p => ({
+        id: p.professorId,
+        name: p.name,
+        institution: p.institution,
+        matchScore: p.matchScore,
+      }));
+      if (profs?.length) {
+        setBatchProfessors(profs);
+        return;
+      }
+    }
 
     const isEmailRequest = mode === 'write' && /套磁信|email|生成|帮我写/i.test(txt) && messages.length > 1;
     if (isEmailRequest) {
@@ -702,6 +721,15 @@ function ChatPageInner() {
                 {msg.role === 'assistant' && msg.matchedProfessors?.map((p, i) => (
                   <ProfessorMatchCard key={i} match={p} />
                 ))}
+                {msg.role === 'assistant' && msg.matchedProfessors && msg.matchedProfessors.length > 1 && (
+                  <button
+                    onClick={() => setBatchProfessors(msg.matchedProfessors!.map(p => ({ id: p.professorId, name: p.name, institution: p.institution, matchScore: p.matchScore })))}
+                    className="mt-2 w-full py-2 rounded-xl text-xs font-semibold"
+                    style={{ background: '#1a2332', color: '#c4a050' }}
+                  >
+                    📨 批量生成套磁信（{msg.matchedProfessors.length} 封）
+                  </button>
+                )}
                 {msg.role === 'assistant' && msg.citations && msg.citations.length > 0 && (
                   <ExtendedReadingPanel
                     papers={msg.citations}
@@ -767,6 +795,17 @@ function ChatPageInner() {
                 {qr}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Batch email flow */}
+        {batchProfessors && (
+          <div className="mt-2">
+            <BatchEmailFlow
+              professors={batchProfessors}
+              userId={undefined}
+              onClose={() => setBatchProfessors(null)}
+            />
           </div>
         )}
 
