@@ -1,0 +1,28 @@
+import type { NextRequest } from 'next/server';
+import { listPublishing, createPublishingRecord, getPublishingStats } from '../../lib/services/publishingService';
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = request.nextUrl;
+    const [records, stats] = await Promise.all([
+      listPublishing({
+        platform: searchParams.get('platform') ?? undefined,
+        contentCardId: searchParams.get('contentCardId') ?? undefined,
+      }),
+      getPublishingStats(),
+    ]);
+    return Response.json({ data: records, total: records.length, stats });
+  } catch (e) {
+    return Response.json({ error: (e as Error).message }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const record = await createPublishingRecord(body);
+    return Response.json({ data: record }, { status: 201 });
+  } catch (e) {
+    return Response.json({ error: (e as Error).message }, { status: 500 });
+  }
+}

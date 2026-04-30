@@ -1,1 +1,556 @@
 @AGENTS.md
+现在 Next.js 项目已经创建成功，并且 localhost:3000 可以打开默认页面。
+
+请先替换 app/page.tsx，做一个 Business Selector 首页。
+
+要求：
+1. 深色高级 SaaS 后台风格
+2. 三张业务卡：Koala PhD、Lucent、Teddy Legal
+3. Koala 卡片可以点击进入 /dashboard/koala
+4. Lucent 和 Teddy 暂时 disabled
+5. 使用 Tailwind CSS
+6. 不要安装额外依赖
+
+
+
+# ============ 以下为 2026-04-28 更新的 C端产品规则 ============
+# CLAUDE.md — Koala PhD Project Context
+# Claude Code 必须在每次开发前阅读此文件
+
+---
+
+## 项目概述
+
+Koala PhD 是一个 AI PhD Advisor 平台。C端前台以 AI 对话为核心，后台自动采集澳洲教授数据。
+商业模式：免费教授匹配 → $1/封定制套磁信 → 订阅。
+
+**完整 PRD 在 `docs/koala_prd_v2.md`，所有产品逻辑以该文件为准。**
+
+---
+
+## 技术栈（严格遵守，不要替换）
+
+```
+Framework:    Next.js 14 App Router + TypeScript
+Styling:      Tailwind CSS
+Database:     Supabase PostgreSQL + pgvector
+Auth:         Supabase Auth
+Storage:      Supabase Storage
+AI:           Anthropic Claude API (claude-sonnet-4-20250514)
+Embedding:    OpenAI text-embedding-3-small (1536 dims)
+Papers:       Semantic Scholar API (free)
+PDF:          @react-pdf/renderer
+Email:        Resend API
+Deploy:       Vercel
+```
+
+---
+
+## 环境变量（.env.local）
+
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+SEMANTIC_SCHOLAR_API_KEY=
+RESEND_API_KEY=
+```
+
+**绝对不要在任何前端代码中引用 SUPABASE_SERVICE_ROLE_KEY 或 ANTHROPIC_API_KEY。** 这些只在 `app/api/` 路由和 `lib/server/` 中使用。
+
+---
+
+## 文件结构（严格遵守）
+
+```
+koala-phd/
+├── CLAUDE.md                          ← 你正在读的文件
+├── docs/
+│   ├── koala_prd_v2.md               ← 产品需求文档（必读）
+│   └── koala_ai_prompts.md           ← AI Prompt 库（必读）
+│
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx                ← Root layout（字体、Providers）
+│   │   ├── page.tsx                  ← 首页
+│   │   ├── ai/page.tsx              ← AI 全屏对话页（核心）
+│   │   ├── professors/
+│   │   │   ├── page.tsx             ← 教授列表
+│   │   │   └── [slug]/page.tsx      ← 教授详情
+│   │   ├── blog/
+│   │   │   ├── page.tsx
+│   │   │   └── [slug]/page.tsx
+│   │   ├── tools/
+│   │   │   ├── page.tsx             ← 工具列表
+│   │   │   ├── niv/page.tsx
+│   │   │   └── pricing/page.tsx
+│   │   │
+│   │   └── api/                      ← 所有后端逻辑
+│   │       ├── ai/
+│   │       │   ├── chat/route.ts    ← POST: AI 对话（所有4模式）
+│   │       │   ├── feedback/route.ts ← POST: 反馈提交
+│   │       │   └── export/route.ts  ← POST: 对话导出 PDF
+│   │       ├── professors/
+│   │       │   ├── route.ts         ← GET: 搜索/筛选/分页
+│   │       │   ├── [slug]/route.ts  ← GET: 详情
+│   │       │   └── sync/route.ts    ← POST: 触发自动采集（Admin only）
+│   │       ├── outreach/
+│   │       │   ├── generate/route.ts ← POST: 生成套磁信
+│   │       │   ├── send/route.ts    ← POST: 发送套磁信
+│   │       │   └── credits/route.ts ← GET/POST: 积分查询/购买
+│   │       ├── report/
+│   │       │   ├── generate/route.ts
+│   │       │   └── [id]/route.ts
+│   │       ├── blog/route.ts
+│   │       ├── niv/assess/route.ts
+│   │       └── cron/
+│   │           ├── sync-professors/route.ts  ← Vercel Cron
+│   │           ├── update-knowledge/route.ts
+│   │           └── scrape-universities/route.ts
+│   │
+│   ├── components/
+│   │   ├── layout/
+│   │   │   ├── BottomTabBar.tsx      ← 底部5个Tab导航
+│   │   │   ├── MobileContainer.tsx   ← 手机端容器（max-w-[480px]）
+│   │   │   └── Header.tsx
+│   │   ├── ai/
+│   │   │   ├── AIChat.tsx            ← 主对话组件（管理消息流）
+│   │   │   ├── AiMessage.tsx         ← AI 消息气泡
+│   │   │   ├── UserMessage.tsx
+│   │   │   ├── ModeTabs.tsx          ← 四模式切换
+│   │   │   ├── QuickButtons.tsx      ← 快捷回复按钮
+│   │   │   ├── ScoreCard.tsx         ← 初评分卡（嵌入对话）
+│   │   │   ├── UploadPrompt.tsx      ← 文件上传区
+│   │   │   ├── MatchList.tsx         ← 教授匹配列表（嵌入对话）
+│   │   │   ├── EmailPreview.tsx      ← 套磁信预览
+│   │   │   ├── PaperCard.tsx         ← 论文引用卡片
+│   │   │   ├── ConfidenceBadge.tsx   ← 置信度标注 🟢🟡🔴⚠
+│   │   │   ├── SourceTag.tsx         ← [Source: xxx] 标签
+│   │   │   ├── FeedbackBar.tsx       ← 👍🤔👎📝
+│   │   │   ├── ProfessorLink.tsx     ← 教授关联卡片
+│   │   │   ├── DailyTask.tsx         ← 每日任务
+│   │   │   ├── AchievementBadge.tsx  ← 成就徽章
+│   │   │   └── ProgressBar.tsx       ← Research Readiness 进度条
+│   │   ├── professor/
+│   │   │   ├── ProfCard.tsx
+│   │   │   ├── ProfDetail.tsx
+│   │   │   ├── GrantList.tsx
+│   │   │   ├── PaperList.tsx
+│   │   │   ├── OpportunityBadge.tsx  ← Opportunity Signal 显示
+│   │   │   └── ShareBar.tsx
+│   │   ├── blog/
+│   │   │   ├── BlogCard.tsx
+│   │   │   └── BlogDetail.tsx
+│   │   └── ui/
+│   │       ├── Button.tsx
+│   │       ├── Chip.tsx
+│   │       ├── KoalaAvatar.tsx
+│   │       ├── Input.tsx
+│   │       └── Modal.tsx
+│   │
+│   ├── lib/
+│   │   ├── supabase/
+│   │   │   ├── client.ts             ← 浏览器端 Supabase client
+│   │   │   └── server.ts            ← 服务器端 Supabase client（用 service_role_key）
+│   │   ├── server/                   ← 只在服务器端运行，绝不 import 到前端
+│   │   │   ├── anthropic.ts         ← Claude API 封装
+│   │   │   ├── semantic-scholar.ts  ← Semantic Scholar API
+│   │   │   ├── rag-engine.ts        ← 科研深潜 RAG 引擎
+│   │   │   ├── matching-engine.ts   ← 教授匹配算法
+│   │   │   ├── email-generator.ts   ← 套磁信生成
+│   │   │   ├── report-generator.ts  ← PDF 报告生成
+│   │   │   ├── sensitive-filter.ts  ← 敏感词过滤
+│   │   │   └── embedding.ts         ← OpenAI embedding 调用
+│   │   ├── prompts/
+│   │   │   ├── system.ts            ← 全局 System Prompt
+│   │   │   ├── path-assessment.ts   ← 路径评估模式 Prompt
+│   │   │   ├── research-dive.ts     ← 科研深潜模式 Prompt
+│   │   │   ├── companion.ts         ← 陪伴模式 Prompt
+│   │   │   ├── writing.ts           ← 文案模式 Prompt
+│   │   │   └── email.ts             ← 套磁信生成 Prompt
+│   │   ├── constants.ts              ← 颜色、字体、品牌信息
+│   │   └── utils.ts
+│   │
+│   ├── hooks/
+│   │   ├── useAIChat.ts              ← AI 对话状态管理
+│   │   ├── useProfessors.ts
+│   │   ├── useCredits.ts             ← 积分状态
+│   │   ├── useAchievements.ts
+│   │   └── useDailyTasks.ts
+│   │
+│   └── types/
+│       ├── professor.ts
+│       ├── student.ts
+│       ├── match.ts
+│       ├── outreach.ts
+│       ├── conversation.ts
+│       └── index.ts
+│
+├── scripts/
+│   ├── professor_collector.py        ← 教授自动采集
+│   ├── knowledge_builder.js          ← 知识库构建
+│   └── import_professors.ts          ← 导入采集数据到 Supabase
+│
+├── supabase/
+│   ├── schema.sql                    ← 完整建表
+│   ├── seed.sql                      ← 敏感词种子数据
+│   └── functions.sql                 ← pgvector 搜索函数
+│
+└── vercel.json                       ← Cron job 配置
+```
+
+---
+
+## 关键 API 接口规范
+
+### POST /api/ai/chat
+
+这是最核心的接口。所有 4 个 AI 模式都走这个接口。
+
+```typescript
+// Request
+{
+  mode: "path" | "research" | "chat" | "write",
+  messages: Array<{ role: "user" | "assistant", content: string }>,
+  professorContext?: {  // 从教授详情页跳转时附带
+    professorId: string,
+    name: string,
+    institution: string,
+    researchTags: string[],
+  },
+  userStyleProfile?: {  // 自适应语气（前端在前3轮后计算传入）
+    sentenceLength: "short" | "medium" | "long",
+    formality: "casual" | "mixed" | "formal",
+    usesEmoji: boolean,
+    expertise: "beginner" | "intermediate" | "expert",
+    emotionalState: "anxious" | "neutral" | "motivated",
+  }
+}
+
+// Response
+{
+  reply: string,            // AI 回复内容（Markdown）
+  citations?: Array<{       // 科研深潜模式才有
+    title: string,
+    authors: string,
+    year: number,
+    journal: string,
+    doi: string,
+    url: string,
+  }>,
+  matchedProfessors?: Array<{  // 路径评估 Stage 3 才有
+    professorId: string,
+    name: string,
+    institution: string,
+    matchScore: number,
+    reason: string,
+  }>,
+  scoreCard?: {             // 路径评估 Stage 1 才有
+    totalScore: number,
+    dimensions: Array<{ name: string, score: number }>,
+  },
+  suggestConsultation?: boolean,  // 是否引导到真人咨询
+  achievement?: string,     // 如果触发了新成就
+}
+```
+
+**处理逻辑（伪代码）：**
+
+```typescript
+export async function POST(req: Request) {
+  const { mode, messages, professorContext, userStyleProfile } = await req.json();
+  
+  // 1. 加载对应模式的 System Prompt
+  let systemPrompt = getBaseSystemPrompt();  // 全局品牌红线
+  systemPrompt += getModePrompt(mode);       // 模式专用指令
+  
+  // 2. 如果有用户风格画像，追加到 System Prompt
+  if (userStyleProfile) {
+    systemPrompt += `\n\n用户说话风格：${describeStyle(userStyleProfile)}。请匹配用户风格回复。`;
+  }
+  
+  // 3. 如果是科研深潜模式，执行 RAG
+  let ragContext = "";
+  if (mode === "research") {
+    const lastMsg = messages[messages.length - 1].content;
+    
+    // 并行检索（Promise.all，不要串行！）
+    const [papers, knowledge, professors] = await Promise.all([
+      searchSemanticScholar(lastMsg),      // lib/server/semantic-scholar.ts
+      searchKnowledgeBase(lastMsg),         // lib/server/rag-engine.ts
+      searchProfessorsByTag(lastMsg),       // lib/server/matching-engine.ts
+    ]);
+    
+    ragContext = assembleRAGContext(papers, knowledge, professors);
+    systemPrompt += `\n\n检索到的参考资料：\n${ragContext}`;
+  }
+  
+  // 4. 如果有教授 context（从详情页跳转）
+  if (professorContext) {
+    systemPrompt += `\n\n用户正在了解的教授：${JSON.stringify(professorContext)}`;
+  }
+  
+  // 5. 调用 Claude API
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 2000,
+    system: systemPrompt,
+    messages: messages.map(m => ({ role: m.role, content: m.content })),
+  });
+  
+  // 6. 后处理
+  const reply = response.content[0].text;
+  const result = postProcess(reply, mode);  // 提取引用、检查无来源数据
+  
+  // 7. 保存对话记录到数据库
+  await saveConversation(mode, messages, result);
+  
+  // 8. 检查是否应该引导咨询
+  result.suggestConsultation = shouldSuggestConsultation(messages, mode);
+  
+  // 9. 检查是否触发成就
+  result.achievement = checkAchievements(messages, mode);
+  
+  return Response.json(result);
+}
+```
+
+### POST /api/outreach/generate
+
+```typescript
+// Request
+{
+  professorId: string,
+  studentProfileJson: object,  // AI 分析后的学生结构化数据
+  tone: "professional" | "warm" | "direct" | "academic",
+  purpose: "PhD" | "MRes" | "RA" | "Scholarship",
+}
+
+// Response
+{
+  emailId: string,
+  subjectLine: string,
+  emailBody: string,
+  followupBody: string,
+  riskNote: string,        // 内部提醒，不发给教授
+  creditsUsed: number,
+  remainingCredits: number,
+}
+```
+
+**关键：生成前必须检查用户积分余额。余额不足返回 402 + 引导购买。**
+
+### GET /api/professors
+
+```typescript
+// Query params
+{
+  search?: string,          // 搜索教授名/方向/学校
+  institution?: string,     // 筛选学校
+  status?: "open" | "all",  // 仅看在招
+  sort?: "h_index" | "funding" | "opportunity" | "updated",
+  page?: number,
+  limit?: number,           // 默认 20
+}
+
+// Response
+{
+  professors: Array<Professor>,
+  total: number,
+  page: number,
+}
+```
+
+---
+
+## Semantic Scholar API 规范
+
+```
+Base URL: https://api.semanticscholar.org/graph/v1
+
+论文搜索:
+GET /paper/search?query={query}&limit=15&fields=paperId,title,year,citationCount,journal,externalIds,url,abstract&year={yearFrom}-
+
+作者搜索:
+GET /author/search?query={name}&limit=5&fields=authorId,name,affiliations,citationCount,hIndex,paperCount,url
+
+作者论文:
+GET /author/{authorId}/papers?limit=10&fields=paperId,title,year,citationCount,journal,externalIds,url,abstract&sort=citationCount:desc
+
+限速：
+- 无 API key: 1 req/sec, 1000 req/day
+- 有 API key: 10 req/sec, 10000 req/day
+- 请求头: x-api-key: {SEMANTIC_SCHOLAR_API_KEY}
+
+重要：
+- 搜索结果可能不精确，必须验证 affiliations 是否包含目标大学
+- 如果匹配不到，设置 semantic_scholar = null，绝不编造
+- DOI 链接格式: https://doi.org/{doi}
+```
+
+---
+
+## Supabase pgvector 搜索函数
+
+```sql
+-- 必须在 Supabase SQL Editor 中创建此函数
+CREATE OR REPLACE FUNCTION match_knowledge(
+  query_embedding vector(1536),
+  match_threshold float DEFAULT 0.7,
+  match_count int DEFAULT 10
+)
+RETURNS TABLE (
+  id uuid,
+  source_type text,
+  source_title text,
+  content text,
+  similarity float
+)
+LANGUAGE sql STABLE
+AS $$
+  SELECT id, source_type, source_title, content,
+    1 - (embedding <=> query_embedding) AS similarity
+  FROM knowledge_chunks
+  WHERE 1 - (embedding <=> query_embedding) > match_threshold
+  ORDER BY embedding <=> query_embedding
+  LIMIT match_count;
+$$;
+```
+
+调用方式（在 rag-engine.ts 中）：
+```typescript
+const { data } = await supabase.rpc('match_knowledge', {
+  query_embedding: embedding,  // 1536维数组
+  match_threshold: 0.7,
+  match_count: 10,
+});
+```
+
+---
+
+## 品牌常量（src/lib/constants.ts）
+
+```typescript
+export const BRAND = {
+  name: "Koala Study Advisors",
+  shortName: "Koala",
+  domain: "koalastudy.net",
+  email: "info@koalastudy.net",
+  address: "Suite 22/26A Lime St, Sydney NSW 2000",
+  wechat: "KoalaStudy",
+  xiaohongshu: "@dr.koalaau",
+  instagram: "@dr.koalaau",
+  tagline: "Koala — 陪你从申请到毕业，每一步都在。",
+  aiName: "考拉学长",
+  aiSubtitle: "你的澳洲学术内线",
+  positioning: "澳洲产学研科研机构",  // 绝不说"留学中介"
+  mara: "KSA 持有 MARA 注册资质",
+} as const;
+
+export const COLORS = {
+  bg: "#faf6ec",
+  card: "#f2ead6",
+  ink: "#1a2332",
+  bark: "#7d6340",
+  fur: "#a08058",
+  gold: "#c4a050",
+  goldDark: "#8a6c30",
+  euc: "#5a8060",
+  terra: "#b06040",
+  txt: "#28201a",
+  txtSoft: "#584838",
+  txtMuted: "#907858",
+} as const;
+
+export const FONTS = {
+  serif: "'Noto Serif SC', serif",
+  en: "'Fraunces', Georgia, serif",
+  mono: "'JetBrains Mono', monospace",
+  body: "'Noto Sans SC', sans-serif",
+} as const;
+```
+
+---
+
+## 常见错误预防
+
+### ❌ 不要做的事
+
+1. **不要在前端直接调用 Claude API** — 所有 AI 调用必须走 /api/ai/chat
+2. **不要在前端 import `lib/server/` 下的任何文件** — 会暴露 API key
+3. **不要用 localStorage** — Artifact 环境不支持，用 React state 或 Supabase
+4. **不要编造教授数据** — 示例数据可以用，但标注"示例数据"
+5. **不要串行调用 API** — RAG 的三个数据源必须 Promise.all 并行
+6. **不要忽略 Semantic Scholar 限速** — 加 delay，无 key 时 1req/sec
+7. **不要把 sensitive_words 表的数据硬编码** — 从数据库读取，Admin 可维护
+8. **不要在 AI 回复中使用"保录取""保奖学金"** — System Prompt 已禁止，但代码层也要做 compliance check
+9. **不要假设用户是桌面端** — 所有 UI 先为 375px 宽度设计
+10. **不要在每条 AI 消息中都推销咨询** — 只在 shouldSuggestConsultation() 返回 true 时
+
+### ✅ 必须做的事
+
+1. **每个教授数据点旁边标注来源** — "via ARC Portal" / "via Semantic Scholar" / "via {大学} website"
+2. **每次 AI 对话保存到 ai_conversations 表**
+3. **每次反馈保存到 feedback 表**
+4. **套磁信生成前检查积分余额**
+5. **科研深潜模式的回答必须包含 [Source] 标注**
+6. **教授职称使用真实职称，不统一叫"教授"**
+7. **所有社媒内容经过 sensitive_filter 过滤**
+8. **PDF 报告包含免责声明**
+9. **NIV 工具包含 MARA 声明和免责**
+10. **移动端底部 Tab 的 Koala 图标要从底栏凸起**
+
+---
+
+## 开发顺序建议
+
+```
+Week 1: 基础设施
+├── Next.js 项目 + Tailwind + TypeScript 配置
+├── Supabase 建库 + schema.sql + functions.sql
+├── src/lib/ 下所有 server 端工具函数
+├── src/types/ 全部类型定义
+└── src/lib/constants.ts + prompts/
+
+Week 2: 前端页面（Mobile-First）
+├── BottomTabBar + MobileContainer
+├── 首页
+├── 教授列表 + 详情（先用 mock 数据）
+├── 博客列表
+├── 工具页 + NIV
+└── AI 对话页基础 UI（消息流 + 输入框 + 模式切换）
+
+Week 3: AI 核心功能
+├── /api/ai/chat 四模式全部接通
+├── RAG 引擎（Semantic Scholar + pgvector）
+├── 路径评估 3 阶段完整流程
+├── 套磁信生成 + 积分系统
+├── 自适应语气引擎
+└── 反馈收集
+
+Week 4: 数据管线 + 后台
+├── professor_collector.py 运行 + 数据导入
+├── knowledge_builder.js 运行
+├── 后台 Dashboard 基础结构
+├── 采集管线监控面板
+├── 教授审核功能
+└── 内容生成器
+
+Week 5: 打磨 + 部署
+├── 每日任务 + 成就系统
+├── PDF 报告生成
+├── 对话导出
+├── 分享功能
+├── Vercel 部署 + Cron 配置
+└── DNS 切换
+```
+
+---
+
+## 给 Claude Code 的一句话总结
+
+```
+Koala PhD is an AI-first platform where users chat with "考拉学长" to get free professor matching, then pay AUD 1/email for customized cold outreach letters. The backend auto-collects professor data from ARC Portal + Semantic Scholar + university websites. The AI adapts to each user's communication style and provides emotional support alongside practical PhD application guidance. All professor data must cite sources. Never say "guaranteed admission" or "guaranteed scholarship". Mobile-first design with bottom tab navigation.
+```
