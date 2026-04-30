@@ -192,6 +192,9 @@ export interface ProfessorMatch {
   reason: string;
   opportunityLabel?: string;
   researchTags?: string[];
+  hIndex?: number;
+  paperCount?: number;
+  citationCount?: number;
 }
 
 export interface ScoreCardDimension {

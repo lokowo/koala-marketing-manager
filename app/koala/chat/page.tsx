@@ -115,35 +115,59 @@ function ConfidenceBadgeInline({ level, count }: { level: ConfidenceLevel; count
 function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
   const score = match.matchScore;
   const color = score >= 75 ? '#5a8060' : score >= 50 ? '#c4a050' : '#b06040';
+  const hasStats = match.hIndex != null || match.paperCount != null || match.citationCount != null;
   return (
-    <Link href={`/koala/professors/${match.professorId}`} style={{ textDecoration: 'none' }}>
-      <div className="rounded-xl p-3 mt-2" style={{ background: '#fff', border: '1px solid #e8dcc8' }}>
+    <div className="rounded-xl p-3 mt-2" style={{ background: '#fff', border: '1px solid #e8dcc8' }}>
+      <Link href={`/koala/professors/${match.professorId}`} style={{ textDecoration: 'none' }}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="text-xs font-semibold" style={{ color: '#1a2332' }}>🎓 {match.name}</div>
             <div className="text-[11px] mt-0.5" style={{ color: '#907858' }}>{match.institution}</div>
             {match.positionTitle && <div className="text-[10px]" style={{ color: '#b09878' }}>{match.positionTitle}</div>}
-            {match.researchTags && match.researchTags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1">
-                {match.researchTags.slice(0, 3).map(tag => (
-                  <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#f2ead6', color: '#7d6340' }}>{tag}</span>
-                ))}
-              </div>
-            )}
           </div>
           <div className="flex-shrink-0 text-center">
             <div className="text-lg font-bold" style={{ color }}>{score}</div>
             <div className="text-[10px]" style={{ color: '#b09878' }}>匹配度</div>
           </div>
         </div>
+        {hasStats && (
+          <div className="flex gap-3 mt-1.5 text-[10px]" style={{ color: '#6b6055' }}>
+            {match.hIndex != null && <span>H:{match.hIndex}</span>}
+            {match.paperCount != null && <span>{match.paperCount}篇论文</span>}
+            {match.citationCount != null && <span>{match.citationCount >= 1000 ? `${(match.citationCount / 1000).toFixed(1)}k` : match.citationCount}引用</span>}
+          </div>
+        )}
+        {match.researchTags && match.researchTags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {match.researchTags.slice(0, 3).map(tag => (
+              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#f2ead6', color: '#7d6340' }}>{tag}</span>
+            ))}
+          </div>
+        )}
         {match.reason && (
           <div className="text-[11px] mt-2 pt-2 leading-relaxed" style={{ color: '#584838', borderTop: '1px solid #f0e8d4' }}>{match.reason}</div>
         )}
         {match.opportunityLabel && (
           <div className="inline-block text-[10px] px-2 py-0.5 rounded-full mt-1" style={{ background: '#f0f8f2', color: '#5a8060' }}>{match.opportunityLabel}</div>
         )}
+      </Link>
+      <div className="flex gap-2 mt-2 pt-2" style={{ borderTop: '1px solid #f0e8d4' }}>
+        <Link
+          href={`/koala/professors/${match.professorId}`}
+          className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg no-underline"
+          style={{ background: '#f0e9d6', color: '#1a2332' }}
+        >
+          查看详情
+        </Link>
+        <Link
+          href={`/koala/chat?action=outreach&prof=${match.professorId}&name=${encodeURIComponent(match.name)}`}
+          className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg no-underline"
+          style={{ background: '#c4a050', color: '#fff' }}
+        >
+          ✉️ 写套磁信
+        </Link>
       </div>
-    </Link>
+    </div>
   );
 }
 
@@ -376,6 +400,10 @@ function ChatPageInner() {
   const [showCreditConfirm, setShowCreditConfirm] = useState(false);
   const [pendingEmailText, setPendingEmailText] = useState<string | null>(null);
   const [pendingProfessorId, setPendingProfessorId] = useState<string | null>(null);
+  const [pendingProfessorName, setPendingProfessorName] = useState<string | null>(() => {
+    const n = searchParams.get('name');
+    return n ? decodeURIComponent(n) : null;
+  });
   const [toastAchievement, setToastAchievement] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [tonePref, setTonePref] = useState<TonePref>('casual');
@@ -391,7 +419,7 @@ function ChatPageInner() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Auto-send outreach message when coming from professor card/detail
+  // Show credit dialog for outreach flow from professor card/detail
   useEffect(() => {
     if (autoSentRef.current) return;
     const action = searchParams.get('action');
@@ -399,10 +427,13 @@ function ChatPageInner() {
     const profId = searchParams.get('prof');
     if (action === 'outreach' && profName) {
       autoSentRef.current = true;
-      const msg = `请帮我给 ${decodeURIComponent(profName)} 教授写一封套磁信`;
+      const decodedName = decodeURIComponent(profName);
+      const msg = `请帮我给 ${decodedName} 教授写一封套磁信`;
       if (profId) setPendingProfessorId(profId);
-      // Small delay so the welcome message renders first
-      setTimeout(() => sendMessageWithProfessor(msg, profId ?? undefined), 300);
+      setPendingProfessorName(decodedName);
+      setPendingEmailText(msg);
+      // Delay so the welcome message renders before the dialog pops up
+      setTimeout(() => setShowCreditConfirm(true), 400);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -682,11 +713,15 @@ function ChatPageInner() {
                 {msg.role === 'assistant' && msg.emailPackage && (
                   <div className="mt-2">
                     <EmailPackage
-                      professorName="目标教授"
+                      professorName={pendingProfessorName ?? '目标教授'}
                       subjectLine={msg.emailPackage.subjectLine}
                       emailBody={msg.emailPackage.emailBody}
                       followupBody={msg.emailPackage.followupBody}
                       riskNote={msg.emailPackage.riskNote}
+                      onRegenerate={() => {
+                        setPendingEmailText('请重新生成一封套磁信');
+                        setShowCreditConfirm(true);
+                      }}
                     />
                   </div>
                 )}

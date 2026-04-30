@@ -199,3 +199,50 @@ export async function deleteProfessor(id: string): Promise<boolean> {
   const { error } = await supabaseAdmin.from('professors').delete().eq('id', id);
   return !error;
 }
+
+export async function searchProfessorsForAI(params: {
+  researchArea: string;
+  university?: string;
+  limit?: number;
+}): Promise<Professor[]> {
+  const limit = Math.min(params.limit ?? 8, 15);
+  const keywords = params.researchArea
+    .split(/[,;，；\s]+/)
+    .map(k => k.trim())
+    .filter(k => k.length >= 2);
+
+  if (keywords.length === 0) return [];
+
+  const orClauses = keywords.map(k => `research_areas::text.ilike.%${k}%`).join(',');
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q: any = supabaseAdmin
+    .from('professors')
+    .select('*')
+    .or(orClauses)
+    .order('opportunity_score', { ascending: false, nullsFirst: false })
+    .order('h_index', { ascending: false, nullsFirst: false })
+    .limit(limit * 3);
+
+  if (params.university) {
+    q = q.ilike('university', `%${params.university}%`);
+  }
+
+  const { data, error } = await q;
+  if (error) throw new Error(error.message);
+
+  const professors = (data ?? []).map(fromRow);
+
+  // Sort: accepting > opportunity_score > h_index
+  professors.sort((a: Professor, b: Professor) => {
+    const aAccepting = a.acceptingStudents === 'yes' ? 1 : 0;
+    const bAccepting = b.acceptingStudents === 'yes' ? 1 : 0;
+    if (aAccepting !== bAccepting) return bAccepting - aAccepting;
+    const aOpp = a.opportunityScore ?? 0;
+    const bOpp = b.opportunityScore ?? 0;
+    if (aOpp !== bOpp) return bOpp - aOpp;
+    return (b.hIndex ?? 0) - (a.hIndex ?? 0);
+  });
+
+  return professors.slice(0, limit);
+}

@@ -6,7 +6,7 @@ interface EmailPackageProps {
   emailId?: string;
   professorName: string;
   professorInstitution?: string;
-  professorEmail?: string; // may be null if not collected
+  professorEmail?: string;
   emailSource?: string;
   matchScore?: number;
   subjectLine: string;
@@ -14,6 +14,7 @@ interface EmailPackageProps {
   followupBody?: string;
   riskNote?: string;
   onStatusChange?: (status: 'sent' | 'later' | 'abandoned') => void;
+  onRegenerate?: () => void;
 }
 
 type CopyState = 'idle' | 'copied' | 'error';
@@ -64,6 +65,7 @@ export function EmailPackage({
   followupBody,
   riskNote,
   onStatusChange,
+  onRegenerate,
 }: EmailPackageProps) {
   const [body, setBody] = useState(initialBody);
   const [status, setStatus] = useState<SendStatus>('pending');
@@ -361,6 +363,17 @@ export function EmailPackage({
             <div className="text-[10px] font-semibold mb-1" style={{ color: '#8a5020' }}>💡 内部提醒</div>
             <div className="text-[11px] leading-relaxed" style={{ color: '#7d4820' }}>{riskNote}</div>
           </div>
+        )}
+
+        {/* Regenerate */}
+        {onRegenerate && (
+          <button
+            onClick={onRegenerate}
+            className="w-full py-2 rounded-xl text-xs font-medium"
+            style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}
+          >
+            🔄 重新生成（消耗 1 积分）
+          </button>
         )}
 
         {/* Status */}
