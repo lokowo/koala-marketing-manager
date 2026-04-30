@@ -39,11 +39,9 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
 
   const navItems = [
     { href: '/dashboard/koala', label: nav.dashboard },
-    { href: '/dashboard/koala/discovery', label: nav.discovery },
     { href: '/dashboard/koala/professors', label: nav.professors },
     { href: '/dashboard/koala/grants', label: nav.grants },
     { href: '/dashboard/koala/topics', label: nav.topics },
-    { href: '/dashboard/koala/content-generator', label: nav.contentGenerator },
     { href: '/dashboard/koala/publishing', label: nav.publishing },
   ];
 

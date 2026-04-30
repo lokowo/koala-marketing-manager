@@ -24,23 +24,17 @@ export type Translations = {
     koalaSubtitle: string;
     lucentSubtitle: string;
     teddySubtitle: string;
-    todaysTasks: string;
-    weeklyCalendar: string;
     latestProfessorCards: string;
     latestGrantCards: string;
-    pendingContentCards: string;
-    dayNames: string[];
   };
   layout: {
     sidebarTitle: string;
     sidebarSubtitle: string;
     nav: {
       dashboard: string;
-      discovery: string;
       professors: string;
       grants: string;
       topics: string;
-      contentGenerator: string;
       publishing: string;
     };
     backToBusiness: string;
@@ -154,42 +148,6 @@ export type Translations = {
       conversionNotes: string;
     };
   };
-  discovery: {
-    pageTitle: string;
-    filterTitle: string;
-    universityLabel: string;
-    researchFieldLabel: string;
-    sourceTypeLabel: string;
-    resultsPerRunLabel: string;
-    allUniversities: string;
-    allFields: string;
-    runButton: string;
-    resultsTitle: string;
-    approve: string;
-    reject: string;
-    saveToDatabase: string;
-    edit: string;
-  };
-  contentGenerator: {
-    pageTitle: string;
-    sourceType: string;
-    generateButton: string;
-    contentInput: string;
-    inputPlaceholder: string;
-    resultsTitle: string;
-    resultLabels: {
-      xiaohongshuPost: string;
-      xiaohongshuCarousel: string;
-      wechatMoment: string;
-      websiteArticle: string;
-      linkedinPost: string;
-      imagePrompt: string;
-      reference: string;
-      complianceCheck: string;
-    };
-    copied: string;
-    noResult: string;
-  };
 }
 
 export const translations: Record<Language, Translations> = {
@@ -215,23 +173,17 @@ export const translations: Record<Language, Translations> = {
       koalaSubtitle: 'Australia Research / PhD / Grant management',
       lucentSubtitle: 'City services & companion content system',
       teddySubtitle: 'Legal assistant content and case system',
-      todaysTasks: "Today's Publishing Tasks",
-      weeklyCalendar: 'Weekly Content Calendar',
       latestProfessorCards: 'Latest Professor Cards',
       latestGrantCards: 'Latest Grant Cards',
-      pendingContentCards: 'Pending Content Cards',
-      dayNames: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     },
     layout: {
       sidebarTitle: 'Koala PhD',
       sidebarSubtitle: 'Marketing Manager',
       nav: {
         dashboard: 'Dashboard',
-        discovery: 'Discovery',
         professors: 'Professors',
         grants: 'Grants',
         topics: 'Topics',
-        contentGenerator: 'Content Generator',
         publishing: 'Publishing',
       },
       backToBusiness: 'Back to Business Selector',
@@ -239,11 +191,9 @@ export const translations: Record<Language, Translations> = {
     header: {
       titles: {
         '/dashboard/koala': 'Koala Dashboard',
-        '/dashboard/koala/discovery': 'Discovery Center',
         '/dashboard/koala/professors': 'Professor Database',
         '/dashboard/koala/grants': 'Grant Database',
         '/dashboard/koala/topics': 'Research Topic Library',
-        '/dashboard/koala/content-generator': 'Content Card Generator',
         '/dashboard/koala/publishing': 'Publishing Tracker',
       },
     },
@@ -353,42 +303,6 @@ export const translations: Record<Language, Translations> = {
         conversionNotes: 'Conversion Notes',
       },
     },
-    discovery: {
-      pageTitle: 'Discovery Center',
-      filterTitle: 'Discovery Filter',
-      universityLabel: 'University',
-      researchFieldLabel: 'Research Field',
-      sourceTypeLabel: 'Source Type',
-      resultsPerRunLabel: 'Results Per Run',
-      allUniversities: 'All Universities',
-      allFields: 'All Fields',
-      runButton: 'Run Discovery',
-      resultsTitle: 'Discovery Results',
-      approve: 'Approve',
-      reject: 'Reject',
-      saveToDatabase: 'Save to Database',
-      edit: 'Edit',
-    },
-    contentGenerator: {
-      pageTitle: 'Content Card Generator',
-      sourceType: 'Source Type',
-      generateButton: 'Generate Content Card',
-      contentInput: 'Content Input',
-      inputPlaceholder: 'Enter raw content here...',
-      resultsTitle: 'Generated Results',
-      resultLabels: {
-        xiaohongshuPost: 'Xiaohongshu Post',
-        xiaohongshuCarousel: 'Xiaohongshu Carousel',
-        wechatMoment: 'WeChat Moment',
-        websiteArticle: 'Website Article',
-        linkedinPost: 'LinkedIn Post',
-        imagePrompt: 'Image Prompt',
-        reference: 'Reference',
-        complianceCheck: 'Compliance Check',
-      },
-      copied: 'Copied to clipboard!',
-      noResult: 'Click "Generate Content Card" to see results.',
-    },
   },
   zh: {
     common: {
@@ -412,23 +326,17 @@ export const translations: Record<Language, Translations> = {
       koalaSubtitle: '澳洲 Research / PhD / Grant 内容管理器',
       lucentSubtitle: '城市服务与情绪陪伴内容系统',
       teddySubtitle: '法律助手内容与案例管理系统',
-      todaysTasks: '今日发布任务',
-      weeklyCalendar: '本周内容日历',
       latestProfessorCards: '最新教授卡片',
       latestGrantCards: '最新资助卡片',
-      pendingContentCards: '待审核内容卡片',
-      dayNames: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
     },
     layout: {
       sidebarTitle: 'Koala PhD',
       sidebarSubtitle: 'Marketing Manager',
       nav: {
         dashboard: '仪表盘',
-        discovery: '发现中心',
         professors: '教授库',
         grants: '资助库',
         topics: '研究专题',
-        contentGenerator: '内容卡片生成器',
         publishing: '发布追踪',
       },
       backToBusiness: '返回业务选择',
@@ -436,11 +344,9 @@ export const translations: Record<Language, Translations> = {
     header: {
       titles: {
         '/dashboard/koala': 'Koala 仪表盘',
-        '/dashboard/koala/discovery': '发现中心',
         '/dashboard/koala/professors': '教授数据库',
         '/dashboard/koala/grants': '资助数据库',
         '/dashboard/koala/topics': '研究专题库',
-        '/dashboard/koala/content-generator': '内容卡片生成器',
         '/dashboard/koala/publishing': '发布追踪',
       },
     },
@@ -549,42 +455,6 @@ export const translations: Record<Language, Translations> = {
         consultations: '咨询',
         conversionNotes: '转化备注',
       },
-    },
-    discovery: {
-      pageTitle: '发现中心',
-      filterTitle: '发现筛选',
-      universityLabel: '大学',
-      researchFieldLabel: '研究领域',
-      sourceTypeLabel: '来源类型',
-      resultsPerRunLabel: '每次结果',
-      allUniversities: '所有大学',
-      allFields: '所有领域',
-      runButton: '开始发现',
-      resultsTitle: '发现结果',
-      approve: '通过',
-      reject: '拒绝',
-      saveToDatabase: '保存到数据库',
-      edit: '编辑',
-    },
-    contentGenerator: {
-      pageTitle: '内容卡片生成器',
-      sourceType: '来源类型',
-      generateButton: '生成内容卡片',
-      contentInput: '内容输入',
-      inputPlaceholder: '在此输入原始内容...',
-      resultsTitle: '生成结果',
-      resultLabels: {
-        xiaohongshuPost: '小红书内容',
-        xiaohongshuCarousel: '小红书轮播',
-        wechatMoment: '朋友圈内容',
-        websiteArticle: '网站文章',
-        linkedinPost: 'LinkedIn 内容',
-        imagePrompt: '图片 Prompt',
-        reference: '参考',
-        complianceCheck: '合规检查',
-      },
-      copied: '已复制到剪贴板！',
-      noResult: '点击“生成内容卡片”查看结果。',
     },
   },
 };

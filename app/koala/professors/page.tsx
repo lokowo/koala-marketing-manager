@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useDeferredValue } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Search, SlidersHorizontal, Bookmark } from 'lucide-react';
 import type { Professor } from '../../lib/types';
@@ -27,28 +27,20 @@ export default function ProfessorsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
-  const deferredSearch = useDeferredValue(search);
 
   useEffect(() => {
     setLoading(true);
-    fetch('/api/professors?limit=100')
+    const params = new URLSearchParams({ limit: '50' });
+    if (search) params.set('search', search);
+    fetch(`/api/professors?${params}`)
       .then(r => r.json())
       .then(d => setProfessors(d.professors ?? d.data ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [search]);
 
   const filtered = professors.filter(p => {
-    const q = deferredSearch.toLowerCase();
-    const matchesSearch = !q || (
-      p.name.toLowerCase().includes(q) ||
-      p.university.toLowerCase().includes(q) ||
-      (p.researchAreas ?? []).some(a => a.toLowerCase().includes(q))
-    );
-
-    if (!matchesSearch) return false;
     if (category === 'all') return true;
-
     const keywords = CATEGORY_KEYWORDS[category] ?? [];
     const areasStr = (p.researchAreas ?? []).join(' ').toLowerCase();
     const facultyStr = (p.faculty ?? '').toLowerCase();
