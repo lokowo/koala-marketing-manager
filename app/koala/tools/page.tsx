@@ -103,6 +103,15 @@ function TierCard({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+const FREE_TOOLS_GRID = [
+  { icon: '📊', title: 'GPA 换算器',     desc: '中国GPA → 澳洲标准一键转换', href: '/koala/tools/niv' },
+  { icon: '🛂', title: 'NIV 签证预评',   desc: '评估签证申请条件',          href: '/koala/tools/niv' },
+  { icon: '🔬', title: 'ARC 项目浏览',   desc: '查看最新澳洲研究经费项目',   href: '/koala/chat?mode=research' },
+  { icon: '🎯', title: 'PhD 路径自评',   desc: '评估申请竞争力与准备程度',   href: '/koala/chat?mode=path' },
+  { icon: '👨‍🏫', title: '教授 Top 10 匹配', desc: '免费获取最匹配的 10 位导师', href: '/koala/chat?mode=research' },
+  { icon: '✉️', title: '免费套磁信',     desc: '免费生成第 1 封定制套磁信',  href: '/koala/chat?mode=write' },
+];
+
 export default function ToolsPage() {
   const [showCredits, setShowCredits] = useState(false);
 
@@ -110,38 +119,51 @@ export default function ToolsPage() {
     <div className="pb-8" style={{ background: '#faf6ec' }}>
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b" style={{ borderColor: '#e8dcc8' }}>
-        <h1 className="text-base font-bold" style={{ color: '#1a2332' }}>定价 & 套餐</h1>
+        <h1 className="text-base font-bold" style={{ color: '#1a2332' }}>工具 & 定价</h1>
         <p className="text-xs mt-0.5" style={{ color: '#907858' }}>
-          订阅送月度额度 · 积分可单独加购 · 两者独立不冲突
+          免费工具直接用 · 订阅解锁更多功能
         </p>
       </div>
 
-      {/* Free tier */}
+      {/* ── Free Tools (first!) ── */}
       <div className="px-4 mt-4">
-        <div className="rounded-2xl p-4" style={{ background: '#f7f2e8', border: '1px solid #e8dcc8' }}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-base font-bold" style={{ color: '#1a2332' }}>免费版</div>
-            <div className="text-sm font-bold" style={{ color: '#5a8060' }}>永久免费</div>
-          </div>
-          <div className="grid grid-cols-1 gap-1.5">
-            {FREE_FEATURES.map(f => (
-              <div key={f.text} className="flex items-start gap-2" style={{ opacity: f.included ? 1 : 0.45 }}>
-                {f.included
-                  ? <Check className="size-3.5 flex-shrink-0 mt-0.5" style={{ color: '#5a8060' }} />
-                  : <X className="size-3.5 flex-shrink-0 mt-0.5" style={{ color: '#907858' }} />}
-                <span className="text-xs leading-snug" style={{ color: '#28201a' }}>{f.text}</span>
-              </div>
-            ))}
-          </div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold" style={{ color: '#1a2332' }}>免费工具箱</h2>
+          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: '#d1fae5', color: '#065f46' }}>
+            无需注册
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-2.5">
+          {FREE_TOOLS_GRID.map(tool => (
+            <Link
+              key={tool.title}
+              href={tool.href}
+              className="rounded-2xl p-3.5 flex flex-col gap-1.5 no-underline"
+              style={{ background: '#fff', border: '1px solid #f0e8d4', boxShadow: '0 2px 8px rgba(196,160,80,0.08)' }}
+            >
+              <span className="text-2xl">{tool.icon}</span>
+              <div className="text-xs font-bold" style={{ color: '#1a2332' }}>{tool.title}</div>
+              <div className="text-[11px] leading-snug" style={{ color: '#907858' }}>{tool.desc}</div>
+            </Link>
+          ))}
         </div>
       </div>
 
-      {/* Subscription tiers */}
+      {/* ── Value separator ── */}
+      <div className="mx-4 mt-5 rounded-2xl p-4" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+        <div className="text-xs font-semibold mb-1.5" style={{ color: '#1a2332' }}>想要更多？解锁完整功能</div>
+        <div className="space-y-1 text-[11px]" style={{ color: '#584838' }}>
+          <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0" style={{ color: '#5a8060' }} />无限 AI 对话轮次</div>
+          <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0" style={{ color: '#5a8060' }} />上传简历 & 成绩单自动解析</div>
+          <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0" style={{ color: '#5a8060' }} />查看完整教授联系方式 & 论文</div>
+          <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0" style={{ color: '#5a8060' }} />每月套磁信额度 & PDF 报告下载</div>
+        </div>
+      </div>
+
+      {/* ── Subscription tiers ── */}
       <div className="px-4 mt-4">
-        <h2 className="text-sm font-semibold mb-3" style={{ color: '#1a2332' }}>
-          订阅套餐
-          <span className="ml-2 text-[11px] font-normal" style={{ color: '#907858' }}>月度额度当月有效，不累积</span>
-        </h2>
+        <h2 className="text-sm font-semibold mb-1" style={{ color: '#1a2332' }}>订阅套餐</h2>
+        <p className="text-[11px] mb-3" style={{ color: '#907858' }}>新用户首月 5 折 · 月度额度当月有效</p>
         <div className="space-y-3">
           {(Object.values(SUBSCRIPTION_TIERS) as typeof SUBSCRIPTION_TIERS[keyof typeof SUBSCRIPTION_TIERS][]).map(tier => (
             <TierCard key={tier.id} tier={tier} isPopular={tier.popular} />

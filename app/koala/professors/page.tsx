@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ChevronLeft, Search, SlidersHorizontal, Bookmark, Loader2,
@@ -99,6 +100,7 @@ async function apiFetch(f: Filters) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ProfessorsPage() {
+  const searchParams = useSearchParams();
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [total, setTotal] = useState<number | null>(null);
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
@@ -107,10 +109,10 @@ export default function ProfessorsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  // Filters
+  // Filters — initialize category from URL param if provided
   const [search, setSearch]         = useState('');
   const [debouncedSearch, setDB]    = useState('');
-  const [category, setCategory]     = useState('all');
+  const [category, setCategory]     = useState(() => searchParams.get('category') ?? 'all');
   const [filterOpen, setFilterOpen] = useState(false);
   const [accepting, setAccepting]   = useState('');        // '' | 'yes'
   const [hIndexMin, setHIndexMin]   = useState(0);

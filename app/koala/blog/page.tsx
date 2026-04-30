@@ -55,11 +55,37 @@ const FULL_TOOLS = [
   { icon: '📋', title: 'PhD 申请自评', desc: '评估你的背景竞争力，获取个性化建议',       href: '/koala/chat?mode=path',    tag: '免费' },
 ];
 
+const BLOG_CTAS: Record<string, { text: string; href: string }> = {
+  '申请技巧': { text: '想让 Koala 帮你写一封？免费试试 →', href: '/koala/chat?mode=write' },
+  '文书':     { text: '想让 Koala 帮你写一封？免费试试 →', href: '/koala/chat?mode=write' },
+  '选校攻略': { text: '告诉 Koala 你的背景，AI 帮你选校 →', href: '/koala/chat?mode=path' },
+  '面试':     { text: '和 Koala 模拟一次 PhD 面试 →', href: '/koala/chat' },
+  '奖学金':   { text: '查看哪些导师有经费，增加奖学金机会 →', href: '/koala/professors' },
+};
+
+function getBlogCta(category: string): { text: string; href: string } {
+  return BLOG_CTAS[category] ?? { text: '有问题？直接问 Koala →', href: '/koala/chat' };
+}
+
 function BlogTab() {
   return (
     <div className="pb-4">
+      {/* Top CTA banner */}
+      <div className="mx-6 mt-4 rounded-2xl px-4 py-3 flex items-center justify-between gap-3" style={{ background: '#1a2332' }}>
+        <span className="text-xs leading-snug" style={{ color: '#e8dcc8' }}>
+          📚 看完攻略，不如直接行动
+        </span>
+        <a
+          href="/koala/chat"
+          className="shrink-0 text-[11px] font-semibold px-3 py-1.5 rounded-full no-underline"
+          style={{ background: '#c4a050', color: '#1a2332' }}
+        >
+          开始规划 →
+        </a>
+      </div>
+
       {/* Featured card */}
-      <div className="px-6 pt-6">
+      <div className="px-6 pt-4">
         <div
           className="rounded-2xl overflow-hidden"
           style={{ background: '#fff', boxShadow: '0 4px 16px rgba(196,160,80,0.12)' }}
@@ -113,29 +139,47 @@ function BlogTab() {
                 {FEATURED_POST.author} · {FEATURED_POST.daysAgo}
               </span>
             </div>
+            <a
+              href={getBlogCta(FEATURED_POST.tag).href}
+              className="mt-2 block text-center text-xs font-semibold py-2.5 rounded-xl no-underline"
+              style={{ background: '#1a2332', color: '#c4a050' }}
+            >
+              {getBlogCta(FEATURED_POST.tag).text}
+            </a>
           </div>
         </div>
       </div>
 
       {/* List posts */}
       <div className="flex px-6 pt-6 flex-col gap-3">
-        {LIST_POSTS.map(post => (
-          <Link
+        {LIST_POSTS.map(post => {
+          const cta = getBlogCta(post.category);
+          return (
+          <div
             key={post.id}
-            href="/koala/blog"
-            className="rounded-xl flex items-stretch overflow-hidden no-underline"
+            className="rounded-xl overflow-hidden"
             style={{ background: '#fff', boxShadow: '0 2px 8px rgba(196,160,80,0.08)' }}
           >
-            <div style={{ background: '#c4a050', width: 4, flexShrink: 0 }} />
-            <div className="flex p-3 flex-col flex-1 gap-1">
-              <h3 className="font-bold text-sm leading-5" style={{ color: '#1a2332' }}>{post.title}</h3>
-              <p className="text-xs leading-4" style={{ color: '#6b7280' }}>{post.excerpt}</p>
-              <span className="text-[11px] mt-1" style={{ color: '#a89878' }}>
-                {post.date} · {post.category}
-              </span>
+            <div className="flex items-stretch">
+              <div style={{ background: '#c4a050', width: 4, flexShrink: 0 }} />
+              <div className="flex p-3 flex-col flex-1 gap-1">
+                <h3 className="font-bold text-sm leading-5" style={{ color: '#1a2332' }}>{post.title}</h3>
+                <p className="text-xs leading-4" style={{ color: '#6b7280' }}>{post.excerpt}</p>
+                <span className="text-[11px] mt-1" style={{ color: '#a89878' }}>
+                  {post.date} · {post.category}
+                </span>
+              </div>
             </div>
-          </Link>
-        ))}
+            <a
+              href={cta.href}
+              className="block text-center text-[11px] font-medium py-2 no-underline"
+              style={{ background: '#f5edd8', color: '#7d6340', borderTop: '1px solid #f0e8d4' }}
+            >
+              {cta.text}
+            </a>
+          </div>
+          );
+        })}
       </div>
 
       {/* Tool grid */}

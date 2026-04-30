@@ -2,15 +2,44 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Bell, ChevronRight, Star } from 'lucide-react';
+import { ArrowRight, Bell, ChevronRight } from 'lucide-react';
 import type { Professor } from '../../lib/types';
 
-interface FeaturedProf {
-  id: string;
-  name: string;
-  university: string;
-  field: string;
-  rating: number;
+const UNI_COLORS: Record<string, { bg: string; fg: string; short: string }> = {
+  'Australian National University':        { bg: '#c4a050', fg: '#1a2332', short: 'ANU' },
+  'University of Melbourne':               { bg: '#003087', fg: '#fff',    short: 'MEL' },
+  'University of Sydney':                  { bg: '#cc0000', fg: '#fff',    short: 'SYD' },
+  'UNSW Sydney':                           { bg: '#1a1a1a', fg: '#ffe600', short: 'NSW' },
+  'University of Queensland':              { bg: '#51247a', fg: '#fff',    short: 'UQ'  },
+  'Monash University':                     { bg: '#006dae', fg: '#fff',    short: 'MON' },
+  'University of Western Australia':       { bg: '#003087', fg: '#fff',    short: 'UWA' },
+  'University of Adelaide':                { bg: '#005a9c', fg: '#fff',    short: 'ADE' },
+  'University of Technology Sydney':       { bg: '#00a3e0', fg: '#fff',    short: 'UTS' },
+  'RMIT University':                       { bg: '#e60028', fg: '#fff',    short: 'RMT' },
+  'Macquarie University':                  { bg: '#e8291c', fg: '#fff',    short: 'MAC' },
+  'Queensland University of Technology':   { bg: '#005a9c', fg: '#fff',    short: 'QUT' },
+  'Deakin University':                     { bg: '#00a86b', fg: '#fff',    short: 'DEA' },
+  'Griffith University':                   { bg: '#d4380d', fg: '#fff',    short: 'GRF' },
+  'La Trobe University':                   { bg: '#e84e1b', fg: '#fff',    short: 'LAT' },
+  'University of Newcastle':               { bg: '#1f1646', fg: '#fff',    short: 'NEW' },
+  'University of Wollongong':              { bg: '#1e5799', fg: '#fff',    short: 'WOL' },
+  'Flinders University':                   { bg: '#004f9f', fg: '#fff',    short: 'FLI' },
+  'Curtin University':                     { bg: '#cfb44b', fg: '#1a2332', short: 'CUR' },
+  'James Cook University':                 { bg: '#005c84', fg: '#fff',    short: 'JCU' },
+  'Swinburne University of Technology':    { bg: '#bb0000', fg: '#fff',    short: 'SWI' },
+  'Western Sydney University':             { bg: '#e52020', fg: '#fff',    short: 'WSY' },
+};
+
+function getUniBadge(university: string) {
+  if (UNI_COLORS[university]) return UNI_COLORS[university];
+  const letters = university.replace(/University of |University /gi, '').slice(0, 3).toUpperCase();
+  return { bg: '#5a6878', fg: '#fff', short: letters };
+}
+
+function fmtNum(n?: number): string {
+  if (!n) return '';
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
 }
 
 interface BlogPost {
@@ -21,23 +50,25 @@ interface BlogPost {
   excerpt: string;
 }
 
+const RESEARCH_AREAS = [
+  { label: 'CS · AI', value: 'cs', emoji: '🤖' },
+  { label: '医学健康', value: 'health', emoji: '🏥' },
+  { label: '生命科学', value: 'bio', emoji: '🧬' },
+  { label: '工程', value: 'eng', emoji: '⚙️' },
+  { label: '心理神经', value: 'neuro', emoji: '🧠' },
+  { label: '物理天文', value: 'physics', emoji: '🔭' },
+  { label: '社科', value: 'soc', emoji: '📊' },
+  { label: '地球科学', value: 'earth', emoji: '🌏' },
+];
+
 export default function HomePage() {
-  const [featuredProfs, setFeaturedProfs] = useState<FeaturedProf[]>([]);
+  const [professors, setProfessors] = useState<Professor[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
 
   useEffect(() => {
-    fetch('/api/professors?limit=4')
+    fetch('/api/professors?limit=6&sortBy=opportunity_score')
       .then(r => r.json())
-      .then(d => {
-        const list: Professor[] = d.professors ?? d.data ?? [];
-        setFeaturedProfs(list.slice(0, 4).map((p, i) => ({
-          id: p.id,
-          name: `${p.positionTitle ? p.positionTitle + ' ' : ''}${p.name}`,
-          university: p.university,
-          field: (p.researchAreas ?? []).slice(0, 2).join(' / ') || p.faculty || '',
-          rating: [4.9, 4.8, 4.7, 4.8][i] ?? 4.7,
-        })));
-      })
+      .then(d => setProfessors(d.data ?? []))
       .catch(() => {});
 
     fetch('/api/blog?limit=2')
@@ -55,17 +86,9 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  const fallbackProfs: FeaturedProf[] = [
-    { id: '1', name: 'Prof. Zhang Wei', university: 'University of Sydney', field: 'Computer Science', rating: 4.9 },
-    { id: '2', name: 'Prof. Li Mei', university: 'UNSW Sydney', field: 'Machine Learning', rating: 4.8 },
-    { id: '3', name: 'Prof. Chen Hao', university: 'University of Melbourne', field: 'Biomedical', rating: 4.7 },
-  ];
-
-  const displayProfs = featuredProfs.length > 0 ? featuredProfs : fallbackProfs;
-
   const fallbackPosts: BlogPost[] = [
-    { id: '1', tag: '留学申请', date: '2024年3月15日', title: '2024 年 CS 硕士申请：如何写出打动招生官的 SOP', excerpt: '从结构、故事到细节打磨，这篇深度指南将帮你把个人陈述写出层次感与说服力…' },
-    { id: '2', tag: '选校攻略', date: '2024年3月12日', title: '美国 Top 30 商学院选校全解析：冲刺、匹配与保底', excerpt: '从 GMAT 分数线到校友资源，全面对比顶尖商学院特色，帮你制定精准选校策略…' },
+    { id: '1', tag: '申请技巧', date: '4月28日', title: '如何写出打动教授的套磁信', excerpt: '从研究兴趣切入，三步法精准匹配教授方向，提升回复率。' },
+    { id: '2', tag: '选校攻略', date: '4月24日', title: '澳洲 PhD 奖学金的隐藏机会', excerpt: '盘点容易被忽视的资助渠道与时间节点，增加中签率。' },
   ];
 
   const displayPosts = blogPosts.length > 0 ? blogPosts : fallbackPosts;
@@ -73,141 +96,222 @@ export default function HomePage() {
   return (
     <div style={{ background: '#faf6ec', minHeight: '100vh', paddingBottom: 100 }}>
       {/* Header */}
-      <header className="flex px-6 pt-4 pb-2 justify-between items-center">
+      <header className="flex px-4 pt-4 pb-2 justify-between items-center">
         <div className="w-8" />
         <div className="flex items-center gap-2">
-          <div
-            className="size-8 rounded-full flex justify-center items-center"
-            style={{ background: '#1a2332' }}
-          >
+          <div className="size-8 rounded-full flex justify-center items-center" style={{ background: '#1a2332' }}>
             <span className="text-base leading-6">🐨</span>
           </div>
-          <span className="font-bold text-base leading-6 tracking-tight" style={{ color: '#1a2332' }}>
-            考拉学长
-          </span>
+          <span className="font-bold text-base tracking-tight" style={{ color: '#1a2332' }}>考拉学长</span>
         </div>
         <button className="relative size-9 flex justify-center items-center">
           <Bell className="size-5" style={{ color: '#1a2332' }} />
-          <span
-            className="size-2 rounded-full absolute right-1 top-1"
-            style={{ background: '#c4a050' }}
-          />
+          <span className="size-2 rounded-full absolute right-1 top-1" style={{ background: '#c4a050' }} />
         </button>
       </header>
 
-      <main className="flex px-6 pt-4 pb-4 flex-col gap-6">
-        {/* Hero CTA */}
-        <Link
-          href="/koala/chat"
-          className="rounded-2xl flex p-6 justify-between items-center w-full no-underline"
-          style={{
-            background: '#1a2332',
-            boxShadow: '0 10px 30px -8px rgba(196,160,80,0.45)',
-          }}
-        >
-          <div className="flex flex-col items-start gap-1">
-            <span className="font-medium opacity-70 text-xs leading-4" style={{ color: '#c4a050' }}>
-              AI 智能助手 · 24/7 在线
-            </span>
-            <span className="font-bold text-lg leading-7" style={{ color: '#c4a050' }}>
-              和考拉学长开始对话 🐨
-            </span>
-          </div>
-          <div
-            className="size-10 rounded-full flex justify-center items-center"
-            style={{ background: 'rgba(196,160,80,0.15)' }}
-          >
-            <ArrowRight className="size-5" style={{ color: '#c4a050' }} />
-          </div>
-        </Link>
+      <main className="px-4 pt-2 pb-4 flex flex-col gap-6">
 
-        {/* Featured Professors */}
-        <section className="flex flex-col gap-4">
-          <div className="flex justify-between items-center">
-            <h2 className="font-bold text-lg leading-7" style={{ color: '#1a2332' }}>推荐教授</h2>
-            <Link
-              href="/koala/professors"
-              className="font-semibold text-xs leading-4 flex items-center gap-1 no-underline"
-              style={{ color: '#c4a050' }}
-            >
-              查看全部
-              <ChevronRight className="size-3" />
+        {/* ── Hero ── */}
+        <section>
+          <div
+            className="rounded-3xl p-5 relative overflow-hidden"
+            style={{ background: '#1a2332' }}
+          >
+            {/* Decorative circle */}
+            <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-10" style={{ background: '#c4a050' }} />
+            <div className="absolute -right-2 bottom-4 w-24 h-24 rounded-full opacity-5" style={{ background: '#c4a050' }} />
+
+            <div className="relative z-10">
+              <div className="text-xs font-medium mb-2 opacity-70" style={{ color: '#c4a050' }}>
+                AI 导师匹配 · 免费使用
+              </div>
+              <h1 className="text-xl font-bold leading-tight mb-1.5" style={{ color: '#fff' }}>
+                2,847 位澳洲导师<br />AI 帮你找最匹配的那个
+              </h1>
+              <p className="text-xs leading-relaxed mb-4 opacity-80" style={{ color: '#e8dcc8' }}>
+                告诉 Koala 你的背景和兴趣，30 秒内获得个性化导师推荐
+              </p>
+              <Link
+                href="/koala/chat"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm no-underline"
+                style={{ background: '#c4a050', color: '#1a2332' }}
+              >
+                开始匹配 <ArrowRight className="size-4" />
+              </Link>
+              <div className="mt-3 text-[11px] opacity-50" style={{ color: '#e8dcc8' }}>
+                已帮助 500+ 位同学找到理想导师
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Three Steps ── */}
+        <section>
+          <h2 className="font-bold text-base mb-3" style={{ color: '#1a2332' }}>三步搞定 PhD 申请</h2>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { icon: '💬', step: '01', title: '聊背景', desc: '告诉 Koala 你的专业和兴趣' },
+              { icon: '🎯', step: '02', title: 'AI 匹配', desc: '从 2,847 位教授中精准推荐' },
+              { icon: '✉️', step: '03', title: '写套磁信', desc: '针对每位教授定制专业邮件' },
+            ].map(s => (
+              <div
+                key={s.step}
+                className="rounded-2xl p-3 flex flex-col gap-1.5"
+                style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}
+              >
+                <span className="text-xl">{s.icon}</span>
+                <div className="text-[10px] font-medium" style={{ color: '#c4a050' }}>{s.step}</div>
+                <div className="text-xs font-bold" style={{ color: '#1a2332' }}>{s.title}</div>
+                <div className="text-[10px] leading-relaxed" style={{ color: '#907858' }}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Hot Professors ── */}
+        <section>
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="font-bold text-base" style={{ color: '#1a2332' }}>🔥 热门导师推荐</h2>
+            <Link href="/koala/professors" className="text-xs font-semibold flex items-center gap-1 no-underline" style={{ color: '#c4a050' }}>
+              查看全部 <ChevronRight className="size-3" />
             </Link>
           </div>
-          <div className="overflow-x-auto flex -mx-6 px-6 pb-2 gap-4">
-            {displayProfs.map(p => (
-              <Link
-                key={p.id}
-                href={`/koala/professors/${p.id}`}
-                className="shrink-0 rounded-2xl bg-white flex p-4 flex-col items-center gap-2 w-44 no-underline"
-                style={{ boxShadow: '0 6px 20px -8px rgba(196,160,80,0.35)' }}
-              >
-                <div
-                  className="size-16 ring-2 rounded-full overflow-hidden flex items-center justify-center text-2xl flex-shrink-0"
-                  style={{ borderColor: '#c4a050', background: '#f2ead6' }}
+          <div className="flex -mx-4 px-4 pb-2 gap-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+            {(professors.length > 0 ? professors : Array(4).fill(null)).map((p, i) => {
+              if (!p) return (
+                <div key={i} className="shrink-0 w-44 h-52 rounded-2xl animate-pulse" style={{ background: '#f2ead6' }} />
+              );
+              const badge = getUniBadge(p.university);
+              const status = p.acceptingStudents === 'yes' ? { label: '招生中', bg: '#d1fae5', color: '#065f46' }
+                           : p.acceptingStudents === 'no'  ? { label: '暂不招', bg: '#fee2e2', color: '#991b1b' }
+                           : null;
+              return (
+                <Link
+                  key={p.id}
+                  href={`/koala/professors/${p.id}`}
+                  className="shrink-0 w-44 rounded-2xl p-3.5 flex flex-col gap-2 no-underline"
+                  style={{ background: '#fff', border: '1px solid #e8dcc8', boxShadow: '0 4px 16px rgba(196,160,80,0.10)' }}
                 >
-                  👨‍🔬
-                </div>
-                <span className="font-bold text-sm leading-5 text-center" style={{ color: '#1a2332' }}>
-                  {p.name}
+                  {/* Uni badge + status */}
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: badge.bg, color: badge.fg }}
+                    >
+                      {badge.short}
+                    </span>
+                    {status && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: status.bg, color: status.color }}>
+                        {status.label}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Name & title */}
+                  <div>
+                    <div className="text-xs font-bold leading-snug" style={{ color: '#1a2332' }}>{p.name}</div>
+                    {p.positionTitle && (
+                      <div className="text-[10px] mt-0.5" style={{ color: '#907858' }}>{p.positionTitle}</div>
+                    )}
+                  </div>
+
+                  {/* Research tag */}
+                  {p.researchAreas?.[0] && (
+                    <div
+                      className="text-[10px] px-2 py-1 rounded-full leading-tight"
+                      style={{ background: '#f2ead6', color: '#584838' }}
+                    >
+                      {p.researchAreas[0].length > 30 ? p.researchAreas[0].slice(0, 28) + '…' : p.researchAreas[0]}
+                    </div>
+                  )}
+
+                  {/* Stats */}
+                  {(p.hIndex || p.paperCount) && (
+                    <div className="flex gap-2 text-[10px]" style={{ color: '#907858' }}>
+                      {p.hIndex && <span>H={p.hIndex}</span>}
+                      {p.paperCount && <span>· {fmtNum(p.paperCount)} 篇</span>}
+                    </div>
+                  )}
+
+                  {/* CTA */}
+                  <div
+                    className="mt-auto text-[10px] font-medium text-center py-1.5 rounded-full"
+                    style={{ background: '#f2ead6', color: '#7d6340' }}
+                  >
+                    查看详情 →
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ── Research Areas ── */}
+        <section>
+          <h2 className="font-bold text-base mb-3" style={{ color: '#1a2332' }}>热门研究方向</h2>
+          <div className="grid grid-cols-4 gap-2">
+            {RESEARCH_AREAS.map(area => (
+              <Link
+                key={area.value}
+                href={`/koala/professors?category=${area.value}`}
+                className="rounded-2xl p-2.5 flex flex-col items-center gap-1 no-underline"
+                style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}
+              >
+                <span className="text-lg">{area.emoji}</span>
+                <span className="text-[10px] font-medium text-center leading-tight" style={{ color: '#584838' }}>
+                  {area.label}
                 </span>
-                <span className="text-center text-[10px]" style={{ color: '#8a8a8a' }}>
-                  {p.university}
-                  {p.field && <><br />{p.field}</>}
-                </span>
-                <div className="flex items-center gap-0.5">
-                  {[1,2,3,4,5].map(i => (
-                    <Star key={i} className="size-3 fill-current" style={{ color: '#c4a050' }} />
-                  ))}
-                  <span className="font-semibold text-[10px] ml-1" style={{ color: '#1a2332' }}>
-                    {p.rating.toFixed(1)}
-                  </span>
-                </div>
               </Link>
             ))}
           </div>
         </section>
 
-        {/* Blog */}
-        <section className="flex flex-col gap-4">
-          <div className="flex justify-between items-center">
-            <h2 className="font-bold text-lg leading-7" style={{ color: '#1a2332' }}>最新博客</h2>
-            <Link
-              href="/koala/blog"
-              className="font-semibold text-xs leading-4 flex items-center gap-1 no-underline"
-              style={{ color: '#c4a050' }}
-            >
-              更多
-              <ChevronRight className="size-3" />
+        {/* ── Blog ── */}
+        <section>
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="font-bold text-base" style={{ color: '#1a2332' }}>最新博客</h2>
+            <Link href="/koala/blog" className="text-xs font-semibold flex items-center gap-1 no-underline" style={{ color: '#c4a050' }}>
+              更多 <ChevronRight className="size-3" />
             </Link>
           </div>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             {displayPosts.map(b => (
               <Link
                 key={b.id}
                 href="/koala/blog"
-                className="rounded-2xl bg-white flex p-4 flex-col gap-2 no-underline"
-                style={{ boxShadow: '0 6px 20px -8px rgba(196,160,80,0.35)' }}
+                className="rounded-2xl p-4 flex flex-col gap-2 no-underline"
+                style={{ background: '#fff', boxShadow: '0 4px 16px rgba(196,160,80,0.08)', border: '1px solid #f0e8d4' }}
               >
                 <div className="flex justify-between items-center">
-                  <span
-                    className="font-semibold rounded-full text-white text-[10px] px-2 py-1"
-                    style={{ background: '#c4a050' }}
-                  >
+                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full text-white" style={{ background: '#c4a050' }}>
                     {b.tag}
                   </span>
                   <span className="text-[10px]" style={{ color: '#b0b0b0' }}>{b.date}</span>
                 </div>
-                <h3 className="leading-snug font-bold text-sm leading-5" style={{ color: '#1a2332' }}>
-                  {b.title}
-                </h3>
-                <p className="leading-relaxed text-xs leading-4" style={{ color: '#8a8a8a' }}>
-                  {b.excerpt}
-                </p>
+                <h3 className="text-sm font-bold leading-snug" style={{ color: '#1a2332' }}>{b.title}</h3>
+                <p className="text-xs leading-relaxed" style={{ color: '#8a8a8a' }}>{b.excerpt}</p>
               </Link>
             ))}
           </div>
         </section>
+
+        {/* ── Bottom CTA ── */}
+        <section>
+          <div className="rounded-3xl p-5 text-center" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+            <div className="text-2xl mb-2">🐨</div>
+            <h3 className="text-sm font-bold mb-1" style={{ color: '#1a2332' }}>还在犹豫？先聊聊你的想法</h3>
+            <p className="text-xs mb-4" style={{ color: '#907858' }}>免费匹配导师，不满意随时退出</p>
+            <Link
+              href="/koala/chat"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm no-underline text-white"
+              style={{ background: '#7d6340' }}
+            >
+              免费开始对话 <ArrowRight className="size-4" />
+            </Link>
+          </div>
+        </section>
+
       </main>
     </div>
   );
