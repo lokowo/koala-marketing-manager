@@ -254,14 +254,14 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
       {/* CTA */}
       <div className="mx-4 mt-4 space-y-2">
         <Link
-          href={`/koala/chat?mode=research&professor=${id}`}
+          href={`/koala/chat?action=research&prof=${id}&name=${encodeURIComponent(professor.name)}`}
           className="block w-full py-3 rounded-full text-center text-sm font-semibold text-white"
           style={{ background: '#7d6340' }}
         >
           🐨 问 Koala 关于这位教授
         </Link>
         <Link
-          href={`/koala/chat?mode=write&professor=${id}`}
+          href={`/koala/chat?action=outreach&prof=${id}&name=${encodeURIComponent(professor.name)}`}
           className="block w-full py-3 rounded-full text-center text-sm font-semibold border"
           style={{ color: '#7d6340', borderColor: '#7d6340' }}
         >

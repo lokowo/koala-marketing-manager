@@ -85,11 +85,13 @@ export async function POST(request: NextRequest) {
       messages,
       professorContext,
       userStyleProfile,
+      professorId,
     }: {
       mode: AIMode;
       messages: ChatMessage[];
       professorContext?: ProfessorContext;
       userStyleProfile?: UserStyleProfile;
+      professorId?: string;
     } = body;
 
     if (!mode || !messages || !Array.isArray(messages)) {
@@ -104,7 +106,36 @@ export async function POST(request: NextRequest) {
       if (styleDesc) extraContext += `\n\n## 用户说话风格\n${styleDesc}。请匹配用户风格回复。`;
     }
 
-    if (professorContext) {
+    // Fetch full professor data from DB when ID is provided (write mode outreach)
+    if (professorId && mode === 'write') {
+      try {
+        const { getProfessor } = await import('../../../lib/services/professorService');
+        const prof = await getProfessor(professorId);
+        if (prof) {
+          extraContext += `\n\n## 套磁目标教授（完整资料）
+姓名：${prof.name}
+大学：${prof.university}
+院系：${prof.faculty || '未知'}
+职称：${prof.positionTitle || '未知'}
+研究方向：${prof.researchAreas.join('、')}
+H指数：${prof.hIndex ?? '未知'}，论文数：${prof.paperCount ?? '未知'}，引用数：${prof.citationCount ?? '未知'}
+招生状态：${prof.acceptingStudents === 'yes' ? '招生中' : prof.acceptingStudents === 'no' ? '暂不招生' : '未知'}
+邮箱：${prof.email || '未知'}
+大学主页：${prof.profileUrl || '无'}
+Google Scholar：${prof.googleScholarUrl || '无'}
+适合学生背景：${prof.suitableStudentBackgrounds.join('；') || '未知'}
+潜在研究课题：${prof.potentialRpTopics.join('；') || '未知'}
+
+请根据以上真实资料为用户生成个性化套磁信。邮件中必须：
+1. 引用该教授的具体研究方向（不要泛泛而谈）
+2. 说明与学生研究兴趣的契合点
+3. 提到该教授所在大学和院系
+4. 语气专业但不过分拘谨`;
+        }
+      } catch (err) {
+        console.error('[Prof Fetch]', err);
+      }
+    } else if (professorContext) {
       extraContext += `\n\n## 用户正在了解的教授\n${JSON.stringify(professorContext)}`;
     }
 

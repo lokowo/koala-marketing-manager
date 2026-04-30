@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Settings, Plus, Send, Sparkles, PawPrint } from 'lucide-react';
 import Link from 'next/link';
 import type { AIMode } from '../../lib/constants';
@@ -343,29 +344,56 @@ function msgId() { return Math.random().toString(36).slice(2); }
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ChatPage() {
-  const [mode, setMode] = useState<AIMode>('path');
-  const [messages, setMessages] = useState<Message[]>([
-    { id: msgId(), role: 'assistant', content: MODES[0].welcome, timestamp: new Date() },
-  ]);
+  const searchParams = useSearchParams();
+  const [mode, setMode] = useState<AIMode>(() => {
+    const action = searchParams.get('action');
+    if (action === 'outreach') return 'write';
+    if (action === 'research') return 'research';
+    return 'path';
+  });
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const action = searchParams.get('action');
+    const modeKey = action === 'outreach' ? 'write' : action === 'research' ? 'research' : 'path';
+    const cfg = MODES.find(m => m.key === modeKey)!;
+    return [{ id: msgId(), role: 'assistant', content: cfg.welcome, timestamp: new Date() }];
+  });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [credits, setCredits] = useState<number>(10);
   const [showCreditConfirm, setShowCreditConfirm] = useState(false);
   const [pendingEmailText, setPendingEmailText] = useState<string | null>(null);
+  const [pendingProfessorId, setPendingProfessorId] = useState<string | null>(null);
   const [toastAchievement, setToastAchievement] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [tonePref, setTonePref] = useState<TonePref>('casual');
   const [langPref, setLangPref] = useState<LangPref>('zh');
-  const [parsedFile, setParsedFile] = useState<string | null>(null); // last parsed filename
+  const [parsedFile, setParsedFile] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const autoSentRef = useRef(false);
 
   const currentMode = MODES.find(m => m.key === mode)!;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Auto-send outreach message when coming from professor card/detail
+  useEffect(() => {
+    if (autoSentRef.current) return;
+    const action = searchParams.get('action');
+    const profName = searchParams.get('name');
+    const profId = searchParams.get('prof');
+    if (action === 'outreach' && profName) {
+      autoSentRef.current = true;
+      const msg = `请帮我给 ${decodeURIComponent(profName)} 教授写一封套磁信`;
+      if (profId) setPendingProfessorId(profId);
+      // Small delay so the welcome message renders first
+      setTimeout(() => sendMessageWithProfessor(msg, profId ?? undefined), 300);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function switchMode(newMode: AIMode) {
     const cfg = MODES.find(m => m.key === newMode)!;
@@ -374,36 +402,33 @@ export default function ChatPage() {
     setInput('');
   }
 
-  const sendMessage = useCallback(async (text?: string) => {
-    const txt = (text ?? input).trim();
-    if (!txt || loading) return;
-
-    const isEmailRequest = mode === 'write' && /套磁信|email|生成|帮我写/i.test(txt) && messages.length > 1;
-    if (isEmailRequest) {
-      setPendingEmailText(txt);
-      setShowCreditConfirm(true);
-      return;
-    }
-
-    setInput('');
+  // Core API call, optionally with a professorId for outreach context
+  const callApi = useCallback(async (
+    txt: string,
+    currentMessages: Message[],
+    professorId?: string,
+  ) => {
     const userMsg: Message = { id: msgId(), role: 'user', content: txt, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
 
     try {
-      const allMsgs = [...messages, userMsg];
+      const allMsgs = [...currentMessages, userMsg];
+      const body: Record<string, unknown> = {
+        mode,
+        messages: allMsgs.map(m => ({ role: m.role, content: m.content })),
+        userStyleProfile: {
+          formality: tonePref === 'professional' ? 'formal' : tonePref === 'direct' ? 'mixed' : 'casual',
+          expertise: 'intermediate',
+          emotionalState: 'neutral',
+        },
+      };
+      if (professorId) body.professorId = professorId;
+
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode,
-          messages: allMsgs.map(m => ({ role: m.role, content: m.content })),
-          userStyleProfile: {
-            formality: tonePref === 'professional' ? 'formal' : tonePref === 'direct' ? 'mixed' : 'casual',
-            expertise: 'intermediate',
-            emotionalState: 'neutral',
-          },
-        }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
 
@@ -429,7 +454,6 @@ export default function ChatPage() {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, assistantMsg]);
-
       if (data.achievement) setToastAchievement(data.achievement);
     } catch {
       setMessages(prev => [...prev, {
@@ -440,7 +464,29 @@ export default function ChatPage() {
     } finally {
       setLoading(false);
     }
-  }, [input, loading, messages, mode, tonePref]);
+  }, [mode, tonePref]);
+
+  // Auto-send from URL params (professor outreach)
+  const sendMessageWithProfessor = useCallback(async (txt: string, professorId?: string) => {
+    setInput('');
+    await callApi(txt, messages, professorId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callApi]);
+
+  const sendMessage = useCallback(async (text?: string) => {
+    const txt = (text ?? input).trim();
+    if (!txt || loading) return;
+
+    const isEmailRequest = mode === 'write' && /套磁信|email|生成|帮我写/i.test(txt) && messages.length > 1;
+    if (isEmailRequest) {
+      setPendingEmailText(txt);
+      setShowCreditConfirm(true);
+      return;
+    }
+
+    setInput('');
+    await callApi(txt, messages, pendingProfessorId ?? undefined);
+  }, [input, loading, messages, mode, callApi, pendingProfessorId]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -505,37 +551,9 @@ export default function ChatPage() {
     const txt = pendingEmailText;
     setPendingEmailText(null);
     setCredits(prev => Math.max(0, prev - 1));
-
-    const doSend = async () => {
-      setInput('');
-      const userMsg: Message = { id: msgId(), role: 'user', content: txt, timestamp: new Date() };
-      setMessages(prev => [...prev, userMsg]);
-      setLoading(true);
-      try {
-        const allMsgs = [...messages, userMsg];
-        const res = await fetch('/api/ai/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode, messages: allMsgs.map(m => ({ role: m.role, content: m.content })) }),
-        });
-        const data = await res.json();
-        setMessages(prev => [...prev, {
-          id: msgId(), role: 'assistant',
-          content: data.reply ?? '抱歉，生成失败，请重试。',
-          emailPackage: data.emailPackage,
-          timestamp: new Date(),
-        }]);
-      } catch {
-        setMessages(prev => [...prev, {
-          id: msgId(), role: 'assistant',
-          content: '网络出错，积分已退回。', timestamp: new Date(),
-        }]);
-        setCredits(prev => prev + 1);
-      } finally {
-        setLoading(false);
-      }
-    };
-    doSend();
+    callApi(txt, messages, pendingProfessorId ?? undefined).catch(() => {
+      setCredits(prev => prev + 1);
+    });
   }
 
   const formatTime = (d: Date) => d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
