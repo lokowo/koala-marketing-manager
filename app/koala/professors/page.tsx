@@ -11,12 +11,15 @@ import type { Professor } from '../../lib/types';
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { label: '全部', value: 'all' },
-  { label: 'CS·AI', value: 'cs' },
-  { label: '生物医学', value: 'bio' },
-  { label: '商科', value: 'biz' },
-  { label: '工程', value: 'eng' },
-  { label: '社科', value: 'soc' },
+  { label: '全部',   value: 'all'    },
+  { label: '医学健康', value: 'health' },
+  { label: '物理天文', value: 'physics' },
+  { label: '生命科学', value: 'bio'    },
+  { label: '地球科学', value: 'earth'  },
+  { label: '心理神经', value: 'neuro'  },
+  { label: 'CS·AI',  value: 'cs'     },
+  { label: '工程',   value: 'eng'    },
+  { label: '社科',   value: 'soc'    },
 ];
 
 const HOT_TAGS = ['AI', 'Machine Learning', 'Neuroscience', 'Data Science', 'Finance', 'Education'];
@@ -77,18 +80,16 @@ type Filters = {
   search: string;
   category: string;
   accepting: string;   // '' | 'yes'
-  funded: boolean;
   hIndexMin: number;   // 0 = no filter
   sortBy: string;
 };
 
 async function apiFetch(f: Filters) {
   const q = new URLSearchParams({ page: String(f.page), limit: String(LIMIT) });
-  if (f.search)      q.set('search', f.search);
+  if (f.search)             q.set('search', f.search);
   if (f.category !== 'all') q.set('category', f.category);
-  if (f.accepting)   q.set('acceptingStudents', f.accepting);
-  if (f.funded)      q.set('grantStatus', 'Active');
-  if (f.hIndexMin)   q.set('hIndexMin', String(f.hIndexMin));
+  if (f.accepting)          q.set('acceptingStudents', f.accepting);
+  if (f.hIndexMin)          q.set('hIndexMin', String(f.hIndexMin));
   if (f.sortBy !== 'opportunity_score') q.set('sortBy', f.sortBy);
   const res = await fetch(`/api/professors?${q}`);
   if (!res.ok) throw new Error('fetch failed');
@@ -112,7 +113,6 @@ export default function ProfessorsPage() {
   const [category, setCategory]     = useState('all');
   const [filterOpen, setFilterOpen] = useState(false);
   const [accepting, setAccepting]   = useState('');        // '' | 'yes'
-  const [funded, setFunded]         = useState(false);
   const [hIndexMin, setHIndexMin]   = useState(0);
   const [sortBy, setSortBy]         = useState('opportunity_score');
 
@@ -120,7 +120,7 @@ export default function ProfessorsPage() {
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Active filter count for badge
-  const activeFilters = [accepting !== '', funded, hIndexMin > 0, sortBy !== 'opportunity_score'].filter(Boolean).length;
+  const activeFilters = [accepting !== '', hIndexMin > 0, sortBy !== 'opportunity_score'].filter(Boolean).length;
 
   // Debounce
   useEffect(() => {
@@ -128,7 +128,7 @@ export default function ProfessorsPage() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const filters: Filters = { page: 1, search: debouncedSearch, category, accepting, funded, hIndexMin, sortBy };
+  const filters: Filters = { page: 1, search: debouncedSearch, category, accepting, hIndexMin, sortBy };
 
   // Reset + load on filter change
   useEffect(() => {
@@ -141,12 +141,12 @@ export default function ProfessorsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, category, accepting, funded, hIndexMin, sortBy]);
+  }, [debouncedSearch, category, accepting, hIndexMin, sortBy]);
 
-  // Category counts once
+  // Category counts once on mount
   useEffect(() => {
     Promise.all(
-      ['cs', 'bio', 'biz', 'eng', 'soc'].map(c =>
+      ['health', 'physics', 'bio', 'earth', 'neuro', 'cs', 'eng', 'soc'].map(c =>
         fetch(`/api/professors?category=${c}&limit=1`)
           .then(r => r.json()).then(d => [c, d.total ?? 0] as [string, number]).catch(() => [c, 0] as [string, number])
       )
@@ -162,7 +162,7 @@ export default function ProfessorsPage() {
       .catch(() => {})
       .finally(() => setLoadingMore(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, debouncedSearch, category, accepting, funded, hIndexMin, sortBy, loadingMore, hasMore]);
+  }, [page, debouncedSearch, category, accepting, hIndexMin, sortBy, loadingMore, hasMore]);
 
   // Intersection observer
   useEffect(() => {
@@ -285,7 +285,7 @@ export default function ProfessorsPage() {
             </p>
             <div className="flex gap-2 mt-1">
               {search && <button onClick={() => setSearch('')} className="text-xs px-4 py-2 rounded-full" style={{ background: '#c4a050', color: '#fff' }}>清除搜索</button>}
-              {activeFilters > 0 && <button onClick={() => { setAccepting(''); setFunded(false); setHIndexMin(0); setSortBy('opportunity_score'); }} className="text-xs px-4 py-2 rounded-full" style={{ background: '#f0e9d6', color: '#1a2332' }}>清除筛选</button>}
+              {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); }} className="text-xs px-4 py-2 rounded-full" style={{ background: '#f0e9d6', color: '#1a2332' }}>清除筛选</button>}
             </div>
             <Link href="/koala/chat" className="mt-2 text-xs px-5 py-2 rounded-full no-underline" style={{ background: '#1a2332', color: '#fff' }}>
               让 Koala AI 帮我匹配 →
@@ -313,6 +313,11 @@ export default function ProfessorsPage() {
               style={{ background: '#1a2332', color: '#fff', maxWidth: 280 }}>
               没找到理想导师？让 Koala AI 精准匹配 →
             </Link>
+            {/* Disclaimer */}
+            <div className="mt-4 px-2 py-3 rounded-xl text-[11px] leading-relaxed" style={{ background: '#f0e9d6', color: '#907858' }}>
+              以上数据来自大学官网、Google Scholar 及公开数据库，仅供参考。经费与招生状态可能与实际情况存在差异，请直接联系导师核实。如发现信息有误，欢迎反馈至{' '}
+              <a href="mailto:info@koalastudyadvisors.net" style={{ color: '#7d6340' }}>info@koalastudyadvisors.net</a>
+            </div>
           </>
         )}
       </div>
@@ -344,12 +349,9 @@ export default function ProfessorsPage() {
             {[['', '全部'], ['yes', '🟢 招生中']].map(([v, label]) => (
               <FilterChip key={v} label={label} active={accepting === v} onClick={() => setAccepting(v)} />
             ))}
-          </FilterSection>
-
-          {/* Funding */}
-          <FilterSection label="经费 / 奖学金">
-            <FilterChip label="全部" active={!funded} onClick={() => setFunded(false)} />
-            <FilterChip label="💰 有经费 (Active grant)" active={funded} onClick={() => setFunded(!funded)} />
+            <p className="w-full mt-1 text-[10px]" style={{ color: '#b0a090' }}>
+              招生状态基于公开数据，如需确认请直接联系导师
+            </p>
           </FilterSection>
 
           {/* H-index */}
@@ -374,7 +376,7 @@ export default function ProfessorsPage() {
           {/* Actions */}
           <div className="flex gap-3 mt-6">
             <button
-              onClick={() => { setAccepting(''); setFunded(false); setHIndexMin(0); setSortBy('opportunity_score'); }}
+              onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); }}
               className="flex-1 py-3 rounded-2xl text-sm font-medium"
               style={{ background: '#f0e9d6', color: '#584838' }}>
               重置

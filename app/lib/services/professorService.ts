@@ -71,13 +71,17 @@ function toInsert(data: Omit<Professor, 'id' | 'createdAt' | 'updatedAt'>) {
   };
 }
 
-// Maps UI category tabs to research_areas array overlap keywords
-const CATEGORY_RESEARCH_AREAS: Record<string, string[]> = {
-  cs: ['Machine Learning', 'Artificial Intelligence', 'Computer Science', 'Deep Learning', 'Natural Language Processing', 'Computer Vision', 'Data Science', 'Software Engineering', 'Cybersecurity', 'Reinforcement Learning', 'Neural Networks', 'Information Technology'],
-  bio: ['Biology', 'Biomedical Engineering', 'Genomics', 'Neuroscience', 'Biochemistry', 'Medicine', 'Pharmacology', 'Public Health', 'Bioinformatics', 'Molecular Biology', 'Immunology', 'Microbiology', 'Epidemiology', 'Oncology'],
-  biz: ['Business', 'Finance', 'Economics', 'Management', 'Marketing', 'Accounting', 'Commerce', 'Supply Chain', 'Entrepreneurship', 'International Business', 'Organisational Behaviour'],
-  eng: ['Engineering', 'Robotics', 'Mechanical Engineering', 'Electrical Engineering', 'Civil Engineering', 'Materials Science', 'Chemical Engineering', 'Aerospace', 'Nanotechnology', 'Structural Engineering', 'Environmental Engineering'],
-  soc: ['Social Science', 'Psychology', 'Sociology', 'Education', 'Anthropology', 'History', 'Political Science', 'Law', 'Linguistics', 'Philosophy', 'Geography', 'Public Policy'],
+// Maps UI category tabs to keywords for ilike substring search on research_areas::text
+// Values must appear as substrings within the descriptive phrases stored in research_areas
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  health:  ['Cancer', 'Health', 'Disease', 'Clinical', 'Stroke', 'Alzheimer', 'Dementia', 'Mental Health', 'Blood Pressure', 'Diabetes', 'Obesity', 'Immune', 'Immunotherapy', 'HIV', 'Nursing', 'Pharmaceutical', 'Vaccine', 'Epidemiology', 'Public Health', 'Malaria', 'Melanoma', 'Asthma', 'Oncology', 'Psychiatric'],
+  physics: ['Astrophysics', 'Astronomy', 'Cosmology', 'Particle physics', 'Quantum', 'Gravitational', 'Dark Matter', 'Gamma-ray', 'Pulsar', 'Supernova', 'Galaxy', 'Stellar', 'Photonic', 'Laser', 'High-Energy', 'Gravitational Wave', 'Atomic and Molecular'],
+  bio:     ['Genomics', 'Ecology', 'Genetics', 'Molecular Biology', 'Evolution', 'Phylogenetic', 'Microbiology', 'Virology', 'Biodiversity', 'Conservation', 'Plant Water', 'Plant Stress', 'Wildlife', 'Animal Behavior', 'Epigenetics', 'DNA', 'RNA', 'Protein'],
+  earth:   ['Geology', 'Geophysics', 'Geochemistry', 'earthquake', 'tectonic', 'Climate', 'Ocean', 'Atmospheric', 'Soil', 'Mineral', 'Paleoclimatology', 'Geologic'],
+  neuro:   ['Neuroscience', 'Neurology', 'Brain', 'Cognitive', 'Schizophrenia', 'Depression', 'Autism', 'Epilepsy', 'Neuroimaging', 'Functional Brain', 'Neuropharmacology'],
+  cs:      ['Machine Learning', 'Artificial Intelligence', 'Deep Learning', 'Computer', 'Neural Network', 'Data Science', 'Algorithm', 'Cybersecurity', 'Natural Language Processing', 'Computer Vision', 'Bioinformatics', 'Robotics', 'Software'],
+  eng:     ['Engineering', 'Materials Science', 'Battery', 'Energy storage', 'Nanotechnology', 'Semiconductor', 'Aerospace', 'Fiber Laser', 'Crystallization', 'X-ray Diffraction', 'Chemical Physics'],
+  soc:     ['Psychology', 'Sociology', 'Education', 'Law', 'Politics', 'Policy', 'Economics', 'Business', 'Finance', 'Management', 'Social Science', 'Anthropology', 'Linguistics', 'History', 'Nutritional'],
 };
 
 type ProfessorFilters = {
@@ -107,11 +111,11 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
   if (filters?.university) q = q.eq('university', filters.university);
   if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
   if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
-  if (filters?.category && filters.category !== 'all' && CATEGORY_RESEARCH_AREAS[filters.category]) {
-    q = q.overlaps('research_areas', CATEGORY_RESEARCH_AREAS[filters.category]);
+  if (filters?.category && filters.category !== 'all' && CATEGORY_KEYWORDS[filters.category]) {
+    const orStr = CATEGORY_KEYWORDS[filters.category].map(k => `research_areas::text.ilike.%${k}%`).join(',');
+    q = q.or(orStr);
   }
   if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
-  if (filters?.grantStatus) q = q.eq('grant_status', filters.grantStatus);
   if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
   if (filters?.search) q = q.or(`name.ilike.%${filters.search}%,university.ilike.%${filters.search}%`);
   const { data, error } = await q;
@@ -125,11 +129,11 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
   if (filters?.university) q = q.eq('university', filters.university);
   if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
   if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
-  if (filters?.category && filters.category !== 'all' && CATEGORY_RESEARCH_AREAS[filters.category]) {
-    q = q.overlaps('research_areas', CATEGORY_RESEARCH_AREAS[filters.category]);
+  if (filters?.category && filters.category !== 'all' && CATEGORY_KEYWORDS[filters.category]) {
+    const orStr = CATEGORY_KEYWORDS[filters.category].map(k => `research_areas::text.ilike.%${k}%`).join(',');
+    q = q.or(orStr);
   }
   if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
-  if (filters?.grantStatus) q = q.eq('grant_status', filters.grantStatus);
   if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
   if (filters?.search) q = q.or(`name.ilike.%${filters.search}%,university.ilike.%${filters.search}%`);
   const { count, error } = await q;

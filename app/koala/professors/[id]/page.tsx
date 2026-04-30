@@ -246,6 +246,11 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
         </div>
       )}
 
+      {/* Data disclaimer */}
+      <div className="mx-4 mt-4 mb-2 px-3 py-3 rounded-xl text-[11px] leading-relaxed" style={{ background: '#f0e9d6', color: '#907858' }}>
+        ⚠️ 数据说明：本页信息来源于大学官网、Google Scholar 及公开数据库，仅供参考。教授的招生状态、经费情况和研究方向可能随时变化，具体信息请以导师本人确认为准。Koala Study Advisors 不对信息的准确性和时效性承担责任。
+      </div>
+
       {/* CTA */}
       <div className="mx-4 mt-4 space-y-2">
         <Link
