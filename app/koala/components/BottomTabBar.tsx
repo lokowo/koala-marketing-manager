@@ -2,18 +2,22 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, MessageCircle, BookOpen, Wrench } from 'lucide-react';
+import { Home, Users, MessageCircle, BookOpen, UserCircle } from 'lucide-react';
+import { useAuth } from './AuthContext';
 
-const SIDE_TABS = [
+const LEFT_TABS = [
   { href: '/koala/home', icon: Home, label: '首页' },
   { href: '/koala/professors', icon: Users, label: '教授' },
+] as const;
+
+const RIGHT_TABS = [
   { href: '/koala/blog', icon: BookOpen, label: '博客' },
-  { href: '/koala/tools', icon: Wrench, label: '工具' },
+  { href: '/koala/my-profile', icon: UserCircle, label: '我的' },
 ] as const;
 
 export default function BottomTabBar() {
   const pathname = usePathname();
-  const isChat = pathname.startsWith('/koala/chat');
+  const { user } = useAuth();
 
   function isActive(href: string) {
     return pathname.startsWith(href);
@@ -33,7 +37,7 @@ export default function BottomTabBar() {
         style={{ maxWidth: 480, margin: '0 auto' }}
       >
         {/* Left 2 tabs */}
-        {SIDE_TABS.slice(0, 2).map(tab => {
+        {LEFT_TABS.map(tab => {
           const active = isActive(tab.href);
           const Icon = tab.icon;
           return (
@@ -74,17 +78,27 @@ export default function BottomTabBar() {
         </div>
 
         {/* Right 2 tabs */}
-        {SIDE_TABS.slice(2).map(tab => {
+        {RIGHT_TABS.map(tab => {
           const active = isActive(tab.href);
           const Icon = tab.icon;
+          // For "我的", show a dot if user is logged in
+          const showDot = tab.href === '/koala/my-profile' && user && !active;
           return (
             <Link
               key={tab.href}
               href={tab.href}
-              className="flex flex-col items-center flex-1 gap-1"
+              className="flex flex-col items-center flex-1 gap-1 relative"
               style={{ textDecoration: 'none' }}
             >
-              <Icon className="size-5" style={{ color: active ? '#c4a050' : '#a89878' }} />
+              <div className="relative">
+                <Icon className="size-5" style={{ color: active ? '#c4a050' : '#a89878' }} />
+                {showDot && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 size-2 rounded-full"
+                    style={{ background: '#5a8060' }}
+                  />
+                )}
+              </div>
               <span
                 className="text-[11px]"
                 style={{

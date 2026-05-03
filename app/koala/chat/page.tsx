@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Settings, Plus, Send, Sparkles, PawPrint } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '../components/AuthContext';
 import type { AIMode } from '../../lib/constants';
 import type { ProfessorMatch, ScoreCard } from '../../lib/types';
 import { ExtendedReadingPanel } from '../components/ai/ExtendedReadingPanel';
@@ -382,6 +383,7 @@ export default function ChatPage() {
 
 function ChatPageInner() {
   const searchParams = useSearchParams();
+  const { user, showLogin } = useAuth();
   const [mode, setMode] = useState<AIMode>(() => {
     const action = searchParams.get('action');
     if (action === 'outreach') return 'write';
@@ -525,6 +527,10 @@ function ChatPageInner() {
   const sendMessage = useCallback(async (text?: string) => {
     const txt = (text ?? input).trim();
     if (!txt || loading) return;
+    if (!user) {
+      showLogin();
+      return;
+    }
 
     // Detect batch intent: "批量" or "多位" or "所有教授" + email keywords
     const isBatchRequest = mode === 'write' && /批量|多位|所有教授|多封|多个教授/i.test(txt);

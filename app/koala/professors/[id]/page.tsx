@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Professor } from '../../../lib/types';
 import { OPPORTUNITY_LABELS } from '../../../lib/constants';
+import { useAuth } from '../../components/AuthContext';
 
 interface Paper {
   id: string;
@@ -20,9 +21,12 @@ interface Paper {
 export default function ProfessorDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { user, showLogin } = useAuth();
   const [professor, setProfessor] = useState<Professor | null>(null);
   const [papers, setPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
+  const [savingBookmark, setSavingBookmark] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -33,6 +37,37 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
       setPapers(pp.papers ?? []);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [id]);
+
+  // Check if already bookmarked
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/user/saved-professors')
+      .then(r => r.json())
+      .then(d => {
+        const isSaved = (d.saved ?? []).some((s: { professor_id: string }) => s.professor_id === id);
+        setSaved(isSaved);
+      }).catch(() => {});
+  }, [user, id]);
+
+  async function toggleBookmark() {
+    if (!user) {
+      showLogin(() => toggleBookmark());
+      return;
+    }
+    setSavingBookmark(true);
+    if (saved) {
+      await fetch(`/api/user/saved-professors?professor_id=${id}`, { method: 'DELETE' });
+      setSaved(false);
+    } else {
+      await fetch('/api/user/saved-professors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ professor_id: id }),
+      });
+      setSaved(true);
+    }
+    setSavingBookmark(false);
+  }
 
   if (loading) {
     return (
@@ -67,14 +102,26 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="pb-6">
-      {/* Back */}
-      <div className="px-4 pt-4">
+      {/* Back + Bookmark */}
+      <div className="px-4 pt-4 flex items-center justify-between">
         <button
           onClick={() => router.back()}
           className="text-xs flex items-center gap-1"
           style={{ color: '#7d6340' }}
         >
           ← 返回
+        </button>
+        <button
+          onClick={toggleBookmark}
+          disabled={savingBookmark}
+          className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full"
+          style={{
+            background: saved ? '#c4a050' : '#f2ead6',
+            color: saved ? '#fff' : '#7d6340',
+            border: `1px solid ${saved ? '#c4a050' : '#d8c8a8'}`,
+          }}
+        >
+          {saved ? '🔖 已收藏' : '🔖 收藏'}
         </button>
       </div>
 
@@ -260,13 +307,23 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
         >
           🐨 问 Koala 关于这位教授
         </Link>
-        <Link
-          href={`/koala/chat?action=outreach&prof=${id}&name=${encodeURIComponent(professor.name)}`}
-          className="block w-full py-3 rounded-full text-center text-sm font-semibold border"
-          style={{ color: '#7d6340', borderColor: '#7d6340' }}
-        >
-          ✍️ 生成套磁信 (AUD 1)
-        </Link>
+        {user ? (
+          <Link
+            href={`/koala/chat?action=outreach&prof=${id}&name=${encodeURIComponent(professor.name)}`}
+            className="block w-full py-3 rounded-full text-center text-sm font-semibold border"
+            style={{ color: '#7d6340', borderColor: '#7d6340' }}
+          >
+            ✍️ 生成套磁信 (AUD 1)
+          </Link>
+        ) : (
+          <button
+            onClick={() => showLogin()}
+            className="block w-full py-3 rounded-full text-center text-sm font-semibold border"
+            style={{ color: '#7d6340', borderColor: '#7d6340', width: '100%' }}
+          >
+            ✍️ 生成套磁信（登录后使用）
+          </button>
+        )}
       </div>
     </div>
   );

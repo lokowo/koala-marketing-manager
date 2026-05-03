@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import BottomTabBar from './components/BottomTabBar';
+import { AuthProvider } from './components/AuthContext';
 
 export const metadata: Metadata = {
   title: 'Koala — 你的澳洲学术内线',
@@ -8,14 +9,16 @@ export const metadata: Metadata = {
 
 export default function KoalaLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ backgroundColor: '#faf6ec', minHeight: '100svh' }}>
-      <div
-        className="relative mx-auto"
-        style={{ maxWidth: 480, minHeight: '100svh', paddingBottom: '88px' }}
-      >
-        {children}
+    <AuthProvider>
+      <div style={{ backgroundColor: '#faf6ec', minHeight: '100svh' }}>
+        <div
+          className="relative mx-auto"
+          style={{ maxWidth: 480, minHeight: '100svh', paddingBottom: '88px' }}
+        >
+          {children}
+        </div>
+        <BottomTabBar />
       </div>
-      <BottomTabBar />
-    </div>
+    </AuthProvider>
   );
 }
