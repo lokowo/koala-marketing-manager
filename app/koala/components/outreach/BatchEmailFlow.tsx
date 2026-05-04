@@ -305,21 +305,26 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
   return (
     <div className="space-y-3">
       {/* Summary bar */}
-      <div className="rounded-2xl p-3 flex items-center justify-between gap-3" style={{ background: '#1a2332' }}>
-        <div>
-          <div className="text-sm font-bold text-white">✅ 生成完成</div>
-          <div className="text-[11px] text-white/60 mt-0.5">
-            成功 {successful.length} 封{failed.length > 0 ? ` · 失败 ${failed.length} 封` : ''}
+      <div className="rounded-2xl p-3" style={{ background: '#1a2332' }}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-bold text-white">✅ 生成完成</div>
+            <div className="text-[11px] text-white/60 mt-0.5">
+              成功 {successful.length} 封{failed.length > 0 ? ` · 失败 ${failed.length} 封` : ''}
+            </div>
           </div>
+          <button
+            onClick={exportDocx}
+            disabled={!successful.length || exporting}
+            className="shrink-0 text-[11px] font-semibold px-3 py-2 rounded-xl text-white transition-opacity"
+            style={{ background: '#c4a050', opacity: exporting ? 0.6 : 1 }}
+          >
+            {exporting ? '导出中…' : '📥 下载套磁信合集'}
+          </button>
         </div>
-        <button
-          onClick={exportDocx}
-          disabled={!successful.length || exporting}
-          className="shrink-0 text-[11px] font-semibold px-3 py-2 rounded-xl text-white transition-opacity"
-          style={{ background: '#c4a050', opacity: exporting ? 0.6 : 1 }}
-        >
-          {exporting ? '导出中…' : '📦 打包下载 Word'}
-        </button>
+        <div className="mt-2 rounded-lg px-2.5 py-2 text-[11px]" style={{ background: 'rgba(255,255,255,0.08)', color: '#e8dcc8' }}>
+          📋 套磁信已生成！请下载后自行逐封发送。建议每封间隔1-2天。
+        </div>
       </div>
 
       {/* Failed entries */}
@@ -356,7 +361,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
           className="w-full py-3 rounded-2xl text-sm font-semibold text-white"
           style={{ background: '#1a2332', opacity: exporting ? 0.6 : 1 }}
         >
-          {exporting ? '正在导出…' : `📦 打包下载全部 ${successful.length} 封（Word 文档）`}
+          {exporting ? '正在导出…' : `📥 下载套磁信合集（${successful.length} 封）`}
         </button>
       )}
     </div>

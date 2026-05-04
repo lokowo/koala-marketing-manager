@@ -220,14 +220,29 @@ export function EmailPackage({
             )}
           </div>
         ) : (
-          /* ── No email: guide user to find it manually ── */
+          /* ── No email: mailto without to + guide to find email ── */
           <div className="space-y-2">
             <button
-              onClick={handleCopyAll}
+              onClick={() => {
+                const mailtoUrl = `mailto:?subject=${encodeURIComponent(subjectLine)}&body=${encodeURIComponent(body)}`;
+                if (mailtoUrl.length > 2000) {
+                  handleCopyAll();
+                  return;
+                }
+                clipboard.copy(`Subject: ${subjectLine}\n\n${body}`);
+                window.location.href = mailtoUrl;
+              }}
               className="w-full py-3 rounded-xl text-sm font-semibold"
               style={{ background: '#c4a050', color: '#fff' }}
             >
-              📋 复制邮件内容
+              📤 复制并打开邮箱（需手动填收件人）
+            </button>
+            <button
+              onClick={handleCopyAll}
+              className="w-full py-2.5 rounded-xl text-sm font-medium"
+              style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}
+            >
+              📋 仅复制内容
             </button>
 
             {(professorGoogleScholar || professorProfileUrl) && (
@@ -262,7 +277,7 @@ export function EmailPackage({
 
         {/* Email tip */}
         <div className="rounded-xl px-3 py-2.5 text-[11px] leading-relaxed" style={{ background: '#f8f5ef', border: '1px solid #e8dcc8', color: '#907858' }}>
-          💡 提示：大多数澳洲教授的邮箱格式为 firstname.lastname@university.edu.au，你也可以在教授的大学官网主页找到联系方式。
+          💡 澳洲教授邮箱常见格式：首字母.姓氏@university.edu.au（如 j.smith@unsw.edu.au）。你也可以在教授的大学官网主页找到联系方式。
         </div>
 
         {/* Follow-up panel */}

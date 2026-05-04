@@ -5,6 +5,8 @@ import type { ChatMessage } from '../../../lib/types';
 interface EmailResultForExport {
   professorName: string;
   professorInstitution?: string;
+  professorEmail?: string;
+  researchAreas?: string[];
   subjectLine: string;
   emailBody: string;
   followupBody?: string;
@@ -47,6 +49,25 @@ async function buildBatchDocx(emails: EmailResultForExport[], title: string): Pr
         heading: HeadingLevel.HEADING_1,
         spacing: { before: 400, after: 200 },
       }),
+    );
+
+    if (e.professorEmail) {
+      sections.push(
+        new Paragraph({ children: [new TextRun({ text: '📧 邮箱：', bold: true, size: 22 }), new TextRun({ text: e.professorEmail, size: 22 })], spacing: { after: 80 } }),
+      );
+    } else {
+      sections.push(
+        new Paragraph({ children: [new TextRun({ text: '📧 邮箱：需手动查找（格式提示：首字母.姓氏@university.edu.au）', size: 22, color: '907858' })], spacing: { after: 80 } }),
+      );
+    }
+
+    if (e.researchAreas?.length) {
+      sections.push(
+        new Paragraph({ children: [new TextRun({ text: '🔬 研究方向：', bold: true, size: 22 }), new TextRun({ text: e.researchAreas.join('、'), size: 22 })], spacing: { after: 160 } }),
+      );
+    }
+
+    sections.push(
       new Paragraph({ children: [new TextRun({ text: '主题行', bold: true, size: 24 })], spacing: { after: 80 } }),
       new Paragraph({ children: [new TextRun({ text: e.subjectLine, size: 22, italics: true })], spacing: { after: 200 } }),
       new Paragraph({ children: [new TextRun({ text: '邮件正文', bold: true, size: 24 })], spacing: { after: 80 } }),
@@ -79,6 +100,26 @@ async function buildBatchDocx(emails: EmailResultForExport[], title: string): Pr
       sections.push(new Paragraph({ children: [new PageBreak()] }));
     }
   }
+
+  // Sending tips page
+  sections.push(
+    new Paragraph({ children: [new PageBreak()] }),
+    new Paragraph({ text: '发送建议', heading: HeadingLevel.HEADING_1, spacing: { after: 200 } }),
+    new Paragraph({ children: [new TextRun({ text: '📧 邮箱格式', bold: true, size: 24 })], spacing: { after: 80 } }),
+    new Paragraph({ children: [new TextRun({ text: '澳洲教授邮箱常见格式：首字母.姓氏@university.edu.au（如 j.smith@unsw.edu.au）。你也可以在教授的大学官网主页找到联系方式。', size: 22 })], spacing: { after: 200 } }),
+    new Paragraph({ children: [new TextRun({ text: '⏰ 发送节奏', bold: true, size: 24 })], spacing: { after: 80 } }),
+    new Paragraph({ children: [new TextRun({ text: '建议每封间隔 1-2 天发送，不要同一天批量发出。教授会看发送时间，过于密集会显得不够用心。', size: 22 })], spacing: { after: 200 } }),
+    new Paragraph({ children: [new TextRun({ text: '📅 最佳时间', bold: true, size: 24 })], spacing: { after: 80 } }),
+    new Paragraph({ children: [new TextRun({ text: '周二至周四上午 9-11 点（教授当地时间）是最佳发送时段。避免周末和节假日。', size: 22 })], spacing: { after: 200 } }),
+    new Paragraph({ children: [new TextRun({ text: '✅ 发送前检查', bold: true, size: 24 })], spacing: { after: 80 } }),
+    new Paragraph({ children: [new TextRun({ text: '1. 确认邮箱地址正确（查教授官网主页）', size: 22 })], spacing: { after: 60 } }),
+    new Paragraph({ children: [new TextRun({ text: '2. 核对教授名字拼写无误', size: 22 })], spacing: { after: 60 } }),
+    new Paragraph({ children: [new TextRun({ text: '3. 确认学校和研究方向信息准确', size: 22 })], spacing: { after: 60 } }),
+    new Paragraph({ children: [new TextRun({ text: '4. 用学校邮箱发送（而非 QQ / 163 邮箱）', size: 22 })], spacing: { after: 60 } }),
+    new Paragraph({ children: [new TextRun({ text: '5. 附上 CV（PDF 格式，英文）', size: 22 })], spacing: { after: 200 } }),
+    new Paragraph({ children: [new TextRun({ text: '📩 跟进策略', bold: true, size: 24 })], spacing: { after: 80 } }),
+    new Paragraph({ children: [new TextRun({ text: '如果 14 天未回复，发一封简短的 follow-up 邮件（已在每封信后附上参考文本）。如果仍无回复，不建议再追。', size: 22 })], spacing: { after: 200 } }),
+  );
 
   // Disclaimer
   sections.push(
