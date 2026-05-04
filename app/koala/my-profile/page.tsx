@@ -146,10 +146,15 @@ export default function MyProfilePage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [showSettings, setShowSettings] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     setDataLoading(true);
+    fetch('/api/admin/me')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.role) setIsAdmin(true); })
+      .catch(() => {});
     Promise.all([
       fetch('/api/user/saved-professors').then(r => r.json()),
       fetch('/api/user/outreach-history').then(r => r.json()),
@@ -309,6 +314,16 @@ export default function MyProfilePage() {
               </div>
             </div>
           </div>
+          {/* Admin CTA — only visible to admins */}
+          {isAdmin && (
+            <Link
+              href="/dashboard"
+              className="mt-4 lg:mt-0 lg:ml-auto flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold no-underline"
+              style={{ background: '#1a2332', color: '#c4a050', border: '2px solid #c4a050', whiteSpace: 'nowrap' }}
+            >
+              ⚙️ 超级管理后台
+            </Link>
+          )}
         </div>
       </div>
 
