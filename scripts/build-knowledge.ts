@@ -31,7 +31,7 @@ if (!OPENAI_KEY) { console.error('❌ Missing OPENAI_API_KEY'); process.exit(1);
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY) as any;
 
 let lastOpenAICall = 0;
-const OPENAI_DELAY = 200; // 5 req/sec conservative
+const OPENAI_DELAY = 60; // ~16 req/sec, well under OpenAI's 3000 RPM limit
 
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -68,9 +68,14 @@ interface Professor {
   id: string;
   name: string;
   university: string;
-  research_areas: string[] | null;
-  references: string | null;
   faculty: string | null;
+  position_title: string | null;
+  research_areas: string[] | null;
+  h_index: number | null;
+  paper_count: number | null;
+  citation_count: number | null;
+  accepting_students: string | null;
+  references: string | null;
 }
 
 interface Paper {
@@ -83,18 +88,29 @@ interface Paper {
   citation_count: number;
 }
 
+const PROFESSORS_ONLY = process.argv.includes('--professors-only');
+
 async function main() {
   console.log('╔══════════════════════════════════════╗');
-  console.log('║   🧠 Koala Knowledge Builder v1.0    ║');
+  console.log('║   🧠 Koala Knowledge Builder v1.1    ║');
   console.log('╚══════════════════════════════════════╝\n');
+  if (PROFESSORS_ONLY) console.log('Mode: professors only (--professors-only)\n');
 
-  // Fetch professors
-  const { data: professors, error: profErr } = await supabase
-    .from('professors')
-    .select('id, name, university, research_areas, references, faculty')
-    .order('opportunity_score', { ascending: false });
-
-  if (profErr) { console.error('❌ professors:', profErr.message); process.exit(1); }
+  // Fetch professors (paginated to get all)
+  const professors: Professor[] = [];
+  const PAGE_SIZE = 1000;
+  let page = 0;
+  while (true) {
+    const { data, error: profErr } = await supabase
+      .from('professors')
+      .select('id, name, university, faculty, position_title, research_areas, h_index, paper_count, citation_count, accepting_students, references')
+      .order('opportunity_score', { ascending: false })
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+    if (profErr) { console.error('❌ professors:', profErr.message); process.exit(1); }
+    professors.push(...(data as Professor[]));
+    if ((data?.length ?? 0) < PAGE_SIZE) break;
+    page++;
+  }
   console.log(`Professors: ${professors.length}`);
 
   // Fetch papers
@@ -118,9 +134,14 @@ async function main() {
     const areas = (prof.research_areas ?? []).join(', ');
     const text = [
       `Professor: ${prof.name}`,
+      prof.position_title ? `Position: ${prof.position_title}` : '',
       `University: ${prof.university}`,
       prof.faculty ? `Faculty: ${prof.faculty}` : '',
       areas ? `Research areas: ${areas}` : '',
+      prof.h_index != null ? `H-Index: ${prof.h_index}` : '',
+      prof.paper_count != null ? `Papers published: ${prof.paper_count}` : '',
+      prof.citation_count != null ? `Total citations: ${prof.citation_count}` : '',
+      prof.accepting_students ? `Accepting students: ${prof.accepting_students}` : '',
       prof.references ? `Bio: ${prof.references.slice(0, 800)}` : '',
     ].filter(Boolean).join('\n');
 
@@ -160,7 +181,7 @@ async function main() {
   }
 
   // --- Paper abstracts ---
-  const paperList = (papers ?? []) as Paper[];
+  const paperList = PROFESSORS_ONLY ? [] : (papers ?? []) as Paper[];
   if (paperList.length > 0) {
     console.log('\n── Paper abstracts ──');
     const profMap = new Map((professors as Professor[]).map(p => [p.id, p.name]));
