@@ -7,6 +7,9 @@ interface EmailPackageProps {
   professorName: string;
   professorInstitution?: string;
   professorEmail?: string;
+  professorGoogleScholar?: string;
+  professorProfileUrl?: string;
+  professorUniversity?: string;
   emailSource?: string;
   matchScore?: number;
   subjectLine: string;
@@ -25,12 +28,11 @@ function useClipboard() {
   const [state, setState] = useState<CopyState>('idle');
   const [manualText, setManualText] = useState<string | null>(null);
 
-  const copy = useCallback(async (text: string, _label: string) => {
+  const copy = useCallback(async (text: string) => {
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
       } else {
-        // Fallback: execCommand
         const el = document.createElement('textarea');
         el.value = text;
         el.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
@@ -42,9 +44,8 @@ function useClipboard() {
         if (!ok) throw new Error('execCommand failed');
       }
       setState('copied');
-      setTimeout(() => setState('idle'), 2000);
+      setTimeout(() => setState('idle'), 2500);
     } catch {
-      // Ultimate fallback: show manual copy dialog
       setManualText(text);
       setState('error');
     }
@@ -58,6 +59,9 @@ export function EmailPackage({
   professorName,
   professorInstitution,
   professorEmail,
+  professorGoogleScholar,
+  professorProfileUrl,
+  professorUniversity,
   emailSource,
   matchScore,
   subjectLine,
@@ -70,51 +74,34 @@ export function EmailPackage({
   const [body, setBody] = useState(initialBody);
   const [status, setStatus] = useState<SendStatus>('pending');
   const [openSection, setOpenSection] = useState<Section | null>(null);
-  const [mailtoFeedback, setMailtoFeedback] = useState<'none' | 'asking'>('none');
   const clipboard = useClipboard();
 
-  const emailDisplay = professorEmail ?? '邮箱未收录';
-  const emailVerified = !!professorEmail;
+  const hasEmail = !!professorEmail;
+  const institution = professorInstitution || professorUniversity || '';
 
   function toggleSection(s: Section) {
     setOpenSection(prev => prev === s ? null : s);
   }
 
-  function handleMailto() {
-    if (!professorEmail) {
-      clipboard.copy(
-        `收件人：（请自行查找教授邮箱）\n\n主题：${subjectLine}\n\n正文：\n${body}`,
-        '邮件内容'
-      );
-      return;
-    }
-
-    const mailtoUrl = `mailto:${professorEmail}?subject=${encodeURIComponent(subjectLine)}&body=${encodeURIComponent(body)}`;
-
-    if (mailtoUrl.length > 2000) {
-      // Auto-degrade: too long for mailto
-      handleCopyAll();
-      return;
-    }
-
-    try {
-      window.location.href = mailtoUrl;
-      // After 3s ask if it worked
-      setTimeout(() => setMailtoFeedback('asking'), 3000);
-    } catch {
-      handleCopyAll();
-    }
+  function handleCopyAll() {
+    const full = `Subject: ${subjectLine}\n\n${body}`;
+    clipboard.copy(full);
   }
 
-  async function handleCopyAll() {
-    const full = `收件人：${emailDisplay}\n\n主题：${subjectLine}\n\n正文：\n${body}`;
-    await clipboard.copy(full, '全部内容');
+  function handleMailtoOpen() {
+    if (!professorEmail) return;
+    const mailtoUrl = `mailto:${professorEmail}?subject=${encodeURIComponent(subjectLine)}&body=${encodeURIComponent(body)}`;
+    if (mailtoUrl.length > 2000) {
+      handleCopyAll();
+      return;
+    }
+    clipboard.copy(`Subject: ${subjectLine}\n\n${body}`);
+    window.location.href = mailtoUrl;
   }
 
   function updateStatus(s: 'sent' | 'later' | 'abandoned') {
     setStatus(s);
     onStatusChange?.(s);
-    // Fire-and-forget API call
     if (emailId) {
       fetch('/api/outreach/status', {
         method: 'POST',
@@ -131,13 +118,11 @@ export function EmailPackage({
         <div className="flex items-center justify-between">
           <div>
             <div className="text-sm font-bold text-white">✉️ 套磁信 · {professorName}</div>
-            {professorInstitution && <div className="text-[11px] text-white/60 mt-0.5">{professorInstitution}</div>}
+            {institution && <div className="text-[11px] text-white/60 mt-0.5">{institution}</div>}
           </div>
           {matchScore !== undefined && (
-            <div
-              className="text-xs font-bold px-2.5 py-1 rounded-full"
-              style={{ background: matchScore >= 75 ? '#5a8060' : '#c4a050', color: '#fff' }}
-            >
+            <div className="text-xs font-bold px-2.5 py-1 rounded-full"
+              style={{ background: matchScore >= 75 ? '#5a8060' : '#c4a050', color: '#fff' }}>
               匹配 {matchScore}%
             </div>
           )}
@@ -145,52 +130,20 @@ export function EmailPackage({
       </div>
 
       <div className="p-3 space-y-3">
-        {/* Recipient */}
-        <div>
-          <div className="text-[10px] font-semibold mb-1" style={{ color: '#907858' }}>📧 收件人</div>
-          <div
-            className="flex items-center gap-2 rounded-xl px-3 py-2"
-            style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}
-          >
-            <span className="flex-1 text-xs font-mono" style={{ color: emailVerified ? '#1a2332' : '#b09878' }}>
-              {emailDisplay}
-            </span>
-            {emailVerified ? (
-              <button onClick={() => clipboard.copy(professorEmail!, '邮箱')} className="text-[11px]" style={{ color: '#c4a050' }}>📋</button>
-            ) : (
-              <a
-                href={`https://${professorInstitution?.toLowerCase().includes('unsw') ? 'unsw' : 'google'}.edu.au`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] no-underline"
-                style={{ color: '#5a8060' }}
-              >
-                查找邮箱 →
-              </a>
-            )}
+        {/* Generated success message */}
+        <div className="rounded-xl px-3 py-2.5" style={{ background: '#f0f8f2', border: '1px solid #c0e0c8' }}>
+          <div className="text-xs font-semibold" style={{ color: '#2d6a3e' }}>
+            {hasEmail ? '✅ 套磁信已生成！' : '📋 邮件已生成！教授邮箱需要你手动查找'}
           </div>
-          {emailSource && (
-            <div className="text-[10px] mt-0.5" style={{ color: '#b09878' }}>
-              via {emailSource}
-              {emailSource === 'inferred' && ' ⚠ 系统推测，建议官网确认'}
-            </div>
-          )}
-          {!emailVerified && (
-            <div className="mt-1 rounded-xl px-2.5 py-1.5 text-[11px]" style={{ background: '#fff5e8', border: '1px solid #f0d0a0', color: '#8a5020' }}>
-              邮箱未收录。请在教授所在大学 Staff Directory 查找后手动填入。
-            </div>
-          )}
         </div>
 
         {/* Subject */}
         <div>
           <div className="text-[10px] font-semibold mb-1" style={{ color: '#907858' }}>📝 主题行</div>
-          <div
-            className="flex items-start gap-2 rounded-xl px-3 py-2"
-            style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}
-          >
+          <div className="flex items-start gap-2 rounded-xl px-3 py-2"
+            style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
             <span className="flex-1 text-xs leading-relaxed" style={{ color: '#1a2332' }}>{subjectLine}</span>
-            <button onClick={() => clipboard.copy(subjectLine, '主题')} className="text-[11px] flex-shrink-0 mt-0.5" style={{ color: '#c4a050' }}>📋</button>
+            <button onClick={() => clipboard.copy(subjectLine)} className="text-[11px] flex-shrink-0 mt-0.5" style={{ color: '#c4a050' }}>📋</button>
           </div>
         </div>
 
@@ -204,19 +157,12 @@ export function EmailPackage({
             className="w-full rounded-xl px-3 py-2 text-xs leading-relaxed outline-none resize-none"
             style={{ background: '#f2ead6', border: '1px solid #e8dcc8', color: '#1a2332', fontFamily: 'inherit' }}
           />
-          <button
-            onClick={() => clipboard.copy(body, '正文')}
-            className="mt-1 text-[11px]"
-            style={{ color: '#c4a050' }}
-          >
-            📋 单独复制正文
-          </button>
         </div>
 
         {/* Copy feedback */}
         {clipboard.state === 'copied' && (
-          <div className="text-xs text-center py-1 rounded-xl" style={{ background: '#f0f8f2', color: '#5a8060' }}>
-            ✅ 已复制到剪贴板！打开邮箱粘贴即可。
+          <div className="text-xs text-center py-1.5 rounded-xl" style={{ background: '#f0f8f2', color: '#5a8060' }}>
+            ✅ 已复制到剪贴板！
           </div>
         )}
 
@@ -232,101 +178,91 @@ export function EmailPackage({
               style={{ background: '#fff', border: '1px solid #f0d0a0', color: '#584838', fontFamily: 'monospace' }}
               onClick={e => (e.target as HTMLTextAreaElement).select()}
             />
-            <div className="text-[10px]" style={{ color: '#8a5020' }}>点击文本框 → 全选(Ctrl+A) → 复制(Ctrl+C)</div>
             <button onClick={clipboard.clearManual} className="text-[11px]" style={{ color: '#907858' }}>关闭</button>
           </div>
         )}
 
-        {/* Divider */}
+        {/* ── Action buttons: different UX based on email availability ── */}
         <div className="flex items-center gap-2">
           <div className="flex-1 h-px" style={{ background: '#e8dcc8' }} />
-          <span className="text-[10px] flex-shrink-0" style={{ color: '#b09878' }}>发送方式（选一种）</span>
+          <span className="text-[10px] flex-shrink-0" style={{ color: '#b09878' }}>发送方式</span>
           <div className="flex-1 h-px" style={{ background: '#e8dcc8' }} />
         </div>
 
-        {/* Method 1: mailto */}
-        <div className="rounded-xl p-3 space-y-2" style={{ background: '#f5e8c4', border: '1px solid #e8d098' }}>
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm">✨</span>
-            <span className="text-xs font-semibold" style={{ color: '#8a6c30' }}>方式一：一键打开邮箱（推荐）</span>
-          </div>
-          <p className="text-[11px] leading-relaxed" style={{ color: '#7d6340' }}>
-            点击按钮自动打开你的邮箱 APP，收件人、主题、正文全部预填好，你只需要检查一下然后点发送。
-          </p>
-          <button
-            onClick={handleMailto}
-            disabled={status !== 'pending'}
-            className="w-full py-2.5 rounded-xl text-sm font-semibold transition-opacity"
-            style={{ background: '#c4a050', color: '#fff', opacity: status !== 'pending' ? 0.5 : 1 }}
-          >
-            📧 打开邮箱发送
-          </button>
-          <p className="text-[10px]" style={{ color: '#b09878' }}>支持 Gmail / Outlook / QQ邮箱 / 163邮箱 / Apple Mail</p>
-
-          {mailtoFeedback === 'asking' && (
-            <div className="rounded-xl p-2.5" style={{ background: '#fff', border: '1px solid #e8d098' }}>
-              <div className="text-[11px] font-semibold mb-2" style={{ color: '#8a6c30' }}>邮箱打开了吗？</div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setMailtoFeedback('none')}
-                  className="flex-1 py-1.5 rounded-lg text-[11px] font-medium"
-                  style={{ background: '#5a8060', color: '#fff' }}
-                >
-                  打开了 ✓
-                </button>
-                <button
-                  onClick={() => { setMailtoFeedback('none'); handleCopyAll(); }}
-                  className="flex-1 py-1.5 rounded-lg text-[11px] font-medium"
-                  style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}
-                >
-                  没打开，帮我复制
-                </button>
-              </div>
+        {hasEmail ? (
+          /* ── Has email: show mailto + copy options ── */
+          <div className="space-y-2">
+            <button
+              onClick={handleMailtoOpen}
+              disabled={status !== 'pending'}
+              className="w-full py-3 rounded-xl text-sm font-semibold"
+              style={{ background: '#c4a050', color: '#fff', opacity: status !== 'pending' ? 0.5 : 1 }}
+            >
+              📤 复制并打开邮箱
+            </button>
+            <button
+              onClick={handleCopyAll}
+              className="w-full py-2.5 rounded-xl text-sm font-medium"
+              style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}
+            >
+              📋 仅复制内容
+            </button>
+            <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+              <span className="text-[10px]" style={{ color: '#907858' }}>收件人：</span>
+              <span className="flex-1 text-xs font-mono" style={{ color: '#1a2332' }}>{professorEmail}</span>
+              <button onClick={() => clipboard.copy(professorEmail!)} className="text-[11px]" style={{ color: '#c4a050' }}>📋</button>
             </div>
-          )}
-        </div>
-
-        {/* Method 2: copy all */}
-        <div className="rounded-xl p-3 space-y-2" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-          <div className="text-xs font-semibold" style={{ color: '#7d6340' }}>方式二：复制全部，手动粘贴</div>
-          <p className="text-[11px]" style={{ color: '#907858' }}>如果方式一打不开，用这个：</p>
-          <button
-            onClick={handleCopyAll}
-            className="w-full py-2 rounded-xl text-sm font-medium"
-            style={{ background: '#fff', color: '#7d6340', border: '1px solid #d8c8a8' }}
-          >
-            📋 复制邮箱+主题+正文
-          </button>
-          <p className="text-[10px]" style={{ color: '#b09878' }}>复制后打开你的邮箱，新建邮件 → 粘贴即可。</p>
-        </div>
-
-        {/* Method 3: step by step */}
-        <div className="rounded-xl p-3 space-y-2" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-          <div className="text-xs font-semibold" style={{ color: '#7d6340' }}>方式三：分步复制</div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => professorEmail && clipboard.copy(professorEmail, '邮箱')}
-              disabled={!professorEmail}
-              className="text-[11px] px-3 py-1.5 rounded-lg"
-              style={{ background: '#fff', color: '#7d6340', border: '1px solid #d8c8a8', opacity: professorEmail ? 1 : 0.4 }}
-            >
-              📋 复制邮箱
-            </button>
-            <button
-              onClick={() => clipboard.copy(subjectLine, '主题')}
-              className="text-[11px] px-3 py-1.5 rounded-lg"
-              style={{ background: '#fff', color: '#7d6340', border: '1px solid #d8c8a8' }}
-            >
-              📋 复制主题
-            </button>
-            <button
-              onClick={() => clipboard.copy(body, '正文')}
-              className="text-[11px] px-3 py-1.5 rounded-lg"
-              style={{ background: '#fff', color: '#7d6340', border: '1px solid #d8c8a8' }}
-            >
-              📋 复制正文
-            </button>
+            {emailSource && (
+              <div className="text-[10px]" style={{ color: '#b09878' }}>
+                邮箱来源：{emailSource}
+                {emailSource === 'inferred' && ' ⚠ 系统推测，建议官网确认'}
+              </div>
+            )}
           </div>
+        ) : (
+          /* ── No email: guide user to find it manually ── */
+          <div className="space-y-2">
+            <button
+              onClick={handleCopyAll}
+              className="w-full py-3 rounded-xl text-sm font-semibold"
+              style={{ background: '#c4a050', color: '#fff' }}
+            >
+              📋 复制邮件内容
+            </button>
+
+            {(professorGoogleScholar || professorProfileUrl) && (
+              <a
+                href={professorGoogleScholar || professorProfileUrl || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 no-underline"
+                style={{ background: '#f2ead6', color: '#1a2332', border: '1px solid #d8c8a8' }}
+              >
+                🔍 查找教授邮箱
+                <span className="text-[10px]" style={{ color: '#907858' }}>
+                  ({professorGoogleScholar ? 'Google Scholar' : '大学主页'})
+                </span>
+              </a>
+            )}
+
+            {!professorGoogleScholar && !professorProfileUrl && (
+              <a
+                href={`https://www.google.com/search?q=${encodeURIComponent(`${professorName} ${institution} email`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 no-underline"
+                style={{ background: '#f2ead6', color: '#1a2332', border: '1px solid #d8c8a8' }}
+              >
+                🔍 查找教授邮箱
+                <span className="text-[10px]" style={{ color: '#907858' }}>(Google搜索)</span>
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Email tip */}
+        <div className="rounded-xl px-3 py-2.5 text-[11px] leading-relaxed" style={{ background: '#f8f5ef', border: '1px solid #e8dcc8', color: '#907858' }}>
+          💡 提示：大多数澳洲教授的邮箱格式为 firstname.lastname@university.edu.au，你也可以在教授的大学官网主页找到联系方式。
         </div>
 
         {/* Follow-up panel */}
@@ -346,7 +282,7 @@ export function EmailPackage({
                   {followupBody}
                 </pre>
                 <button
-                  onClick={() => clipboard.copy(followupBody, 'Follow-up 邮件')}
+                  onClick={() => clipboard.copy(followupBody)}
                   className="mt-2 text-[11px]"
                   style={{ color: '#c4a050' }}
                 >
@@ -372,7 +308,7 @@ export function EmailPackage({
             className="w-full py-2 rounded-xl text-xs font-medium"
             style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}
           >
-            🔄 重新生成（消耗 1 积分）
+            🔄 重新生成
           </button>
         )}
 

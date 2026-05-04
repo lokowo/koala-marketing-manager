@@ -155,9 +155,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch full professor data for write mode outreach
+    let outreachProfessor: Professor | null = null;
     if (professorId && mode === 'write') {
       try {
         const prof = await getProfessor(professorId);
+        outreachProfessor = prof;
         if (prof) {
           extraContext += `\n\n## 套磁目标教授（完整资料）
 姓名：${prof.name}
@@ -411,7 +413,13 @@ Google Scholar：${prof.googleScholarUrl || '无'}
     }
 
     if (blocks.email) {
-      result.emailPackage = blocks.email;
+      result.emailPackage = {
+        ...blocks.email,
+        professorEmail: outreachProfessor?.email || null,
+        professorGoogleScholar: outreachProfessor?.googleScholarUrl || null,
+        professorProfileUrl: outreachProfessor?.profileUrl || null,
+        professorUniversity: outreachProfessor?.university || null,
+      };
     }
 
     if (blocks.quickReplies) {

@@ -28,6 +28,10 @@ interface EmailPackageData {
   emailBody: string;
   followupBody?: string;
   riskNote?: string;
+  professorEmail?: string | null;
+  professorGoogleScholar?: string | null;
+  professorProfileUrl?: string | null;
+  professorUniversity?: string | null;
 }
 
 interface Message {
@@ -891,6 +895,10 @@ function ChatPageInner() {
                   <div className="mt-2">
                     <EmailPackage
                       professorName={pendingProfessorName ?? '目标教授'}
+                      professorEmail={msg.emailPackage.professorEmail || undefined}
+                      professorGoogleScholar={msg.emailPackage.professorGoogleScholar || undefined}
+                      professorProfileUrl={msg.emailPackage.professorProfileUrl || undefined}
+                      professorUniversity={msg.emailPackage.professorUniversity || undefined}
                       subjectLine={msg.emailPackage.subjectLine}
                       emailBody={msg.emailPackage.emailBody}
                       followupBody={msg.emailPackage.followupBody}
