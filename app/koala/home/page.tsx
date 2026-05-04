@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Bell, ChevronRight, X } from 'lucide-react';
 import type { Professor } from '../../lib/types';
+import { useAuth } from '../components/AuthContext';
 
 const UNI_COLORS: Record<string, { bg: string; fg: string; short: string }> = {
   'Australian National University':        { bg: '#c4a050', fg: '#1a2332', short: 'ANU' },
@@ -62,10 +64,26 @@ const RESEARCH_AREAS = [
   { label: '地球科学', value: 'earth', emoji: '🌏' },
 ];
 
+const STEP_LINKS = [
+  { href: '/koala/chat',      label: '申请规划' },
+  { href: '/koala/professors', label: '教授库' },
+  { href: '/koala/chat?mode=write', label: '写套磁信' },
+];
+
 export default function HomePage() {
+  const router = useRouter();
+  const { user, showLogin } = useAuth();
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [showNotif, setShowNotif] = useState(false);
+
+  function handleStepClick(href: string) {
+    if (!user) {
+      showLogin(() => router.push(href));
+    } else {
+      router.push(href);
+    }
+  }
 
   useEffect(() => {
     fetch('/api/professors?limit=6&sortBy=opportunity_score')
@@ -136,7 +154,7 @@ export default function HomePage() {
             <Bell className="size-[18px]" style={{ color: '#584838' }} />
           </button>
           <Link
-            href="/login"
+            href="/koala/auth"
             className="size-9 rounded-full flex items-center justify-center no-underline"
             style={{ background: '#1a2332' }}
           >
@@ -210,17 +228,26 @@ export default function HomePage() {
               { icon: '💬', step: '01', title: '聊背景', desc: '告诉 Koala 你的专业和兴趣' },
               { icon: '🎯', step: '02', title: 'AI 匹配', desc: '从 2,847 位教授中精准推荐' },
               { icon: '✉️', step: '03', title: '写套磁信', desc: '针对每位教授定制专业邮件' },
-            ].map(s => (
-              <div
+            ].map((s, i) => (
+              <button
                 key={s.step}
-                className="rounded-2xl p-3 flex flex-col gap-1.5"
-                style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}
+                onClick={() => handleStepClick(STEP_LINKS[i].href)}
+                className="rounded-2xl p-3 flex flex-col gap-1.5 text-left w-full transition-all active:scale-95"
+                style={{ background: '#f2ead6', border: '1px solid #e8dcc8', cursor: 'pointer' }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+                  (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 16px rgba(125,99,64,0.15)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.transform = '';
+                  (e.currentTarget as HTMLElement).style.boxShadow = '';
+                }}
               >
                 <span className="text-xl">{s.icon}</span>
                 <div className="text-[10px] font-medium" style={{ color: '#c4a050' }}>{s.step}</div>
                 <div className="text-xs font-bold" style={{ color: '#1a2332' }}>{s.title}</div>
                 <div className="text-[10px] leading-relaxed" style={{ color: '#907858' }}>{s.desc}</div>
-              </div>
+              </button>
             ))}
           </div>
         </section>
