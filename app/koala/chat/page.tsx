@@ -367,6 +367,93 @@ function SettingsPanel({
 
 function msgId() { return Math.random().toString(36).slice(2); }
 
+// ─── Persistence helpers ─────────────────────────────────────────────────────
+
+const LOCAL_STORAGE_KEY = 'koala_chat_history';
+
+function getLocalHistory(mode: string): Message[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${LOCAL_STORAGE_KEY}_${mode}`);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Array<{ id: string; role: 'user' | 'assistant'; content: string; metadata?: Record<string, unknown>; timestamp: string }>;
+    return parsed.map(m => ({ ...m, timestamp: new Date(m.timestamp) })) as Message[];
+  } catch { return []; }
+}
+
+function setLocalHistory(mode: string, messages: Message[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const slim = messages.map(m => ({
+      id: m.id, role: m.role, content: m.content,
+      metadata: m.matchedProfessors || m.scoreCard || m.emailPackage ? {
+        matchedProfessors: m.matchedProfessors,
+        scoreCard: m.scoreCard,
+        emailPackage: m.emailPackage,
+        citations: m.citations,
+      } : undefined,
+      timestamp: m.timestamp.toISOString(),
+    }));
+    localStorage.setItem(`${LOCAL_STORAGE_KEY}_${mode}`, JSON.stringify(slim.slice(-60)));
+  } catch {}
+}
+
+function clearLocalHistory(mode: string) {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(`${LOCAL_STORAGE_KEY}_${mode}`);
+}
+
+async function loadRemoteHistory(userId: string, mode: string): Promise<Message[]> {
+  try {
+    const res = await fetch(`/api/chat-history?userId=${userId}&mode=${mode}&limit=60`);
+    if (!res.ok) return [];
+    const { messages } = await res.json();
+    if (!messages?.length) return [];
+    return messages.map((m: { id: string; role: 'user' | 'assistant'; content: string; metadata?: Record<string, unknown>; created_at: string }) => ({
+      id: m.id,
+      role: m.role,
+      content: m.content,
+      matchedProfessors: m.metadata?.matchedProfessors,
+      scoreCard: m.metadata?.scoreCard,
+      emailPackage: m.metadata?.emailPackage,
+      citations: m.metadata?.citations,
+      timestamp: new Date(m.created_at),
+    })) as Message[];
+  } catch { return []; }
+}
+
+async function saveRemoteMessages(userId: string, mode: string, msgs: Message[]) {
+  try {
+    await fetch('/api/chat-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId, mode,
+        messages: msgs.map(m => ({
+          role: m.role,
+          content: m.content,
+          metadata: m.matchedProfessors || m.scoreCard || m.emailPackage || m.citations ? {
+            matchedProfessors: m.matchedProfessors,
+            scoreCard: m.scoreCard,
+            emailPackage: m.emailPackage,
+            citations: m.citations,
+          } : null,
+        })),
+      }),
+    });
+  } catch {}
+}
+
+async function clearRemoteHistory(userId: string, mode: string) {
+  try {
+    await fetch('/api/chat-history', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, mode }),
+    });
+  } catch {}
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ChatPage() {
@@ -394,8 +481,12 @@ function ChatPageInner() {
     const action = searchParams.get('action');
     const modeKey = action === 'outreach' ? 'write' : action === 'research' ? 'research' : 'path';
     const cfg = MODES.find(m => m.key === modeKey)!;
+    // Try loading from localStorage immediately (server-rendered safe)
+    const cached = getLocalHistory(modeKey);
+    if (cached.length > 0) return cached;
     return [{ id: msgId(), role: 'assistant', content: cfg.welcome, timestamp: new Date() }];
   });
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
@@ -422,6 +513,20 @@ function ChatPageInner() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Load history from remote DB when user is logged in
+  useEffect(() => {
+    if (historyLoaded) return;
+    if (!user?.id) { setHistoryLoaded(true); return; }
+    loadRemoteHistory(user.id, mode).then(loaded => {
+      if (loaded.length > 0) {
+        setMessages(loaded);
+        setLocalHistory(mode, loaded);
+      }
+      setHistoryLoaded(true);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, mode]);
 
   // Auto-send outreach message from professor card/detail URL params
   const [pendingAutoSend, setPendingAutoSend] = useState<{ msg: string; profId?: string } | null>(() => {
@@ -451,11 +556,26 @@ function ChatPageInner() {
   function switchMode(newMode: AIMode) {
     const cfg = MODES.find(m => m.key === newMode)!;
     setMode(newMode);
-    setMessages([{ id: msgId(), role: 'assistant', content: cfg.welcome, timestamp: new Date() }]);
     setInput('');
     if (newMode !== 'write') {
       setPendingProfessorId(null);
       setPendingProfessorName(null);
+    }
+    // Load cached history for this mode
+    const cached = getLocalHistory(newMode);
+    if (cached.length > 0) {
+      setMessages(cached);
+    } else {
+      setMessages([{ id: msgId(), role: 'assistant', content: cfg.welcome, timestamp: new Date() }]);
+    }
+    // Also try loading from remote in background
+    if (user?.id) {
+      loadRemoteHistory(user.id, newMode).then(loaded => {
+        if (loaded.length > 0) {
+          setMessages(loaded);
+          setLocalHistory(newMode, loaded);
+        }
+      });
     }
   }
 
@@ -510,18 +630,28 @@ function ChatPageInner() {
         noResults: mode === 'research' && (!data.citations || data.citations.length === 0),
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, assistantMsg]);
+      setMessages(prev => {
+        const updated = [...prev, assistantMsg];
+        setLocalHistory(mode, updated);
+        if (user?.id) saveRemoteMessages(user.id, mode, [userMsg, assistantMsg]);
+        return updated;
+      });
       if (data.achievement) setToastAchievement(data.achievement);
     } catch {
-      setMessages(prev => [...prev, {
+      const errMsg: Message = {
         id: msgId(), role: 'assistant',
         content: '抱歉，网络出了点问题。请稍后再试。',
         timestamp: new Date(),
-      }]);
+      };
+      setMessages(prev => {
+        const updated = [...prev, errMsg];
+        setLocalHistory(mode, updated);
+        return updated;
+      });
     } finally {
       setLoading(false);
     }
-  }, [mode, tonePref]);
+  }, [mode, tonePref, user]);
 
   // Auto-send from URL params (professor outreach)
   const sendMessageWithProfessor = useCallback(async (txt: string, professorId?: string) => {
@@ -620,7 +750,10 @@ function ChatPageInner() {
   }
 
   function clearConversation() {
-    setMessages([{ id: msgId(), role: 'assistant', content: currentMode.welcome, timestamp: new Date() }]);
+    const fresh = [{ id: msgId(), role: 'assistant' as const, content: currentMode.welcome, timestamp: new Date() }];
+    setMessages(fresh);
+    clearLocalHistory(mode);
+    if (user?.id) clearRemoteHistory(user.id, mode);
   }
 
   function confirmEmailGeneration() {
