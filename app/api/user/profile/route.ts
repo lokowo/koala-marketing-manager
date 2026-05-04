@@ -30,23 +30,33 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     // Calculate profile completeness
-    const completenessFields = [
+    const coreFields = [
       'display_name', 'university', 'major', 'degree_level',
       'gpa', 'target_field', 'english_level',
       'has_research_experience', 'target_universities',
     ];
+    const extendedFields = [
+      'english_test_type', 'english_scores', 'strengths',
+      'career_goal', 'preferred_city', 'budget',
+      'start_semester', 'personality_tags', 'work_experience',
+    ];
     const mergedForCalc = { ...body };
-    const filled = completenessFields.filter(f => {
+    const isFilled = (f: string) => {
       const v = mergedForCalc[f];
       if (v === undefined || v === null || v === '') return false;
       if (Array.isArray(v) && v.length === 0) return false;
+      if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0) return false;
       return true;
-    });
-    // bonus 10% if parsed_data or resume_url
+    };
+    const coreFilled = coreFields.filter(isFilled).length;
+    const extFilled = extendedFields.filter(isFilled).length;
     const hasFile = mergedForCalc.parsed_data || mergedForCalc.resume_url || mergedForCalc.file_name;
+    // Core fields = 50%, extended = 40%, file = 10%
     const completeness = Math.min(
       100,
-      Math.round((filled.length / completenessFields.length) * 90) + (hasFile ? 10 : 0)
+      Math.round((coreFilled / coreFields.length) * 50) +
+      Math.round((extFilled / extendedFields.length) * 40) +
+      (hasFile ? 10 : 0)
     );
 
     const { error } = await db

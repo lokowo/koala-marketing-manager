@@ -35,6 +35,18 @@ export interface UserProfile {
   profile_completeness: number;
   plan_type: 'free' | 'starter' | 'pro' | 'elite';
   credits_remaining: number;
+  // Extended profile fields
+  english_test_type: string | null;
+  english_scores: { overall?: number; writing?: number; speaking?: number; reading?: number; listening?: number } | null;
+  strengths: string[] | null;
+  career_goal: string | null;
+  preferred_city: string[] | null;
+  budget: string | null;
+  start_semester: string | null;
+  personality_tags: string[] | null;
+  language_preference: string | null;
+  work_experience: string | null;
+  files: Array<{ name: string; url: string; path: string; type: string; size: number; uploaded_at: string }> | null;
   created_at: string;
   updated_at: string;
 }

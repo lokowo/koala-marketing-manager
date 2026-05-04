@@ -278,10 +278,19 @@ export async function deleteProfessor(id: string): Promise<boolean> {
   return !error;
 }
 
+interface StudentMatchProfile {
+  languagePreference?: string;
+  personalityTags?: string[];
+  careerGoal?: string;
+  preferredCity?: string[];
+  budget?: string;
+}
+
 export async function searchProfessorsForAI(params: {
   researchArea: string;
   university?: string;
   limit?: number;
+  studentProfile?: StudentMatchProfile;
 }): Promise<Professor[]> {
   const limit = Math.min(params.limit ?? 8, 15);
   const keywords = params.researchArea
@@ -316,19 +325,65 @@ export async function searchProfessorsForAI(params: {
     return keywords.some(k => areasText.includes(k));
   });
 
-  // Sort: accepting > keyword hit count > opportunity_score > h_index
-  matched.sort((a: Professor, b: Professor) => {
-    const aAccepting = a.acceptingStudents === 'yes' || a.acceptingStudents === 'likely' ? 1 : 0;
-    const bAccepting = b.acceptingStudents === 'yes' || b.acceptingStudents === 'likely' ? 1 : 0;
-    if (aAccepting !== bAccepting) return bAccepting - aAccepting;
-    const aHits = keywords.filter(k => a.researchAreas.join(' ').toLowerCase().includes(k)).length;
-    const bHits = keywords.filter(k => b.researchAreas.join(' ').toLowerCase().includes(k)).length;
-    if (aHits !== bHits) return bHits - aHits;
-    const aOpp = a.opportunityScore ?? 0;
-    const bOpp = b.opportunityScore ?? 0;
-    if (aOpp !== bOpp) return bOpp - aOpp;
-    return (b.hIndex ?? 0) - (a.hIndex ?? 0);
+  // Enhanced scoring with student profile matching
+  const sp = params.studentProfile;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scored = matched.map((p: Professor) => {
+    const row = data?.find((r: any) => r.id === p.id);
+    let score = 0;
+
+    // Base: keyword hit count (weight 50%)
+    const hits = keywords.filter(k => p.researchAreas.join(' ').toLowerCase().includes(k)).length;
+    score += (hits / keywords.length) * 50;
+
+    // Accepting students bonus
+    if (p.acceptingStudents === 'yes' || p.acceptingStudents === 'likely') score += 10;
+
+    // Opportunity score contribution
+    score += Math.min((p.opportunityScore ?? 0) / 10, 5);
+
+    if (sp && row) {
+      // Language affinity (15%)
+      if (sp.languagePreference === '中文沟通优先' && row.chinese_friendly) {
+        score += 15;
+      }
+
+      // Supervision style match (10%)
+      if (sp.personalityTags?.includes('需要指导') && row.supervision_style === 'hands-on') {
+        score += 10;
+      } else if (sp.personalityTags?.includes('自主型') && row.supervision_style === 'independent') {
+        score += 10;
+      }
+
+      // Career goal match (10%)
+      if (sp.careerGoal === '工业界' && row.industry_connections) {
+        score += 10;
+      }
+
+      // Geographic preference (5%)
+      if (sp.preferredCity?.length) {
+        const uniLower = p.university.toLowerCase();
+        const cityMatch = sp.preferredCity.some(c => {
+          const cl = c.toLowerCase();
+          if (cl.includes('sydney') || cl.includes('悉尼')) return uniLower.includes('sydney') || uniLower.includes('unsw') || uniLower.includes('uts') || uniLower.includes('macquarie');
+          if (cl.includes('melbourne') || cl.includes('墨尔本')) return uniLower.includes('melbourne') || uniLower.includes('monash') || uniLower.includes('rmit');
+          if (cl.includes('brisbane') || cl.includes('布里斯班')) return uniLower.includes('queensland') || uniLower.includes('qut') || uniLower.includes('griffith');
+          return uniLower.includes(cl);
+        });
+        if (cityMatch) score += 5;
+      }
+
+      // Budget match (10%)
+      if (sp.budget === '必须全奖' && p.grantStatus === 'Active') {
+        score += 10;
+      }
+    }
+
+    return { professor: p, score };
   });
 
-  return matched.slice(0, limit);
+  // Sort by composite score descending
+  scored.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
+
+  return scored.slice(0, limit).map((s: { professor: Professor; score: number }) => s.professor);
 }

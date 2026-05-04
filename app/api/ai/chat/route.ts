@@ -134,12 +134,14 @@ export async function POST(request: NextRequest) {
       professorContext,
       userStyleProfile,
       professorId,
+      studentProfile: studentMatchProfile,
     }: {
       mode: AIMode;
       messages: ChatMessage[];
       professorContext?: ProfessorContext;
       userStyleProfile?: UserStyleProfile;
       professorId?: string;
+      studentProfile?: { languagePreference?: string; personalityTags?: string[]; careerGoal?: string; preferredCity?: string[]; budget?: string };
     } = body;
 
     if (!mode || !messages || !Array.isArray(messages)) {
@@ -152,6 +154,20 @@ export async function POST(request: NextRequest) {
     if (userStyleProfile) {
       const styleDesc = describeUserStyle(userStyleProfile);
       if (styleDesc) extraContext += `\n\n## 用户说话风格\n${styleDesc}。请匹配用户风格回复。`;
+    }
+
+    if (studentMatchProfile) {
+      const parts: string[] = [];
+      if (studentMatchProfile.languagePreference) parts.push(`语言偏好：${studentMatchProfile.languagePreference}`);
+      if (studentMatchProfile.careerGoal) parts.push(`职业目标：${studentMatchProfile.careerGoal}`);
+      if (studentMatchProfile.preferredCity?.length) parts.push(`偏好城市：${studentMatchProfile.preferredCity.join('、')}`);
+      if (studentMatchProfile.budget) parts.push(`经费情况：${studentMatchProfile.budget}`);
+      if (studentMatchProfile.personalityTags?.length) parts.push(`性格特点：${studentMatchProfile.personalityTags.join('、')}`);
+      if (parts.length > 0) {
+        extraContext += `\n\n## 已知用户画像\n${parts.join('\n')}`;
+      } else {
+        extraContext += `\n\n## 用户画像状态\n画像信息较少，请在对话中自然地引导用户补充背景信息。`;
+      }
     }
 
     // Fetch full professor data for write mode outreach
@@ -310,6 +326,7 @@ Google Scholar：${prof.googleScholarUrl || '无'}
               researchArea: toolInput.researchArea,
               university: toolInput.university,
               limit: toolInput.limit,
+              studentProfile: studentMatchProfile,
             });
             toolSearchedProfessors = professors;
 

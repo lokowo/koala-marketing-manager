@@ -45,6 +45,12 @@ export interface Professor {
     publication: number;
     explicit: number;
   };
+  // Extended matching fields
+  supervisionStyle?: string;
+  labSize?: string;
+  chineseFriendly?: boolean;
+  industryConnections?: string;
+  recentGraduates?: string;
   createdAt?: string;
   updatedAt?: string;
 }

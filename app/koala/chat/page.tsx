@@ -225,21 +225,66 @@ function FeedbackBar({ onFeedback, current }: { onFeedback: (r: FeedbackRating) 
   );
 }
 
-function FileUploadSheet({ onClose, onFile }: { onClose: () => void; onFile: (f: File) => void }) {
+function FileUploadSheet({ onClose, onFile }: { onClose: () => void; onFile: (f: File, type: string) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [selectedType, setSelectedType] = useState<string>('resume');
+  const [error, setError] = useState<string | null>(null);
+
+  const options = [
+    { type: 'resume', icon: '📄', label: '上传简历', accept: '.pdf', desc: 'PDF, 最大5MB' },
+    { type: 'transcript', icon: '📊', label: '上传成绩单', accept: '.pdf,.png,.jpg,.jpeg', desc: 'PDF/图片, 最大5MB' },
+    { type: 'other', icon: '📑', label: '上传其他文件', accept: '.pdf,.png,.jpg,.jpeg,.doc,.docx', desc: 'PDF/图片/Word, 最大5MB' },
+  ];
+
+  function handleSelect(type: string) {
+    setSelectedType(type);
+    setError(null);
+    inputRef.current?.click();
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const ext = f.name.split('.').pop()?.toLowerCase() ?? '';
+    const allowed = ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'];
+    if (!allowed.includes(ext)) {
+      setError('不支持的文件格式。允许：PDF, PNG, JPG, DOC, DOCX');
+      return;
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      setError('文件大小不能超过 5MB');
+      return;
+    }
+    onFile(f, selectedType);
+    onClose();
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.3)' }} onClick={onClose}>
       <div className="w-full rounded-t-3xl p-6" style={{ background: '#faf6ec', maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
         <div className="text-sm font-semibold mb-4" style={{ color: '#1a2332' }}>上传文件</div>
         <div className="space-y-2">
-          {[{ icon: '📄', label: '上传简历 (PDF)' }, { icon: '📊', label: '上传成绩单 (PDF/图片)' }].map(item => (
-            <button key={item.label} onClick={() => inputRef.current?.click()} className="w-full flex items-center gap-3 rounded-2xl p-4 text-left" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-sm" style={{ color: '#1a2332' }}>{item.label}</span>
+          {options.map(opt => (
+            <button key={opt.type} onClick={() => handleSelect(opt.type)} className="w-full flex items-center gap-3 rounded-2xl p-4 text-left" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+              <span className="text-xl">{opt.icon}</span>
+              <div>
+                <span className="text-sm font-medium" style={{ color: '#1a2332' }}>{opt.label}</span>
+                <span className="text-[11px] ml-2" style={{ color: '#907858' }}>({opt.desc})</span>
+              </div>
             </button>
           ))}
         </div>
-        <input ref={inputRef} type="file" accept=".pdf,image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { onFile(f); onClose(); } }} />
+        {selectedType === 'other' && (
+          <p className="text-[11px] mt-2 px-1" style={{ color: '#907858' }}>
+            例如：证书、论文草稿、研究计划、推荐信等
+          </p>
+        )}
+        {error && (
+          <div className="mt-3 rounded-xl px-3 py-2 text-xs" style={{ background: '#fff0f0', color: '#b06040', border: '1px solid #f0c0c0' }}>
+            {error}
+          </div>
+        )}
+        <input ref={inputRef} type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" className="hidden" onChange={handleFileChange} />
         <button className="w-full mt-4 py-3 rounded-2xl text-sm font-medium" style={{ background: '#f2ead6', color: '#907858' }} onClick={onClose}>取消</button>
       </div>
     </div>
@@ -474,7 +519,7 @@ export default function ChatPage() {
 
 function ChatPageInner() {
   const searchParams = useSearchParams();
-  const { user, showLogin } = useAuth();
+  const { user, profile, showLogin } = useAuth();
   const [mode, setMode] = useState<AIMode>(() => {
     const action = searchParams.get('action');
     if (action === 'outreach') return 'write';
@@ -605,6 +650,15 @@ function ChatPageInner() {
         },
       };
       if (professorId) body.professorId = professorId;
+      if (profile) {
+        body.studentProfile = {
+          languagePreference: profile.language_preference ?? undefined,
+          personalityTags: profile.personality_tags ?? undefined,
+          careerGoal: profile.career_goal ?? undefined,
+          preferredCity: profile.preferred_city ?? undefined,
+          budget: profile.budget ?? undefined,
+        };
+      }
 
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
@@ -708,49 +762,56 @@ function ChatPageInner() {
     setMessages(prev => prev.map(m => m.id === id ? { ...m, feedback: rating } : m));
   }
 
-  async function handleFile(file: File) {
+  async function handleFile(file: File, fileType: string = 'resume') {
     setMessages(prev => [...prev, {
       id: msgId(), role: 'user',
       content: `📎 已上传：${file.name}，正在解析…`,
       timestamp: new Date(),
     }]);
 
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch('/api/user/profile/parse', { method: 'POST', body: fd });
-      const data = await res.json();
+    // Upload file to storage
+    const uploadFd = new FormData();
+    uploadFd.append('file', file);
+    uploadFd.append('fileType', fileType);
+    fetch('/api/user/files', { method: 'POST', body: uploadFd }).catch(() => {});
 
-      if (res.ok && data.profile) {
-        const p = data.profile;
-        const summary = [
-          p.major ? `专业：${p.major}` : '',
-          p.university ? `学校：${p.university}` : '',
-          p.gpa ? `GPA：${p.gpa}${p.gpaScale ? `/${p.gpaScale}` : ''}` : '',
-          p.researchInterests?.length ? `研究兴趣：${p.researchInterests.slice(0, 3).join('、')}` : '',
-        ].filter(Boolean).join('\n');
+    // Parse if it's a resume
+    if (fileType === 'resume') {
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch('/api/user/profile/parse', { method: 'POST', body: fd });
+        const data = await res.json();
 
-        setParsedFile(file.name);
-        setMessages(prev => [...prev, {
-          id: msgId(), role: 'assistant',
-          content: `✅ 简历解析完成！\n\n${summary}\n\n数据已保存到「个人数据中心」。需要根据你的背景匹配教授吗？`,
-          quickReplies: ['是的，帮我匹配教授', '先看路径评估'],
-          timestamp: new Date(),
-        }]);
-      } else {
-        setMessages(prev => [...prev, {
-          id: msgId(), role: 'assistant',
-          content: `已收到文件「${file.name}」。请告诉我你想用它做什么？`,
-          timestamp: new Date(),
-        }]);
+        if (res.ok && data.profile) {
+          const p = data.profile;
+          const summary = [
+            p.major ? `专业：${p.major}` : '',
+            p.university ? `学校：${p.university}` : '',
+            p.gpa ? `GPA：${p.gpa}${p.gpaScale ? `/${p.gpaScale}` : ''}` : '',
+            p.researchInterests?.length ? `研究兴趣：${p.researchInterests.slice(0, 3).join('、')}` : '',
+          ].filter(Boolean).join('\n');
+
+          setParsedFile(file.name);
+          setMessages(prev => [...prev, {
+            id: msgId(), role: 'assistant',
+            content: `✅ 简历解析完成！\n\n${summary}\n\n数据已保存到「个人数据中心」。需要根据你的背景匹配教授吗？`,
+            quickReplies: ['是的，帮我匹配教授', '先看路径评估'],
+            timestamp: new Date(),
+          }]);
+          return;
+        }
+      } catch {
+        // fall through to generic response
       }
-    } catch {
-      setMessages(prev => [...prev, {
-        id: msgId(), role: 'assistant',
-        content: `已收到文件「${file.name}」。请告诉我你想用它做什么？`,
-        timestamp: new Date(),
-      }]);
     }
+
+    const typeLabels: Record<string, string> = { resume: '简历', transcript: '成绩单', other: '文件' };
+    setMessages(prev => [...prev, {
+      id: msgId(), role: 'assistant',
+      content: `✅ ${typeLabels[fileType] || '文件'}「${file.name}」已保存！你可以在"我的"页面查看已上传的文件。需要我帮你做什么？`,
+      timestamp: new Date(),
+    }]);
   }
 
   function clearConversation() {
@@ -978,6 +1039,15 @@ function ChatPageInner() {
         )}
         <div ref={bottomRef} />
       </div>
+
+      {/* Profile guidance hint */}
+      {profile && (profile.profile_completeness ?? 0) < 60 && (
+        <div className="flex-shrink-0 px-4 py-2" style={{ background: '#f8f5ef' }}>
+          <p className="text-[11px] leading-relaxed text-center" style={{ color: '#907858' }}>
+            💡 多跟我聊聊你的背景和想法，你说得越多，我帮你匹配的导师就越精准哦～
+          </p>
+        </div>
+      )}
 
       {/* Input bar */}
       <div
