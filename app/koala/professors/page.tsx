@@ -50,7 +50,7 @@ const UNI_COLORS: Record<string, { bg: string; fg: string; short: string }> = {
   'Western Sydney University':             { bg: '#e52020', fg: '#fff',    short: 'WSY' },
 };
 
-const LIMIT = 50;
+const LIMIT = 20;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -379,13 +379,13 @@ function ProfessorsPageInner() {
       )}
 
       {/* List */}
-      <div className="flex px-4 pt-4 pb-4 flex-col gap-4 lg:px-0 lg:grid lg:grid-cols-2">
+      <div className="flex px-4 pt-4 pb-2 flex-col gap-4 lg:px-0 lg:grid lg:grid-cols-2">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="rounded-2xl animate-pulse" style={{ background: '#f2ead6', height: 160 }} />
           ))
         ) : professors.length === 0 ? (
-          <div className="flex flex-col items-center py-16 gap-3">
+          <div className="flex flex-col items-center py-16 gap-3 lg:col-span-2">
             <span className="text-4xl">🔍</span>
             <p className="font-medium text-sm" style={{ color: '#1a2332' }}>
               {search ? `未找到与"${search}"相关的导师` : '暂无匹配数据'}
@@ -404,33 +404,33 @@ function ProfessorsPageInner() {
         ) : (
           professors.map(p => <ProfCard key={p.id} p={p} />)
         )}
-
-        <div ref={sentinelRef} />
-
-        {loadingMore && (
-          <div className="flex justify-center py-4">
-            <Loader2 className="size-5 animate-spin" style={{ color: '#c4a050' }} />
-          </div>
-        )}
-
-        {!loading && !hasMore && professors.length > 0 && (
-          <>
-            <p className="text-center text-xs py-2" style={{ color: '#b0a090' }}>
-              已加载全部 {professors.length.toLocaleString()} 位导师
-            </p>
-            <Link href="/koala/chat"
-              className="mx-auto block text-center text-sm font-medium py-3 px-6 rounded-2xl no-underline"
-              style={{ background: '#1a2332', color: '#fff', maxWidth: 280 }}>
-              没找到理想导师？让 Koala AI 精准匹配 →
-            </Link>
-            {/* Disclaimer */}
-            <div className="mt-4 px-2 py-3 rounded-xl text-[11px] leading-relaxed" style={{ background: '#f0e9d6', color: '#907858' }}>
-              以上数据来自大学官网、Google Scholar 及公开数据库，仅供参考。经费与招生状态可能与实际情况存在差异，请直接联系导师核实。如发现信息有误，欢迎反馈至{' '}
-              <a href="mailto:info@koalastudyadvisors.net" style={{ color: '#7d6340' }}>info@koalastudyadvisors.net</a>
-            </div>
-          </>
-        )}
       </div>
+
+      {/* Sentinel for infinite scroll - must be outside grid */}
+      <div ref={sentinelRef} className="h-4 px-4" />
+
+      {loadingMore && (
+        <div className="flex justify-center py-4">
+          <Loader2 className="size-5 animate-spin" style={{ color: '#c4a050' }} />
+        </div>
+      )}
+
+      {!loading && !hasMore && professors.length > 0 && (
+        <div className="px-4 pb-4 lg:px-0 space-y-3">
+          <p className="text-center text-xs py-2" style={{ color: '#b0a090' }}>
+            已加载全部 {professors.length.toLocaleString()} 位导师
+          </p>
+          <Link href="/koala/chat"
+            className="mx-auto block text-center text-sm font-medium py-3 px-6 rounded-2xl no-underline"
+            style={{ background: '#1a2332', color: '#fff', maxWidth: 280 }}>
+            没找到理想导师？让 Koala AI 精准匹配 →
+          </Link>
+          <div className="mt-4 px-2 py-3 rounded-xl text-[11px] leading-relaxed" style={{ background: '#f0e9d6', color: '#907858' }}>
+            以上数据来自大学官网、Google Scholar 及公开数据库，仅供参考。经费与招生状态可能与实际情况存在差异，请直接联系导师核实。如发现信息有误，欢迎反馈至{' '}
+            <a href="mailto:info@koalastudyadvisors.net" style={{ color: '#7d6340' }}>info@koalastudyadvisors.net</a>
+          </div>
+        </div>
+      )}
       </div>{/* end right panel */}
       </div>{/* end lg:flex */}
 

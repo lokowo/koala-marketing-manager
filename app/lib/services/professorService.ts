@@ -123,11 +123,35 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
   if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
   if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
   if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
-  if (filters?.search) q = q.or(`name.ilike.%${filters.search}%,university.ilike.%${filters.search}%`);
+  const searchTerm = filters?.search?.trim();
+  if (searchTerm) {
+    q = q.or(`name.ilike.%${searchTerm}%,university.ilike.%${searchTerm}%,faculty.ilike.%${searchTerm}%`);
+  }
   const { data, error } = await q;
   if (error) throw new Error(error.message);
 
   let results = (data ?? []).map(fromRow);
+
+  // Also filter by research_areas in JS (PostgREST can't ilike on text[])
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    const nameUniMatched = new Set(results.map((p: Professor) => p.id));
+    // If we got results from the DB query, also add professors whose research areas match
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let allQ: any = supabaseAdmin.from('professors').select('*').order(sortField, { ascending: false, nullsFirst: false }).limit(500);
+    if (filters?.university) allQ = allQ.eq('university', filters.university);
+    if (filters?.acceptingStudents) allQ = allQ.eq('accepting_students', filters.acceptingStudents);
+    if (filters?.hIndexMin) allQ = allQ.gte('h_index', filters.hIndexMin);
+    const { data: allData } = await allQ;
+    if (allData) {
+      const areaMatched = allData.map(fromRow).filter((p: Professor) => {
+        if (nameUniMatched.has(p.id)) return false;
+        const areasText = p.researchAreas.join(' ').toLowerCase();
+        return areasText.includes(term);
+      });
+      results = [...results, ...areaMatched];
+    }
+  }
 
   if (hasCategory) {
     const categoryKeywords = CATEGORY_KEYWORDS[filters!.category!].map(k => k.toLowerCase());
@@ -135,9 +159,9 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
       const areasText = p.researchAreas.join(' ').toLowerCase();
       return categoryKeywords.some(k => areasText.includes(k));
     });
-    results = results.slice(offset, offset + limit);
   }
 
+  results = results.slice(offset, offset + limit);
   return results;
 }
 
@@ -162,6 +186,27 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
     }).length;
   }
 
+  const searchTerm = filters?.search?.trim();
+
+  // If search term exists, we need to count matches including research_areas (JS filter)
+  if (searchTerm) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q: any = supabaseAdmin.from('professors').select('name,university,research_areas').limit(3000);
+    if (filters?.university) q = q.eq('university', filters.university);
+    if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
+    if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
+    if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    const term = searchTerm.toLowerCase();
+    return (data ?? []).filter((row: { name: string; university: string; research_areas: string[] | null }) => {
+      if (row.name.toLowerCase().includes(term)) return true;
+      if (row.university.toLowerCase().includes(term)) return true;
+      const areasText = (row.research_areas ?? []).join(' ').toLowerCase();
+      return areasText.includes(term);
+    }).length;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = supabaseAdmin.from('professors').select('*', { count: 'exact', head: true });
   if (filters?.university) q = q.eq('university', filters.university);
@@ -169,7 +214,6 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
   if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
   if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
   if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
-  if (filters?.search) q = q.or(`name.ilike.%${filters.search}%,university.ilike.%${filters.search}%`);
   const { count, error } = await q;
   if (error) throw new Error(error.message);
   return count ?? 0;

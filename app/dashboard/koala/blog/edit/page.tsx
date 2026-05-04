@@ -21,6 +21,7 @@ export default function BlogEditPage() {
 
   const [loading, setLoading] = useState(!!editId);
   const [saving, setSaving] = useState(false);
+  const [aiWorking, setAiWorking] = useState<string | null>(null);
   const [contentTab, setContentTab] = useState<'zh' | 'en'>('zh');
   const [form, setForm] = useState({
     category: 'phd_guide',
@@ -60,6 +61,42 @@ export default function BlogEditPage() {
     }
   }, [editId]);
 
+  async function aiAssist(action: string) {
+    setAiWorking(action);
+    try {
+      const res = await fetch('/api/blog/ai-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          title: form.title_zh || form.title_en,
+          content: form.content_zh || form.content_en,
+          category: form.category,
+        }),
+      });
+      const data = await res.json();
+
+      if (action === 'recommend_category' && data.category) {
+        setForm(prev => ({ ...prev, category: data.category }));
+      } else if (action === 'generate_tags' && data.tags) {
+        setForm(prev => ({ ...prev, tags: data.tags.join(', ') }));
+      } else if (action === 'translate') {
+        setForm(prev => ({
+          ...prev,
+          title_en: data.titleEn || prev.title_en,
+          excerpt_en: data.excerptEn || prev.excerpt_en,
+          content_en: data.contentEn || prev.content_en,
+        }));
+        setContentTab('en');
+      } else if (action === 'cover_prompt') {
+        setForm(prev => ({ ...prev, cover_image_url: `[AI Prompt] ${data.prompt}` }));
+      }
+    } catch {
+      alert('AI 操作失败，请重试');
+    }
+    setAiWorking(null);
+  }
+
   async function handleSave() {
     setSaving(true);
     const body = {
@@ -72,7 +109,7 @@ export default function BlogEditPage() {
       content_en: form.content_en,
       category: form.category,
       tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-      cover_image_url: form.cover_image_url || null,
+      cover_image_url: form.cover_image_url?.startsWith('[AI Prompt]') ? null : (form.cover_image_url || null),
       status: form.status,
     };
 
@@ -90,43 +127,6 @@ export default function BlogEditPage() {
     setSaving(false);
   }
 
-  async function handleAITranslate() {
-    if (!form.content_zh) return alert('请先填写中文内容');
-    setSaving(true);
-    try {
-      const res = await fetch('/api/blog/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: `翻译以下内容：${form.title_zh}`, category: form.category, style: 'professional', publishMode: 'draft' }),
-      });
-      const data = await res.json();
-      if (data.post) {
-        setForm(prev => ({
-          ...prev,
-          title_en: data.post.title_en || prev.title_en,
-          excerpt_en: data.post.excerpt_en || prev.excerpt_en,
-          content_en: data.post.content_en || prev.content_en,
-        }));
-      }
-    } catch { /* ignore */ }
-    setSaving(false);
-  }
-
-  async function handleAITags() {
-    if (!form.title_zh && !form.content_zh) return;
-    try {
-      const res = await fetch('/api/blog/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: form.title_zh || form.title_en, category: form.category, style: 'casual', publishMode: 'draft' }),
-      });
-      const data = await res.json();
-      if (data.post?.tags) {
-        setForm(prev => ({ ...prev, tags: data.post.tags.join(', ') }));
-      }
-    } catch { /* ignore */ }
-  }
-
   if (loading) {
     return <div className="p-8 text-center text-gray-500">加载中...</div>;
   }
@@ -142,7 +142,10 @@ export default function BlogEditPage() {
         {/* Category */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">分类 Category</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              分类 Category
+              <AIButton label="🔖 AI推荐" working={aiWorking === 'recommend_category'} onClick={() => aiAssist('recommend_category')} />
+            </label>
             <select
               value={form.category}
               onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
@@ -156,7 +159,7 @@ export default function BlogEditPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               标签 Tags
-              <button onClick={handleAITags} className="ml-2 text-xs text-amber-600 hover:text-amber-700">🏷 AI生成</button>
+              <AIButton label="🏷 AI生成" working={aiWorking === 'generate_tags'} onClick={() => aiAssist('generate_tags')} />
             </label>
             <input
               type="text"
@@ -168,21 +171,36 @@ export default function BlogEditPage() {
           </div>
         </div>
 
+        {/* Original Language */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">原始语言 Original Language</label>
+          <div className="flex gap-2">
+            <span className="px-3 py-1.5 text-sm bg-amber-100 text-amber-800 rounded-lg font-medium">中文 Chinese</span>
+            <span className="px-3 py-1.5 text-sm text-gray-400 bg-gray-50 rounded-lg">English</span>
+          </div>
+        </div>
+
         {/* Cover Image */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">封面图 Cover Image</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            封面图 Cover Image
+            <AIButton label="✨ AI生成封面" working={aiWorking === 'cover_prompt'} onClick={() => aiAssist('cover_prompt')} />
+          </label>
           <input
             type="text"
             value={form.cover_image_url}
             onChange={e => setForm(prev => ({ ...prev, cover_image_url: e.target.value }))}
-            placeholder="图片URL"
+            placeholder="图片URL（或点击AI生成获取推荐prompt）"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
           />
+          {form.cover_image_url?.startsWith('[AI Prompt]') && (
+            <p className="text-xs text-amber-600 mt-1">封面图Prompt已生成，可用于 DALL-E / Midjourney 生成图片后粘贴URL</p>
+          )}
         </div>
 
         {/* Content Tabs */}
         <div>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             <button
               onClick={() => setContentTab('zh')}
               className={`px-3 py-1.5 text-sm rounded-lg ${contentTab === 'zh' ? 'bg-amber-100 text-amber-800 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
@@ -195,11 +213,13 @@ export default function BlogEditPage() {
             >
               English Content
             </button>
-            {contentTab === 'en' && (
-              <button onClick={handleAITranslate} className="ml-auto text-xs px-3 py-1 border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50">
-                🔄 AI翻译到English
-              </button>
-            )}
+            <button
+              onClick={() => aiAssist('translate')}
+              disabled={aiWorking === 'translate' || !form.content_zh}
+              className="ml-auto text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 disabled:opacity-50"
+            >
+              {aiWorking === 'translate' ? '⏳ 翻译中...' : '🔄 AI翻译到English'}
+            </button>
           </div>
 
           {contentTab === 'zh' ? (
@@ -279,5 +299,17 @@ export default function BlogEditPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function AIButton({ label, working, onClick }: { label: string; working: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={e => { e.preventDefault(); onClick(); }}
+      disabled={working}
+      className="ml-2 text-xs text-amber-600 hover:text-amber-700 disabled:opacity-50"
+    >
+      {working ? '⏳...' : label}
+    </button>
   );
 }

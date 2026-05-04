@@ -16,6 +16,17 @@ const CATEGORIES: Record<string, { zh: string; en: string }> = {
   news: { zh: '行业新闻', en: 'Education News' },
 };
 
+const COVER_IMAGE_PROMPTS: Record<string, string> = {
+  phd_guide: 'professional photo of international students studying at Australian university library',
+  application: 'document preparation for PhD application, laptop with research papers',
+  scholarship: 'graduation cap on Australian dollar bills, scholarship concept',
+  visa: 'Australian passport and student visa documents',
+  supervisor: 'professor and student discussing research in modern university office',
+  research: 'scientific research laboratory with modern equipment',
+  student_life: 'international students enjoying campus life at Australian university',
+  news: 'Australian university campus aerial view',
+};
+
 const STYLE_PROMPTS: Record<string, string> = {
   professional: '写作风格：专业权威 — 像学术顾问的分析报告，用数据和事实说话，语气严谨。',
   casual: '写作风格：学长分享 — 像学长学姐的经验分享，亲切真实，可以用口语化表达。',
@@ -45,9 +56,10 @@ export async function POST(req: NextRequest) {
     const zhText = zhResponse.content[0].type === 'text' ? zhResponse.content[0].text : '';
     let zhData: { titleZh: string; excerptZh: string; contentZh: string; tags: string[]; imageKeywords?: string[] };
     try {
-      zhData = JSON.parse(zhText);
+      const cleaned = zhText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      zhData = JSON.parse(cleaned);
     } catch {
-      return Response.json({ error: 'AI generation failed - invalid JSON response', raw: zhText }, { status: 500 });
+      return Response.json({ error: 'AI generation failed - invalid JSON response', raw: zhText.slice(0, 200) }, { status: 500 });
     }
 
     // Step 2 & 3: Translate to English + Generate SEO (parallel)
@@ -80,9 +92,10 @@ export async function POST(req: NextRequest) {
     let seoZh = { seoTitle: '', seoDescription: '', seoKeywords: '' };
     let seoEn = { seoTitle: '', seoDescription: '', seoKeywords: '' };
 
-    try { enData = JSON.parse(enText); } catch { /* use defaults */ }
-    try { seoZh = JSON.parse(seoZhText); } catch { /* use defaults */ }
-    try { seoEn = JSON.parse(seoEnText); } catch { /* use defaults */ }
+    function cleanJson(t: string) { return t.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim(); }
+    try { enData = JSON.parse(cleanJson(enText)); } catch { /* use defaults */ }
+    try { seoZh = JSON.parse(cleanJson(seoZhText)); } catch { /* use defaults */ }
+    try { seoEn = JSON.parse(cleanJson(seoEnText)); } catch { /* use defaults */ }
 
     // Step 4: Calculate reading time
     const charCount = (zhData.contentZh || '').length;
@@ -121,7 +134,11 @@ export async function POST(req: NextRequest) {
     return Response.json({
       success: true,
       post,
-      meta: { imageCount: imageCount || 0, imageKeywords: zhData.imageKeywords },
+      meta: {
+        imageCount: imageCount || 0,
+        imageKeywords: zhData.imageKeywords,
+        coverPrompt: COVER_IMAGE_PROMPTS[category] || COVER_IMAGE_PROMPTS.phd_guide,
+      },
     });
   } catch (error) {
     console.error('[blog/generate]', error);

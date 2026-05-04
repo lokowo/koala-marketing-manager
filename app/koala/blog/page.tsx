@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Mail, PenLine, Calculator, CalendarDays, Clock } from 'lucide-react';
+import { Search, Mail, PenLine, Calculator, CalendarDays, Clock, Share2 } from 'lucide-react';
 
 interface BlogPost {
   id: string;
@@ -170,16 +170,26 @@ function BlogTab() {
           const cta = BLOG_CTAS[post.category] || { text: '有问题？直接问 Koala →', href: '/koala/chat' };
           return (
             <div key={post.id} className="rounded-xl overflow-hidden" style={{ background: '#fff', boxShadow: '0 2px 8px rgba(196,160,80,0.08)' }}>
-              <div className="flex items-stretch">
-                <div style={{ background: '#c4a050', width: 4, flexShrink: 0 }} />
-                <div className="flex p-3 flex-col flex-1 gap-1">
-                  <h3 className="font-bold text-sm leading-5" style={{ color: '#1a2332' }}>{post.title_zh || post.title_en}</h3>
-                  <p className="text-xs leading-4" style={{ color: '#6b7280' }}>{post.excerpt_zh || post.excerpt_en}</p>
-                  <span className="text-[11px] mt-1" style={{ color: '#a89878' }}>
-                    {timeAgo(post.published_at)} · {CATEGORY_LABELS[post.category] || post.category}
-                  </span>
+              <Link href={`/koala/blog/${post.id}`} className="no-underline">
+                <div className="flex items-stretch">
+                  <div style={{ background: '#c4a050', width: 4, flexShrink: 0 }} />
+                  <div className="flex p-3 flex-col flex-1 gap-1">
+                    <div className="flex items-start justify-between">
+                      <h3 className="font-bold text-sm leading-5 flex-1" style={{ color: '#1a2332' }}>{post.title_zh || post.title_en}</h3>
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/koala/blog/${post.id}`); }}
+                        className="shrink-0 ml-2 size-6 rounded-full flex items-center justify-center" style={{ background: '#f0e9d6' }}
+                      >
+                        <Share2 className="size-3" style={{ color: '#c4a050' }} />
+                      </button>
+                    </div>
+                    <p className="text-xs leading-4" style={{ color: '#6b7280' }}>{post.excerpt_zh || post.excerpt_en}</p>
+                    <span className="text-[11px] mt-1" style={{ color: '#a89878' }}>
+                      {timeAgo(post.published_at)} · {CATEGORY_LABELS[post.category] || post.category}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </Link>
               <a
                 href={cta.href}
                 className="block text-center text-[11px] font-medium py-2 no-underline"
