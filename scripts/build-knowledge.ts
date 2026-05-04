@@ -113,19 +113,45 @@ async function main() {
   }
   console.log(`Professors: ${professors.length}`);
 
-  // Fetch papers
-  const { data: papers, error: paperErr } = await supabase
-    .from('papers')
-    .select('id, professor_id, title, year, abstract, journal, citation_count')
-    .not('abstract', 'is', null)
-    .neq('abstract', '');
-
-  if (paperErr) { console.error('❌ papers:', paperErr.message); process.exit(1); }
-  console.log(`Papers with abstracts: ${papers?.length ?? 0}\n`);
+  // Fetch papers with abstracts (paginated)
+  const papers: Paper[] = [];
+  if (!PROFESSORS_ONLY) {
+    let paperPage = 0;
+    while (true) {
+      const { data, error: paperErr } = await supabase
+        .from('papers')
+        .select('id, professor_id, title, year, abstract, journal, citation_count')
+        .not('abstract', 'is', null)
+        .neq('abstract', '')
+        .order('citation_count', { ascending: false })
+        .range(paperPage * 1000, (paperPage + 1) * 1000 - 1);
+      if (paperErr) { console.error('❌ papers:', paperErr.message); process.exit(1); }
+      papers.push(...((data ?? []) as Paper[]));
+      if ((data?.length ?? 0) < 1000) break;
+      paperPage++;
+    }
+  }
+  console.log(`Papers with abstracts: ${papers.length}\n`);
 
   let inserted = 0;
   let skipped = 0;
   const startTime = Date.now();
+
+  // Pre-load all existing source_titles to avoid one Supabase query per professor
+  console.log('Loading existing chunks index…');
+  const existingTitles = new Set<string>();
+  let chunkPage = 0;
+  while (true) {
+    const { data: existing } = await supabase
+      .from('knowledge_chunks')
+      .select('source_title')
+      .range(chunkPage * 1000, (chunkPage + 1) * 1000 - 1);
+    if (!existing || existing.length === 0) break;
+    for (const row of existing) existingTitles.add(row.source_title as string);
+    if (existing.length < 1000) break;
+    chunkPage++;
+  }
+  console.log(`  Existing chunks: ${existingTitles.size}\n`);
 
   // --- Professor profiles ---
   console.log('── Professor profiles ──');
@@ -145,19 +171,12 @@ async function main() {
       prof.references ? `Bio: ${prof.references.slice(0, 800)}` : '',
     ].filter(Boolean).join('\n');
 
-    process.stdout.write(`  [${String(i + 1).padStart(3)}/${professors.length}] ${prof.name.slice(0, 35).padEnd(35)}`);
+    process.stdout.write(`  [${String(i + 1).padStart(4)}/${professors.length}] ${prof.name.slice(0, 35).padEnd(35)}`);
 
     const titleKey = `[PROF] ${prof.name} — ${prof.university}`;
 
-    // Check if already embedded
-    const { count } = await supabase
-      .from('knowledge_chunks')
-      .select('*', { count: 'exact', head: true })
-      .eq('source_type', 'professor_paper')
-      .eq('source_title', titleKey);
-
-    if ((count ?? 0) > 0) {
-      console.log(' [skip]');
+    if (existingTitles.has(titleKey)) {
+      process.stdout.write(' [skip]\n');
       skipped++;
       continue;
     }
@@ -198,18 +217,12 @@ async function main() {
         `Abstract: ${(paper.abstract ?? '').slice(0, 1500)}`,
       ].filter(Boolean).join('\n');
 
-      process.stdout.write(`  [${String(i + 1).padStart(3)}/${paperList.length}] ${paper.title.slice(0, 35).padEnd(35)}`);
+      process.stdout.write(`  [${String(i + 1).padStart(4)}/${paperList.length}] ${paper.title.slice(0, 35).padEnd(35)}`);
 
       const titleKey = `[PAPER] ${paper.title.slice(0, 200)}`;
 
-      const { count } = await supabase
-        .from('knowledge_chunks')
-        .select('*', { count: 'exact', head: true })
-        .eq('source_type', 'professor_paper')
-        .eq('source_title', titleKey);
-
-      if ((count ?? 0) > 0) {
-        console.log(' [skip]');
+      if (existingTitles.has(titleKey)) {
+        process.stdout.write(' [skip]\n');
         skipped++;
         continue;
       }
