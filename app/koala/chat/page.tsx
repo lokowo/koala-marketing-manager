@@ -423,24 +423,30 @@ function ChatPageInner() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Show credit dialog for outreach flow from professor card/detail
-  useEffect(() => {
-    if (autoSentRef.current) return;
+  // Auto-send outreach message from professor card/detail URL params
+  const [pendingAutoSend, setPendingAutoSend] = useState<{ msg: string; profId?: string } | null>(() => {
     const action = searchParams.get('action');
     const profName = searchParams.get('name');
     const profId = searchParams.get('prof');
     if (action === 'outreach' && profName) {
-      autoSentRef.current = true;
       const decodedName = decodeURIComponent(profName);
-      const msg = `请帮我给 ${decodedName} 教授写一封套磁信`;
-      if (profId) setPendingProfessorId(profId);
-      setPendingProfessorName(decodedName);
-      setPendingEmailText(msg);
-      // Delay so the welcome message renders before the dialog pops up
-      setTimeout(() => setShowCreditConfirm(true), 400);
+      return { msg: `请帮我给 ${decodedName} 教授写一封套磁信`, profId: profId ?? undefined };
     }
+    return null;
+  });
+
+  useEffect(() => {
+    if (!pendingAutoSend || autoSentRef.current) return;
+    autoSentRef.current = true;
+    const profId = searchParams.get('prof');
+    if (profId) setPendingProfessorId(profId);
+    const timer = setTimeout(() => {
+      callApi(pendingAutoSend.msg, messages, pendingAutoSend.profId);
+      setPendingAutoSend(null);
+    }, 500);
+    return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pendingAutoSend]);
 
   function switchMode(newMode: AIMode) {
     const cfg = MODES.find(m => m.key === newMode)!;
