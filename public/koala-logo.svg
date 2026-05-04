@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="#1a2332"/>
+  <!-- Ears -->
+  <circle cx="18" cy="18" r="10" fill="#a08058"/>
+  <circle cx="46" cy="18" r="10" fill="#a08058"/>
+  <circle cx="18" cy="18" r="6" fill="#c4a050"/>
+  <circle cx="46" cy="18" r="6" fill="#c4a050"/>
+  <!-- Face -->
+  <ellipse cx="32" cy="36" rx="18" ry="20" fill="#d4b87a"/>
+  <!-- Nose area -->
+  <ellipse cx="32" cy="40" rx="10" ry="8" fill="#f5edd8"/>
+  <!-- Nose -->
+  <ellipse cx="32" cy="38" rx="4" ry="3" fill="#1a2332"/>
+  <!-- Eyes -->
+  <circle cx="24" cy="32" r="3" fill="#1a2332"/>
+  <circle cx="40" cy="32" r="3" fill="#1a2332"/>
+  <circle cx="25" cy="31" r="1" fill="#fff"/>
+  <circle cx="41" cy="31" r="1" fill="#fff"/>
+</svg>

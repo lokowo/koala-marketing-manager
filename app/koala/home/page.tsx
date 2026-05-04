@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Bell, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowRight, Bell, ChevronRight, X } from 'lucide-react';
 import type { Professor } from '../../lib/types';
 
 const UNI_COLORS: Record<string, { bg: string; fg: string; short: string }> = {
@@ -64,6 +65,7 @@ const RESEARCH_AREAS = [
 export default function HomePage() {
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [showNotif, setShowNotif] = useState(false);
 
   useEffect(() => {
     fetch('/api/professors?limit=6&sortBy=opportunity_score')
@@ -96,19 +98,73 @@ export default function HomePage() {
   return (
     <div style={{ background: '#faf6ec', minHeight: '100vh', paddingBottom: 100 }}>
       {/* Header */}
-      <header className="flex px-4 pt-4 pb-2 justify-between items-center">
-        <div className="w-8" />
-        <div className="flex items-center gap-2">
-          <div className="size-8 rounded-full flex justify-center items-center" style={{ background: '#1a2332' }}>
-            <span className="text-base leading-6">🐨</span>
+      <header
+        className="sticky top-0 z-50 px-4 pt-4 pb-3 flex justify-between items-center"
+        style={{ background: 'linear-gradient(135deg, #faf6ec 0%, #f5edd8 100%)', borderBottom: '1px solid #ebe3d0' }}
+      >
+        {/* Left: Logo + brand */}
+        <Link href="/koala/home" className="flex items-center gap-2.5 no-underline">
+          <Image
+            src="/koala-logo.svg"
+            alt="Koala"
+            width={32}
+            height={32}
+            className="rounded-lg"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+              (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+            }}
+          />
+          <span className="hidden size-8 rounded-lg flex items-center justify-center text-base" style={{ background: '#1a2332' }}>🐨</span>
+          <div className="flex flex-col">
+            <span className="text-sm font-bold tracking-tight leading-none" style={{ color: '#1a2332' }}>
+              Koala Study
+            </span>
+            <span className="text-[10px] leading-tight mt-0.5" style={{ color: '#907858' }}>
+              你的澳洲学术内线
+            </span>
           </div>
-          <span className="font-bold text-base tracking-tight" style={{ color: '#1a2332' }}>考拉学长</span>
+        </Link>
+
+        {/* Right: Bell + Avatar */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowNotif(!showNotif)}
+            className="relative size-9 flex justify-center items-center rounded-full transition-colors"
+            style={{ background: showNotif ? '#f2ead6' : 'transparent' }}
+          >
+            <Bell className="size-[18px]" style={{ color: '#584838' }} />
+          </button>
+          <Link
+            href="/login"
+            className="size-9 rounded-full flex items-center justify-center no-underline"
+            style={{ background: '#1a2332' }}
+          >
+            <span className="text-xs font-medium text-white">登录</span>
+          </Link>
         </div>
-        <button className="relative size-9 flex justify-center items-center">
-          <Bell className="size-5" style={{ color: '#1a2332' }} />
-          <span className="size-2 rounded-full absolute right-1 top-1" style={{ background: '#c4a050' }} />
-        </button>
       </header>
+
+      {/* Notification dropdown */}
+      {showNotif && (
+        <div
+          className="mx-4 mt-1 mb-2 rounded-2xl p-4 flex items-center justify-between"
+          style={{ background: '#fff', border: '1px solid #e8dcc8', boxShadow: '0 8px 24px rgba(125,99,64,0.10)' }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-full flex items-center justify-center" style={{ background: '#f2ead6' }}>
+              <Bell className="size-4" style={{ color: '#c4a050' }} />
+            </div>
+            <div>
+              <p className="text-xs font-medium" style={{ color: '#584838' }}>暂无新消息</p>
+              <p className="text-[10px] mt-0.5" style={{ color: '#907858' }}>有新动态时会通知你</p>
+            </div>
+          </div>
+          <button onClick={() => setShowNotif(false)} className="size-6 flex items-center justify-center rounded-full" style={{ background: '#f2ead6' }}>
+            <X className="size-3" style={{ color: '#907858' }} />
+          </button>
+        </div>
+      )}
 
       <main className="px-4 pt-2 pb-4 flex flex-col gap-6">
 
