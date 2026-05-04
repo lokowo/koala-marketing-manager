@@ -102,37 +102,71 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
   const limit = filters?.limit ?? 20;
   const offset = filters?.offset ?? 0;
   const sortField = filters?.sortBy ?? 'opportunity_score';
+  const hasCategory = filters?.category && filters.category !== 'all' && CATEGORY_KEYWORDS[filters.category];
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = supabaseAdmin
     .from('professors')
     .select('*')
-    .order(sortField, { ascending: false, nullsFirst: false })
-    .range(offset, offset + limit - 1);
+    .order(sortField, { ascending: false, nullsFirst: false });
+
+  // When category filter is active, fetch more rows and filter in JS
+  // (PostgREST can't do ilike on text[] columns)
+  if (!hasCategory) {
+    q = q.range(offset, offset + limit - 1);
+  } else {
+    q = q.limit(500);
+  }
+
   if (filters?.university) q = q.eq('university', filters.university);
   if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
   if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
-  if (filters?.category && filters.category !== 'all' && CATEGORY_KEYWORDS[filters.category]) {
-    const orStr = CATEGORY_KEYWORDS[filters.category].map(k => `research_areas::text.ilike.%${k}%`).join(',');
-    q = q.or(orStr);
-  }
   if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
   if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
   if (filters?.search) q = q.or(`name.ilike.%${filters.search}%,university.ilike.%${filters.search}%`);
   const { data, error } = await q;
   if (error) throw new Error(error.message);
-  return (data ?? []).map(fromRow);
+
+  let results = (data ?? []).map(fromRow);
+
+  if (hasCategory) {
+    const categoryKeywords = CATEGORY_KEYWORDS[filters!.category!].map(k => k.toLowerCase());
+    results = results.filter((p: Professor) => {
+      const areasText = p.researchAreas.join(' ').toLowerCase();
+      return categoryKeywords.some(k => areasText.includes(k));
+    });
+    results = results.slice(offset, offset + limit);
+  }
+
+  return results;
 }
 
 export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' | 'offset' | 'sortBy'>): Promise<number> {
+  const hasCategory = filters?.category && filters.category !== 'all' && CATEGORY_KEYWORDS[filters.category];
+
+  if (hasCategory) {
+    // Can't count with ilike on text[] in PostgREST — fetch and count in JS
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q: any = supabaseAdmin.from('professors').select('research_areas').limit(3000);
+    if (filters?.university) q = q.eq('university', filters.university);
+    if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
+    if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
+    if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
+    if (filters?.search) q = q.or(`name.ilike.%${filters.search}%,university.ilike.%${filters.search}%`);
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    const categoryKeywords = CATEGORY_KEYWORDS[filters!.category!].map(k => k.toLowerCase());
+    return (data ?? []).filter((row: { research_areas: string[] | null }) => {
+      const areasText = (row.research_areas ?? []).join(' ').toLowerCase();
+      return categoryKeywords.some(k => areasText.includes(k));
+    }).length;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = supabaseAdmin.from('professors').select('*', { count: 'exact', head: true });
   if (filters?.university) q = q.eq('university', filters.university);
   if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
   if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
-  if (filters?.category && filters.category !== 'all' && CATEGORY_KEYWORDS[filters.category]) {
-    const orStr = CATEGORY_KEYWORDS[filters.category].map(k => `research_areas::text.ilike.%${k}%`).join(',');
-    q = q.or(orStr);
-  }
   if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
   if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
   if (filters?.search) q = q.or(`name.ilike.%${filters.search}%,university.ilike.%${filters.search}%`);
@@ -208,21 +242,20 @@ export async function searchProfessorsForAI(params: {
   const limit = Math.min(params.limit ?? 8, 15);
   const keywords = params.researchArea
     .split(/[,;，；\s]+/)
-    .map(k => k.trim())
+    .map(k => k.trim().toLowerCase())
     .filter(k => k.length >= 2);
 
   if (keywords.length === 0) return [];
 
-  const orClauses = keywords.map(k => `research_areas::text.ilike.%${k}%`).join(',');
-
+  // PostgREST can't do ilike on text[] casts, so we fetch a broad set
+  // ordered by score and filter by keyword match in JS.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = supabaseAdmin
     .from('professors')
     .select('*')
-    .or(orClauses)
     .order('opportunity_score', { ascending: false, nullsFirst: false })
     .order('h_index', { ascending: false, nullsFirst: false })
-    .limit(limit * 3);
+    .limit(500);
 
   if (params.university) {
     q = q.ilike('university', `%${params.university}%`);
@@ -231,18 +264,27 @@ export async function searchProfessorsForAI(params: {
   const { data, error } = await q;
   if (error) throw new Error(error.message);
 
-  const professors = (data ?? []).map(fromRow);
+  const allProfessors = (data ?? []).map(fromRow);
 
-  // Sort: accepting > opportunity_score > h_index
-  professors.sort((a: Professor, b: Professor) => {
-    const aAccepting = a.acceptingStudents === 'yes' ? 1 : 0;
-    const bAccepting = b.acceptingStudents === 'yes' ? 1 : 0;
+  // Filter: professor's research_areas must contain at least one keyword
+  const matched = allProfessors.filter((p: Professor) => {
+    const areasText = p.researchAreas.join(' ').toLowerCase();
+    return keywords.some(k => areasText.includes(k));
+  });
+
+  // Sort: accepting > keyword hit count > opportunity_score > h_index
+  matched.sort((a: Professor, b: Professor) => {
+    const aAccepting = a.acceptingStudents === 'yes' || a.acceptingStudents === 'likely' ? 1 : 0;
+    const bAccepting = b.acceptingStudents === 'yes' || b.acceptingStudents === 'likely' ? 1 : 0;
     if (aAccepting !== bAccepting) return bAccepting - aAccepting;
+    const aHits = keywords.filter(k => a.researchAreas.join(' ').toLowerCase().includes(k)).length;
+    const bHits = keywords.filter(k => b.researchAreas.join(' ').toLowerCase().includes(k)).length;
+    if (aHits !== bHits) return bHits - aHits;
     const aOpp = a.opportunityScore ?? 0;
     const bOpp = b.opportunityScore ?? 0;
     if (aOpp !== bOpp) return bOpp - aOpp;
     return (b.hIndex ?? 0) - (a.hIndex ?? 0);
   });
 
-  return professors.slice(0, limit);
+  return matched.slice(0, limit);
 }
