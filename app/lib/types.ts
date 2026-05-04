@@ -33,7 +33,7 @@ export interface Professor {
   hIndex?: number;
   paperCount?: number;
   citationCount?: number;
-  acceptingStudents?: 'yes' | 'no' | 'unknown';
+  acceptingStudents?: 'yes' | 'no' | 'unknown' | 'likely';
   dataSources?: Array<'arc' | 'semantic_scholar' | 'uni_website' | 'linkedin' | 'manual'>;
   lastSyncedAt?: string;
   // Opportunity Signal (auto-calculated, 0-100)
