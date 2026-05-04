@@ -274,10 +274,10 @@ export default function MyProfilePage() {
   }
 
   return (
-    <div className="pb-6" style={{ background: '#faf6ec' }}>
+    <div className="pb-6 lg:pb-12" style={{ background: '#faf6ec' }}>
       {/* ── Header card ──────────────────── */}
-      <div className="px-4 pt-5 pb-4">
-        <div className="rounded-3xl p-5" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+      <div className="px-4 lg:px-0 pt-5 pb-4">
+        <div className="rounded-3xl p-5 lg:flex lg:items-center lg:gap-8" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
           <div className="flex items-center gap-4">
             {/* Avatar */}
             <div
@@ -312,8 +312,12 @@ export default function MyProfilePage() {
         </div>
       </div>
 
+      {/* ── Two-col on desktop ── */}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+      <div>{/* left column */}
+
       {/* ── Profile completeness ──────────── */}
-      <div className="mx-4 mb-3 rounded-2xl p-4" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl p-4" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
         <div className="flex items-center gap-4">
           <div className="relative flex-shrink-0">
             <ArcProgress pct={pct} />
@@ -350,7 +354,7 @@ export default function MyProfilePage() {
       </div>
 
       {/* ── Personal info ─────────────────── */}
-      <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
         <div
           className="flex items-center justify-between px-4 py-3"
           style={{ borderBottom: editing ? '1px solid #e8dcc8' : undefined }}
@@ -471,7 +475,7 @@ export default function MyProfilePage() {
       </div>
 
       {/* ── CV Upload ────────────────────── */}
-      <div className="mx-4 mb-3 rounded-2xl p-4" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl p-4" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-semibold" style={{ color: '#1a2332' }}>📄 简历 / 成绩单</span>
           {profile?.file_name && (
@@ -500,8 +504,11 @@ export default function MyProfilePage() {
         />
       </div>
 
+      </div>{/* end left column */}
+      <div>{/* right column */}
+
       {/* ── Saved professors ──────────────── */}
-      <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid #e8dcc8' }}>
           <span className="text-xs font-semibold" style={{ color: '#1a2332' }}>
             🔖 我的收藏 <span className="font-normal" style={{ color: '#907858' }}>({saved.length})</span>
@@ -560,7 +567,7 @@ export default function MyProfilePage() {
       </div>
 
       {/* ── Outreach history ──────────────── */}
-      <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
         <div className="px-4 py-3" style={{ borderBottom: '1px solid #e8dcc8' }}>
           <span className="text-xs font-semibold" style={{ color: '#1a2332' }}>
             ✉️ 套磁信记录 <span className="font-normal" style={{ color: '#907858' }}>({emails.length})</span>
@@ -613,7 +620,7 @@ export default function MyProfilePage() {
       </div>
 
       {/* ── CTA ──────────────────────────── */}
-      <div className="mx-4 mb-4">
+      <div className="mx-4 lg:mx-0 mb-4">
         <Link
           href="/koala/chat"
           className="block w-full py-3 rounded-full text-center text-sm font-semibold text-white no-underline"
@@ -624,7 +631,7 @@ export default function MyProfilePage() {
       </div>
 
       {/* ── Settings ─────────────────────── */}
-      <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
         <button
           onClick={() => setShowSettings(!showSettings)}
           className="w-full flex items-center justify-between px-4 py-3"
@@ -672,9 +679,11 @@ export default function MyProfilePage() {
       </div>
 
       {/* ── Data disclaimer ──────────────── */}
-      <div className="mx-4 mt-2 px-3 py-2 rounded-xl text-[10px] leading-relaxed" style={{ background: '#f0e9d6', color: '#b09878' }}>
+      <div className="mx-4 lg:mx-0 mt-2 px-3 py-2 rounded-xl text-[10px] leading-relaxed" style={{ background: '#f0e9d6', color: '#b09878' }}>
         你的个人信息仅用于 AI 推荐优化，不会与第三方共享。
       </div>
+      </div>{/* end right column */}
+      </div>{/* end two-col grid */}
     </div>
   );
 }

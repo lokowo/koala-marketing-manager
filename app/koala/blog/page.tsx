@@ -71,7 +71,7 @@ function BlogTab() {
   return (
     <div className="pb-4">
       {/* Top CTA banner */}
-      <div className="mx-6 mt-4 rounded-2xl px-4 py-3 flex items-center justify-between gap-3" style={{ background: '#1a2332' }}>
+      <div className="mx-6 lg:mx-0 mt-4 rounded-2xl px-4 py-3 flex items-center justify-between gap-3" style={{ background: '#1a2332' }}>
         <span className="text-xs leading-snug" style={{ color: '#e8dcc8' }}>
           📚 看完攻略，不如直接行动
         </span>
@@ -85,7 +85,7 @@ function BlogTab() {
       </div>
 
       {/* Featured card */}
-      <div className="px-6 pt-4">
+      <div className="px-6 lg:px-0 pt-4">
         <div
           className="rounded-2xl overflow-hidden"
           style={{ background: '#fff', boxShadow: '0 4px 16px rgba(196,160,80,0.12)' }}
@@ -151,7 +151,7 @@ function BlogTab() {
       </div>
 
       {/* List posts */}
-      <div className="flex px-6 pt-6 flex-col gap-3">
+      <div className="flex px-6 lg:px-0 pt-6 flex-col gap-3 lg:grid lg:grid-cols-3">
         {LIST_POSTS.map(post => {
           const cta = getBlogCta(post.category);
           return (
@@ -183,14 +183,14 @@ function BlogTab() {
       </div>
 
       {/* Tool grid */}
-      <div className="px-6 pt-8">
+      <div className="px-6 lg:px-0 pt-8">
         <div className="flex mb-4 justify-between items-center">
           <h2 className="font-bold text-lg leading-7" style={{ color: '#1a2332' }}>工具箱</h2>
           <Link href="/koala/tools" className="font-medium text-xs leading-4 no-underline" style={{ color: '#c4a050' }}>
             查看全部
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {TOOLS_GRID.map(tool => {
             const Icon = tool.icon;
             return (
@@ -255,8 +255,7 @@ export default function BlogToolsPage() {
   return (
     <div style={{ background: '#faf6ec', minHeight: '100vh', paddingBottom: 100 }}>
       {/* Header */}
-      <div className="flex px-6 pt-4 pb-2 justify-between items-center">
-        <div style={{ width: 32 }} />
+      <div className="flex px-6 lg:px-0 pt-4 pb-2 justify-between items-center">
         <h1 className="font-bold text-xl leading-7" style={{ color: '#1a2332' }}>博客 &amp; 工具</h1>
         <button
           className="size-8 rounded-full flex justify-center items-center"
@@ -267,8 +266,8 @@ export default function BlogToolsPage() {
       </div>
 
       {/* Tab switcher */}
-      <div className="px-6 pt-4">
-        <div className="rounded-full flex p-1 items-center" style={{ background: '#f0e8d4' }}>
+      <div className="px-6 lg:px-0 pt-4">
+        <div className="rounded-full flex p-1 items-center lg:inline-flex lg:rounded-full" style={{ background: '#f0e8d4' }}>
           <button
             onClick={() => setTab('blog')}
             className="rounded-full text-sm leading-5 py-2 flex-1 transition-colors"

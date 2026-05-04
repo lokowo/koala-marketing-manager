@@ -115,9 +115,9 @@ export default function HomePage() {
 
   return (
     <div style={{ background: '#faf6ec', minHeight: '100vh', paddingBottom: 100 }}>
-      {/* Header */}
+      {/* Header — mobile only; desktop uses TopNavBar */}
       <header
-        className="sticky top-0 z-50 px-4 pt-4 pb-3 flex justify-between items-center"
+        className="lg:hidden sticky top-0 z-50 px-4 pt-4 pb-3 flex justify-between items-center"
         style={{ background: 'linear-gradient(135deg, #faf6ec 0%, #f5edd8 100%)', borderBottom: '1px solid #ebe3d0' }}
       >
         {/* Left: Logo + brand */}
@@ -184,26 +184,26 @@ export default function HomePage() {
         </div>
       )}
 
-      <main className="px-4 pt-2 pb-4 flex flex-col gap-6">
+      <main className="px-4 lg:px-0 pt-2 pb-4 flex flex-col gap-6 lg:gap-10">
 
         {/* ── Hero ── */}
         <section>
           <div
-            className="rounded-3xl p-5 relative overflow-hidden"
+            className="rounded-3xl p-5 lg:p-10 relative overflow-hidden lg:flex lg:items-center lg:gap-12"
             style={{ background: '#1a2332' }}
           >
             {/* Decorative circle */}
             <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-10" style={{ background: '#c4a050' }} />
             <div className="absolute -right-2 bottom-4 w-24 h-24 rounded-full opacity-5" style={{ background: '#c4a050' }} />
 
-            <div className="relative z-10">
+            <div className="relative z-10 lg:flex-1">
               <div className="text-xs font-medium mb-2 opacity-70" style={{ color: '#c4a050' }}>
                 AI 导师匹配 · 免费使用
               </div>
-              <h1 className="text-xl font-bold leading-tight mb-1.5" style={{ color: '#fff' }}>
+              <h1 className="text-xl lg:text-3xl font-bold leading-tight mb-1.5" style={{ color: '#fff' }}>
                 2,847 位澳洲导师<br />AI 帮你找最匹配的那个
               </h1>
-              <p className="text-xs leading-relaxed mb-4 opacity-80" style={{ color: '#e8dcc8' }}>
+              <p className="text-xs lg:text-sm leading-relaxed mb-4 opacity-80" style={{ color: '#e8dcc8' }}>
                 告诉 Koala 你的背景和兴趣，30 秒内获得个性化导师推荐
               </p>
               <Link
@@ -223,7 +223,7 @@ export default function HomePage() {
         {/* ── Three Steps ── */}
         <section>
           <h2 className="font-bold text-base mb-3" style={{ color: '#1a2332' }}>三步搞定 PhD 申请</h2>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 lg:gap-4">
             {[
               { icon: '💬', step: '01', title: '聊背景', desc: '告诉 Koala 你的专业和兴趣' },
               { icon: '🎯', step: '02', title: 'AI 匹配', desc: '从 2,847 位教授中精准推荐' },
@@ -232,7 +232,7 @@ export default function HomePage() {
               <button
                 key={s.step}
                 onClick={() => handleStepClick(STEP_LINKS[i].href)}
-                className="rounded-2xl p-3 flex flex-col gap-1.5 text-left w-full transition-all active:scale-95"
+                className="rounded-2xl p-3 lg:p-5 flex flex-col gap-1.5 text-left w-full transition-all active:scale-95"
                 style={{ background: '#f2ead6', border: '1px solid #e8dcc8', cursor: 'pointer' }}
                 onMouseEnter={e => {
                   (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
@@ -260,10 +260,10 @@ export default function HomePage() {
               查看全部 <ChevronRight className="size-3" />
             </Link>
           </div>
-          <div className="flex -mx-4 px-4 pb-2 gap-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex -mx-4 px-4 pb-2 gap-3 overflow-x-auto lg:overflow-visible lg:mx-0 lg:px-0 lg:grid lg:grid-cols-3 lg:gap-4" style={{ scrollbarWidth: 'none' }}>
             {(professors.length > 0 ? professors : Array(4).fill(null)).map((p, i) => {
               if (!p) return (
-                <div key={i} className="shrink-0 w-44 h-52 rounded-2xl animate-pulse" style={{ background: '#f2ead6' }} />
+                <div key={i} className="shrink-0 w-44 lg:w-auto h-52 rounded-2xl animate-pulse" style={{ background: '#f2ead6' }} />
               );
               const badge = getUniBadge(p.university);
               const status = p.acceptingStudents === 'yes' ? { label: '招生中', bg: '#d1fae5', color: '#065f46' }
@@ -273,7 +273,7 @@ export default function HomePage() {
                 <Link
                   key={p.id}
                   href={`/koala/professors/${p.id}`}
-                  className="shrink-0 w-44 rounded-2xl p-3.5 flex flex-col gap-2 no-underline"
+                  className="shrink-0 w-44 lg:w-auto rounded-2xl p-3.5 flex flex-col gap-2 no-underline"
                   style={{ background: '#fff', border: '1px solid #e8dcc8', boxShadow: '0 4px 16px rgba(196,160,80,0.10)' }}
                 >
                   {/* Uni badge + status */}
@@ -333,7 +333,7 @@ export default function HomePage() {
         {/* ── Research Areas ── */}
         <section>
           <h2 className="font-bold text-base mb-3" style={{ color: '#1a2332' }}>热门研究方向</h2>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 lg:grid-cols-8 gap-2">
             {RESEARCH_AREAS.map(area => (
               <Link
                 key={area.value}
@@ -358,7 +358,7 @@ export default function HomePage() {
               更多 <ChevronRight className="size-3" />
             </Link>
           </div>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2">
             {displayPosts.map(b => (
               <Link
                 key={b.id}

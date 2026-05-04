@@ -133,7 +133,7 @@ export default function ToolsPage() {
             无需注册
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5">
           {FREE_TOOLS_GRID.map(tool => (
             <Link
               key={tool.title}
@@ -164,7 +164,7 @@ export default function ToolsPage() {
       <div className="px-4 mt-4">
         <h2 className="text-sm font-semibold mb-1" style={{ color: '#1a2332' }}>订阅套餐</h2>
         <p className="text-[11px] mb-3" style={{ color: '#907858' }}>新用户首月 5 折 · 月度额度当月有效</p>
-        <div className="space-y-3">
+        <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-4">
           {(Object.values(SUBSCRIPTION_TIERS) as typeof SUBSCRIPTION_TIERS[keyof typeof SUBSCRIPTION_TIERS][]).map(tier => (
             <TierCard key={tier.id} tier={tier} isPopular={tier.popular} />
           ))}

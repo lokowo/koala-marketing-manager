@@ -192,13 +192,13 @@ function ProfessorsPageInner() {
   return (
     <div style={{ background: '#faf6ec', minHeight: '100vh', paddingBottom: 120 }}>
 
-      {/* Filter backdrop */}
+      {/* Filter backdrop — mobile only */}
       {filterOpen && (
-        <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setFilterOpen(false)} />
+        <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setFilterOpen(false)} />
       )}
 
-      {/* Header */}
-      <div className="flex px-4 pt-4 pb-2 justify-between items-center">
+      {/* Mobile Header — hidden on desktop */}
+      <div className="flex lg:hidden px-4 pt-4 pb-2 justify-between items-center">
         <Link href="/koala/home" className="size-10 rounded-full flex justify-center items-center" style={{ background: '#f0e9d6' }}>
           <ChevronLeft className="size-5" style={{ color: '#1a2332' }} />
         </Link>
@@ -223,8 +223,104 @@ function ProfessorsPageInner() {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="px-4 pt-2">
+      {/* Desktop title */}
+      <div className="hidden lg:flex items-baseline gap-3 pt-6 pb-2">
+        <h1 className="font-bold text-2xl" style={{ color: '#1a2332' }}>教授库</h1>
+        {total !== null && <span className="text-sm" style={{ color: '#907858' }}>共 {total.toLocaleString()} 位导师</span>}
+      </div>
+
+      {/* Desktop layout: sidebar + list */}
+      <div className="lg:flex lg:gap-6 lg:items-start">
+
+        {/* ── Left sidebar (desktop only) ── */}
+        <aside className="hidden lg:block lg:w-64 lg:flex-shrink-0 lg:sticky lg:top-20">
+          {/* Search */}
+          <div className="rounded-2xl flex px-4 py-3 items-center gap-2 mb-3" style={{ background: '#f0e9d6' }}>
+            <Search className="size-4 shrink-0" style={{ color: '#8a8470' }} />
+            <input
+              type="text" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="搜索教授、学校、研究方向…"
+              className="flex-1 bg-transparent text-sm outline-none" style={{ color: '#1a2332' }}
+            />
+            {search && <button onClick={() => setSearch('')} className="text-xs" style={{ color: '#907858' }}>清除</button>}
+          </div>
+
+          {/* Hot tags */}
+          {!search && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {HOT_TAGS.map(tag => (
+                <button key={tag} onClick={() => setSearch(tag)}
+                  className="text-xs px-3 py-1 rounded-full"
+                  style={{ background: 'rgba(196,160,80,0.1)', color: '#8a6c30', border: '1px solid rgba(196,160,80,0.25)' }}>
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Categories */}
+          <div className="rounded-2xl overflow-hidden mb-3" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+            <div className="px-3 py-2.5 text-xs font-semibold" style={{ color: '#584838', borderBottom: '1px solid #e8dcc8' }}>研究方向</div>
+            {CATEGORIES.map(cat => {
+              const count = cat.value === 'all' ? total : (categoryCounts[cat.value] ?? null);
+              const active = category === cat.value;
+              return (
+                <button key={cat.value} onClick={() => setCategory(cat.value)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs transition-colors"
+                  style={active
+                    ? { background: '#c4a050', color: '#fff', fontWeight: 700 }
+                    : { background: 'transparent', color: '#1a2332' }}>
+                  <span>{cat.label}</span>
+                  {count !== null && (
+                    <span className="text-[10px]" style={{ opacity: active ? 0.85 : 0.5 }}>
+                      {count >= 1000 ? `${Math.floor(count / 100) / 10}k` : count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Filters */}
+          <div className="rounded-2xl overflow-hidden mb-3" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+            <div className="px-3 py-2.5 text-xs font-semibold" style={{ color: '#584838', borderBottom: '1px solid #e8dcc8' }}>招生状态</div>
+            {[['', '全部'], ['yes', '🟢 招生中']].map(([v, label]) => (
+              <button key={v} onClick={() => setAccepting(v)}
+                className="w-full text-left px-3 py-2 text-xs transition-colors"
+                style={accepting === v ? { background: '#c4a050', color: '#fff', fontWeight: 600 } : { background: 'transparent', color: '#1a2332' }}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="rounded-2xl overflow-hidden mb-3" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+            <div className="px-3 py-2.5 text-xs font-semibold" style={{ color: '#584838', borderBottom: '1px solid #e8dcc8' }}>H指数</div>
+            {[[0, '全部'], [10, 'H ≥ 10'], [20, 'H ≥ 20'], [40, 'H ≥ 40'], [80, 'H ≥ 80']].map(([v, label]) => (
+              <button key={v} onClick={() => setHIndexMin(Number(v))}
+                className="w-full text-left px-3 py-2 text-xs transition-colors"
+                style={hIndexMin === Number(v) ? { background: '#c4a050', color: '#fff', fontWeight: 600 } : { background: 'transparent', color: '#1a2332' }}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+            <div className="px-3 py-2.5 text-xs font-semibold" style={{ color: '#584838', borderBottom: '1px solid #e8dcc8' }}>排序</div>
+            {[['opportunity_score','⭐ 推荐度'],['h_index','📈 H指数'],['paper_count','📄 论文数'],['citation_count','📊 引用数']].map(([v, label]) => (
+              <button key={v} onClick={() => setSortBy(v)}
+                className="w-full text-left px-3 py-2 text-xs transition-colors"
+                style={sortBy === v ? { background: '#c4a050', color: '#fff', fontWeight: 600 } : { background: 'transparent', color: '#1a2332' }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        {/* ── Right: main content ── */}
+        <div className="lg:flex-1 lg:min-w-0">
+
+      {/* Mobile Search */}
+      <div className="px-4 pt-2 lg:hidden">
         <div className="rounded-2xl flex px-4 py-3 items-center gap-2" style={{ background: '#f0e9d6' }}>
           <Search className="size-4 shrink-0" style={{ color: '#8a8470' }} />
           <input
@@ -237,9 +333,9 @@ function ProfessorsPageInner() {
         {!search && <p className="text-xs mt-2 px-1" style={{ color: '#a09078' }}>输入你的研究方向，找到最匹配的导师</p>}
       </div>
 
-      {/* Hot tags */}
+      {/* Mobile Hot tags */}
       {!search && (
-        <div className="flex flex-wrap px-4 pt-2 gap-2">
+        <div className="flex flex-wrap px-4 pt-2 gap-2 lg:hidden">
           {HOT_TAGS.map(tag => (
             <button key={tag} onClick={() => setSearch(tag)}
               className="text-xs px-3 py-1 rounded-full"
@@ -250,8 +346,8 @@ function ProfessorsPageInner() {
         </div>
       )}
 
-      {/* Category tabs */}
-      <div className="overflow-x-auto flex px-4 pt-4 gap-2 pb-1 no-scrollbar">
+      {/* Mobile Category tabs */}
+      <div className="overflow-x-auto flex px-4 pt-4 gap-2 pb-1 no-scrollbar lg:hidden">
         {CATEGORIES.map(cat => {
           const count = cat.value === 'all' ? total : (categoryCounts[cat.value] ?? null);
           const active = category === cat.value;
@@ -283,7 +379,7 @@ function ProfessorsPageInner() {
       )}
 
       {/* List */}
-      <div className="flex px-4 pt-4 pb-4 flex-col gap-4">
+      <div className="flex px-4 pt-4 pb-4 flex-col gap-4 lg:px-0 lg:grid lg:grid-cols-2">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="rounded-2xl animate-pulse" style={{ background: '#f2ead6', height: 160 }} />
@@ -335,10 +431,12 @@ function ProfessorsPageInner() {
           </>
         )}
       </div>
+      </div>{/* end right panel */}
+      </div>{/* end lg:flex */}
 
-      {/* Filter bottom sheet */}
+      {/* Filter bottom sheet — mobile only */}
       <div
-        className="fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 overflow-y-auto"
+        className="lg:hidden fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 overflow-y-auto"
         style={{
           transform: filterOpen ? 'translateY(0)' : 'translateY(100%)',
           background: '#faf6ec',
