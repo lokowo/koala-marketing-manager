@@ -10,14 +10,27 @@ export async function GET() {
     const todayISO = today.toISOString();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
 
-    const [usersRes, professorsRes, chunksRes, blogPublishedRes, blogDraftRes, chatTodayRes, chatMonthRes] = await Promise.all([
+    const [
+      usersRes,
+      professorsRes,
+      chunksRes,
+      blogPublishedRes,
+      blogDraftRes,
+      chatTodayRes,
+      chatMonthRes,
+      outreachTodayRes,
+      outreachMonthRes,
+    ] = await Promise.all([
       supabaseAdmin.auth.admin.listUsers(),
       db.from('professors').select('*', { count: 'exact', head: true }),
       db.from('knowledge_chunks').select('*', { count: 'exact', head: true }),
       db.from('blog_posts').select('*', { count: 'exact', head: true }).eq('status', 'published'),
       db.from('blog_posts').select('*', { count: 'exact', head: true }).eq('status', 'draft'),
-      db.from('chat_messages').select('*', { count: 'exact', head: true }).gte('created_at', todayISO),
-      db.from('chat_messages').select('*', { count: 'exact', head: true }).gte('created_at', monthStart),
+      // ai_conversations is where chat saves (no user_id required)
+      db.from('ai_conversations').select('*', { count: 'exact', head: true }).gte('created_at', todayISO),
+      db.from('ai_conversations').select('*', { count: 'exact', head: true }).gte('created_at', monthStart),
+      db.from('outreach_emails').select('*', { count: 'exact', head: true }).gte('created_at', todayISO),
+      db.from('outreach_emails').select('*', { count: 'exact', head: true }).gte('created_at', monthStart),
     ]);
 
     const allUsers = usersRes.data?.users || [];
@@ -29,6 +42,7 @@ export async function GET() {
       knowledgeChunks: chunksRes.count ?? 0,
       blog: { published: blogPublishedRes.count ?? 0, draft: blogDraftRes.count ?? 0 },
       chat: { today: chatTodayRes.count ?? 0, month: chatMonthRes.count ?? 0 },
+      outreach: { today: outreachTodayRes.count ?? 0, month: outreachMonthRes.count ?? 0 },
     });
   } catch (error) {
     console.error('[admin/stats]', error);
@@ -38,6 +52,7 @@ export async function GET() {
       knowledgeChunks: 0,
       blog: { published: 0, draft: 0 },
       chat: { today: 0, month: 0 },
+      outreach: { today: 0, month: 0 },
     });
   }
 }

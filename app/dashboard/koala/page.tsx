@@ -8,6 +8,7 @@ interface Stats {
   knowledgeChunks: number;
   blog: { published: number; draft: number };
   chat: { today: number; month: number };
+  outreach: { today: number; month: number };
 }
 
 export default function KoalaDashboard() {
@@ -20,8 +21,9 @@ export default function KoalaDashboard() {
   const cards = stats ? [
     { label: '注册用户', value: stats.users.total, sub: `今日 +${stats.users.today}`, icon: '👥', color: 'bg-blue-50 text-blue-700' },
     { label: '教授总数', value: stats.professors, sub: `知识库 ${stats.knowledgeChunks} chunks`, icon: '👨‍🏫', color: 'bg-purple-50 text-purple-700' },
+    { label: 'AI 对话（本月）', value: stats.chat.month, sub: `今日 ${stats.chat.today} 次`, icon: '💬', color: 'bg-amber-50 text-amber-700' },
+    { label: '套磁信生成（本月）', value: stats.outreach.month, sub: `今日 ${stats.outreach.today} 封`, icon: '✉️', color: 'bg-rose-50 text-rose-700' },
     { label: '博客文章', value: stats.blog.published + stats.blog.draft, sub: `已发布 ${stats.blog.published} / 草稿 ${stats.blog.draft}`, icon: '📝', color: 'bg-green-50 text-green-700' },
-    { label: 'AI 对话', value: stats.chat.month, sub: `今日 ${stats.chat.today}`, icon: '💬', color: 'bg-amber-50 text-amber-700' },
   ] : [];
 
   return (
@@ -32,7 +34,7 @@ export default function KoalaDashboard() {
       </div>
 
       {!stats ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {[1, 2, 3, 4].map(i => (
             <div key={i} className="bg-white rounded-xl shadow p-6 animate-pulse">
               <div className="h-4 bg-gray-200 rounded w-20 mb-3" />
@@ -42,7 +44,7 @@ export default function KoalaDashboard() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {cards.map(card => (
             <div key={card.label} className="bg-white rounded-xl shadow p-6">
               <div className="flex items-center justify-between mb-3">

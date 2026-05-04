@@ -741,6 +741,10 @@ function ChatPageInner() {
         setBatchProfessors(profs);
         return;
       }
+      // No prior professors in conversation — ask AI to search first (no credit consumed for search)
+      setInput('');
+      callApi(txt, messages);
+      return;
     }
 
     const isEmailRequest = mode === 'write' && /套磁信|email|生成|帮我写/i.test(txt) && messages.length > 1;
@@ -1017,7 +1021,14 @@ function ChatPageInner() {
           <div className="mt-2">
             <BatchEmailFlow
               professors={batchProfessors}
-              userId={undefined}
+              studentProfile={profile ? {
+                major: profile.major ?? undefined,
+                degreeLevel: profile.degree_level ?? undefined,
+                gpa: profile.gpa != null ? String(profile.gpa) : undefined,
+                researchInterests: profile.research_description ? [profile.research_description] : undefined,
+                university: profile.university ?? undefined,
+              } : undefined}
+              userId={user?.id}
               onClose={() => setBatchProfessors(null)}
             />
           </div>
