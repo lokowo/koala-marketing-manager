@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ExternalLink } from 'lucide-react';
 
 type UserRole = 'super_admin' | 'admin' | 'viewer';
 
@@ -44,7 +46,8 @@ export default function UsersPage() {
     load();
   }, [router]);
 
-  async function updateRole(userId: string, role: UserRole) {
+  async function updateRole(e: React.MouseEvent, userId: string, role: UserRole) {
+    e.stopPropagation(); // prevent row click
     setSaving(userId);
     const res = await fetch('/api/admin/users', {
       method: 'PATCH',
@@ -76,7 +79,9 @@ export default function UsersPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900">用户管理</h1>
-        <p className="text-slate-500 text-sm mt-1">管理后台用户权限（仅超级管理员可见）</p>
+        <p className="text-slate-500 text-sm mt-1">
+          共 {users.length} 位用户 · 点击行查看用户详情
+        </p>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -87,6 +92,7 @@ export default function UsersPage() {
               <th className="text-left px-4 py-3 text-slate-600 font-medium">注册时间</th>
               <th className="text-left px-4 py-3 text-slate-600 font-medium">最后登录</th>
               <th className="text-left px-4 py-3 text-slate-600 font-medium">权限</th>
+              <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody>
@@ -96,8 +102,12 @@ export default function UsersPage() {
               const locked = isSelf || isSuperAdmin;
 
               return (
-                <tr key={user.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-4 py-3 text-slate-800">
+                <tr
+                  key={user.id}
+                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer transition-colors"
+                  onClick={() => router.push(`/dashboard/koala/users/${user.id}`)}
+                >
+                  <td className="px-4 py-3 text-slate-800 font-medium">
                     {user.email}
                     {isSelf && <span className="ml-2 text-xs text-emerald-600">(你)</span>}
                   </td>
@@ -109,7 +119,7 @@ export default function UsersPage() {
                       ? new Date(user.last_sign_in_at).toLocaleDateString('zh-CN')
                       : '—'}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                     {locked ? (
                       <span className="inline-block px-2 py-1 rounded text-xs bg-slate-100 text-slate-500">
                         {user.role ? ROLE_LABELS[user.role] : '无权限'}
@@ -118,7 +128,8 @@ export default function UsersPage() {
                       <select
                         value={user.role ?? ''}
                         disabled={saving === user.id}
-                        onChange={e => updateRole(user.id, e.target.value as UserRole)}
+                        onChange={e => updateRole(e as unknown as React.MouseEvent, user.id, e.target.value as UserRole)}
+                        onClick={e => e.stopPropagation()}
                         className="border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 bg-white focus:outline-none focus:border-emerald-500 disabled:opacity-50"
                       >
                         <option value="">— 无权限 —</option>
@@ -127,6 +138,15 @@ export default function UsersPage() {
                         <option value="super_admin">超级管理员</option>
                       </select>
                     )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/dashboard/koala/users/${user.id}`}
+                      onClick={e => e.stopPropagation()}
+                      className="text-emerald-600 hover:text-emerald-700 flex items-center gap-1 text-xs no-underline"
+                    >
+                      详情 <ExternalLink className="size-3" />
+                    </Link>
                   </td>
                 </tr>
               );
