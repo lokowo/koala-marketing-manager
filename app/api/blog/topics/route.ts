@@ -43,7 +43,7 @@ async function fetchGoogleNewsRSS(query: string): Promise<{ title: string; sourc
   }
 }
 
-const FALLBACK_PROMPT = `You are a content strategist for Koala Study Advisors (koalaphd.com), an Australian PhD advisory platform helping Chinese students apply to Australian universities.
+const FALLBACK_PROMPT = `You are a content strategist for Koala PhD (koalaphd.com), an Australian PhD advisory platform helping Chinese students apply to Australian universities.
 
 Since no real-time news is available, generate {count} trending blog article topics based on your knowledge of current trends in Australian higher education, PhD applications, and international student life.
 
@@ -62,7 +62,7 @@ Return a JSON array: [{"title": "中文标题", "category": "category_key", "sty
 Categories: phd_guide, application, scholarship, visa, supervisor, research, student_life, news.
 
 DIVERSITY RULES:
-- At most 2 can directly mention PhD申请/套磁信/导师
+- At most 2 can directly mention PhD申请/申请信/导师
 - At least 3 should be broader: education policy, visa, scholarship news, research trends
 - All topics must connect naturally to PhD preparation`;
 
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
 
     if (allNews.length > 0) {
       const newsContext = allNews.map((n, i) => `${i + 1}. [${n.source}] ${n.title} (${n.date})`).join('\n');
-      prompt = `Based on the following real news, suggest ${count} blog article topics for Koala PhD (koalaphd.com).\n\nNEWS:\n${newsContext}\n\nReturn a JSON array of objects: [{"title": "中文标题", "category": "category_key", "style": "professional|casual|news", "source": "news source name", "sourceDate": "date string", "reason": "为什么这个主题好"}].\n\nCategories: phd_guide, application, scholarship, visa, supervisor, research, student_life, news.\n\nDIVERSITY RULES:\n- At most 2 can directly mention PhD申请/套磁信/导师\n- At least 3 should be broader: education policy, visa, scholarship news, research trends\n- All topics must connect naturally to PhD preparation`;
+      prompt = `Based on the following real news, suggest ${count} blog article topics for Koala PhD (koalaphd.com).\n\nNEWS:\n${newsContext}\n\nReturn a JSON array of objects: [{"title": "中文标题", "category": "category_key", "style": "professional|casual|news", "source": "news source name", "sourceDate": "date string", "reason": "为什么这个主题好"}].\n\nCategories: phd_guide, application, scholarship, visa, supervisor, research, student_life, news.\n\nDIVERSITY RULES:\n- At most 2 can directly mention PhD申请/申请信/导师\n- At least 3 should be broader: education policy, visa, scholarship news, research trends\n- All topics must connect naturally to PhD preparation`;
     } else {
       // Fallback: generate topics without news
       prompt = FALLBACK_PROMPT.replace('{count}', String(count));
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }],
-      system: 'You are a content strategist for Koala Study Advisors (koalaphd.com), an Australian PhD advisory platform. Return valid JSON array only, no markdown code blocks or extra text.',
+      system: 'You are a content strategist for Koala PhD (koalaphd.com), an Australian PhD advisory platform. Return valid JSON array only, no markdown code blocks or extra text.',
     });
 
     const text = response.content[0].type === 'text' ? response.content[0].text : '[]';

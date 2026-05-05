@@ -10,7 +10,7 @@ import { SUBSCRIPTION_TIERS, CREDIT_PRICES, BRAND, FREE_LIMITS } from '../../lib
 const FREE_FEATURES: { text: string; included: boolean }[] = [
   { text: `每天 ${FREE_LIMITS.dailyAiTurns} 轮 AI 对话`, included: true },
   { text: `Top ${FREE_LIMITS.professorMatchCount} 教授匹配（免费查看）`, included: true },
-  { text: '1 封免费套磁信', included: true },
+  { text: '1 封免费申请信', included: true },
   { text: '博客 / NIV 签证 / GPA 工具全免费', included: true },
   { text: '上传简历 & 成绩单', included: false },
   { text: '教授完整数据（经费/论文/联系方式）', included: false },
@@ -66,7 +66,7 @@ function TierCard({
         </div>
 
         <div className="text-[11px] mb-3" style={{ color: '#907858' }}>
-          含 {tier.monthlyCredits} 封套磁信额度 · 新用户首月 5 折
+          含 {tier.monthlyCredits} 封申请信额度 · 新用户首月 5 折
         </div>
 
         {/* Included */}
@@ -109,7 +109,7 @@ const FREE_TOOLS_GRID = [
   { icon: '🔬', title: 'ARC 项目浏览',   desc: '查看最新澳洲研究经费项目',   href: '/koala/chat?mode=research' },
   { icon: '🎯', title: 'PhD 路径自评',   desc: '评估申请竞争力与准备程度',   href: '/koala/chat?mode=path' },
   { icon: '👨‍🏫', title: '教授 Top 10 匹配', desc: '免费获取最匹配的 10 位导师', href: '/koala/chat?mode=research' },
-  { icon: '✉️', title: '免费套磁信',     desc: '免费生成第 1 封定制套磁信',  href: '/koala/chat?mode=write' },
+  { icon: '✉️', title: '免费申请信',     desc: '免费生成第 1 封定制申请信',  href: '/koala/chat?mode=write' },
 ];
 
 export default function ToolsPage() {
@@ -156,7 +156,7 @@ export default function ToolsPage() {
           <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0" style={{ color: '#5a8060' }} />无限 AI 对话轮次</div>
           <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0" style={{ color: '#5a8060' }} />上传简历 & 成绩单自动解析</div>
           <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0" style={{ color: '#5a8060' }} />查看完整教授联系方式 & 论文</div>
-          <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0" style={{ color: '#5a8060' }} />每月套磁信额度 & PDF 报告下载</div>
+          <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0" style={{ color: '#5a8060' }} />每月申请信额度 & PDF 报告下载</div>
         </div>
       </div>
 
@@ -229,7 +229,7 @@ export default function ToolsPage() {
         >
           <div className="text-xs font-semibold mb-2" style={{ color: '#1a2332' }}>积分使用说明</div>
           <div className="space-y-1.5 text-[11px]" style={{ color: '#584838' }}>
-            <div>• 生成 1 封套磁信消耗 1 积分，确认弹窗后扣除</div>
+            <div>• 生成 1 封申请信消耗 1 积分，确认弹窗后扣除</div>
             <div>• 订阅月度额度优先使用，用完后从积分余额扣除</div>
             <div>• 月度额度当月有效，不累积到下月</div>
             <div>• 单独购买的积分永久有效，不过期</div>

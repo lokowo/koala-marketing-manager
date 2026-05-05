@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     // 4. Build prompt
     const studentBg = studentProfile
       ? `专业：${studentProfile.major ?? '未知'}，学历：${studentProfile.degreeLevel ?? '未知'}，GPA: ${studentProfile.gpa ?? '未填写'}，研究兴趣：${studentProfile.researchInterests?.join('、') ?? '未知'}`
-      : '学生背景未提供，请生成通用版本的套磁信框架。';
+      : '学生背景未提供，请生成通用版本的申请信框架。';
 
     const prompt = buildEmailPrompt({
       professorName: prof.name,

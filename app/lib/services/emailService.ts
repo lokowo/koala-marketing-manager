@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@koalaphd.com';
-const BRAND_NAME = 'Koala Study Advisors';
+const BRAND_NAME = 'Koala PhD';
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://koalaphd.com';
 
 function brandTemplate(title: string, body: string): string {
@@ -32,7 +32,7 @@ function brandTemplate(title: string, body: string): string {
           <div style="font-size:11px;color:#907858;line-height:1.6;">
             ${BRAND_NAME} · 澳洲产学研科研机构<br/>
             Suite 22/26A Lime St, Sydney NSW 2000<br/>
-            <a href="mailto:info@koalastudyadvisors.net" style="color:#c4a050;text-decoration:none;">info@koalastudyadvisors.net</a>
+            <a href="mailto:info@koalaphd.com" style="color:#c4a050;text-decoration:none;">info@koalaphd.com</a>
           </div>
         </td></tr>
       </table>
@@ -84,7 +84,7 @@ export async function sendVerificationReminder(params: {
 }) {
   const body = `
     <p>你好！你的 ${BRAND_NAME} 账户尚未完成邮箱验证。</p>
-    <p>为了确保你能正常使用所有功能（包括 AI 导师匹配和套磁信生成），请尽快完成验证：</p>
+    <p>为了确保你能正常使用所有功能（包括 AI 导师匹配和申请信生成），请尽快完成验证：</p>
     ${ctaButton('立即验证邮箱', params.verifyUrl)}
     <p style="font-size:12px;color:#907858;">如果你已经验证，请忽略此邮件。</p>
   `;
@@ -126,7 +126,7 @@ export async function sendWelcomeEmail(params: { to: string; name?: string }) {
     <p>你现在可以使用 ${BRAND_NAME} 的全部功能了：</p>
     <ul style="padding-left:20px;margin:16px 0;">
       <li style="margin-bottom:8px;"><strong>AI 导师匹配</strong> — 从 3,000+ 位澳洲教授中找到最适合你的导师</li>
-      <li style="margin-bottom:8px;"><strong>定制套磁信</strong> — AI 针对每位教授生成个性化邮件</li>
+      <li style="margin-bottom:8px;"><strong>定制申请信</strong> — AI 针对每位教授生成个性化邮件</li>
       <li style="margin-bottom:8px;"><strong>科研深潜</strong> — 搜索最新论文，理解前沿方向</li>
       <li style="margin-bottom:8px;"><strong>路径评估</strong> — 评估你的 PhD 申请竞争力</li>
     </ul>

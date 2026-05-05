@@ -16,7 +16,7 @@ const ACHIEVEMENT_ICONS: Record<string, string> = {
 const ACHIEVEMENT_LABELS: Record<string, string> = {
   first_cv: '第一份简历',
   first_match: '首次教授匹配',
-  first_email: '发出第一封套磁信',
+  first_email: '发出第一封申请信',
   first_reply: '收到第一封回信',
   research_angle: '科研方向确定',
   grant_hunter: '发现经费信号',

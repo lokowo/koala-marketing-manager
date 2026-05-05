@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
           ? `研究兴趣：${studentProfile.researchInterests.join('、')}`
           : '',
       ].filter(Boolean).join('，')
-    : '学生背景未提供，生成通用版本套磁信框架。';
+    : '学生背景未提供，生成通用版本申请信框架。';
 
   const stream = new ReadableStream({
     async start(controller) {

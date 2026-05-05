@@ -28,7 +28,7 @@ export default function FeedbackPage() {
   const topQuestions = [
     { question: 'TFS 奖学金申请要求', count: 0, mode: 'path' },
     { question: '澳洲PhD申请时间线', count: 0, mode: 'path' },
-    { question: '套磁信如何写', count: 0, mode: 'write' },
+    { question: '申请信如何写', count: 0, mode: 'write' },
   ];
 
   return (

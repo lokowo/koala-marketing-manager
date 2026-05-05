@@ -116,14 +116,14 @@ const MODE_LABELS: Record<string, string> = {
   path:     '🧭 申请规划',
   research: '🔬 科研助手',
   chat:     '💬 自由聊天',
-  write:    '✉️ 写套磁信',
+  write:    '✉️ 写申请信',
 };
 
 const TABS = [
   { key: 'overview',  label: '概况',   icon: User },
   { key: 'profile',   label: '背景资料', icon: FileText },
   { key: 'saved',     label: '收藏',   icon: BookOpen },
-  { key: 'outreach',  label: '套磁信', icon: Mail },
+  { key: 'outreach',  label: '申请信', icon: Mail },
   { key: 'chat',      label: '对话',   icon: MessageSquare },
   { key: 'admin',     label: '管理',   icon: Settings },
 ] as const;
@@ -296,7 +296,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         {[
           { label: '积分余额', value: profile?.credits_remaining ?? 0 },
           { label: '收藏教授', value: savedProfessors.length },
-          { label: '套磁信', value: outreachEmails.length },
+          { label: '申请信', value: outreachEmails.length },
           { label: '对话消息', value: totalChats },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-3 text-center">
@@ -510,12 +510,12 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         </div>
       )}
 
-      {/* ── Tab: 套磁信 ── */}
+      {/* ── Tab: 申请信 ── */}
       {tab === 'outreach' && (
         <div className="space-y-3">
           {outreachEmails.length === 0 ? (
             <div className="bg-white rounded-xl border border-slate-200 p-4">
-              <p className="text-sm text-slate-300">暂无套磁信记录</p>
+              <p className="text-sm text-slate-300">暂无申请信记录</p>
             </div>
           ) : (
             outreachEmails.map(email => <OutreachCard key={email.id} email={email} />)

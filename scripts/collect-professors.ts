@@ -132,7 +132,7 @@ async function fetchOAAuthors(ror: string): Promise<OAAuthor[]> {
     url.searchParams.set('sort', 'cited_by_count:desc');
     url.searchParams.set('per-page', String(AUTHORS_PER_PAGE));
     url.searchParams.set('page', String(page));
-    url.searchParams.set('mailto', 'info@koalastudyadvisors.net');
+    url.searchParams.set('mailto', 'info@koalaphd.com');
 
     try {
       const res = await fetch(url.toString(), { signal: AbortSignal.timeout(20000) });

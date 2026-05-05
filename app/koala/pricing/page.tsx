@@ -6,7 +6,7 @@ import { Check, X } from 'lucide-react';
 const FREE_FEATURES = [
   { text: '每天 10 轮 AI 对话', ok: true },
   { text: 'Top 10 教授匹配（免费查看）', ok: true },
-  { text: '1 封免费套磁信', ok: true },
+  { text: '1 封免费申请信', ok: true },
   { text: '博客 / NIV签证评估 / GPA换算', ok: true },
   { text: '上传简历 & 成绩单分析', ok: false },
   { text: '教授完整数据（经费/论文/联系方式）', ok: false },
@@ -29,7 +29,7 @@ const TIERS = [
     color: '#7d6340',
     highlight: false,
     features: [
-      '每月 10 积分（套磁信额度）',
+      '每月 10 积分（申请信额度）',
       '无限 AI 对话',
       '上传简历 & 成绩单',
       '教授完整联系方式',
@@ -44,7 +44,7 @@ const TIERS = [
     color: '#c4a050',
     highlight: true,
     features: [
-      '每月 30 积分（套磁信额度）',
+      '每月 30 积分（申请信额度）',
       '无限 AI 对话',
       '上传简历 & 成绩单',
       '教授完整联系方式',
@@ -113,7 +113,7 @@ export default function PricingPage() {
         {/* Credit packages */}
         <div>
           <h2 className="text-sm font-bold mb-1" style={{ color: '#1a2332' }}>积分包</h2>
-          <p className="text-xs mb-3" style={{ color: '#907858' }}>每封套磁信消耗 1 积分，积分永久有效（不过期）</p>
+          <p className="text-xs mb-3" style={{ color: '#907858' }}>每封申请信消耗 1 积分，积分永久有效（不过期）</p>
           <div className="grid grid-cols-2 gap-2.5">
             {CREDIT_PACKS.map(pack => (
               <div
@@ -215,7 +215,7 @@ export default function PricingPage() {
         </div>
 
         <p className="text-center text-[10px]" style={{ color: '#b09878' }}>
-          价格以澳元 (AUD) 计算 · 支持 Stripe 支付 · 如有问题联系 info@koalastudyadvisors.net
+          价格以澳元 (AUD) 计算 · 支持 Stripe 支付 · 如有问题联系 info@koalaphd.com
         </p>
       </div>
     </div>

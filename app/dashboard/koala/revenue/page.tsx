@@ -7,8 +7,8 @@ export default function RevenuePage() {
   }, []);
 
   const metrics = [
-    { label: '套磁信销售额', value: 'AUD 0', change: '+0%', icon: '✉️', color: 'bg-green-50' },
-    { label: '套磁信购买数', value: '0', change: '', icon: '📧', color: 'bg-blue-50' },
+    { label: '申请信销售额', value: 'AUD 0', change: '+0%', icon: '✉️', color: 'bg-green-50' },
+    { label: '申请信购买数', value: '0', change: '', icon: '📧', color: 'bg-blue-50' },
     { label: '订阅用户数', value: '0', change: '', icon: '👥', color: 'bg-purple-50' },
     { label: '月经常性收入', value: 'AUD 0', change: '', icon: '💰', color: 'bg-yellow-50' },
   ];
@@ -24,7 +24,7 @@ export default function RevenuePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">收入统计</h1>
-        <p className="text-sm text-gray-500 mt-1">套磁信销售、订阅收入与转化率分析</p>
+        <p className="text-sm text-gray-500 mt-1">申请信销售、订阅收入与转化率分析</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -62,7 +62,7 @@ export default function RevenuePage() {
               { stage: '开始 AI 对话', value: 0, pct: '0%' },
               { stage: '完成路径评估', value: 0, pct: '0%' },
               { stage: '查看教授匹配', value: 0, pct: '0%' },
-              { stage: '购买套磁信', value: 0, pct: '0%' },
+              { stage: '购买申请信', value: 0, pct: '0%' },
             ].map(stage => (
               <div key={stage.stage}>
                 <div className="flex justify-between text-sm mb-0.5">
@@ -87,7 +87,7 @@ export default function RevenuePage() {
         <div className="text-center py-8 text-gray-400">
           <div className="text-4xl mb-2">📊</div>
           <p>暂无订单数据</p>
-          <p className="text-sm mt-1">用户购买套磁信或订阅后将显示在此</p>
+          <p className="text-sm mt-1">用户购买申请信或订阅后将显示在此</p>
         </div>
       </div>
     </div>

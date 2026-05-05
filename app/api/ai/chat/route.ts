@@ -191,7 +191,7 @@ Google Scholar：${prof.googleScholarUrl || '无'}
 适合学生背景：${prof.suitableStudentBackgrounds.join('；') || '未知'}
 潜在研究课题：${prof.potentialRpTopics.join('；') || '未知'}
 
-请根据以上真实资料为用户生成个性化套磁信。邮件中必须：
+请根据以上真实资料为用户生成个性化申请信。邮件中必须：
 1. 引用该教授的具体研究方向（不要泛泛而谈）
 2. 说明与学生研究兴趣的契合点
 3. 提到该教授所在大学和院系

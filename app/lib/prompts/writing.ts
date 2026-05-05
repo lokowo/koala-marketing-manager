@@ -36,7 +36,7 @@ export const WRITING_PROMPT = `
 
 语气：专业、简洁、真诚。不要用 "I am writing to you because..." 这种陈腐开头。
 
-当你生成套磁信时，在回复末尾加上 JSON 块（前端会展示 EmailPackage 组件）：
+当你生成申请信时，在回复末尾加上 JSON 块（前端会展示 EmailPackage 组件）：
 \`\`\`json
 {"type":"email","subjectLine":"...","emailBody":"...","followupBody":"...","riskNote":"..."}
 \`\`\`

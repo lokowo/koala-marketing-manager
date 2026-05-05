@@ -69,8 +69,8 @@ function fmtCitations(n?: number): string {
 }
 
 function getStatusBadge(s?: string): { label: string; bg: string; color: string } | null {
-  if (s === 'yes')    return { label: '招生中', bg: '#d1fae5', color: '#065f46' };
-  if (s === 'no')     return { label: '暂不招生', bg: '#fee2e2', color: '#991b1b' };
+  if (s === 'yes')    return { label: '招生中', bg: 'rgba(34,197,94,0.15)', color: '#22c55e' };
+  if (s === 'no')     return { label: '暂不招生', bg: 'rgba(239,68,68,0.15)', color: '#ef4444' };
   return null;
 }
 
@@ -102,8 +102,8 @@ async function apiFetch(f: Filters) {
 export default function ProfessorsPage() {
   return (
     <Suspense fallback={
-      <div style={{ background: '#faf6ec', minHeight: '100vh' }} className="flex items-center justify-center">
-        <p className="text-sm" style={{ color: '#907858' }}>加载中…</p>
+      <div style={{ background: '#080c10', minHeight: '100vh' }} className="flex items-center justify-center">
+        <p className="text-sm" style={{ color: '#6a7a7e' }}>加载中…</p>
       </div>
     }>
       <ProfessorsPageInner />
@@ -190,7 +190,7 @@ function ProfessorsPageInner() {
   }, [loadMore]);
 
   return (
-    <div style={{ background: '#faf6ec', minHeight: '100vh', paddingBottom: 120 }}>
+    <div style={{ background: '#080c10', minHeight: '100vh', paddingBottom: 120 }}>
 
       {/* Filter backdrop — mobile only */}
       {filterOpen && (
@@ -199,21 +199,21 @@ function ProfessorsPageInner() {
 
       {/* Mobile Header — hidden on desktop */}
       <div className="flex lg:hidden px-4 pt-4 pb-2 justify-between items-center">
-        <Link href="/koala/home" className="size-10 rounded-full flex justify-center items-center" style={{ background: '#f0e9d6' }}>
-          <ChevronLeft className="size-5" style={{ color: '#1a2332' }} />
+        <Link href="/koala/discover" className="size-10 rounded-full flex justify-center items-center" style={{ background: 'rgba(201,169,110,0.1)' }}>
+          <ChevronLeft className="size-5" style={{ color: '#c9a96e' }} />
         </Link>
         <div className="flex flex-col items-center">
-          <h1 className="font-bold text-lg leading-7" style={{ color: '#1a2332' }}>教授库</h1>
+          <h1 className="font-bold text-lg leading-7" style={{ color: '#e8e4dc' }}>教授库</h1>
           {total !== null && (
-            <span className="text-xs" style={{ color: '#907858' }}>共 {total.toLocaleString()} 位导师</span>
+            <span className="text-xs" style={{ color: '#6a7a7e' }}>共 {total.toLocaleString()} 位导师</span>
           )}
         </div>
         <button
           onClick={() => setFilterOpen(true)}
           className="size-10 rounded-full flex justify-center items-center relative"
-          style={{ background: activeFilters ? '#c4a050' : '#f0e9d6' }}
+          style={{ background: activeFilters ? '#c9a96e' : 'rgba(201,169,110,0.1)' }}
         >
-          <SlidersHorizontal className="size-5" style={{ color: activeFilters ? '#fff' : '#c4a050' }} />
+          <SlidersHorizontal className="size-5" style={{ color: activeFilters ? '#080c10' : '#c9a96e' }} />
           {activeFilters > 0 && (
             <span className="absolute -top-0.5 -right-0.5 size-4 rounded-full text-[10px] font-bold flex items-center justify-center"
               style={{ background: '#cc4444', color: '#fff' }}>
@@ -225,8 +225,8 @@ function ProfessorsPageInner() {
 
       {/* Desktop title */}
       <div className="hidden lg:flex items-baseline gap-3 pt-6 pb-2">
-        <h1 className="font-bold text-2xl" style={{ color: '#1a2332' }}>教授库</h1>
-        {total !== null && <span className="text-sm" style={{ color: '#907858' }}>共 {total.toLocaleString()} 位导师</span>}
+        <h1 className="font-bold text-2xl" style={{ color: '#e8e4dc' }}>教授库</h1>
+        {total !== null && <span className="text-sm" style={{ color: '#6a7a7e' }}>共 {total.toLocaleString()} 位导师</span>}
       </div>
 
       {/* Desktop layout: sidebar + list */}
@@ -235,14 +235,14 @@ function ProfessorsPageInner() {
         {/* ── Left sidebar (desktop only) ── */}
         <aside className="hidden lg:block lg:w-64 lg:flex-shrink-0 lg:sticky lg:top-20">
           {/* Search */}
-          <div className="rounded-2xl flex px-4 py-3 items-center gap-2 mb-3" style={{ background: '#f0e9d6' }}>
-            <Search className="size-4 shrink-0" style={{ color: '#8a8470' }} />
+          <div className="rounded-2xl flex px-4 py-3 items-center gap-2 mb-3" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.12)' }}>
+            <Search className="size-4 shrink-0" style={{ color: '#6a7a7e' }} />
             <input
               type="text" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="搜索教授、学校、研究方向…"
-              className="flex-1 bg-transparent text-sm outline-none" style={{ color: '#1a2332' }}
+              className="flex-1 bg-transparent text-sm outline-none" style={{ color: '#e8e4dc' }}
             />
-            {search && <button onClick={() => setSearch('')} className="text-xs" style={{ color: '#907858' }}>清除</button>}
+            {search && <button onClick={() => setSearch('')} className="text-xs" style={{ color: '#c9a96e' }}>清除</button>}
           </div>
 
           {/* Hot tags */}
@@ -251,7 +251,7 @@ function ProfessorsPageInner() {
               {HOT_TAGS.map(tag => (
                 <button key={tag} onClick={() => setSearch(tag)}
                   className="text-xs px-3 py-1 rounded-full"
-                  style={{ background: 'rgba(196,160,80,0.1)', color: '#8a6c30', border: '1px solid rgba(196,160,80,0.25)' }}>
+                  style={{ background: 'rgba(201,169,110,0.08)', color: '#c9a96e', border: '1px solid rgba(201,169,110,0.2)' }}>
                   {tag}
                 </button>
               ))}
@@ -259,8 +259,8 @@ function ProfessorsPageInner() {
           )}
 
           {/* Categories */}
-          <div className="rounded-2xl overflow-hidden mb-3" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-            <div className="px-3 py-2.5 text-xs font-semibold" style={{ color: '#584838', borderBottom: '1px solid #e8dcc8' }}>研究方向</div>
+          <div className="rounded-2xl overflow-hidden mb-3" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.12)' }}>
+            <div className="px-3 py-2.5 text-xs font-semibold" style={{ color: '#a8b8ac', borderBottom: '1px solid rgba(201,169,110,0.12)' }}>研究方向</div>
             {CATEGORIES.map(cat => {
               const count = cat.value === 'all' ? total : (categoryCounts[cat.value] ?? null);
               const active = category === cat.value;
@@ -268,8 +268,8 @@ function ProfessorsPageInner() {
                 <button key={cat.value} onClick={() => setCategory(cat.value)}
                   className="w-full flex items-center justify-between px-3 py-2 text-xs transition-colors"
                   style={active
-                    ? { background: '#c4a050', color: '#fff', fontWeight: 700 }
-                    : { background: 'transparent', color: '#1a2332' }}>
+                    ? { background: '#c9a96e', color: '#080c10', fontWeight: 700 }
+                    : { background: 'transparent', color: '#e8e4dc' }}>
                   <span>{cat.label}</span>
                   {count !== null && (
                     <span className="text-[10px]" style={{ opacity: active ? 0.85 : 0.5 }}>
@@ -282,34 +282,34 @@ function ProfessorsPageInner() {
           </div>
 
           {/* Filters */}
-          <div className="rounded-2xl overflow-hidden mb-3" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-            <div className="px-3 py-2.5 text-xs font-semibold" style={{ color: '#584838', borderBottom: '1px solid #e8dcc8' }}>招生状态</div>
+          <div className="rounded-2xl overflow-hidden mb-3" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.12)' }}>
+            <div className="px-3 py-2.5 text-xs font-semibold" style={{ color: '#a8b8ac', borderBottom: '1px solid rgba(201,169,110,0.12)' }}>招生状态</div>
             {[['', '全部'], ['yes', '🟢 招生中']].map(([v, label]) => (
               <button key={v} onClick={() => setAccepting(v)}
                 className="w-full text-left px-3 py-2 text-xs transition-colors"
-                style={accepting === v ? { background: '#c4a050', color: '#fff', fontWeight: 600 } : { background: 'transparent', color: '#1a2332' }}>
+                style={accepting === v ? { background: '#c9a96e', color: '#080c10', fontWeight: 600 } : { background: 'transparent', color: '#e8e4dc' }}>
                 {label}
               </button>
             ))}
           </div>
 
-          <div className="rounded-2xl overflow-hidden mb-3" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-            <div className="px-3 py-2.5 text-xs font-semibold" style={{ color: '#584838', borderBottom: '1px solid #e8dcc8' }}>H指数</div>
+          <div className="rounded-2xl overflow-hidden mb-3" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.12)' }}>
+            <div className="px-3 py-2.5 text-xs font-semibold" style={{ color: '#a8b8ac', borderBottom: '1px solid rgba(201,169,110,0.12)' }}>H指数</div>
             {[[0, '全部'], [10, 'H ≥ 10'], [20, 'H ≥ 20'], [40, 'H ≥ 40'], [80, 'H ≥ 80']].map(([v, label]) => (
               <button key={v} onClick={() => setHIndexMin(Number(v))}
                 className="w-full text-left px-3 py-2 text-xs transition-colors"
-                style={hIndexMin === Number(v) ? { background: '#c4a050', color: '#fff', fontWeight: 600 } : { background: 'transparent', color: '#1a2332' }}>
+                style={hIndexMin === Number(v) ? { background: '#c9a96e', color: '#080c10', fontWeight: 600 } : { background: 'transparent', color: '#e8e4dc' }}>
                 {label}
               </button>
             ))}
           </div>
 
-          <div className="rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-            <div className="px-3 py-2.5 text-xs font-semibold" style={{ color: '#584838', borderBottom: '1px solid #e8dcc8' }}>排序</div>
+          <div className="rounded-2xl overflow-hidden" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.12)' }}>
+            <div className="px-3 py-2.5 text-xs font-semibold" style={{ color: '#a8b8ac', borderBottom: '1px solid rgba(201,169,110,0.12)' }}>排序</div>
             {[['opportunity_score','⭐ 推荐度'],['h_index','📈 H指数'],['paper_count','📄 论文数'],['citation_count','📊 引用数']].map(([v, label]) => (
               <button key={v} onClick={() => setSortBy(v)}
                 className="w-full text-left px-3 py-2 text-xs transition-colors"
-                style={sortBy === v ? { background: '#c4a050', color: '#fff', fontWeight: 600 } : { background: 'transparent', color: '#1a2332' }}>
+                style={sortBy === v ? { background: '#c9a96e', color: '#080c10', fontWeight: 600 } : { background: 'transparent', color: '#e8e4dc' }}>
                 {label}
               </button>
             ))}
@@ -321,16 +321,16 @@ function ProfessorsPageInner() {
 
       {/* Mobile Search */}
       <div className="px-4 pt-2 lg:hidden">
-        <div className="rounded-2xl flex px-4 py-3 items-center gap-2" style={{ background: '#f0e9d6' }}>
-          <Search className="size-4 shrink-0" style={{ color: '#8a8470' }} />
+        <div className="rounded-2xl flex px-4 py-3 items-center gap-2" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.12)' }}>
+          <Search className="size-4 shrink-0" style={{ color: '#6a7a7e' }} />
           <input
             type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder="搜索教授、学校、研究方向…"
-            className="flex-1 bg-transparent text-sm outline-none" style={{ color: '#1a2332' }}
+            className="flex-1 bg-transparent text-sm outline-none" style={{ color: '#e8e4dc' }}
           />
-          {search && <button onClick={() => setSearch('')} className="text-xs" style={{ color: '#907858' }}>清除</button>}
+          {search && <button onClick={() => setSearch('')} className="text-xs" style={{ color: '#c9a96e' }}>清除</button>}
         </div>
-        {!search && <p className="text-xs mt-2 px-1" style={{ color: '#a09078' }}>输入你的研究方向，找到最匹配的导师</p>}
+        {!search && <p className="text-xs mt-2 px-1" style={{ color: '#6a7a7e' }}>输入你的研究方向，找到最匹配的导师</p>}
       </div>
 
       {/* Mobile Hot tags */}
@@ -339,7 +339,7 @@ function ProfessorsPageInner() {
           {HOT_TAGS.map(tag => (
             <button key={tag} onClick={() => setSearch(tag)}
               className="text-xs px-3 py-1 rounded-full"
-              style={{ background: 'rgba(196,160,80,0.1)', color: '#8a6c30', border: '1px solid rgba(196,160,80,0.25)' }}>
+              style={{ background: 'rgba(201,169,110,0.08)', color: '#c9a96e', border: '1px solid rgba(201,169,110,0.2)' }}>
               {tag}
             </button>
           ))}
@@ -355,8 +355,8 @@ function ProfessorsPageInner() {
             <button key={cat.value} onClick={() => setCategory(cat.value)}
               className="whitespace-nowrap text-xs px-3 py-2 rounded-full transition-colors flex items-center gap-1"
               style={active
-                ? { background: '#c4a050', color: '#fff', fontWeight: 700 }
-                : { background: '#fff', color: '#1a2332', border: '1px solid #e5dcc3' }}>
+                ? { background: '#c9a96e', color: '#080c10', fontWeight: 700 }
+                : { background: '#111c28', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.15)' }}>
               {cat.label}
               {count !== null && (
                 <span className="text-[10px]" style={{ opacity: active ? 0.85 : 0.5 }}>
@@ -371,10 +371,10 @@ function ProfessorsPageInner() {
       {/* Sort hint */}
       {sortBy !== 'opportunity_score' && (
         <div className="px-4 pt-2 flex items-center gap-1">
-          <span className="text-xs" style={{ color: '#907858' }}>排序：
+          <span className="text-xs" style={{ color: '#6a7a7e' }}>排序：
             {{ h_index: 'H指数', paper_count: '论文数', citation_count: '引用数', updated_at: '最近更新' }[sortBy] ?? sortBy}
           </span>
-          <button onClick={() => setSortBy('opportunity_score')} className="text-xs underline" style={{ color: '#c4a050' }}>重置</button>
+          <button onClick={() => setSortBy('opportunity_score')} className="text-xs underline" style={{ color: '#c9a96e' }}>重置</button>
         </div>
       )}
 
@@ -382,22 +382,22 @@ function ProfessorsPageInner() {
       <div className="flex px-4 pt-4 pb-2 flex-col gap-4 lg:px-0 lg:grid lg:grid-cols-2">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-2xl animate-pulse" style={{ background: '#f2ead6', height: 160 }} />
+            <div key={i} className="rounded-2xl animate-pulse" style={{ background: '#111c28', height: 160 }} />
           ))
         ) : professors.length === 0 ? (
           <div className="flex flex-col items-center py-16 gap-3 lg:col-span-2">
             <span className="text-4xl">🔍</span>
-            <p className="font-medium text-sm" style={{ color: '#1a2332' }}>
+            <p className="font-medium text-sm" style={{ color: '#e8e4dc' }}>
               {search ? `未找到与"${search}"相关的导师` : '暂无匹配数据'}
             </p>
-            <p className="text-xs text-center" style={{ color: '#907858' }}>
+            <p className="text-xs text-center" style={{ color: '#6a7a7e' }}>
               {search ? '试试换个关键词，或点击热门标签' : '尝试调整筛选条件'}
             </p>
             <div className="flex gap-2 mt-1">
-              {search && <button onClick={() => setSearch('')} className="text-xs px-4 py-2 rounded-full" style={{ background: '#c4a050', color: '#fff' }}>清除搜索</button>}
-              {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); }} className="text-xs px-4 py-2 rounded-full" style={{ background: '#f0e9d6', color: '#1a2332' }}>清除筛选</button>}
+              {search && <button onClick={() => setSearch('')} className="text-xs px-4 py-2 rounded-full" style={{ background: '#c9a96e', color: '#080c10' }}>清除搜索</button>}
+              {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); }} className="text-xs px-4 py-2 rounded-full" style={{ background: '#111c28', color: '#e8e4dc' }}>清除筛选</button>}
             </div>
-            <Link href="/koala/chat" className="mt-2 text-xs px-5 py-2 rounded-full no-underline" style={{ background: '#1a2332', color: '#fff' }}>
+            <Link href="/koala/chat" className="mt-2 text-xs px-5 py-2 rounded-full no-underline" style={{ background: '#c9a96e', color: '#080c10' }}>
               让 Koala AI 帮我匹配 →
             </Link>
           </div>
@@ -417,17 +417,17 @@ function ProfessorsPageInner() {
 
       {!loading && !hasMore && professors.length > 0 && (
         <div className="px-4 pb-4 lg:px-0 space-y-3">
-          <p className="text-center text-xs py-2" style={{ color: '#b0a090' }}>
+          <p className="text-center text-xs py-2" style={{ color: '#6a7a7e' }}>
             已加载全部 {professors.length.toLocaleString()} 位导师
           </p>
           <Link href="/koala/chat"
             className="mx-auto block text-center text-sm font-medium py-3 px-6 rounded-2xl no-underline"
-            style={{ background: '#1a2332', color: '#fff', maxWidth: 280 }}>
+            style={{ background: '#c9a96e', color: '#080c10', maxWidth: 280 }}>
             没找到理想导师？让 Koala AI 精准匹配 →
           </Link>
-          <div className="mt-4 px-2 py-3 rounded-xl text-[11px] leading-relaxed" style={{ background: '#f0e9d6', color: '#907858' }}>
+          <div className="mt-4 px-2 py-3 rounded-xl text-[11px] leading-relaxed" style={{ background: '#111c28', color: '#6a7a7e', border: '1px solid rgba(201,169,110,0.12)' }}>
             以上数据来自大学官网、Google Scholar 及公开数据库，仅供参考。经费与招生状态可能与实际情况存在差异，请直接联系导师核实。如发现信息有误，欢迎反馈至{' '}
-            <a href="mailto:info@koalastudyadvisors.net" style={{ color: '#7d6340' }}>info@koalastudyadvisors.net</a>
+            <a href="mailto:info@koalaphd.com" style={{ color: '#c9a96e' }}>info@koalaphd.com</a>
           </div>
         </div>
       )}
@@ -439,20 +439,21 @@ function ProfessorsPageInner() {
         className="lg:hidden fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 overflow-y-auto"
         style={{
           transform: filterOpen ? 'translateY(0)' : 'translateY(100%)',
-          background: '#faf6ec',
+          background: '#0d1520',
           borderRadius: '20px 20px 0 0',
           maxHeight: '75vh',
-          boxShadow: '0 -8px 32px rgba(0,0,0,0.15)',
+          boxShadow: '0 -8px 32px rgba(0,0,0,0.5)',
+          border: '1px solid rgba(201,169,110,0.12)',
         }}
       >
         <div className="px-4 pt-3 pb-6">
           {/* Handle */}
-          <div className="mx-auto mb-4 rounded-full" style={{ width: 36, height: 4, background: '#d4c9b0' }} />
+          <div className="mx-auto mb-4 rounded-full" style={{ width: 36, height: 4, background: 'rgba(201,169,110,0.3)' }} />
 
           <div className="flex justify-between items-center mb-5">
-            <h2 className="font-bold text-base" style={{ color: '#1a2332' }}>筛选 & 排序</h2>
+            <h2 className="font-bold text-base" style={{ color: '#e8e4dc' }}>筛选 & 排序</h2>
             <button onClick={() => setFilterOpen(false)}>
-              <X className="size-5" style={{ color: '#907858' }} />
+              <X className="size-5" style={{ color: '#6a7a7e' }} />
             </button>
           </div>
 
@@ -490,13 +491,13 @@ function ProfessorsPageInner() {
             <button
               onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); }}
               className="flex-1 py-3 rounded-2xl text-sm font-medium"
-              style={{ background: '#f0e9d6', color: '#584838' }}>
+              style={{ background: '#111c28', color: '#a8b8ac', border: '1px solid rgba(201,169,110,0.12)' }}>
               重置
             </button>
             <button
               onClick={() => setFilterOpen(false)}
               className="flex-2 flex-grow-[2] py-3 rounded-2xl text-sm font-bold"
-              style={{ background: '#c4a050', color: '#fff' }}>
+              style={{ background: '#c9a96e', color: '#080c10' }}>
               应用筛选
             </button>
           </div>
@@ -515,7 +516,7 @@ function ProfCard({ p }: { p: Professor }) {
   const hasStats = p.hIndex || p.paperCount || p.citationCount;
 
   return (
-    <div className="rounded-2xl bg-white overflow-hidden" style={{ boxShadow: '0 4px 16px rgba(196,160,80,0.12)' }}>
+    <div className="rounded-2xl overflow-hidden" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.12)', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>
       {/* Top badges row */}
       <div className="flex items-center gap-2 px-4 pt-3 pb-2">
         {statusBadge && (
@@ -526,17 +527,17 @@ function ProfCard({ p }: { p: Professor }) {
         )}
         {hasGrant && (
           <span className="text-[11px] font-medium px-2 py-0.5 rounded-full"
-            style={{ background: '#fef9c3', color: '#854d0e' }}>
+            style={{ background: 'rgba(234,179,8,0.15)', color: '#eab308' }}>
             💰 有经费
           </span>
         )}
         {p.opportunityScore != null && p.opportunityScore >= 70 && (
           <span className="text-[11px] font-medium px-2 py-0.5 rounded-full"
-            style={{ background: 'rgba(196,160,80,0.15)', color: '#8a6c30' }}>
+            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}>
             ⭐ 推荐
           </span>
         )}
-        <Bookmark className="size-4 ml-auto shrink-0" style={{ color: '#c4a050' }} />
+        <Bookmark className="size-4 ml-auto shrink-0" style={{ color: '#c9a96e' }} />
       </div>
 
       {/* Main info */}
@@ -548,10 +549,10 @@ function ProfCard({ p }: { p: Professor }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="font-bold text-[15px] leading-5 truncate" style={{ color: '#1a2332' }}>
+          <h3 className="font-bold text-[15px] leading-5 truncate" style={{ color: '#e8e4dc' }}>
             {p.name}
           </h3>
-          <p className="text-xs mt-0.5" style={{ color: '#7a7468' }}>
+          <p className="text-xs mt-0.5" style={{ color: '#6a7a7e' }}>
             {p.positionTitle ? `${p.positionTitle} · ` : ''}{p.university}
           </p>
         </div>
@@ -559,7 +560,7 @@ function ProfCard({ p }: { p: Professor }) {
 
       {/* Stats row */}
       {hasStats && (
-        <div className="flex gap-3 px-4 pb-3 text-xs" style={{ color: '#6b6055' }}>
+        <div className="flex gap-3 px-4 pb-3 text-xs" style={{ color: '#6a7a7e' }}>
           {p.hIndex != null && (
             <span className="flex items-center gap-1">
               <TrendingUp className="size-3" />
@@ -584,10 +585,10 @@ function ProfCard({ p }: { p: Professor }) {
       {/* Suitable backgrounds */}
       {(p.suitableStudentBackgrounds ?? []).length > 0 && (
         <div className="flex flex-wrap gap-1 px-4 pb-2">
-          <span className="text-[10px]" style={{ color: '#907858' }}>适合背景：</span>
+          <span className="text-[10px]" style={{ color: '#6a7a7e' }}>适合背景：</span>
           {p.suitableStudentBackgrounds.slice(0, 3).map(bg => (
             <span key={bg} className="text-[10px] px-1.5 py-0.5 rounded-full"
-              style={{ background: '#f0e9d6', color: '#584838' }}>
+              style={{ background: 'rgba(201,169,110,0.08)', color: '#a8b8ac' }}>
               {bg}
             </span>
           ))}
@@ -599,7 +600,7 @@ function ProfCard({ p }: { p: Professor }) {
         <div className="flex flex-wrap gap-1 px-4 pb-3">
           {p.researchAreas.slice(0, 3).map(area => (
             <span key={area} className="rounded-full text-[10px] px-2 py-0.5"
-              style={{ border: '1px solid rgba(196,160,80,0.4)', color: '#c4a050' }}>
+              style={{ border: '1px solid rgba(201,169,110,0.25)', color: '#c9a96e' }}>
               {area}
             </span>
           ))}
@@ -610,14 +611,14 @@ function ProfCard({ p }: { p: Professor }) {
       <div className="flex gap-2 px-4 pb-4">
         <Link href={`/koala/professors/${p.id}`}
           className="flex-1 text-center text-xs font-semibold py-2 rounded-xl no-underline"
-          style={{ background: '#f0e9d6', color: '#1a2332' }}>
+          style={{ background: 'rgba(201,169,110,0.1)', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.2)' }}>
           查看详情
         </Link>
         <Link href={`/koala/chat?action=outreach&prof=${p.id}&name=${encodeURIComponent(p.name)}`}
           className="flex-1 text-center text-xs font-semibold py-2 rounded-xl no-underline flex items-center justify-center gap-1"
-          style={{ background: '#c4a050', color: '#fff' }}>
+          style={{ background: '#c9a96e', color: '#080c10' }}>
           <MessageSquarePlus className="size-3" />
-          套磁信
+          申请信
         </Link>
       </div>
     </div>
@@ -629,7 +630,7 @@ function ProfCard({ p }: { p: Professor }) {
 function FilterSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-5">
-      <p className="text-xs font-semibold mb-2" style={{ color: '#584838' }}>{label}</p>
+      <p className="text-xs font-semibold mb-2" style={{ color: '#a8b8ac' }}>{label}</p>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
   );
@@ -640,8 +641,8 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
     <button onClick={onClick}
       className="text-xs px-3 py-1.5 rounded-full transition-colors"
       style={active
-        ? { background: '#c4a050', color: '#fff', fontWeight: 600 }
-        : { background: '#f0e9d6', color: '#584838' }}>
+        ? { background: '#c9a96e', color: '#080c10', fontWeight: 600 }
+        : { background: '#111c28', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.15)' }}>
       {label}
     </button>
   );

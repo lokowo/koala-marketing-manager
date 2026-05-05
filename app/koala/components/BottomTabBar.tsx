@@ -27,7 +27,7 @@ export default function BottomTabBar() {
   const chatActive = pathname.startsWith('/koala/chat');
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50" style={{ backgroundColor: '#0a0e14', borderTop: '1px solid rgba(201,169,110,0.12)' }}>
+    <div className="fixed inset-x-0 bottom-0 z-50" style={{ backgroundColor: '#0a0e14', borderTop: '1px solid rgba(201,169,110,0.12)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="relative flex justify-around items-end px-4 pb-6 pt-2" style={{ maxWidth: 480, margin: '0 auto' }}>
         {LEFT_TABS.map(tab => {
           const active = isActive(tab.href);

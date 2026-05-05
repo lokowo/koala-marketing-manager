@@ -7,7 +7,7 @@ import { Home, Users, MessageCircle, BookOpen, UserCircle } from 'lucide-react';
 import { useAuth } from './AuthContext';
 
 const NAV_ITEMS: { href: string; icon: React.ElementType; label: string; highlight?: boolean }[] = [
-  { href: '/koala/home', icon: Home, label: '首页' },
+  { href: '/koala/discover', icon: Home, label: '发现' },
   { href: '/koala/professors', icon: Users, label: '教授库' },
   { href: '/koala/chat', icon: MessageCircle, label: 'Koala AI', highlight: true },
   { href: '/koala/blog', icon: BookOpen, label: '博客' },
@@ -26,16 +26,16 @@ export default function TopNavBar() {
     <nav
       className="hidden lg:flex fixed top-0 inset-x-0 z-50 items-center justify-between px-8"
       style={{
-        backgroundColor: '#ffffff',
-        borderBottom: '1px solid #f0e8d4',
-        boxShadow: '0 2px 12px rgba(196,160,80,0.08)',
+        backgroundColor: '#0a0e14',
+        borderBottom: '1px solid rgba(201,169,110,0.12)',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
         height: 64,
       }}
     >
       {/* Logo */}
-      <Link href="/koala/home" className="flex items-center gap-2" style={{ textDecoration: 'none' }}>
+      <Link href="/koala/discover" className="flex items-center gap-2" style={{ textDecoration: 'none' }}>
         <span className="text-2xl">🐨</span>
-        <span className="font-bold text-base" style={{ color: '#7d6340' }}>Koala PhD</span>
+        <span className="font-bold text-base" style={{ color: '#c9a96e' }}>Koala PhD</span>
       </Link>
 
       {/* Nav links */}
@@ -50,8 +50,8 @@ export default function TopNavBar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white mx-2"
-                style={{ background: '#c4a050', textDecoration: 'none' }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold mx-2"
+                style={{ background: '#c9a96e', color: '#080c10', textDecoration: 'none' }}
               >
                 <Icon className="size-4" />
                 {item.label}
@@ -65,9 +65,9 @@ export default function TopNavBar() {
               href={item.href}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm transition-colors relative"
               style={{
-                color: active ? '#c4a050' : '#7d6340',
+                color: active ? '#c9a96e' : '#6a7a7e',
                 fontWeight: active ? 700 : 400,
-                background: active ? '#faf0d8' : 'transparent',
+                background: active ? 'rgba(201,169,110,0.1)' : 'transparent',
                 textDecoration: 'none',
               }}
             >

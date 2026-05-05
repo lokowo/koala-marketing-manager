@@ -41,14 +41,14 @@ const BLOG_CTAS: Record<string, { text: string; href: string }> = {
 };
 
 const TOOLS_GRID = [
-  { icon: Mail, title: '套磁信生成器', desc: 'AI 一键生成', href: '/koala/chat?mode=write' },
+  { icon: Mail, title: '申请信生成器', desc: 'AI 一键生成', href: '/koala/chat?mode=write' },
   { icon: PenLine, title: 'SOP 润色', desc: '专业表达优化', href: '/koala/chat?mode=write' },
   { icon: Calculator, title: 'GPA 换算', desc: '多体系互转', href: '/koala/tools' },
   { icon: CalendarDays, title: '截止日期追踪', desc: '不错过任何 DDL', href: '/koala/tools' },
 ];
 
 const FULL_TOOLS = [
-  { icon: '✉️', title: '套磁信生成器', desc: '输入教授信息和你的背景，AI 生成定制套磁信', href: '/koala/chat?mode=write', tag: '定制' },
+  { icon: '✉️', title: '申请信生成器', desc: '输入教授信息和你的背景，AI 生成定制申请信', href: '/koala/chat?mode=write', tag: '定制' },
   { icon: '✏️', title: 'SOP 润色', desc: '上传 SOP 草稿，AI 优化表达与逻辑结构', href: '/koala/chat?mode=write', tag: '免费' },
   { icon: '🧮', title: 'GPA 换算', desc: '澳洲 WAM / 4.0 / 百分制 多体系互转', href: '/koala/tools', tag: '免费' },
   { icon: '📅', title: '截止日期追踪', desc: '各校 PhD 申请时间线，不错过任何 DDL', href: '/koala/tools', tag: '免费' },

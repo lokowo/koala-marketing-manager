@@ -117,7 +117,7 @@ export function EmailPackage({
       <div className="p-3" style={{ background: '#1a2332' }}>
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-bold text-white">✉️ 套磁信 · {professorName}</div>
+            <div className="text-sm font-bold text-white">✉️ 申请信 · {professorName}</div>
             {institution && <div className="text-[11px] text-white/60 mt-0.5">{institution}</div>}
           </div>
           {matchScore !== undefined && (
@@ -133,7 +133,7 @@ export function EmailPackage({
         {/* Generated success message */}
         <div className="rounded-xl px-3 py-2.5" style={{ background: '#f0f8f2', border: '1px solid #c0e0c8' }}>
           <div className="text-xs font-semibold" style={{ color: '#2d6a3e' }}>
-            {hasEmail ? '✅ 套磁信已生成！' : '📋 邮件已生成！教授邮箱需要你手动查找'}
+            {hasEmail ? '✅ 申请信已生成！' : '📋 邮件已生成！教授邮箱需要你手动查找'}
           </div>
         </div>
 
@@ -364,7 +364,7 @@ export function EmailPackage({
             }}
           >
             {status === 'sent' && '✅ 已标记为已发送，14 天后我会提醒你跟进'}
-            {status === 'later' && '⏳ 已保存，可以在"我的套磁信"找到这封信'}
+            {status === 'later' && '⏳ 已保存，可以在"我的申请信"找到这封信'}
             {status === 'abandoned' && '❌ 已放弃'}
           </div>
         )}

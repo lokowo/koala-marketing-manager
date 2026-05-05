@@ -1,8 +1,8 @@
 export const BRAND = {
-  name: 'Koala Study Advisors',
+  name: 'Koala PhD',
   shortName: 'Koala',
-  domain: 'koalastudyadvisors.net',
-  email: 'info@koalastudyadvisors.net',
+  domain: 'koalaphd.com',
+  email: 'info@koalaphd.com',
   address: 'Suite 22/26A Lime St, Sydney NSW 2000',
   wechat: 'KoalaStudyAdvisor',
   xiaohongshu: 'DrKoalaAU',
@@ -14,18 +14,18 @@ export const BRAND = {
 } as const;
 
 export const COLORS = {
-  bg: '#faf6ec',
-  card: '#f2ead6',
-  ink: '#1a2332',
-  bark: '#7d6340',
+  bg: '#080c10',
+  card: '#111c28',
+  ink: '#e8e4dc',
+  bark: '#c9a96e',
   fur: '#a08058',
-  gold: '#c4a050',
+  gold: '#c9a96e',
   goldDark: '#8a6c30',
   euc: '#5a8060',
   terra: '#b06040',
-  txt: '#28201a',
-  txtSoft: '#584838',
-  txtMuted: '#907858',
+  txt: '#e8e4dc',
+  txtSoft: '#a8b8ac',
+  txtMuted: '#6a7a7e',
 } as const;
 
 export const FONTS = {
@@ -84,7 +84,7 @@ export const SUBSCRIPTION_TIERS = {
       '不限 AI 对话轮数',
       '上传简历 & 成绩单',
       '教授完整资料（经费/论文/联系方式）',
-      '每月 10 封定制套磁信',
+      '每月 10 封定制申请信',
       'PDF 评估报告下载',
       '每周新教授推送',
     ],
@@ -101,7 +101,7 @@ export const SUBSCRIPTION_TIERS = {
     popular: true,
     features: [
       'Starter 全部功能',
-      '每月 30 封定制套磁信',
+      '每月 30 封定制申请信',
       'RP 大纲生成（不限次）',
       'Follow-up 智能提醒',
       '每日任务 + 成就系统',
@@ -121,7 +121,7 @@ export const SUBSCRIPTION_TIERS = {
     popular: false,
     features: [
       'Pro 全部功能',
-      '每月 100 封定制套磁信',
+      '每月 100 封定制申请信',
       '人工审核 3 次/月',
       '新 ARC 项目 24 小时内推送',
       '回复追踪 + 意图分析',

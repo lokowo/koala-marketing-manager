@@ -113,7 +113,7 @@ export default function AuthPage() {
         <div className="w-full max-w-sm text-center">
           <div className="text-5xl mb-4">🎉</div>
           <h1 className="text-xl font-bold mb-2" style={{ color: '#1a2332' }}>验证成功！</h1>
-          <p className="text-sm mb-6" style={{ color: '#907858' }}>欢迎加入 Koala Study Advisors，正在跳转…</p>
+          <p className="text-sm mb-6" style={{ color: '#907858' }}>欢迎加入 Koala PhD，正在跳转…</p>
           <div className="w-8 h-8 mx-auto rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#c4a050', borderTopColor: 'transparent' }} />
         </div>
       </div>

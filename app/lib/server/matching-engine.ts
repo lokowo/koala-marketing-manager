@@ -138,7 +138,7 @@ ${studentDesc}
 2. skillFit (0-25)：学生技能能否补教授项目短板
 3. opportunitySignal (0-25)：已预计算，直接用提供的 opportunity_score 等比换算到 25 分
 4. proposalPotential (0-15)：学生能否针对教授研究写出合理 RP
-5. communicationFit (0-10)：是否容易写出有针对性的套磁信
+5. communicationFit (0-10)：是否容易写出有针对性的申请信
 
 返回 JSON 数组，只返回 JSON，不要其他文字：
 [{"professorId":"xxx","academicFit":18,"skillFit":22,"proposalPotential":12,"communicationFit":8,"reason":"一句话中文匹配原因","proposalDirections":["方向1","方向2"]}]

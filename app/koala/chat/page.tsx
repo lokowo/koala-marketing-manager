@@ -91,11 +91,11 @@ const MODES: {
   },
   {
     key: 'write',
-    label: '✉️ 写套磁信',
+    label: '✉️ 写申请信',
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 20h9" strokeLinecap="round"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-    desc: '定制套磁信 · SOP · 研究计划',
-    placeholder: '给我一位教授的名字，我帮你写套磁信……',
-    welcome: '给我一位教授的名字或链接，我帮你写一封专业的套磁信 ✉️',
+    desc: '定制申请信 · SOP · 研究计划',
+    placeholder: '给我一位教授的名字，我帮你写申请信……',
+    welcome: '给我一位教授的名字或链接，我帮你写一封专业的申请信 ✉️',
     initialReplies: ['我有目标教授', '帮我先找教授再写信', '修改我的草稿'],
   },
 ];
@@ -170,7 +170,7 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
           className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg no-underline"
           style={{ background: '#c4a050', color: '#fff' }}
         >
-          ✉️ 写套磁信
+          ✉️ 写申请信
         </Link>
       </div>
     </div>
@@ -297,7 +297,7 @@ function CreditConfirmDialog({ remaining, onConfirm, onCancel }: { remaining: nu
       <div className="w-full rounded-t-3xl p-6" style={{ background: '#faf6ec', maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2 mb-1">
           <Sparkles className="size-4" style={{ color: '#c4a050' }} />
-          <span className="text-sm font-bold" style={{ color: '#1a2332' }}>生成套磁信</span>
+          <span className="text-sm font-bold" style={{ color: '#1a2332' }}>生成申请信</span>
         </div>
         <p className="text-xs leading-relaxed mb-1" style={{ color: '#584838' }}>本次生成将消耗 <strong>1 积分</strong>，剩余 {remaining} 积分。</p>
         <p className="text-[11px]" style={{ color: '#907858' }}>月度额度优先扣除；单独购买的积分永久有效。</p>
@@ -325,7 +325,7 @@ function ConsultationBanner() {
       <div className="text-xs font-semibold mb-1" style={{ color: '#8a6c30' }}>💡 需要更深入的分析？</div>
       <p className="text-[11px] leading-relaxed" style={{ color: '#7d6340' }}>AI 评估有局限，真人顾问能帮你做更精准的项目匹配。</p>
       <div className="flex gap-2 mt-2">
-        <a href="mailto:info@koalastudyadvisors.net" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline" style={{ background: '#c4a050', color: '#fff' }}>📧 联系顾问</a>
+        <a href="mailto:info@koalaphd.com" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline" style={{ background: '#c4a050', color: '#fff' }}>📧 联系顾问</a>
         <a href="weixin://dl/chat?username=KoalaStudyAdvisor" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline" style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}>💬 微信咨询</a>
       </div>
     </div>
@@ -584,7 +584,7 @@ function ChatPageInner() {
     const profId = searchParams.get('prof');
     if (action === 'outreach' && profName) {
       const decodedName = decodeURIComponent(profName);
-      return { msg: `请帮我给 ${decodedName} 教授写一封套磁信`, profId: profId ?? undefined };
+      return { msg: `请帮我给 ${decodedName} 教授写一封申请信`, profId: profId ?? undefined };
     }
     return null;
   });
@@ -747,7 +747,7 @@ function ChatPageInner() {
       return;
     }
 
-    const isEmailRequest = mode === 'write' && /套磁信|email|生成|帮我写/i.test(txt) && messages.length > 1;
+    const isEmailRequest = mode === 'write' && /申请信|email|生成|帮我写/i.test(txt) && messages.length > 1;
     if (isEmailRequest) {
       setPendingEmailText(txt);
       setShowCreditConfirm(true);
@@ -861,7 +861,7 @@ function ChatPageInner() {
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-base leading-6 tracking-wide" style={{ color: '#c4a050' }}>
-              Koala Study Advisors
+              Koala PhD
             </span>
             <span className="text-[10px]" style={{ color: 'rgba(196,160,80,0.8)' }}>
               考拉学长 · 在线
@@ -941,7 +941,7 @@ function ChatPageInner() {
                     className="mt-2 w-full py-2 rounded-xl text-xs font-semibold"
                     style={{ background: '#1a2332', color: '#c4a050' }}
                   >
-                    📨 批量生成套磁信（{msg.matchedProfessors.length} 封）
+                    📨 批量生成申请信（{msg.matchedProfessors.length} 封）
                   </button>
                 )}
                 {msg.role === 'assistant' && msg.citations && msg.citations.length > 0 && (
@@ -969,7 +969,7 @@ function ChatPageInner() {
                       followupBody={msg.emailPackage.followupBody}
                       riskNote={msg.emailPackage.riskNote}
                       onRegenerate={() => {
-                        setPendingEmailText('请重新生成一封套磁信');
+                        setPendingEmailText('请重新生成一封申请信');
                         setShowCreditConfirm(true);
                       }}
                     />

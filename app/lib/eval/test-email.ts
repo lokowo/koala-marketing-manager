@@ -8,14 +8,14 @@ export async function runEmailTests(): Promise<ModuleResult> {
   let score = 0;
 
   // Test 1: Write mode asks for details before generating
-  details.push('\n[email_1] 套磁信生成前追问信息');
+  details.push('\n[email_1] 申请信生成前追问信息');
   try {
     const resp = await fetch(`${BASE}/api/ai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         mode: 'write',
-        messages: [{ role: 'user', content: '帮我写一封给UNSW量子传感方向教授的套磁信' }],
+        messages: [{ role: 'user', content: '帮我写一封给UNSW量子传感方向教授的申请信' }],
       }),
       signal: AbortSignal.timeout(30000),
     });
@@ -46,7 +46,7 @@ export async function runEmailTests(): Promise<ModuleResult> {
       body: JSON.stringify({
         mode: 'write',
         messages: [
-          { role: 'user', content: '帮我写一封给UNSW量子传感方向教授的套磁信' },
+          { role: 'user', content: '帮我写一封给UNSW量子传感方向教授的申请信' },
           { role: 'assistant', content: '好的，请告诉我你的研究背景' },
           { role: 'user', content: '我是电子工程本科，研究MEMS传感器，想申请Professor Wang的PhD' },
         ],
@@ -69,7 +69,7 @@ export async function runEmailTests(): Promise<ModuleResult> {
 
   return {
     name: 'email',
-    label: '套磁信质量',
+    label: '申请信质量',
     score,
     passingScore: 80,
     passed: score >= 80,

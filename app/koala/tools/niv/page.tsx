@@ -142,8 +142,8 @@ function ResultCard({ score, answers }: { score: number; answers: Record<string,
           本评估由 AI 基于公开政策信息生成，<strong>不构成移民法律建议</strong>。签证审核结果取决于申请人的完整材料和澳洲移民局的个案判断。
         </p>
         <p className="text-[11px] leading-relaxed" style={{ color: '#584838' }}>
-          如需专业移民建议，请联系 Koala Study Advisors：
-          <a href="mailto:info@koalastudyadvisors.net" className="font-medium" style={{ color: '#c4a050' }}> info@koalastudyadvisors.net</a>
+          如需专业移民建议，请联系 Koala PhD：
+          <a href="mailto:info@koalaphd.com" className="font-medium" style={{ color: '#c4a050' }}> info@koalaphd.com</a>
         </p>
         <p className="text-[10px]" style={{ color: '#b09878' }}>
           参考法规：Migration Act 1958 (Cth) · Student Visa (Class TU) Regulations

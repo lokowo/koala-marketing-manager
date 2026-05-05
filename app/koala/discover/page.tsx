@@ -29,9 +29,9 @@ function recruitBadge(score: number) {
 }
 
 interface Professor {
-  id: string; name: string; university: string; position_title: string;
-  research_areas: string[]; h_index: number; paper_count: number;
-  citation_count: number; opportunity_score: number; email: string;
+  id: string; name: string; university: string; positionTitle: string;
+  researchAreas: string[]; hIndex: number; paperCount: number;
+  citationCount: number; opportunityScore: number; email: string;
   matchScore?: number;
 }
 
@@ -52,7 +52,7 @@ export default function DiscoverPage() {
   async function fetchProfessors() {
     setLoading(true);
     try {
-      const res = await fetch('/api/professors?limit=20&sort=opportunity_score');
+      const res = await fetch('/api/professors?limit=20&sortBy=opportunity_score');
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       const profs = (data.data ?? data.professors ?? data ?? []).map((p: Professor) => ({
@@ -137,7 +137,7 @@ export default function DiscoverPage() {
             if (stackPos > 2) return null;
             const isFlipped = flippedId === prof.id;
             const uni = getUni(prof.university);
-            const badge = recruitBadge(prof.opportunity_score);
+            const badge = recruitBadge(prof.opportunityScore);
 
             return (
               <TinderCard
@@ -177,14 +177,14 @@ export default function DiscoverPage() {
                           {badge.label && <div className="flex items-center gap-1"><div className="size-2 rounded-full" style={{ background: badge.color }} /><span className="text-xs" style={{ color: badge.color }}>{badge.label}</span></div>}
                         </div>
                         <h2 className="text-lg font-semibold mb-1" style={{ color: '#e8e4dc' }}>{prof.name}</h2>
-                        <p className="text-xs mb-4" style={{ color: '#6a7a7e' }}>{prof.position_title ?? 'Researcher'}</p>
+                        <p className="text-xs mb-4" style={{ color: '#6a7a7e' }}>{prof.positionTitle ?? 'Researcher'}</p>
                         <div className="flex flex-wrap gap-1.5 mb-4">
-                          {(prof.research_areas ?? []).slice(0, 3).map((area, i) => (
+                          {(prof.researchAreas ?? []).slice(0, 3).map((area, i) => (
                             <span key={i} className="px-2 py-0.5 rounded-full text-[10px]" style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e', border: '1px solid rgba(201,169,110,0.2)' }}>{area}</span>
                           ))}
                         </div>
                         <div className="flex items-center gap-3 text-xs mb-auto" style={{ color: '#6a7a7e' }}>
-                          <span>H={prof.h_index ?? '?'}</span><span>·</span><span>{prof.paper_count ?? '?'} papers</span><span>·</span><span>{(prof.citation_count ?? 0).toLocaleString()} 引用</span>
+                          <span>H={prof.hIndex ?? '?'}</span><span>·</span><span>{prof.paperCount ?? '?'} papers</span><span>·</span><span>{(prof.citationCount ?? 0).toLocaleString()} 引用</span>
                         </div>
                         <div className="my-4" style={{ height: 1, background: 'rgba(201,169,110,0.1)' }} />
                         <div className="text-center mb-2">
@@ -199,13 +199,13 @@ export default function DiscoverPage() {
                           <h3 className="text-sm font-semibold" style={{ color: '#e8e4dc' }}>{prof.name}</h3>
                           <button onClick={(e) => { e.stopPropagation(); setFlippedId(null); }} className="text-xs px-2 py-1 rounded" style={{ color: '#8a9a8e', background: 'rgba(255,255,255,0.05)' }}>← 翻回</button>
                         </div>
-                        <p className="text-xs mb-3" style={{ color: '#6a7a7e' }}>{prof.university} · {prof.position_title}</p>
+                        <p className="text-xs mb-3" style={{ color: '#6a7a7e' }}>{prof.university} · {prof.positionTitle}</p>
                         <div className="mb-3">
                           <p className="text-[10px] uppercase mb-1.5" style={{ color: '#5a6a6e', letterSpacing: '1px' }}>研究方向</p>
-                          <p className="text-xs leading-relaxed" style={{ color: '#a8b8ac' }}>{(prof.research_areas ?? []).join(' · ')}</p>
+                          <p className="text-xs leading-relaxed" style={{ color: '#a8b8ac' }}>{(prof.researchAreas ?? []).join(' · ')}</p>
                         </div>
                         <div className="grid grid-cols-3 gap-2 mb-3">
-                          {[{ l: 'H-index', v: prof.h_index ?? '?' }, { l: '论文', v: prof.paper_count ?? '?' }, { l: '引用', v: (prof.citation_count ?? 0).toLocaleString() }].map(s => (
+                          {[{ l: 'H-index', v: prof.hIndex ?? '?' }, { l: '论文', v: prof.paperCount ?? '?' }, { l: '引用', v: (prof.citationCount ?? 0).toLocaleString() }].map(s => (
                             <div key={s.l} className="text-center p-2 rounded-lg" style={{ background: 'rgba(201,169,110,0.06)' }}>
                               <div className="text-sm font-semibold" style={{ color: '#c9a96e' }}>{s.v}</div>
                               <div className="text-[9px]" style={{ color: '#6a7a7e' }}>{s.l}</div>

@@ -160,7 +160,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
         body: JSON.stringify({
           exportType: 'batch-emails',
           emails: exportable,
-          title: `套磁信打包 · ${new Date().toLocaleDateString('zh-CN')}`,
+          title: `申请信打包 · ${new Date().toLocaleDateString('zh-CN')}`,
         }),
       });
 
@@ -185,7 +185,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
     return (
       <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1.5px solid #e8dcc8' }}>
         <div className="p-4" style={{ background: '#1a2332' }}>
-          <div className="text-sm font-bold text-white">📨 批量生成套磁信</div>
+          <div className="text-sm font-bold text-white">📨 批量生成申请信</div>
           <div className="text-[11px] text-white/60 mt-0.5">每封消耗 1 积分，生成后可单独修改和下载</div>
         </div>
 
@@ -248,7 +248,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity"
               style={{ background: count ? '#c4a050' : '#d8c8a8', opacity: count ? 1 : 0.6 }}
             >
-              开始生成 {count} 封套磁信
+              开始生成 {count} 封申请信
             </button>
           </div>
         </div>
@@ -262,7 +262,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
     return (
       <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1.5px solid #e8dcc8' }}>
         <div className="p-4" style={{ background: '#1a2332' }}>
-          <div className="text-sm font-bold text-white">🔄 正在生成套磁信…</div>
+          <div className="text-sm font-bold text-white">🔄 正在生成申请信…</div>
           <div className="text-[11px] text-white/60 mt-0.5">{progressMsg}</div>
         </div>
         <div className="p-4 space-y-3">
@@ -319,11 +319,11 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
             className="shrink-0 text-[11px] font-semibold px-3 py-2 rounded-xl text-white transition-opacity"
             style={{ background: '#c4a050', opacity: exporting ? 0.6 : 1 }}
           >
-            {exporting ? '导出中…' : '📥 下载套磁信合集'}
+            {exporting ? '导出中…' : '📥 下载申请信合集'}
           </button>
         </div>
         <div className="mt-2 rounded-lg px-2.5 py-2 text-[11px]" style={{ background: 'rgba(255,255,255,0.08)', color: '#e8dcc8' }}>
-          📋 套磁信已生成！请下载后自行逐封发送。建议每封间隔1-2天。
+          📋 申请信已生成！请下载后自行逐封发送。建议每封间隔1-2天。
         </div>
       </div>
 
@@ -361,7 +361,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
           className="w-full py-3 rounded-2xl text-sm font-semibold text-white"
           style={{ background: '#1a2332', opacity: exporting ? 0.6 : 1 }}
         >
-          {exporting ? '正在导出…' : `📥 下载套磁信合集（${successful.length} 封）`}
+          {exporting ? '正在导出…' : `📥 下载申请信合集（${successful.length} 封）`}
         </button>
       )}
     </div>

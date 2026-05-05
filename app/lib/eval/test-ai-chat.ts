@@ -74,7 +74,7 @@ const AI_CHAT_TESTS: TestCase[] = [
   {
     id: 'write_1',
     mode: 'write',
-    input: '帮我写一封给UNSW量子传感方向教授的套磁信',
+    input: '帮我写一封给UNSW量子传感方向教授的申请信',
     checks: [
       { rule: 'no_template_direct', desc: '不直接输出通用模板，应追问信息或提示' },
     ],

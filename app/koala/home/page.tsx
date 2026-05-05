@@ -67,7 +67,7 @@ const RESEARCH_AREAS = [
 const STEP_LINKS = [
   { href: '/koala/chat',      label: '申请规划' },
   { href: '/koala/professors', label: '教授库' },
-  { href: '/koala/chat?mode=write', label: '写套磁信' },
+  { href: '/koala/chat?mode=write', label: '写申请信' },
 ];
 
 export default function HomePage() {
@@ -107,7 +107,7 @@ export default function HomePage() {
   }, []);
 
   const fallbackPosts: BlogPost[] = [
-    { id: '1', tag: '申请技巧', date: '4月28日', title: '如何写出打动教授的套磁信', excerpt: '从研究兴趣切入，三步法精准匹配教授方向，提升回复率。' },
+    { id: '1', tag: '申请技巧', date: '4月28日', title: '如何写出打动教授的申请信', excerpt: '从研究兴趣切入，三步法精准匹配教授方向，提升回复率。' },
     { id: '2', tag: '选校攻略', date: '4月24日', title: '澳洲 PhD 奖学金的隐藏机会', excerpt: '盘点容易被忽视的资助渠道与时间节点，增加中签率。' },
   ];
 
@@ -227,7 +227,7 @@ export default function HomePage() {
             {[
               { icon: '💬', step: '01', title: '聊背景', desc: '告诉 Koala 你的专业和兴趣' },
               { icon: '🎯', step: '02', title: 'AI 匹配', desc: '从 2,847 位教授中精准推荐' },
-              { icon: '✉️', step: '03', title: '写套磁信', desc: '针对每位教授定制专业邮件' },
+              { icon: '✉️', step: '03', title: '写申请信', desc: '针对每位教授定制专业邮件' },
             ].map((s, i) => (
               <button
                 key={s.step}

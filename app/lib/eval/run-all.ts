@@ -55,7 +55,7 @@ async function main() {
   results.push(matchResult);
   if (verbose) printModuleDetails(matchResult);
 
-  console.log('运行 套磁信质量测试...');
+  console.log('运行 申请信质量测试...');
   const emailResult = await runEmailTests();
   results.push(emailResult);
   if (verbose) printModuleDetails(emailResult);

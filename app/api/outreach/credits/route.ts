@@ -9,7 +9,7 @@ const db = supabaseAdmin as any;
 // ─── Credit packages (à-la-carte) ────────────────────────────────────────────
 
 export const CREDIT_PACKAGES = [
-  { id: 'single',   credits: 1,   priceAUD: CREDIT_PRICES.single,  label: '单封',    description: '1 封定制套磁信' },
+  { id: 'single',   credits: 1,   priceAUD: CREDIT_PRICES.single,  label: '单封',    description: '1 封定制申请信' },
   { id: 'pack_10',  credits: 10,  priceAUD: CREDIT_PRICES.pack10,  label: '10 封包', description: '省 $0.10/封' },
   { id: 'pack_30',  credits: 30,  priceAUD: CREDIT_PRICES.pack30,  label: '30 封包', description: '省 $0.34/封', popular: true },
   { id: 'pack_100', credits: 100, priceAUD: CREDIT_PRICES.pack100, label: '100 封包', description: '省 $0.51/封' },

@@ -22,7 +22,7 @@ export default function SettingsPage() {
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">品牌设置</h3>
         <div className="space-y-3 text-sm text-gray-600">
-          <p><span className="font-medium text-gray-900">品牌名称：</span>Koala Study Advisors</p>
+          <p><span className="font-medium text-gray-900">品牌名称：</span>Koala PhD</p>
           <p><span className="font-medium text-gray-900">AI 名称：</span>考拉学长</p>
           <p><span className="font-medium text-gray-900">域名：</span>koalastudy.net</p>
         </div>

@@ -26,7 +26,7 @@ const ACHIEVEMENT_ICONS: Record<string, string> = {
 };
 
 const ACHIEVEMENT_LABELS: Record<string, string> = {
-  first_cv: '第一份简历', first_match: '首次教授匹配', first_email: '发出第一封套磁信',
+  first_cv: '第一份简历', first_match: '首次教授匹配', first_email: '发出第一封申请信',
   first_reply: '收到教授回复', research_angle: '科研方向确定', grant_hunter: '发现经费信号',
   rp_starter: 'RP 起草完成', outreach_campaign: '开始批量套磁', phd_pathway_clear: 'PhD 路径清晰',
 };
@@ -131,7 +131,7 @@ export default function MyProgressPage() {
           <StatCard
             icon="✉️"
             value={data?.stats.emailsSent ?? 0}
-            label="已发套磁信"
+            label="已发申请信"
             sub={`共生成 ${data?.stats.emailsGenerated ?? 0} 封`}
             color="#5a8060"
           />

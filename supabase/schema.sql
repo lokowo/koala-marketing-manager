@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS blog_posts (
                   )),
   tags            TEXT[] NOT NULL DEFAULT '{}',
   cover_image     TEXT,
-  author_name     TEXT NOT NULL DEFAULT 'Koala Study Advisors',
+  author_name     TEXT NOT NULL DEFAULT 'Koala PhD',
   content_card_id UUID REFERENCES content_cards(id) ON DELETE SET NULL,
   status          TEXT NOT NULL DEFAULT 'draft'
                     CHECK (status IN ('draft', 'published', 'archived')),

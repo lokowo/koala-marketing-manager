@@ -171,7 +171,7 @@ export default function MyProfilePage() {
         <div className="text-5xl mb-4">🐨</div>
         <h1 className="text-lg font-bold mb-2" style={{ color: '#1a2332' }}>登录后查看个人中心</h1>
         <p className="text-sm mb-6 leading-relaxed" style={{ color: '#907858' }}>
-          保存你的背景信息，收藏心仪教授，<br />查看套磁信历史
+          保存你的背景信息，收藏心仪教授，<br />查看申请信历史
         </p>
         <button
           onClick={() => showLogin()}
@@ -585,7 +585,7 @@ export default function MyProfilePage() {
       <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
         <div className="px-4 py-3" style={{ borderBottom: '1px solid #e8dcc8' }}>
           <span className="text-xs font-semibold" style={{ color: '#1a2332' }}>
-            ✉️ 套磁信记录 <span className="font-normal" style={{ color: '#907858' }}>({emails.length})</span>
+            ✉️ 申请信记录 <span className="font-normal" style={{ color: '#907858' }}>({emails.length})</span>
           </span>
         </div>
 
@@ -593,7 +593,7 @@ export default function MyProfilePage() {
           <div className="px-4 py-4 text-xs text-center" style={{ color: '#907858' }}>加载中…</div>
         ) : emails.length === 0 ? (
           <div className="px-4 py-5 text-center">
-            <p className="text-xs" style={{ color: '#907858' }}>还没有生成过套磁信</p>
+            <p className="text-xs" style={{ color: '#907858' }}>还没有生成过申请信</p>
             <Link
               href="/koala/chat"
               className="text-xs mt-1 inline-block no-underline font-medium"

@@ -55,7 +55,7 @@ TFS 路径可行性：72/100
 {"type":"professorMatches","professors":[{"professorId":"...","name":"...","institution":"...","matchScore":87,"reason":"...","researchTags":["..."]}]}
 \`\`\`
 
-报告末尾："如需进一步的 Proposal 辅导和申请规划，建议联系 KSA 学术顾问团队：info@koalastudyadvisors.net"
+报告末尾："如需进一步的 Proposal 辅导和申请规划，建议联系 KSA 学术顾问团队：info@koalaphd.com"
 
 ## 快捷回复提示
 在每次 Stage 1 回答后，建议以下快捷回复（加在 JSON 末尾）：
