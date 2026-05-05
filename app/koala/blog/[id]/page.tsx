@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Copy, Check, MoreHorizontal, Clock } from 'lucide-react';
+import { ChevronLeft, Copy, MoreHorizontal, Clock } from 'lucide-react';
 
 interface BlogPost {
   id: string;
@@ -16,6 +16,7 @@ interface BlogPost {
   author: string;
   reading_time_zh: number;
   published_at: string;
+  cover_image_url: string | null;
   tags: string[];
 }
 
@@ -144,14 +145,26 @@ export default function BlogDetailPage() {
       )}
 
       {/* Header */}
-      <div className="flex px-4 pt-4 pb-2 items-center sticky top-0 z-10" style={{ background: '#080c10' }}>
+      <div className="flex px-4 pt-4 pb-2 items-center sticky top-0 z-10 max-w-[720px] mx-auto" style={{ background: '#080c10' }}>
         <Link href="/koala/blog" className="size-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(201,169,110,0.06)' }}>
           <ChevronLeft className="size-5" style={{ color: '#e8e4dc' }} />
         </Link>
       </div>
 
+      {/* Cover Image */}
+      {post.cover_image_url && (
+        <div className="max-w-[720px] mx-auto px-5 md:px-0 mb-5">
+          <img
+            src={post.cover_image_url}
+            alt={post.title_zh || post.title_en || ''}
+            className="w-full rounded-xl md:rounded-2xl object-cover"
+            style={{ maxHeight: 400 }}
+          />
+        </div>
+      )}
+
       {/* Article */}
-      <article className="px-5 lg:px-0 lg:max-w-2xl lg:mx-auto">
+      <article className="px-5 md:px-0 max-w-[720px] mx-auto">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e' }}>
             {CATEGORY_LABELS[post.category] || post.category}
@@ -161,7 +174,7 @@ export default function BlogDetailPage() {
           </span>
         </div>
 
-        <h1 className="text-xl font-bold leading-tight mb-3" style={{ color: '#e8e4dc' }}>
+        <h1 className="text-xl md:text-2xl font-bold leading-tight mb-3" style={{ color: '#e8e4dc' }}>
           {post.title_zh || post.title_en}
         </h1>
 
@@ -186,7 +199,7 @@ export default function BlogDetailPage() {
         {/* Content */}
         <div
           className="prose prose-sm max-w-none"
-          style={{ color: '#e8e4dc', lineHeight: 1.8 }}
+          style={{ color: '#c8d0cc', lineHeight: 1.8 }}
           dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
         />
 
@@ -216,13 +229,14 @@ export default function BlogDetailPage() {
         {relatedPosts.length > 0 && (
           <div className="mt-8 pt-6" style={{ borderTop: '1px solid rgba(201,169,110,0.1)' }}>
             <p className="text-sm font-medium mb-3" style={{ color: '#a8b8ac' }}>相关文章</p>
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
+            {/* Mobile: horizontal scroll; Desktop: 3-col grid */}
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 md:grid md:grid-cols-3 md:overflow-visible" style={{ scrollbarWidth: 'none' }}>
               {relatedPosts.map(rp => (
                 <Link
                   key={rp.id}
                   href={`/koala/blog/${rp.id}`}
-                  className="flex-shrink-0 w-56 p-3 rounded-xl no-underline"
-                  style={{ background: 'rgba(201,169,110,0.06)' }}
+                  className="related-card flex-shrink-0 w-56 md:w-auto p-3 rounded-xl no-underline transition-all"
+                  style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid transparent' }}
                 >
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full inline-block mb-2" style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}>
                     {CATEGORY_LABELS[rp.category] || rp.category}
@@ -247,6 +261,12 @@ export default function BlogDetailPage() {
           </Link>
         </div>
       </article>
+
+      <style jsx>{`
+        .related-card:hover {
+          border-color: rgba(201,169,110,0.2) !important;
+        }
+      `}</style>
     </div>
   );
 }
