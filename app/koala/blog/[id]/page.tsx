@@ -81,52 +81,52 @@ export default function BlogDetailPage() {
     setTimeout(() => setToast(null), 3000);
   }
 
-  function getShareUrl() {
-    return typeof window !== 'undefined' ? window.location.href : '';
-  }
-
-  function getTitle() {
-    return post?.title_zh || post?.title_en || '';
-  }
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://koalaphd.com';
+  const shareUrl = post ? `${baseUrl}/koala/blog/${post.id}` : '';
+  const shareTitle = post?.title_zh || post?.title_en || '';
+  const shareExcerpt = post?.excerpt_zh || post?.excerpt_en || '';
 
   function copyLink() {
-    navigator.clipboard.writeText(getShareUrl());
+    navigator.clipboard.writeText(shareUrl);
     showToast('链接已复制');
   }
 
   function shareFacebook() {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getShareUrl())}`, '_blank');
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
   }
 
   function shareTwitter() {
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(getTitle())}&url=${encodeURIComponent(getShareUrl())}`, '_blank');
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTitle)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
   }
 
   function shareLinkedIn() {
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(getShareUrl())}`, '_blank');
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
   }
 
   function shareWhatsApp() {
-    window.open(`https://wa.me/?text=${encodeURIComponent(getTitle() + ' ' + getShareUrl())}`, '_blank');
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareTitle + '\n' + shareUrl)}`, '_blank');
   }
 
   function shareWechat() {
-    navigator.clipboard.writeText(getShareUrl());
-    showToast('链接已复制，请在微信中粘贴分享');
+    const wechatText = `【Koala PhD】${shareTitle}\n\n${shareExcerpt}\n\n阅读全文👉 ${shareUrl}`;
+    navigator.clipboard.writeText(wechatText);
+    showToast('已复制分享内容，请在微信中粘贴发送');
   }
 
   function shareXiaohongshu() {
-    navigator.clipboard.writeText(`${getTitle()}\n${getShareUrl()}`);
-    showToast('已复制，请在小红书中粘贴');
+    const excerpt = post?.excerpt_zh || (post?.content_zh || '').slice(0, 100);
+    const xhsText = `${shareTitle} #KoalaPhD #澳洲留学 #PhD申请\n\n${excerpt}...\n\n🔗 ${shareUrl}`;
+    navigator.clipboard.writeText(xhsText);
+    showToast('已复制小红书文案，请在小红书中粘贴发布');
   }
 
   function shareEmail() {
-    window.open(`mailto:?subject=${encodeURIComponent(getTitle())}&body=${encodeURIComponent(getTitle() + '\n\n' + getShareUrl())}`, '_self');
+    window.open(`mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareExcerpt + '\n\n' + shareUrl)}`, '_self');
   }
 
   async function shareNative() {
     try {
-      await navigator.share({ title: getTitle(), url: getShareUrl() });
+      await navigator.share({ title: shareTitle, text: shareExcerpt, url: shareUrl });
     } catch { /* user cancelled */ }
   }
 
