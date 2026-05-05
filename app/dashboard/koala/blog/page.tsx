@@ -289,7 +289,30 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
   const [genStep, setGenStep] = useState('');
   const [error, setError] = useState('');
   const [generatedTitle, setGeneratedTitle] = useState('');
+  const [loadingRandom, setLoadingRandom] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const poolRef = useRef<Professor[]>([]);
+
+  async function fetchRandomProf() {
+    setLoadingRandom(true);
+    try {
+      if (poolRef.current.length === 0) {
+        const res = await fetch('/api/professors?limit=20&sortBy=opportunity_score');
+        const data = await res.json();
+        poolRef.current = data.data || data.professors || [];
+      }
+      if (poolRef.current.length > 0) {
+        const idx = Math.floor(Math.random() * poolRef.current.length);
+        const prof = poolRef.current[idx];
+        setSelectedProf(prof);
+        setSearchQuery(prof.name || prof.name_en || '');
+        setShowDropdown(false);
+      }
+    } catch { /* ignore */ }
+    setLoadingRandom(false);
+  }
+
+  useEffect(() => { fetchRandomProf(); }, []);
 
   function handleInputChange(value: string) {
     setSearchQuery(value);
@@ -438,7 +461,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                   value={searchQuery}
                   onChange={e => handleInputChange(e.target.value)}
                   onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
-                  placeholder="输入教授姓名搜索..."
+                  placeholder="输入教授姓名、大学或研究方向..."
                   className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 />
                 <button
@@ -449,6 +472,13 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                   {step === 'web-searching' ? '搜索中...' : '🔍 网络搜索'}
                 </button>
               </div>
+              <button
+                onClick={fetchRandomProf}
+                disabled={loadingRandom}
+                className="mt-2 px-3 py-1.5 text-xs border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 disabled:opacity-50"
+              >
+                {loadingRandom ? '加载中...' : '🎲 随机推荐'}
+              </button>
 
               {/* Typeahead Dropdown */}
               {showDropdown && (
@@ -474,7 +504,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
             {selectedProf && (
               <div className="border border-purple-200 bg-purple-50 rounded-lg p-4 mb-4">
                 <div className="flex items-start justify-between">
-                  <div>
+                  <div className="flex-1">
                     <p className="font-medium text-gray-900">{selectedProf.name || selectedProf.name_en}</p>
                     <p className="text-sm text-gray-600">{selectedProf.university || selectedProf.institution}</p>
                     {(selectedProf.researchAreas || selectedProf.research_tags || selectedProf.research_areas || []).length > 0 && (
@@ -485,6 +515,13 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                       </div>
                     )}
                   </div>
+                  <button
+                    onClick={fetchRandomProf}
+                    disabled={loadingRandom}
+                    className="text-xs text-amber-600 hover:text-amber-700 whitespace-nowrap ml-2"
+                  >
+                    换一个 🔄
+                  </button>
                 </div>
                 <button
                   onClick={handleGenerateExisting}
