@@ -4,15 +4,15 @@ import Link from 'next/link';
 import { ReactNode, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Header from './Header';
-import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { supabase } from '../../lib/supabase/client';
 import type { UserRole } from '../../lib/auth';
 
-interface NavSection {
+interface NavItem {
   icon: string;
   label: string;
   href: string;
   children?: { label: string; href: string }[];
+  adminOnly?: boolean;
 }
 
 export default function KoalaLayout({ children }: { children: ReactNode }) {
@@ -21,6 +21,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -38,7 +39,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
   }, [router, pathname]);
 
   useEffect(() => {
-    const sections: NavSection[] = buildNav(role);
+    const sections = buildNav(role);
     for (const s of sections) {
       if (s.children?.some(c => pathname.startsWith(c.href))) {
         setExpanded(s.href);
@@ -56,58 +57,40 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
     router.replace('/login');
   }
 
-  function buildNav(userRole: UserRole | null): NavSection[] {
-    const nav: NavSection[] = [
+  function buildNav(userRole: UserRole | null): NavItem[] {
+    const nav: NavItem[] = [
+      { icon: '📊', label: '仪表盘', href: '/dashboard/koala' },
       {
-        icon: '📊',
-        label: '仪表盘',
-        href: '/dashboard/koala',
-      },
-      {
-        icon: '📝',
-        label: '博客管理',
-        href: '/dashboard/koala/blog',
+        icon: '👨\u200D🏫', label: '教授库',
+        href: '/dashboard/koala/professors',
         children: [
-          { label: '草稿箱', href: '/dashboard/koala/blog/drafts' },
-          { label: '已发布', href: '/dashboard/koala/blog/published' },
-          { label: '定时发布', href: '/dashboard/koala/blog/scheduled' },
-          { label: '全部', href: '/dashboard/koala/blog' },
+          { label: '全部教授', href: '/dashboard/koala/professors' },
+          { label: '数据质量', href: '/dashboard/koala/professors/quality' },
         ],
       },
       {
-        icon: '✨',
-        label: 'AI 内容生成',
+        icon: '📝', label: '博客管理',
+        href: '/dashboard/koala/blog',
+        children: [
+          { label: '全部文章', href: '/dashboard/koala/blog' },
+          { label: '新建文章', href: '/dashboard/koala/blog/edit' },
+        ],
+      },
+      {
+        icon: '✨', label: 'AI 内容',
         href: '/dashboard/koala/ai-content',
         children: [
           { label: '单篇生成', href: '/dashboard/koala/ai-content' },
           { label: '批量生成', href: '/dashboard/koala/ai-content/batch' },
-          { label: '知识库内容', href: '/dashboard/koala/ai-content/knowledge' },
         ],
       },
-      {
-        icon: '👨‍🏫',
-        label: '教授库管理',
-        href: '/dashboard/koala/professors',
-        children: [
-          { label: '审核列表', href: '/dashboard/koala/professors' },
-          { label: '已发布', href: '/dashboard/koala/professors/verified' },
-          { label: '数据采集', href: '/dashboard/koala/professors/sync' },
-        ],
-      },
-      {
-        icon: '👥',
-        label: '用户管理',
-        href: '/dashboard/koala/users',
-      },
-      {
-        icon: '⚙️',
-        label: '系统设置',
-        href: '/dashboard/koala/settings',
-      },
+      { icon: '👥', label: '用户管理', href: '/dashboard/koala/users', adminOnly: true },
+      { icon: '📈', label: '数据分析', href: '/dashboard/koala/analytics' },
+      { icon: '⚙️', label: '系统设置', href: '/dashboard/koala/settings' },
     ];
 
     if (userRole !== 'super_admin') {
-      return nav.filter(n => n.href !== '/dashboard/koala/users');
+      return nav.filter(n => !n.adminOnly);
     }
     return nav;
   }
@@ -115,7 +98,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
   if (!authChecked) {
     return (
       <div className="flex h-screen bg-slate-950 items-center justify-center">
-        <p className="text-slate-400 text-sm">验证身份中…</p>
+        <p className="text-slate-400 text-sm">验证身份中...</p>
       </div>
     );
   }
@@ -128,16 +111,31 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-[#f8fafc]">
       {/* Sidebar */}
-      <div className="w-64 bg-slate-900 text-white flex flex-col shrink-0">
-        <div className="p-6 border-b border-slate-800">
-          <h1 className="text-lg font-bold">Koala PhD Admin</h1>
-          <p className="text-xs text-slate-400 mt-1">后台管理系统</p>
+      <div className={`${collapsed ? 'w-16' : 'w-60'} bg-[#0f172a] text-white flex flex-col shrink-0 transition-all duration-200`}>
+        <div className={`${collapsed ? 'px-3 py-4' : 'px-5 py-5'} border-b border-slate-800 flex items-center gap-3`}>
+          {!collapsed && (
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base font-bold tracking-tight">Koala PhD</h1>
+              <p className="text-[10px] text-slate-500 mt-0.5">Admin Console</p>
+            </div>
+          )}
+          <button
+            onClick={() => setCollapsed(v => !v)}
+            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors flex-shrink-0"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {collapsed
+                ? <path d="M9 18l6-6-6-6" />
+                : <path d="M15 18l-6-6 6-6" />
+              }
+            </svg>
+          </button>
         </div>
 
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <ul className="space-y-1">
+        <nav className="flex-1 px-2 py-3 overflow-y-auto">
+          <ul className="space-y-0.5">
             {navSections.map((section) => {
               const active = isActive(section.href);
               const isExpanded = expanded === section.href;
@@ -148,33 +146,36 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
                     <>
                       <button
                         onClick={() => setExpanded(isExpanded ? null : section.href)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors ${
                           active
                             ? 'bg-slate-800 text-white'
-                            : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                            : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
                         }`}
+                        title={collapsed ? section.label : undefined}
                       >
-                        <span className="text-base">{section.icon}</span>
-                        <span className="flex-1 text-left">{section.label}</span>
-                        <svg
-                          className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
+                        <span className="text-sm flex-shrink-0">{section.icon}</span>
+                        {!collapsed && (
+                          <>
+                            <span className="flex-1 text-left">{section.label}</span>
+                            <svg
+                              className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </>
+                        )}
                       </button>
-                      {isExpanded && (
-                        <ul className="mt-1 ml-8 space-y-0.5">
+                      {isExpanded && !collapsed && (
+                        <ul className="mt-0.5 ml-7 space-y-0.5">
                           {section.children.map((child) => (
                             <li key={child.href}>
                               <Link
                                 href={child.href}
-                                className={`block px-3 py-1.5 rounded text-sm transition-colors ${
+                                className={`block px-3 py-1.5 rounded text-[13px] transition-colors no-underline ${
                                   pathname === child.href
-                                    ? 'text-amber-400 bg-slate-800/50'
-                                    : 'text-slate-400 hover:text-white'
+                                    ? 'text-amber-400 bg-slate-800/40'
+                                    : 'text-slate-500 hover:text-slate-300'
                                 }`}
                               >
                                 {child.label}
@@ -187,14 +188,15 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
                   ) : (
                     <Link
                       href={section.href}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors no-underline ${
                         active
                           ? 'bg-slate-800 text-white'
-                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                          : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
                       }`}
+                      title={collapsed ? section.label : undefined}
                     >
-                      <span className="text-base">{section.icon}</span>
-                      <span>{section.label}</span>
+                      <span className="text-sm flex-shrink-0">{section.icon}</span>
+                      {!collapsed && <span>{section.label}</span>}
                     </Link>
                   )}
                 </li>
@@ -203,13 +205,18 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-slate-800 space-y-3">
-          <LanguageSwitcher />
+        <div className={`${collapsed ? 'px-2' : 'px-4'} py-3 border-t border-slate-800`}>
+          {!collapsed && (
+            <div className="text-[11px] text-slate-600 mb-2">
+              {role === 'super_admin' ? '超级管理员' : role === 'admin' ? '管理员' : '只读'}
+            </div>
+          )}
           <button
             onClick={handleSignOut}
-            className="block w-full text-left text-sm text-slate-400 hover:text-white transition"
+            className="w-full text-left text-[13px] text-slate-500 hover:text-white transition px-2 py-1.5 rounded hover:bg-slate-800/60"
+            title="退出登录"
           >
-            退出登录
+            {collapsed ? '🚪' : '退出登录'}
           </button>
         </div>
       </div>
