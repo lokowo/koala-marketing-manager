@@ -21,6 +21,8 @@ export async function POST(req: NextRequest) {
 
     console.log('[generate-images] Starting for post:', postId, 'count:', imageCount);
 
+    // Step 1: Read post content
+    console.log('[generate-images] Step 1: Reading post content...');
     const { data: post, error: fetchErr } = await db
       .from('blog_posts')
       .select('content_zh')
@@ -31,10 +33,12 @@ export async function POST(req: NextRequest) {
       console.error('[generate-images] Post not found:', fetchErr);
       return Response.json({ error: 'Post not found or has no content' }, { status: 404 });
     }
+    console.log('[generate-images] Post content length:', post.content_zh.length);
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-    console.log('[generate-images] Determining placements via Haiku...');
+    // Step 2: Determine image placements via Haiku
+    console.log('[generate-images] Step 2: Determining placements via Haiku...');
     const placementRes = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 500,
@@ -57,6 +61,8 @@ export async function POST(req: NextRequest) {
     }
 
     placements = placements.slice(0, imageCount);
+    console.log('[generate-images] Placements:', placements.length, placements.map(p => p.insertAfterHeading));
+
     if (placements.length === 0) {
       console.log('[generate-images] No placements found');
       return Response.json({ success: true, imagesInserted: 0 });
@@ -66,9 +72,11 @@ export async function POST(req: NextRequest) {
     let updatedContent = post.content_zh;
     let imagesInserted = 0;
 
-    for (const placement of placements) {
+    for (let idx = 0; idx < placements.length; idx++) {
+      const placement = placements[idx];
       try {
-        console.log('[generate-images] Generating image for:', placement.insertAfterHeading);
+        // Step 3: Generate image via OpenAI
+        console.log(`[generate-images] Step 3.${idx + 1}: Generating image for: "${placement.insertAfterHeading}"`);
         const response = await openai.images.generate({
           model: 'gpt-image-1',
           prompt: `Photorealistic editorial photograph: ${placement.promptEn}. Professional DSLR, natural lighting, sharp focus. Absolutely NO text, NO words, NO letters, NO watermarks anywhere in the image.`,
@@ -77,9 +85,67 @@ export async function POST(req: NextRequest) {
           quality: 'low',
         });
 
-        const imageUrl = response.data?.[0]?.url || null;
-        if (!imageUrl) continue;
+        const imageData = response.data?.[0];
+        if (!imageData) {
+          console.error(`[generate-images] No image data returned for placement ${idx + 1}`);
+          continue;
+        }
+        console.log(`[generate-images] Image ${idx + 1} format: b64_json=${!!imageData.b64_json}, url=${!!imageData.url}`);
 
+        // Step 4: Download image data
+        console.log(`[generate-images] Step 4.${idx + 1}: Preparing image buffer...`);
+        let imgBuffer: Buffer;
+
+        if (imageData.b64_json) {
+          imgBuffer = Buffer.from(imageData.b64_json, 'base64');
+          console.log(`[generate-images] Decoded b64_json, buffer size: ${imgBuffer.length}`);
+        } else if (imageData.url) {
+          console.log(`[generate-images] Downloading from temp URL: ${imageData.url.slice(0, 80)}...`);
+          const imgRes = await fetch(imageData.url);
+          if (!imgRes.ok) {
+            console.error(`[generate-images] Download failed: ${imgRes.status} ${imgRes.statusText}`);
+            continue;
+          }
+          imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+          console.log(`[generate-images] Downloaded, buffer size: ${imgBuffer.length}`);
+        } else {
+          console.error(`[generate-images] No b64_json or url in response for placement ${idx + 1}`);
+          continue;
+        }
+
+        // Step 5: Upload to Supabase Storage
+        const fileName = `inline/${postId}-${idx}-${Date.now()}.png`;
+        console.log(`[generate-images] Step 5.${idx + 1}: Uploading to Supabase Storage: ${fileName}`);
+
+        const { error: uploadErr } = await db.storage
+          .from('blog-images')
+          .upload(fileName, imgBuffer, {
+            contentType: 'image/png',
+            upsert: true,
+          });
+
+        if (uploadErr) {
+          console.error(`[generate-images] Upload failed:`, uploadErr);
+          try {
+            await db.storage.createBucket('blog-images', { public: true });
+            const { error: retryErr } = await db.storage
+              .from('blog-images')
+              .upload(fileName, imgBuffer, { contentType: 'image/png', upsert: true });
+            if (retryErr) {
+              console.error(`[generate-images] Retry upload failed:`, retryErr);
+              continue;
+            }
+          } catch (bucketErr) {
+            console.error(`[generate-images] Bucket creation failed:`, bucketErr);
+            continue;
+          }
+        }
+
+        const { data: urlData } = db.storage.from('blog-images').getPublicUrl(fileName);
+        const permanentUrl = urlData.publicUrl;
+        console.log(`[generate-images] Permanent URL: ${permanentUrl.slice(0, 80)}...`);
+
+        // Step 6: Insert into markdown content
         const headingPattern = new RegExp(
           `(##\\s*${placement.insertAfterHeading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^\n]*)`,
           'i'
@@ -88,25 +154,29 @@ export async function POST(req: NextRequest) {
         const match = updatedContent.match(headingPattern);
         if (match && match.index !== undefined) {
           const insertPos = match.index + match[0].length;
-          const imageMarkdown = `\n\n![${placement.insertAfterHeading}](${imageUrl})\n`;
+          const imageMarkdown = `\n\n![${placement.insertAfterHeading}](${permanentUrl})\n`;
           updatedContent = updatedContent.slice(0, insertPos) + imageMarkdown + updatedContent.slice(insertPos);
           imagesInserted++;
-          console.log('[generate-images] Inserted image after:', placement.insertAfterHeading);
+          console.log(`[generate-images] Step 6.${idx + 1}: Inserted image after: "${placement.insertAfterHeading}"`);
+        } else {
+          console.warn(`[generate-images] Heading not found in content: "${placement.insertAfterHeading}"`);
         }
       } catch (e: unknown) {
         const errMsg = e instanceof Error ? e.message : String(e);
-        console.error('[generate-images] Image generation failed for:', placement.insertAfterHeading, errMsg);
+        console.error(`[generate-images] Image ${idx + 1} failed:`, errMsg);
       }
     }
 
+    // Step 7: Update post content in DB
     if (imagesInserted > 0) {
+      console.log(`[generate-images] Step 7: Updating DB with ${imagesInserted} new images...`);
       await db
         .from('blog_posts')
         .update({ content_zh: updatedContent })
         .eq('id', postId);
     }
 
-    console.log('[generate-images] Done! Inserted', imagesInserted, 'images');
+    console.log('[generate-images] Done! Inserted', imagesInserted, 'images for post:', postId);
     return Response.json({ success: true, imagesInserted });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
