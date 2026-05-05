@@ -178,20 +178,28 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    if (imageCount && imageCount > 0 && post?.id) {
-      try {
-        const baseUrl = req.nextUrl.origin;
+    if (post?.id) {
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin;
+
+      fetch(`${baseUrl}/api/blog/generate-cover`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: post.id }),
+      }).catch(err => console.error('[generate] Cover image trigger failed:', err));
+
+      if (imageCount && imageCount > 0) {
         fetch(`${baseUrl}/api/blog/generate-images`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ postId: post.id, imageCount }),
-        });
-      } catch { /* fire and forget */ }
+        }).catch(err => console.error('[generate] Inline images trigger failed:', err));
+      }
     }
 
     return Response.json({
       success: true,
       post,
+      message: '文章已生成，图片正在后台生成中...',
       meta: {
         imageCount: imageCount || 0,
         imageKeywords: zhData.imageKeywords,

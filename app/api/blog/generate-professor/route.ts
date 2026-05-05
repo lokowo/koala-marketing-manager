@@ -230,5 +230,14 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
     return Response.json({ error: error.message }, { status: 500 });
   }
 
+  if (post?.id) {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    fetch(`${baseUrl}/api/blog/generate-cover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postId: post.id }),
+    }).catch(err => console.error('[generate-professor] Cover image trigger failed:', err));
+  }
+
   return Response.json({ success: true, post, title: zhData.titleZh });
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 const CATEGORIES: Record<string, string> = {
@@ -14,6 +14,22 @@ const CATEGORIES: Record<string, string> = {
   news: '行业新闻',
   professor_spotlight: '教授推荐',
 };
+
+interface InlineImage {
+  alt: string;
+  url: string;
+  fullMatch: string;
+}
+
+function extractInlineImages(content: string): InlineImage[] {
+  const regex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  const images: InlineImage[] = [];
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    images.push({ alt: match[1], url: match[2], fullMatch: match[0] });
+  }
+  return images;
+}
 
 export default function BlogEditPage() {
   const searchParams = useSearchParams();
@@ -62,6 +78,8 @@ export default function BlogEditPage() {
     }
   }, [editId]);
 
+  const inlineImages = useMemo(() => extractInlineImages(form.content_zh), [form.content_zh]);
+
   async function aiAssist(action: string) {
     setAiWorking(action);
     try {
@@ -98,6 +116,56 @@ export default function BlogEditPage() {
     setAiWorking(null);
   }
 
+  async function generateCover() {
+    if (!editId || aiWorking === 'cover_image') return;
+    setAiWorking('cover_image');
+    try {
+      const res = await fetch('/api/blog/generate-cover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: editId }),
+      });
+      const data = await res.json();
+      if (data.imageUrl) {
+        setForm(prev => ({ ...prev, cover_image_url: data.imageUrl }));
+      } else {
+        alert(data.error || 'AI封面生成失败');
+      }
+    } catch { alert('AI封面生成失败'); }
+    setAiWorking(null);
+  }
+
+  function removeInlineImage(img: InlineImage) {
+    setForm(prev => ({
+      ...prev,
+      content_zh: prev.content_zh.replace(img.fullMatch, '').replace(/\n{3,}/g, '\n\n'),
+    }));
+  }
+
+  async function addInlineImage() {
+    if (!editId || aiWorking === 'add_inline') return;
+    setAiWorking('add_inline');
+    try {
+      const res = await fetch('/api/blog/generate-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: editId, imageCount: 1 }),
+      });
+      const data = await res.json();
+      if (data.success && data.imagesInserted > 0) {
+        const postRes = await fetch(`/api/blog?search=&limit=50`);
+        const postData = await postRes.json();
+        const updated = postData.posts?.find((p: { id: string }) => p.id === editId);
+        if (updated?.content_zh) {
+          setForm(prev => ({ ...prev, content_zh: updated.content_zh }));
+        }
+      } else {
+        alert('插图生成失败或无合适位置');
+      }
+    } catch { alert('插图生成失败'); }
+    setAiWorking(null);
+  }
+
   async function handleSave() {
     setSaving(true);
     const body = {
@@ -131,6 +199,8 @@ export default function BlogEditPage() {
   if (loading) {
     return <div className="p-8 text-center text-gray-500">加载中...</div>;
   }
+
+  const hasCover = form.cover_image_url && !form.cover_image_url.startsWith('[') && form.cover_image_url.startsWith('http');
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -185,81 +255,43 @@ export default function BlogEditPage() {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             封面图 Cover Image
-            {editId && (
-              <button
-                onClick={async (e) => {
-                  e.preventDefault();
-                  if (aiWorking === 'cover_image') return;
-                  setAiWorking('cover_image');
-                  try {
-                    const res = await fetch('/api/blog/generate-cover', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        postId: editId,
-                        title: form.title_zh || form.title_en,
-                        category: form.category,
-                      }),
-                    });
-                    const data = await res.json();
-                    if (data.imageUrl) {
-                      setForm(prev => ({ ...prev, cover_image_url: data.imageUrl }));
-                    } else {
-                      alert(data.error || 'AI封面生成失败');
-                    }
-                  } catch { alert('AI封面生成失败'); }
-                  setAiWorking(null);
-                }}
-                disabled={aiWorking === 'cover_image'}
-                className="ml-2 text-xs text-amber-600 hover:text-amber-700 disabled:opacity-50"
-              >
-                {aiWorking === 'cover_image' ? '⏳ 生成中(~15s)...' : '🎨 AI生成封面'}
-              </button>
-            )}
           </label>
+          {hasCover ? (
+            <div className="relative">
+              <img src={form.cover_image_url} alt="cover preview" className="rounded-lg w-full max-h-40 object-cover" />
+              {editId && (
+                <button
+                  onClick={generateCover}
+                  disabled={aiWorking === 'cover_image'}
+                  className="absolute top-2 right-2 px-2.5 py-1 text-xs bg-white/90 text-amber-700 rounded-lg hover:bg-white disabled:opacity-50 font-medium shadow"
+                >
+                  {aiWorking === 'cover_image' ? '⏳ 生成中(~15s)...' : '🔄 重新生成'}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
+              {aiWorking === 'cover_image' ? (
+                <p className="text-sm text-amber-600 animate-pulse">⏳ 封面图生成中(~15s)...</p>
+              ) : editId ? (
+                <button
+                  onClick={generateCover}
+                  className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+                >
+                  🎨 生成封面图
+                </button>
+              ) : (
+                <p className="text-sm text-gray-400">保存文章后可生成封面图</p>
+              )}
+            </div>
+          )}
           <input
             type="text"
             value={form.cover_image_url}
             onChange={e => setForm(prev => ({ ...prev, cover_image_url: e.target.value }))}
-            placeholder="图片URL（保存后可点击 AI生成封面）"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            placeholder="图片URL（或点击上方按钮AI生成）"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-2"
           />
-          {form.cover_image_url && !form.cover_image_url.startsWith('[') && form.cover_image_url.startsWith('http') && (
-            <div className="mt-2 relative">
-              <img src={form.cover_image_url} alt="cover preview" className="rounded-lg w-full max-h-40 object-cover" />
-              {editId && (
-                <button
-                  onClick={async (e) => {
-                    e.preventDefault();
-                    if (aiWorking === 'cover_image') return;
-                    setAiWorking('cover_image');
-                    try {
-                      const res = await fetch('/api/blog/generate-cover', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          postId: editId,
-                          title: form.title_zh || form.title_en,
-                          category: form.category,
-                        }),
-                      });
-                      const data = await res.json();
-                      if (data.imageUrl) {
-                        setForm(prev => ({ ...prev, cover_image_url: data.imageUrl }));
-                      } else {
-                        alert(data.error || '换一张失败');
-                      }
-                    } catch { alert('换一张失败'); }
-                    setAiWorking(null);
-                  }}
-                  disabled={aiWorking === 'cover_image'}
-                  className="absolute top-2 right-2 px-2.5 py-1 text-xs bg-white/90 text-amber-700 rounded-lg hover:bg-white disabled:opacity-50 font-medium shadow"
-                >
-                  {aiWorking === 'cover_image' ? '⏳ 生成中...' : '🔄 换一张'}
-                </button>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Content Tabs */}
@@ -336,6 +368,41 @@ export default function BlogEditPage() {
             </div>
           )}
         </div>
+
+        {/* Inline Images Management */}
+        {editId && contentTab === 'zh' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">文内插图 Inline Images ({inlineImages.length})</label>
+            {inlineImages.length > 0 ? (
+              <div className="space-y-2">
+                {inlineImages.map((img, i) => (
+                  <div key={i} className="flex items-center gap-3 p-2 border border-gray-200 rounded-lg">
+                    <img src={img.url} alt={img.alt} className="w-16 h-16 rounded object-cover flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-600 truncate">{img.alt || '无标题'}</p>
+                      <p className="text-[10px] text-gray-400 truncate">{img.url.slice(0, 60)}...</p>
+                    </div>
+                    <button
+                      onClick={() => removeInlineImage(img)}
+                      className="text-xs text-red-500 hover:text-red-700 px-2 py-1 flex-shrink-0"
+                    >
+                      🗑 删除
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400">暂无文内插图</p>
+            )}
+            <button
+              onClick={addInlineImage}
+              disabled={aiWorking === 'add_inline'}
+              className="mt-2 px-3 py-1.5 text-xs border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 disabled:opacity-50"
+            >
+              {aiWorking === 'add_inline' ? '⏳ 生成中(~20s)...' : '➕ 追加 1 张插图'}
+            </button>
+          </div>
+        )}
 
         {/* Status + Save */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-200">
