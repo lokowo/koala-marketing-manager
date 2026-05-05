@@ -14,6 +14,7 @@ interface BlogPost {
   created_at: string;
   published_at: string | null;
   tags: string[];
+  cover_image_url: string | null;
 }
 
 interface Professor {
@@ -229,6 +230,7 @@ export default function BlogPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-4">
+                  <CoverButton post={post} onDone={fetchPosts} />
                   <Link href={`/dashboard/koala/blog/edit?id=${post.id}`} className="text-sm text-gray-600 hover:text-amber-600 px-2 py-1">
                     编辑
                   </Link>
@@ -607,5 +609,40 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
         )}
       </div>
     </div>
+  );
+}
+
+function CoverButton({ post, onDone }: { post: BlogPost; onDone: () => void }) {
+  const [generating, setGenerating] = useState(false);
+
+  if (post.cover_image_url) return null;
+
+  async function handleGenerate() {
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/blog/generate-cover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: post.id,
+          title: post.title_zh || post.title_en || '',
+          category: post.category,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) onDone();
+      else alert(data.error || '封面生成失败');
+    } catch { alert('封面生成失败'); }
+    setGenerating(false);
+  }
+
+  return (
+    <button
+      onClick={handleGenerate}
+      disabled={generating}
+      className="text-sm text-purple-600 hover:text-purple-700 px-2 py-1 disabled:opacity-50"
+    >
+      {generating ? '⏳...' : '🎨 封面'}
+    </button>
   );
 }

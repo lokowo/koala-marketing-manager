@@ -185,17 +185,47 @@ export default function BlogEditPage() {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             封面图 Cover Image
-            <AIButton label="✨ AI生成封面" working={aiWorking === 'cover_prompt'} onClick={() => aiAssist('cover_prompt')} />
+            {editId && (
+              <button
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (aiWorking === 'cover_image') return;
+                  setAiWorking('cover_image');
+                  try {
+                    const res = await fetch('/api/blog/generate-cover', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        postId: editId,
+                        title: form.title_zh || form.title_en,
+                        category: form.category,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (data.imageUrl) {
+                      setForm(prev => ({ ...prev, cover_image_url: data.imageUrl }));
+                    } else {
+                      alert(data.error || 'AI封面生成失败');
+                    }
+                  } catch { alert('AI封面生成失败'); }
+                  setAiWorking(null);
+                }}
+                disabled={aiWorking === 'cover_image'}
+                className="ml-2 text-xs text-amber-600 hover:text-amber-700 disabled:opacity-50"
+              >
+                {aiWorking === 'cover_image' ? '⏳ 生成中(~15s)...' : '🎨 AI生成封面'}
+              </button>
+            )}
           </label>
           <input
             type="text"
             value={form.cover_image_url}
             onChange={e => setForm(prev => ({ ...prev, cover_image_url: e.target.value }))}
-            placeholder="图片URL（或点击AI生成获取推荐prompt）"
+            placeholder="图片URL（保存后可点击 AI生成封面）"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
           />
-          {form.cover_image_url?.startsWith('[AI Prompt]') && (
-            <p className="text-xs text-amber-600 mt-1">封面图Prompt已生成，可用于 DALL-E / Midjourney 生成图片后粘贴URL</p>
+          {form.cover_image_url && !form.cover_image_url.startsWith('[') && form.cover_image_url.startsWith('http') && (
+            <img src={form.cover_image_url} alt="cover preview" className="mt-2 rounded-lg w-full max-h-40 object-cover" />
           )}
         </div>
 
