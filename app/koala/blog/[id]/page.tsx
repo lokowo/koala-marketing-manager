@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Share2, Copy, Check } from 'lucide-react';
+import { ChevronLeft, Copy, Check, MoreHorizontal, Clock } from 'lucide-react';
 
 interface BlogPost {
   id: string;
@@ -35,9 +35,9 @@ export default function BlogDetailPage() {
   const { id } = useParams();
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showShare, setShowShare] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [wechatCopied, setWechatCopied] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [canNativeShare, setCanNativeShare] = useState(false);
+  const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
 
   useEffect(() => {
     fetch(`/api/blog/${id}`)
@@ -45,35 +45,74 @@ export default function BlogDetailPage() {
       .then(data => {
         setPost(data.post || null);
         setLoading(false);
+        if (data.post?.category) {
+          fetch(`/api/blog?public=true&category=${data.post.category}&limit=4`)
+            .then(r => r.json())
+            .then(rel => {
+              const filtered = (rel.posts || []).filter((p: BlogPost) => p.id !== id);
+              setRelatedPosts(filtered.slice(0, 3));
+            });
+        }
       })
       .catch(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    setCanNativeShare(typeof navigator !== 'undefined' && !!navigator.share);
+  }, []);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }
 
   function getShareUrl() {
     return typeof window !== 'undefined' ? window.location.href : '';
   }
 
-  function copyLink() {
-    navigator.clipboard.writeText(getShareUrl());
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  function getTitle() {
+    return post?.title_zh || post?.title_en || '';
   }
 
-  function copyForWechat() {
+  function copyLink() {
     navigator.clipboard.writeText(getShareUrl());
-    setWechatCopied(true);
-    setTimeout(() => setWechatCopied(false), 3000);
+    showToast('链接已复制');
+  }
+
+  function shareFacebook() {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getShareUrl())}`, '_blank');
   }
 
   function shareTwitter() {
-    const url = getShareUrl();
-    const text = post?.title_zh || post?.title_en || '';
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(getTitle())}&url=${encodeURIComponent(getShareUrl())}`, '_blank');
   }
 
   function shareLinkedIn() {
-    const url = getShareUrl();
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(getShareUrl())}`, '_blank');
+  }
+
+  function shareWhatsApp() {
+    window.open(`https://wa.me/?text=${encodeURIComponent(getTitle() + ' ' + getShareUrl())}`, '_blank');
+  }
+
+  function shareWechat() {
+    navigator.clipboard.writeText(getShareUrl());
+    showToast('链接已复制，请在微信中粘贴分享');
+  }
+
+  function shareXiaohongshu() {
+    navigator.clipboard.writeText(`${getTitle()}\n${getShareUrl()}`);
+    showToast('已复制，请在小红书中粘贴');
+  }
+
+  function shareEmail() {
+    window.open(`mailto:?subject=${encodeURIComponent(getTitle())}&body=${encodeURIComponent(getTitle() + '\n\n' + getShareUrl())}`, '_self');
+  }
+
+  async function shareNative() {
+    try {
+      await navigator.share({ title: getTitle(), url: getShareUrl() });
+    } catch { /* user cancelled */ }
   }
 
   if (loading) {
@@ -97,52 +136,19 @@ export default function BlogDetailPage() {
 
   return (
     <div style={{ background: '#080c10', minHeight: '100vh', paddingBottom: 120 }}>
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-medium" style={{ background: '#c9a96e', color: '#080c10' }}>
+          {toast}
+        </div>
+      )}
+
       {/* Header */}
-      <div className="flex px-4 pt-4 pb-2 items-center justify-between sticky top-0 z-10" style={{ background: '#080c10' }}>
+      <div className="flex px-4 pt-4 pb-2 items-center sticky top-0 z-10" style={{ background: '#080c10' }}>
         <Link href="/koala/blog" className="size-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(201,169,110,0.06)' }}>
           <ChevronLeft className="size-5" style={{ color: '#e8e4dc' }} />
         </Link>
-        <button
-          onClick={() => setShowShare(!showShare)}
-          className="size-9 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(201,169,110,0.06)' }}
-        >
-          <Share2 className="size-4" style={{ color: '#c9a96e' }} />
-        </button>
       </div>
-
-      {/* Share Panel */}
-      {showShare && (
-        <div className="mx-4 mb-4 p-4 rounded-2xl" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 4px 16px rgba(196,160,80,0.12)' }}>
-          <p className="text-sm font-medium mb-3" style={{ color: '#e8e4dc' }}>分享文章</p>
-          <div className="grid grid-cols-4 gap-3">
-            <button onClick={copyLink} className="flex flex-col items-center gap-1.5">
-              <div className="size-10 rounded-full flex items-center justify-center" style={{ background: copied ? '#d1fae5' : 'rgba(201,169,110,0.06)' }}>
-                {copied ? <Check className="size-4 text-green-600" /> : <Copy className="size-4" style={{ color: '#c9a96e' }} />}
-              </div>
-              <span className="text-[10px]" style={{ color: '#a8b8ac' }}>{copied ? '已复制' : '复制链接'}</span>
-            </button>
-            <button onClick={copyForWechat} className="flex flex-col items-center gap-1.5">
-              <div className="size-10 rounded-full flex items-center justify-center" style={{ background: wechatCopied ? '#d1fae5' : '#e6f7e6' }}>
-                {wechatCopied ? <Check className="size-4 text-green-600" /> : <span className="text-lg">💬</span>}
-              </div>
-              <span className="text-[10px]" style={{ color: '#a8b8ac' }}>{wechatCopied ? '已复制，请在微信中粘贴分享' : '微信'}</span>
-            </button>
-            <button onClick={shareTwitter} className="flex flex-col items-center gap-1.5">
-              <div className="size-10 rounded-full flex items-center justify-center" style={{ background: '#e8f4fd' }}>
-                <span className="text-lg">𝕏</span>
-              </div>
-              <span className="text-[10px]" style={{ color: '#a8b8ac' }}>Twitter</span>
-            </button>
-            <button onClick={shareLinkedIn} className="flex flex-col items-center gap-1.5">
-              <div className="size-10 rounded-full flex items-center justify-center" style={{ background: '#e8f0fa' }}>
-                <span className="text-lg">in</span>
-              </div>
-              <span className="text-[10px]" style={{ color: '#a8b8ac' }}>LinkedIn</span>
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Article */}
       <article className="px-5 lg:px-0 lg:max-w-2xl lg:mx-auto">
@@ -177,28 +183,61 @@ export default function BlogDetailPage() {
           </div>
         )}
 
-        {/* Content - simple markdown rendering */}
+        {/* Content */}
         <div
           className="prose prose-sm max-w-none"
           style={{ color: '#e8e4dc', lineHeight: 1.8 }}
           dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
         />
 
-        {/* Bottom share bar */}
+        {/* Share Bar */}
         <div className="mt-8 pt-6" style={{ borderTop: '1px solid rgba(201,169,110,0.1)' }}>
-          <p className="text-sm font-medium mb-3" style={{ color: '#a8b8ac' }}>觉得有帮助？分享给朋友</p>
-          <div className="flex gap-2">
-            <button onClick={copyLink} className="px-4 py-2 text-xs rounded-full flex items-center gap-1.5" style={{ background: 'rgba(201,169,110,0.06)', color: '#a8b8ac' }}>
-              <Copy className="size-3" /> {copied ? '已复制' : '复制链接'}
+          <p className="text-sm font-medium mb-3" style={{ color: '#a8b8ac' }}>分享文章</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <ShareBtn onClick={shareFacebook} label="f" title="Facebook" />
+            <ShareBtn onClick={shareTwitter} label="𝕏" title="X" />
+            <ShareBtn onClick={shareLinkedIn} label="in" title="LinkedIn" />
+            <ShareBtn onClick={shareWhatsApp} label="📱" title="WhatsApp" />
+            <ShareBtn onClick={shareWechat} label="💬" title="微信" />
+            <ShareBtn onClick={shareXiaohongshu} label="📕" title="小红书" />
+            <ShareBtn onClick={shareEmail} label="✉" title="邮件" />
+            <button onClick={copyLink} title="复制链接" className="size-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(201,169,110,0.06)' }}>
+              <Copy className="size-3.5" style={{ color: '#c9a96e' }} />
             </button>
-            <button onClick={shareTwitter} className="px-4 py-2 text-xs rounded-full" style={{ background: 'rgba(201,169,110,0.06)', color: '#a8b8ac' }}>
-              𝕏 Twitter
-            </button>
-            <button onClick={shareLinkedIn} className="px-4 py-2 text-xs rounded-full" style={{ background: 'rgba(201,169,110,0.06)', color: '#a8b8ac' }}>
-              LinkedIn
-            </button>
+            {canNativeShare && (
+              <button onClick={shareNative} title="更多" className="size-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(201,169,110,0.06)' }}>
+                <MoreHorizontal className="size-3.5" style={{ color: '#c9a96e' }} />
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Related Posts */}
+        {relatedPosts.length > 0 && (
+          <div className="mt-8 pt-6" style={{ borderTop: '1px solid rgba(201,169,110,0.1)' }}>
+            <p className="text-sm font-medium mb-3" style={{ color: '#a8b8ac' }}>相关文章</p>
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
+              {relatedPosts.map(rp => (
+                <Link
+                  key={rp.id}
+                  href={`/koala/blog/${rp.id}`}
+                  className="flex-shrink-0 w-56 p-3 rounded-xl no-underline"
+                  style={{ background: 'rgba(201,169,110,0.06)' }}
+                >
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full inline-block mb-2" style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}>
+                    {CATEGORY_LABELS[rp.category] || rp.category}
+                  </span>
+                  <p className="text-sm font-medium line-clamp-2 leading-snug mb-1.5" style={{ color: '#e8e4dc' }}>
+                    {rp.title_zh || rp.title_en}
+                  </p>
+                  <span className="text-[11px] flex items-center gap-1" style={{ color: '#6a7a7e' }}>
+                    <Clock className="size-3" /> {rp.reading_time_zh} min
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* CTA */}
         <div className="mt-6 p-4 rounded-2xl" style={{ background: 'rgba(201,169,110,0.1)' }}>
@@ -209,6 +248,14 @@ export default function BlogDetailPage() {
         </div>
       </article>
     </div>
+  );
+}
+
+function ShareBtn({ onClick, label, title }: { onClick: () => void; label: string; title: string }) {
+  return (
+    <button onClick={onClick} title={title} className="size-9 rounded-full flex items-center justify-center text-sm" style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e' }}>
+      {label}
+    </button>
   );
 }
 
