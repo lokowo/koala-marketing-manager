@@ -1,14 +1,19 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 
-const NEWS_QUERIES = [
-  'Australia PhD funding 2026',
-  'Australian university news',
-  'international student Australia policy',
-  'OpenAI DeepMind AI research latest',
-  'Australia cost of living students',
-  'PhD career prospects technology industry',
-];
+function getNewsQueries() {
+  const now = new Date();
+  const month = now.toLocaleString('en-US', { month: 'long' });
+  const year = now.getFullYear();
+  return [
+    `Australia PhD funding ${month} ${year}`,
+    `Australian university news ${month} ${year}`,
+    `international student Australia policy ${month} ${year}`,
+    `OpenAI DeepMind AI research news today`,
+    `Australia cost of living students ${year}`,
+    `PhD career prospects technology industry ${month} ${year}`,
+  ];
+}
 
 const FALLBACK_PROMPT = `You are a content strategist for Koala PhD (koalaphd.com), an academic matching platform connecting Chinese students with Australian PhD supervisors.
 
@@ -42,7 +47,7 @@ export async function GET(req: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-    const selectedQueries = [...NEWS_QUERIES]
+    const selectedQueries = getNewsQueries()
       .sort(() => Math.random() - 0.5)
       .slice(0, 4);
 
@@ -56,7 +61,12 @@ export async function GET(req: NextRequest) {
         tools: [{ type: 'web_search_20250305', name: 'web_search' }] as any[],
         messages: [{
           role: 'user',
-          content: `Search for 8 recent news articles about: Australia PhD, Australian university policy, AI technology research, international students Australia. For each article return: title, source, date, one-sentence summary. Return as a numbered list.`,
+          content: `Search for the LATEST news from the past 48 hours (today is ${new Date().toISOString().split('T')[0]}) about these topics: ${selectedQueries.join(', ')}.
+
+CRITICAL: Only include news published within the last 2 days. Ignore anything older.
+
+For each article return: title, source name, publication date, one-sentence summary.
+Return as a numbered list. If no recent news found for a topic, skip it.`,
         }],
       });
 
