@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 
 const CATEGORIES: Record<string, string> = {
@@ -14,6 +14,8 @@ const CATEGORIES: Record<string, string> = {
   news: '行业新闻',
 };
 
+type GenStep = 'idle' | 'writing_zh' | 'translating' | 'seo' | 'done' | 'error' | 'slow';
+
 export default function AIContentPage() {
   const [tab, setTab] = useState<'single' | 'batch'>('single');
   const [topic, setTopic] = useState('');
@@ -22,12 +24,34 @@ export default function AIContentPage() {
   const [publishMode, setPublishMode] = useState('draft');
   const [imageCount, setImageCount] = useState(0);
   const [generating, setGenerating] = useState(false);
+  const [genStep, setGenStep] = useState<GenStep>('idle');
   const [result, setResult] = useState<{ success?: boolean; post?: { id: string; title_zh: string }; error?: string } | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const startRef = useRef<number>(0);
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
 
   async function handleGenerate() {
     if (!topic.trim()) return alert('请输入文章主题');
     setGenerating(true);
     setResult(null);
+    setGenStep('writing_zh');
+    startRef.current = Date.now();
+
+    timerRef.current = setTimeout(() => {
+      setGenStep(prev => prev !== 'done' && prev !== 'error' ? 'slow' : prev);
+    }, 60000);
+
+    const stepTimer1 = setTimeout(() => {
+      setGenStep(prev => prev === 'writing_zh' ? 'translating' : prev);
+    }, 12000);
+
+    const stepTimer2 = setTimeout(() => {
+      setGenStep(prev => prev === 'translating' ? 'seo' : prev);
+    }, 22000);
+
     try {
       const res = await fetch('/api/blog/generate', {
         method: 'POST',
@@ -36,12 +60,28 @@ export default function AIContentPage() {
       });
       const data = await res.json();
       setResult(data);
+      setGenStep(data.success ? 'done' : 'error');
       if (data.success) setTopic('');
     } catch (e) {
       setResult({ error: String(e) });
+      setGenStep('error');
     }
+
+    clearTimeout(stepTimer1);
+    clearTimeout(stepTimer2);
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
     setGenerating(false);
   }
+
+  const stepLabels: Record<GenStep, string> = {
+    idle: '',
+    writing_zh: '正在撰写中文...',
+    translating: '正在翻译英文...',
+    seo: '正在优化SEO...',
+    done: '完成！',
+    error: '生成失败',
+    slow: '生成时间较长，请耐心等待...',
+  };
 
   return (
     <div className="space-y-6">
@@ -129,18 +169,56 @@ export default function AIContentPage() {
           disabled={generating || !topic.trim()}
           className="w-full py-3 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {generating ? '⏳ 生成中...（约30-60秒）' : '✨ 生成文章（中文撰写 → 英文翻译 → SEO优化）'}
+          {generating ? '⏳ 生成中...' : '✨ 生成文章（中文撰写 → 英文翻译 → SEO优化）'}
         </button>
 
-        {result && (
+        {/* Generation Progress */}
+        {generating && genStep !== 'idle' && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-5 h-5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm font-medium text-amber-800">{stepLabels[genStep]}</span>
+            </div>
+            <div className="space-y-1.5 text-xs">
+              <p className={genStep === 'writing_zh' || genStep === 'slow' ? 'text-amber-700 font-medium' : genStep === 'translating' || genStep === 'seo' || genStep === 'done' ? 'text-green-600' : 'text-gray-400'}>
+                {(genStep === 'translating' || genStep === 'seo' || genStep === 'done') ? '✅' : '⏳'} 1. 中文撰写
+              </p>
+              <p className={genStep === 'translating' ? 'text-amber-700 font-medium' : genStep === 'seo' || genStep === 'done' ? 'text-green-600' : 'text-gray-400'}>
+                {(genStep === 'seo' || genStep === 'done') ? '✅' : genStep === 'translating' ? '⏳' : '⏸'} 2. 英文翻译
+              </p>
+              <p className={genStep === 'seo' ? 'text-amber-700 font-medium' : genStep === 'done' ? 'text-green-600' : 'text-gray-400'}>
+                {genStep === 'done' ? '✅' : genStep === 'seo' ? '⏳' : '⏸'} 3. SEO优化
+              </p>
+            </div>
+            {genStep === 'slow' && (
+              <p className="text-xs text-amber-600 mt-2">⚠ 生成时间较长，请耐心等待...</p>
+            )}
+          </div>
+        )}
+
+        {/* Result */}
+        {result && !generating && (
           <div className={`p-4 rounded-lg ${result.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
             {result.success ? (
               <div>
                 <p className="text-green-700 font-medium">✅ 文章生成成功！</p>
                 <p className="text-sm text-green-600 mt-1">{result.post?.title_zh}</p>
-                <Link href="/dashboard/koala/blog" className="text-sm text-green-700 underline mt-2 inline-block">
-                  → 前往博客管理查看
-                </Link>
+                <p className="text-xs text-green-500 mt-0.5">
+                  {publishMode === 'publish' ? '已发布' : '已保存为草稿'}
+                </p>
+                <div className="flex gap-3 mt-3">
+                  {result.post?.id && (
+                    <Link href={`/dashboard/koala/blog/edit?id=${result.post.id}`} className="text-sm text-amber-700 underline">
+                      查看文章
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => { setResult(null); setGenStep('idle'); }}
+                    className="text-sm text-gray-600 underline"
+                  >
+                    继续生成
+                  </button>
+                </div>
               </div>
             ) : (
               <p className="text-red-700 text-sm">❌ {result.error || '生成失败'}</p>
