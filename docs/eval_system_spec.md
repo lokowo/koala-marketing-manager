@@ -229,7 +229,7 @@ async function evaluateResponse(
 // 用 Claude 做判断的辅助函数
 async function claudeJudge(prompt: string): Promise<string> {
   const resp = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 10,
     messages: [{ role: 'user', content: prompt }],
   });

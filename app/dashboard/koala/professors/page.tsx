@@ -122,12 +122,18 @@ export default function ProfessorsPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {professors.map((prof) => (
                 <tr key={prof.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{prof.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <Link href={`/dashboard/koala/professors/${prof.id}`} className="text-blue-600 hover:text-blue-900 hover:underline">
+                      {prof.name}
+                    </Link>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{prof.university}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{prof.title}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{prof.researchAreas.join(', ')}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{prof.grantStatus}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{prof.email}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {prof.email || <span className="inline-flex items-center gap-1 text-orange-600"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> 缺失</span>}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       prof.verificationStatus === 'Verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'

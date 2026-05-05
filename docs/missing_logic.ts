@@ -219,7 +219,7 @@ ${batch.map(p => JSON.stringify({
 只返回 JSON，不要任何其他文字。`;
 
   const response = await anthropicClient.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 4000,
     messages: [{ role: 'user', content: matchPrompt }],
   });
@@ -344,7 +344,7 @@ async function generateOutreachEmail(
 }`;
 
   const response = await anthropicClient.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 2000,
     messages: [{ role: 'user', content: prompt }],
   });
@@ -691,7 +691,7 @@ async function parseStudentCV(
 
   // 2. Claude 结构化
   const response = await anthropicClient.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 1500,
     messages: [{
       role: 'user',

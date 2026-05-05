@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     const stylePrompt = STYLE_PROMPTS[style] || STYLE_PROMPTS.casual;
 
     const zhResponse = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 3000,
       messages: [{ role: 'user', content: `请根据以下主题写一篇博客文章。\n\n主题：${topic}\n分类：${catLabel}\n${stylePrompt}\n\n要求：\n- Markdown格式，1200-2000字\n- 80%是主题本身的深度分析，20%自然关联到澳洲PhD申请\n- 包含真实数据和统计（如有）\n- 自然融入SEO关键词：澳洲、PhD、博士、留学、scholarship、申请、supervisor\n- Koala PhD提及最多1-2句放在文章末尾\n- 语气像考拉学长：温暖专业的学长分享\n\n请返回JSON格式：\n{"titleZh": "中文标题", "excerptZh": "100字摘要", "contentZh": "正文markdown", "tags": ["标签1","标签2",...], "imageKeywords": ["封面图关键词"]}` }],
       system: SYSTEM_PROMPT,
@@ -84,19 +84,19 @@ export async function POST(req: NextRequest) {
 
     const [enResponse, seoZhResponse, seoEnResponse] = await Promise.all([
       anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 3000,
         messages: [{ role: 'user', content: `Translate the following Chinese blog article to English. Keep the same structure and markdown format.\n\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\nContent:\n${zhData.contentZh}\n\nReturn JSON: {"titleEn": "...", "excerptEn": "...", "contentEn": "..."}` }],
         system: 'You are a professional translator. Return valid JSON only.',
       }),
       anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 500,
         messages: [{ role: 'user', content: `Generate SEO metadata in Chinese for this blog article about Australian PhD study.\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\n\nReturn JSON: {"seoTitle": "max 60 chars", "seoDescription": "max 160 chars", "seoKeywords": "comma-separated, include: 澳洲PhD, 博士留学, scholarship"}` }],
         system: 'Return valid JSON only.',
       }),
       anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 500,
         messages: [{ role: 'user', content: `Generate SEO metadata in English for this blog article about Australian PhD study.\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\n\nReturn JSON: {"seoTitle": "max 60 chars", "seoDescription": "max 160 chars", "seoKeywords": "comma-separated, include: Australia PhD, scholarship, supervisor"}` }],
         system: 'Return valid JSON only.',

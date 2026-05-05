@@ -20,7 +20,7 @@ const LIMIT = parseInt(process.argv.find(a => a.startsWith('--limit='))?.split('
 
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
-async function findEmail(name: string, university: string): Promise<{ email: string | null; currentUni: string | null; source: string }> {
+async function findEmail(name: string, university: string, retries = 3): Promise<{ email: string | null; currentUni: string | null; source: string }> {
   try {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
@@ -46,17 +46,28 @@ If you truly cannot find it after searching, return: NOT_FOUND`
       if ((block as any).type === 'text') allText.push((block as any).text);
     }
     const text = allText.join('\n').trim();
-    
+
     const emailMatch = text.match(/[\w.+-]+@[\w.-]+\.edu\.au/i);
     const uniMatch = text.match(/UNIVERSITY:\s*(.+)/i);
-    
+
     if (emailMatch) {
       return { email: emailMatch[0].toLowerCase(), currentUni: uniMatch?.[1]?.trim() ?? null, source: 'ai-web-search' };
     }
     return { email: null, currentUni: null, source: 'ai-not-found' };
   } catch (e: any) {
-    if (e?.status === 429) { console.log('  ⏳ Rate limited, waiting 60s...'); await sleep(60000); return findEmail(name, university); }
-    return { email: null, currentUni: null, source: `ai-error: ${e?.message?.slice(0, 80)}` };
+    if (e?.status === 429) {
+      console.log('  ⏳ Rate limited, waiting 60s...');
+      await sleep(60000);
+      if (retries <= 0) return { email: null, currentUni: null, source: 'ai-error: rate limit retries exhausted' };
+      return findEmail(name, university, retries - 1);
+    }
+    const msg = e?.message ?? '';
+    if ((msg.includes('Connection error') || msg.includes('timed out')) && retries > 0) {
+      console.log(`  ⏳ ${msg.includes('timed out') ? 'Timed out' : 'Connection error'}, waiting 30s... (${retries - 1} retries left)`);
+      await sleep(30000);
+      return findEmail(name, university, retries - 1);
+    }
+    return { email: null, currentUni: null, source: `ai-error: ${msg.slice(0, 80)}` };
   }
 }
 
@@ -93,7 +104,7 @@ async function main() {
       if (result.source.includes('error')) errors++; else notFound++;
       console.log(`✗ [${result.source}]`);
     }
-    await sleep(1000);
+    await sleep(3000);
   }
 
   console.log(`\nDone! Found: ${found} | Moved: ${moved} | Not found: ${notFound} | Errors: ${errors} | Total: ${profs.length}`);

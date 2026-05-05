@@ -36,7 +36,7 @@ Styling:      Tailwind CSS
 Database:     Supabase PostgreSQL + pgvector
 Auth:         Supabase Auth
 Storage:      Supabase Storage
-AI:           Anthropic Claude API (claude-sonnet-4-20250514)
+AI:           Anthropic Claude API (claude-sonnet-4-6)
 Embedding:    OpenAI text-embedding-3-small (1536 dims)
 Papers:       Semantic Scholar API (free)
 PDF:          @react-pdf/renderer
@@ -294,7 +294,7 @@ export async function POST(req: Request) {
   
   // 5. 调用 Claude API
   const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-4-6",
     max_tokens: 2000,
     system: systemPrompt,
     messages: messages.map(m => ({ role: m.role, content: m.content })),
