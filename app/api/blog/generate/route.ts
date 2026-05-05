@@ -52,7 +52,7 @@ BRAND RULES:
 
 SEO KEYWORDS to weave in naturally: 澳洲, PhD, 博士, 留学, scholarship, 申请, supervisor
 
-Always return valid JSON only, no markdown code blocks.`;
+CRITICAL: Return ONLY valid JSON. Use proper JSON escaping: \\n for newlines, \\" for quotes inside strings. No markdown code fences. No text before or after the JSON object.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -75,11 +75,31 @@ export async function POST(req: NextRequest) {
 
     const zhText = zhResponse.content[0].type === 'text' ? zhResponse.content[0].text : '';
     let zhData: { titleZh: string; excerptZh: string; contentZh: string; tags: string[]; imageKeywords?: string[] };
+
+    const stripped = zhText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+    const candidate = jsonMatch ? jsonMatch[0] : stripped;
+
     try {
-      const cleaned = zhText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      zhData = JSON.parse(cleaned);
+      zhData = JSON.parse(candidate);
     } catch {
-      return Response.json({ error: 'AI generation failed - invalid JSON response', raw: zhText.slice(0, 200) }, { status: 500 });
+      try {
+        const fixResponse = await anthropic.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 4000,
+          messages: [{
+            role: 'user',
+            content: `The following text is malformed JSON. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), contentZh (string), tags (array of strings), imageKeywords (array of strings, optional). Ensure all string values properly escape quotes and newlines.\n\n${candidate.slice(0, 6000)}`,
+          }],
+          system: 'Return ONLY valid JSON. No markdown, no explanation, no code fences.',
+        });
+        const fixText = fixResponse.content[0].type === 'text' ? fixResponse.content[0].text : '';
+        const fixCleaned = fixText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        const fixMatch = fixCleaned.match(/\{[\s\S]*\}/);
+        zhData = JSON.parse(fixMatch ? fixMatch[0] : fixCleaned);
+      } catch {
+        return Response.json({ error: 'AI generation failed - invalid JSON response', raw: zhText.slice(0, 200) }, { status: 500 });
+      }
     }
 
     const [enResponse, seoZhResponse, seoEnResponse] = await Promise.all([

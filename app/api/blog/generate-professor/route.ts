@@ -114,15 +114,35 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
 - 文末加一句引导：想了解更多？在 Koala PhD 查看 ${profName} 教授的完整档案
 
 返回JSON：{"titleZh": "中文标题", "excerptZh": "100字摘要", "contentZh": "正文markdown", "tags": ["标签1","标签2",...]}` }],
-      system: 'You are 考拉学长, content writer for Koala PhD (koalaphd.com). Return valid JSON only, no markdown code blocks.',
+      system: 'You MUST return ONLY valid JSON. All string values must use proper JSON escaping: use \\n for newlines, \\" for quotes inside strings. Do not use markdown code fences. Do not add any text before or after the JSON object.',
     });
 
     let zhText = '';
     for (const block of zhResponse.content) {
       if (block.type === 'text') { zhText = block.text; break; }
     }
-    const cleaned = zhText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    zhData = JSON.parse(cleaned);
+
+    const stripped = zhText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+    const candidate = jsonMatch ? jsonMatch[0] : stripped;
+
+    try {
+      zhData = JSON.parse(candidate);
+    } catch {
+      const fixResponse = await anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4000,
+        messages: [{
+          role: 'user',
+          content: `The following text is malformed JSON. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), contentZh (string), tags (array of strings). Ensure all string values properly escape quotes and newlines.\n\n${candidate.slice(0, 6000)}`,
+        }],
+        system: 'Return ONLY valid JSON. No markdown, no explanation, no code fences.',
+      });
+      const fixText = fixResponse.content[0].type === 'text' ? fixResponse.content[0].text : '';
+      const fixCleaned = fixText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const fixMatch = fixCleaned.match(/\{[\s\S]*\}/);
+      zhData = JSON.parse(fixMatch ? fixMatch[0] : fixCleaned);
+    }
   } catch (e) {
     return Response.json({ error: 'Chinese article generation failed', details: (e as Error).message }, { status: 500 });
   }
