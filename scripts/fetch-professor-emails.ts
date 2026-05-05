@@ -376,7 +376,7 @@ async function main() {
   const { data: professors, error } = await supabase
     .from('professors')
     .select('id, name, university, profile_url, email')
-    .is('email', null)
+    .or('email.is.null,email.eq.')
     .order('opportunity_score', { ascending: false })
     .limit(limitN);
 
