@@ -1,35 +1,14 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 
-const NEWS_CATEGORIES: Record<string, string[]> = {
-  '澳洲教育政策': ['Australia international student policy 2026', 'Australia university funding cap changes'],
-  '学术圈动态': ['Australia ARC research grant 2026', 'world university ranking QS THE 2026'],
-  '国际时事与留学': ['China Australia education relations 2026', 'geopolitics international students'],
-  '科技公司与AI': ['AI research breakthrough 2026', 'OpenAI DeepMind biotech discovery'],
-  '留学生活': ['Australia student cost of living 2026', 'PhD student mental health support'],
-  '职业与产业': ['Australia PhD career outcomes industry', 'academic job market Australia 2026'],
-};
-
-async function fetchNewsWithWebSearch(anthropic: Anthropic, keywords: string[]): Promise<string> {
-  try {
-    const searchQuery = keywords.join('; ');
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
-      tools: [{ type: 'web_search' as any, name: 'web_search' }] as any,
-      messages: [{
-        role: 'user',
-        content: `Search for the latest news about each of these topics and return a summary of 8-10 recent news items with title, source, date, and a one-sentence summary:\n\n${searchQuery}\n\nFormat each item as: [Source] Title (Date) - Summary`,
-      }],
-    });
-
-    const textBlocks = response.content.filter((b: any) => b.type === 'text');
-    return textBlocks.map((b: any) => b.text).join('\n');
-  } catch (error) {
-    console.error('[blog/topics] web_search failed:', error);
-    return '';
-  }
-}
+const NEWS_QUERIES = [
+  'Australia PhD funding 2026',
+  'Australian university news',
+  'international student Australia policy',
+  'OpenAI DeepMind AI research latest',
+  'Australia cost of living students',
+  'PhD career prospects technology industry',
+];
 
 const FALLBACK_PROMPT = `You are a content strategist for Koala PhD (koalaphd.com), an academic matching platform connecting Chinese students with Australian PhD supervisors.
 
@@ -63,24 +42,46 @@ export async function GET(req: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-    const categoryKeys = Object.keys(NEWS_CATEGORIES);
-    const selectedCategories = categoryKeys.sort(() => Math.random() - 0.5).slice(0, 4);
-    const keywords = selectedCategories.map(cat => {
-      const queries = NEWS_CATEGORIES[cat];
-      return queries[Math.floor(Math.random() * queries.length)];
-    });
+    const selectedQueries = [...NEWS_QUERIES]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 4);
 
-    const newsContext = await fetchNewsWithWebSearch(anthropic, keywords);
-
-    let prompt: string;
+    let newsData = '';
     let newsCount = 0;
 
-    if (newsContext.trim().length > 0) {
-      newsCount = (newsContext.match(/\[.*?\]/g) || []).length;
+    try {
+      const searchResponse = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        tools: [{ type: 'web_search_20250305' as any, name: 'web_search' }] as any,
+        messages: [{
+          role: 'user',
+          content: `Search for recent news about these topics: ${selectedQueries.join(', ')}.
+Return a numbered list of 8-10 recent news items. For each item include:
+- Title
+- Source name and date
+- One sentence summary
+Only return the list, no other text.`,
+        }],
+      });
+
+      const textBlocks = searchResponse.content.filter((b: any) => b.type === 'text');
+      newsData = textBlocks.map((b: any) => b.text).join('\n').trim();
+      if (newsData) {
+        const lines = newsData.split('\n').filter(l => l.trim().length > 0);
+        newsCount = lines.filter(l => /^\d+[\.\)]/.test(l.trim())).length || lines.length;
+      }
+    } catch (error) {
+      console.error('[blog/topics] web_search failed:', error);
+    }
+
+    let prompt: string;
+
+    if (newsData.length > 0) {
       prompt = `Based on the following real-time news gathered via web search, suggest ${count} blog article topics for Koala PhD (koalaphd.com), an academic matching platform connecting Chinese students with Australian PhD supervisors.
 
 NEWS:
-${newsContext}
+${newsData}
 
 Consider these 6 news source categories when selecting angles:
 1. 澳洲教育政策 2. 学术圈动态 3. 国际时事与留学 4. 科技公司与AI 5. 留学生活 6. 职业与产业
@@ -113,7 +114,7 @@ DIVERSITY RULES:
       topics = [];
     }
 
-    return Response.json({ topics, newsCount: newsCount || topics.length });
+    return Response.json({ topics, newsCount });
   } catch (error) {
     console.error('[blog/topics]', error);
     return Response.json({ error: 'Internal server error', details: String(error) }, { status: 500 });
