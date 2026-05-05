@@ -1,17 +1,14 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 
-function getNewsQueries() {
-  const now = new Date();
-  const month = now.toLocaleString('en-US', { month: 'long' });
-  const year = now.getFullYear();
+function getNewsQueries(todayStr: string) {
   return [
-    `Australia PhD funding ${month} ${year}`,
-    `Australian university news ${month} ${year}`,
-    `international student Australia policy ${month} ${year}`,
+    `Australia PhD funding news ${todayStr}`,
+    `Australian university policy news today`,
+    `international student Australia ${todayStr}`,
     `OpenAI DeepMind AI research news today`,
-    `Australia cost of living students ${year}`,
-    `PhD career prospects technology industry ${month} ${year}`,
+    `Australia cost of living students news today`,
+    `tech industry hiring PhD Australia news today`,
   ];
 }
 
@@ -47,7 +44,12 @@ export async function GET(req: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-    const selectedQueries = getNewsQueries()
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const cutoffDate = new Date(today.getTime() - 48 * 60 * 60 * 1000);
+    const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
+    const selectedQueries = getNewsQueries(todayStr)
       .sort(() => Math.random() - 0.5)
       .slice(0, 4);
 
@@ -61,20 +63,46 @@ export async function GET(req: NextRequest) {
         tools: [{ type: 'web_search_20250305', name: 'web_search' }] as any[],
         messages: [{
           role: 'user',
-          content: `Search for the LATEST news from the past 48 hours (today is ${new Date().toISOString().split('T')[0]}) about these topics: ${selectedQueries.join(', ')}.
+          content: `Today's date is ${todayStr}.
 
-CRITICAL: Only include news published within the last 2 days. Ignore anything older.
+CRITICAL CONSTRAINTS:
+- ONLY return news published between ${cutoffStr} and ${todayStr}
+- DO NOT include any article older than 48 hours
+- If a search returns old results, skip them and only keep recent ones
+- If no recent news found for a topic, skip that topic entirely
 
-For each article return: title, source name, publication date, one-sentence summary.
-Return as a numbered list. If no recent news found for a topic, skip it.`,
+Search for the LATEST news (past 48 hours only) about: ${selectedQueries.join(', ')}.
+
+For each recent news item return:
+- Title
+- Source name
+- Publication date (MUST be ${cutoffStr} or later)
+- One-sentence summary
+
+Return as a numbered list. Reject anything older than ${cutoffStr}.`,
         }],
       });
 
       const textBlocks = searchResponse.content.filter((b: any) => b.type === 'text');
       newsData = textBlocks.map((b: any) => b.text).join('\n').trim();
+
       if (newsData) {
         const lines = newsData.split('\n').filter(l => l.trim().length > 0);
-        newsCount = lines.filter(l => /^\d+[\.\)]/.test(l.trim())).length || lines.length;
+        const numberedLines = lines.filter(l => /^\d+[\.\)]/.test(l.trim()));
+        const newsLines = numberedLines.length > 0 ? numberedLines : lines;
+
+        // Filter out news with dates clearly older than cutoff
+        const filteredLines = newsLines.filter(line => {
+          const dateMatch = line.match(/(\d{4}-\d{2}-\d{2})/);
+          if (dateMatch) {
+            return dateMatch[1] >= cutoffStr;
+          }
+          // If no parseable date, keep the line (avoid false negatives)
+          return true;
+        });
+
+        newsCount = filteredLines.length;
+        newsData = filteredLines.join('\n');
       }
     } catch (error) {
       console.error('[blog/topics] web_search failed:', error);
@@ -85,7 +113,7 @@ Return as a numbered list. If no recent news found for a topic, skip it.`,
     if (newsData.length > 0) {
       prompt = `Based on the following real-time news gathered via web search, suggest ${count} blog article topics for Koala PhD (koalaphd.com), an academic matching platform connecting Chinese students with Australian PhD supervisors.
 
-NEWS:
+NEWS (all from the past 48 hours):
 ${newsData}
 
 Consider these 6 news source categories when selecting angles:
@@ -119,7 +147,7 @@ DIVERSITY RULES:
       topics = [];
     }
 
-    return Response.json({ topics, newsCount });
+    return Response.json({ topics, newsCount, dateRange: `${cutoffStr} to ${todayStr}` });
   } catch (error) {
     console.error('[blog/topics]', error);
     return Response.json({ error: 'Internal server error', details: String(error) }, { status: 500 });

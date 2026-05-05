@@ -4,13 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 
 interface Topic {
+  id: string;
   title: string;
   category: string;
   style: string;
   source: string;
   sourceDate: string;
   reason: string;
-  selected?: boolean;
 }
 
 interface GenerationItem {
@@ -41,6 +41,7 @@ const STYLE_LABELS: Record<string, string> = {
 
 export default function BatchGeneratePage() {
   const [topics, setTopics] = useState<Topic[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [newsCount, setNewsCount] = useState(0);
   const [loadingTopics, setLoadingTopics] = useState(false);
   const [publishMode, setPublishMode] = useState('draft');
@@ -58,7 +59,12 @@ export default function BatchGeneratePage() {
     try {
       const res = await fetch('/api/blog/topics?count=8');
       const data = await res.json();
-      setTopics((data.topics || []).map((t: Topic) => ({ ...t, selected: true })));
+      const loadedTopics = (data.topics || []).map((t: any, i: number) => ({
+        ...t,
+        id: `topic-${i}-${Date.now()}`,
+      }));
+      setTopics(loadedTopics);
+      setSelectedIds(new Set());
       setNewsCount(data.newsCount || 0);
     } catch { /* ignore */ }
     setLoadingTopics(false);
@@ -66,18 +72,30 @@ export default function BatchGeneratePage() {
 
   useEffect(() => { fetchTopics(); }, []);
 
-  function toggleTopic(idx: number) {
-    setTopics(prev => prev.map((t, i) => i === idx ? { ...t, selected: !t.selected } : t));
+  function toggleTopic(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   }
 
-  function selectAll(val: boolean) {
-    setTopics(prev => prev.map(t => ({ ...t, selected: val })));
+  function selectAll() {
+    setSelectedIds(new Set(topics.map(t => t.id)));
   }
 
-  const selectedCount = topics.filter(t => t.selected).length;
+  function deselectAll() {
+    setSelectedIds(new Set());
+  }
+
+  const selectedCount = selectedIds.size;
 
   async function handleBatchGenerate() {
-    const selected = topics.filter(t => t.selected);
+    const selected = topics.filter(t => selectedIds.has(t.id));
     if (selected.length === 0) return alert('请至少选择一篇主题');
 
     setGenerating(true);
@@ -139,7 +157,7 @@ export default function BatchGeneratePage() {
       } catch (e) {
         if (controller.signal.aborted) {
           setItems(prev => prev.map((item, idx) =>
-            idx >= i ? { ...item, status: idx === i ? 'cancelled' : 'cancelled' } : item
+            idx >= i ? { ...item, status: 'cancelled' } : item
           ));
           break;
         }
@@ -211,7 +229,6 @@ export default function BatchGeneratePage() {
             )}
           </div>
 
-          {/* Progress Bar */}
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
               className="bg-amber-500 h-2 rounded-full transition-all duration-300"
@@ -220,7 +237,6 @@ export default function BatchGeneratePage() {
           </div>
           <p className="text-xs text-gray-500">已完成 {successItems}/{totalItems} 篇</p>
 
-          {/* Item List */}
           <div className="space-y-1.5 max-h-80 overflow-y-auto">
             {items.map((item, i) => (
               <div key={i} className={`flex items-center gap-2 p-2 rounded text-sm ${
@@ -289,22 +305,21 @@ export default function BatchGeneratePage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {topics.map((topic, idx) => (
+              {topics.map(topic => (
                 <div
-                  key={idx}
-                  onClick={() => toggleTopic(idx)}
-                  className={`bg-white rounded-lg shadow p-4 cursor-pointer transition border-2 ${
-                    topic.selected ? 'border-amber-300 bg-amber-50/30' : 'border-transparent hover:border-gray-200'
+                  key={topic.id}
+                  className={`bg-white rounded-lg shadow p-4 transition border-2 ${
+                    selectedIds.has(topic.id) ? 'border-amber-300 bg-amber-50/30' : 'border-transparent hover:border-gray-200'
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
-                      checked={topic.selected || false}
-                      onChange={() => toggleTopic(idx)}
-                      className="mt-1 accent-amber-600"
+                      checked={selectedIds.has(topic.id)}
+                      onChange={() => toggleTopic(topic.id)}
+                      className="mt-1 accent-amber-600 cursor-pointer"
                     />
-                    <div className="flex-1">
+                    <div className="flex-1 cursor-pointer" onClick={() => toggleTopic(topic.id)}>
                       <h4 className="font-medium text-gray-900">{topic.title}</h4>
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">
@@ -328,8 +343,8 @@ export default function BatchGeneratePage() {
           {topics.length > 0 && (
             <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between sticky bottom-4">
               <div className="flex items-center gap-3">
-                <button onClick={() => selectAll(true)} className="text-sm text-amber-600 hover:text-amber-700">全选</button>
-                <button onClick={() => selectAll(false)} className="text-sm text-gray-500 hover:text-gray-700">取消全选</button>
+                <button onClick={selectAll} className="text-sm text-amber-600 hover:text-amber-700">全选</button>
+                <button onClick={deselectAll} className="text-sm text-gray-500 hover:text-gray-700">取消全选</button>
                 <span className="text-sm text-gray-600">已选 <span className="font-medium text-amber-700">{selectedCount}</span> 篇（预计 {selectedCount * 20}-{selectedCount * 40} 秒）</span>
               </div>
               <button
