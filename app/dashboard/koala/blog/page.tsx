@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 
 interface BlogPost {
@@ -19,10 +19,14 @@ interface BlogPost {
 interface Professor {
   id: string;
   name: string;
-  name_en: string;
-  institution: string;
+  name_en?: string;
+  university: string;
+  institution?: string;
+  researchAreas?: string[];
   research_tags?: string[];
   research_areas?: string[];
+  hIndex?: number;
+  paperCount?: number;
 }
 
 const CATEGORIES: Record<string, string> = {
@@ -258,47 +262,159 @@ export default function BlogPage() {
   );
 }
 
+interface WebSearchProfessor {
+  name: string;
+  university: string;
+  faculty: string | null;
+  positionTitle: string | null;
+  email: string | null;
+  researchAreas: string[];
+  hIndex: number | null;
+  paperCount: number | null;
+  citationCount: number | null;
+  profileUrl: string | null;
+  googleScholarUrl: string | null;
+  opportunityScore: number;
+}
+
+type ModalStep = 'search' | 'web-searching' | 'web-result' | 'generating' | 'done';
+
 function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void; onGenerated: () => void }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [results, setResults] = useState<Professor[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [generating, setGenerating] = useState(false);
+  const [suggestions, setSuggestions] = useState<Professor[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedProf, setSelectedProf] = useState<Professor | null>(null);
+  const [webResult, setWebResult] = useState<WebSearchProfessor | null>(null);
+  const [step, setStep] = useState<ModalStep>('search');
+  const [genStep, setGenStep] = useState('');
   const [error, setError] = useState('');
+  const [generatedTitle, setGeneratedTitle] = useState('');
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  async function handleSearch() {
-    if (!searchQuery.trim()) return;
-    setSearching(true);
+  function handleInputChange(value: string) {
+    setSearchQuery(value);
+    setSelectedProf(null);
+    setWebResult(null);
     setError('');
-    try {
-      const res = await fetch(`/api/professors?search=${encodeURIComponent(searchQuery)}&limit=10`);
-      const data = await res.json();
-      setResults(data.professors || []);
-      if ((data.professors || []).length === 0) setError('未找到匹配的教授');
-    } catch {
-      setError('搜索失败');
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.trim().length < 2) {
+      setSuggestions([]);
+      setShowDropdown(false);
+      return;
     }
-    setSearching(false);
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/professors?search=${encodeURIComponent(value)}&limit=5`);
+        const data = await res.json();
+        const profs = data.data || data.professors || [];
+        setSuggestions(profs);
+        setShowDropdown(profs.length > 0);
+      } catch {
+        setSuggestions([]);
+        setShowDropdown(false);
+      }
+    }, 300);
   }
 
-  async function handleGenerate(prof: Professor) {
-    setGenerating(true);
+  function handleSelectProf(prof: Professor) {
+    setSelectedProf(prof);
+    setSearchQuery(prof.name || prof.name_en || '');
+    setShowDropdown(false);
+    setWebResult(null);
+  }
+
+  async function handleWebSearch() {
+    setStep('web-searching');
     setError('');
+    try {
+      const res = await fetch('/api/professors/web-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: searchQuery }),
+      });
+      const data = await res.json();
+      if (data.professor) {
+        setWebResult(data.professor);
+        setStep('web-result');
+      } else {
+        setError(data.error || '未找到教授信息');
+        setStep('search');
+      }
+    } catch {
+      setError('网络搜索失败，请重试');
+      setStep('search');
+    }
+  }
+
+  async function handleAddAndGenerate() {
+    if (!webResult) return;
+    setStep('generating');
+    setGenStep('正在添加教授到数据库...');
+    setError('');
+    try {
+      const createRes = await fetch('/api/professors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: webResult.name,
+          university: webResult.university,
+          faculty: webResult.faculty || '',
+          positionTitle: webResult.positionTitle || 'Researcher',
+          email: webResult.email || '',
+          researchAreas: webResult.researchAreas || [],
+          profileUrl: webResult.profileUrl || '',
+          googleScholarUrl: webResult.googleScholarUrl || '',
+          hIndex: webResult.hIndex,
+          paperCount: webResult.paperCount,
+          citationCount: webResult.citationCount,
+          opportunityScore: webResult.opportunityScore || 50,
+          verificationStatus: 'unverified',
+          grantStatus: 'unknown',
+        }),
+      });
+      const createData = await createRes.json();
+      const profId = createData.data?.id;
+      if (!profId) throw new Error('Failed to create professor');
+
+      await generateArticle(profId);
+    } catch (e) {
+      setError('添加教授失败：' + (e as Error).message);
+      setStep('search');
+    }
+  }
+
+  async function handleGenerateExisting() {
+    if (!selectedProf) return;
+    setStep('generating');
+    setError('');
+    await generateArticle(selectedProf.id);
+  }
+
+  async function generateArticle(professorId: string) {
+    setGenStep('搜索教授最新信息...');
+    await new Promise(r => setTimeout(r, 500));
+    setGenStep('生成中文文章...');
+
     try {
       const res = await fetch('/api/blog/generate-professor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ professorId: prof.id }),
+        body: JSON.stringify({ professorId }),
       });
+      setGenStep('翻译英文 + SEO优化...');
       const data = await res.json();
       if (data.success) {
-        onGenerated();
+        setGeneratedTitle(data.title || '文章已生成');
+        setStep('done');
       } else {
         setError(data.error || '生成失败');
-        setGenerating(false);
+        setStep('search');
       }
     } catch {
       setError('生成失败，请重试');
-      setGenerating(false);
+      setStep('search');
     }
   }
 
@@ -310,52 +426,144 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
         </div>
 
-        <div className="flex gap-2 mb-4">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            placeholder="输入教授姓名搜索..."
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-          />
-          <button
-            onClick={handleSearch}
-            disabled={searching}
-            className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-          >
-            {searching ? '搜索中...' : '搜索'}
-          </button>
-        </div>
-
         {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
 
-        {generating && (
-          <div className="text-center py-8">
-            <p className="text-sm text-gray-600 animate-pulse">正在生成教授推荐文章，请稍候...</p>
-            <p className="text-xs text-gray-400 mt-2">AI 正在搜索最新信息并撰写文章（约30秒）</p>
+        {/* Search Step */}
+        {(step === 'search' || step === 'web-searching') && (
+          <>
+            <div className="relative mb-4">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => handleInputChange(e.target.value)}
+                  onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
+                  placeholder="输入教授姓名搜索..."
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+                <button
+                  onClick={handleWebSearch}
+                  disabled={!searchQuery.trim() || step === 'web-searching'}
+                  className="px-3 py-2 text-sm border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 disabled:opacity-50 whitespace-nowrap"
+                >
+                  {step === 'web-searching' ? '搜索中...' : '🔍 网络搜索'}
+                </button>
+              </div>
+
+              {/* Typeahead Dropdown */}
+              {showDropdown && (
+                <div className="absolute z-10 left-0 right-12 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {suggestions.map(prof => (
+                    <button
+                      key={prof.id}
+                      onClick={() => handleSelectProf(prof)}
+                      className="w-full text-left px-3 py-2 hover:bg-purple-50 border-b border-gray-100 last:border-0"
+                    >
+                      <p className="text-sm font-medium text-gray-900">{prof.name || prof.name_en}</p>
+                      <p className="text-xs text-gray-500">{prof.university || prof.institution}</p>
+                      {(prof.researchAreas || prof.research_tags || prof.research_areas || []).length > 0 && (
+                        <p className="text-xs text-purple-600">{(prof.researchAreas || prof.research_tags || prof.research_areas || []).slice(0, 3).join(', ')}</p>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Selected Professor Card */}
+            {selectedProf && (
+              <div className="border border-purple-200 bg-purple-50 rounded-lg p-4 mb-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">{selectedProf.name || selectedProf.name_en}</p>
+                    <p className="text-sm text-gray-600">{selectedProf.university || selectedProf.institution}</p>
+                    {(selectedProf.researchAreas || selectedProf.research_tags || selectedProf.research_areas || []).length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {(selectedProf.researchAreas || selectedProf.research_tags || selectedProf.research_areas || []).slice(0, 5).map((tag, i) => (
+                          <span key={i} className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={handleGenerateExisting}
+                  className="mt-3 w-full px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
+                >
+                  ✨ 生成推荐文章
+                </button>
+              </div>
+            )}
+
+            {!selectedProf && searchQuery.trim().length >= 2 && (
+              <p className="text-xs text-gray-500 mb-2">
+                数据库中没有？点击右侧"🔍 网络搜索"从网上查找教授信息
+              </p>
+            )}
+          </>
+        )}
+
+        {/* Web Search Result */}
+        {step === 'web-result' && webResult && (
+          <div className="border border-green-200 bg-green-50 rounded-lg p-4 mb-4">
+            <p className="text-xs text-green-700 font-medium mb-2">🌐 网络搜索结果</p>
+            <p className="font-medium text-gray-900">{webResult.name}</p>
+            <p className="text-sm text-gray-600">{webResult.positionTitle} — {webResult.university}</p>
+            {webResult.faculty && <p className="text-sm text-gray-500">{webResult.faculty}</p>}
+            <div className="flex gap-3 mt-2 text-xs text-gray-600">
+              {webResult.hIndex && <span>H-index: {webResult.hIndex}</span>}
+              {webResult.paperCount && <span>论文: {webResult.paperCount}</span>}
+              {webResult.citationCount && <span>引用: {webResult.citationCount}</span>}
+            </div>
+            {webResult.researchAreas?.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {webResult.researchAreas.slice(0, 5).map((tag, i) => (
+                  <span key={i} className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{tag}</span>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={handleAddAndGenerate}
+                className="flex-1 px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
+              >
+                ✨ 确认并生成文章
+              </button>
+              <button
+                onClick={() => { setStep('search'); setWebResult(null); }}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                返回
+              </button>
+            </div>
           </div>
         )}
 
-        {!generating && results.length > 0 && (
-          <div className="space-y-2">
-            {results.map(prof => (
-              <div key={prof.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{prof.name || prof.name_en}</p>
-                  <p className="text-xs text-gray-500">{prof.institution}</p>
-                  {(prof.research_tags || prof.research_areas || []).length > 0 && (
-                    <p className="text-xs text-purple-600 mt-0.5">{(prof.research_tags || prof.research_areas || []).slice(0, 3).join(', ')}</p>
-                  )}
-                </div>
-                <button
-                  onClick={() => handleGenerate(prof)}
-                  className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                >
-                  生成文章
-                </button>
-              </div>
-            ))}
+        {/* Generating Step */}
+        {step === 'generating' && (
+          <div className="text-center py-8">
+            <div className="inline-block w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-sm text-gray-700 font-medium">{genStep}</p>
+            <div className="mt-4 space-y-2 text-xs text-gray-500">
+              <p className={genStep.includes('搜索') ? 'text-purple-600 font-medium' : ''}>1. 搜索教授信息</p>
+              <p className={genStep.includes('中文') ? 'text-purple-600 font-medium' : ''}>2. 生成中文文章</p>
+              <p className={genStep.includes('翻译') ? 'text-purple-600 font-medium' : ''}>3. 翻译英文 + SEO优化</p>
+            </div>
+          </div>
+        )}
+
+        {/* Done Step */}
+        {step === 'done' && (
+          <div className="text-center py-8">
+            <p className="text-3xl mb-3">✅</p>
+            <p className="text-sm font-medium text-gray-900">{generatedTitle}</p>
+            <p className="text-xs text-gray-500 mt-1">文章已保存到草稿箱</p>
+            <button
+              onClick={onGenerated}
+              className="mt-4 px-6 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            >
+              完成
+            </button>
           </div>
         )}
       </div>
