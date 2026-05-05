@@ -142,7 +142,14 @@ export async function POST(req: NextRequest) {
     const readingTimeEn = Math.max(2, Math.ceil(wordCount / 200));
 
     const status = publishMode === 'publish' ? 'published' : 'draft';
+    const slug = zhData.titleZh
+      .toLowerCase()
+      .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 100) + '-' + Date.now();
+
     const row = {
+      slug,
       title_zh: zhData.titleZh,
       title_en: enData.titleEn,
       excerpt_zh: zhData.excerptZh,

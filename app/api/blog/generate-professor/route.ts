@@ -194,7 +194,14 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
   topPaperJournals.slice(0, 2).forEach(j => { if (!tags.includes(j)) tags.push(j); });
 
   // Step 9: Insert to blog_posts
+  const slug = zhData.titleZh
+    .toLowerCase()
+    .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 100) + '-' + Date.now();
+
   const row = {
+    slug,
     title_zh: zhData.titleZh,
     title_en: enData.titleEn || null,
     excerpt_zh: zhData.excerptZh,
