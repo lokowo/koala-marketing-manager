@@ -2,18 +2,16 @@ import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 
 const NEWS_SEARCH_QUERIES = [
-  'Australia PhD scholarship 2026',
-  'Australia university ranking',
-  'Australia student visa 500 changes',
-  'Australia international student news',
-  'ARC grant results 2026',
-  'PhD application Australia tips',
-  'academic job market Australia',
-  'world university ranking 2026',
-  'Australia immigration policy student',
-  'Australian Government RTP scholarship',
-  'cost of living Australia student',
-  'mental health PhD student',
+  'Australia education policy international students 2026',
+  'Australia university research grant ARC',
+  'geopolitics impact international education Australia China',
+  'OpenAI DeepMind Google AI biotech research breakthrough',
+  'Australia student visa immigration policy changes',
+  'PhD student life cost living mental health Australia',
+  'Australia academic job market career industry',
+  'world university ranking QS THE 2026',
+  'Australia China relations education research',
+  'scholarship RTP CSIRO research fellowship Australia',
 ];
 
 async function fetchGoogleNewsRSS(query: string): Promise<{ title: string; source: string; date: string; link: string }[]> {
@@ -43,37 +41,38 @@ async function fetchGoogleNewsRSS(query: string): Promise<{ title: string; sourc
   }
 }
 
-const FALLBACK_PROMPT = `You are a content strategist for Koala PhD (koalaphd.com), an Australian PhD advisory platform helping Chinese students apply to Australian universities.
+const FALLBACK_PROMPT = `You are a content strategist for Koala PhD (koalaphd.com), an academic matching platform connecting Chinese students with Australian PhD supervisors.
 
-Since no real-time news is available, generate {count} trending blog article topics based on your knowledge of current trends in Australian higher education, PhD applications, and international student life.
+Since no real-time news is available, generate {count} trending blog article topics based on your knowledge of current trends.
 
-Consider these timely angles:
-- Australian university ranking changes and implications
-- New scholarship rounds (RTP, university-specific)
-- Visa policy updates (subclass 500, post-study work rights)
-- ARC funding results and what they mean for students
-- Cost of living changes for students
-- Mental health resources for PhD students
-- AI/tech impact on research and academia
-- Supervisor selection strategies
+Consider these 6 news source categories:
+1. 澳洲教育政策 — university funding, international student caps, policy changes
+2. 学术圈动态 — rankings, ARC grants, new research centres, academic hiring
+3. 国际时事与留学 — geopolitics affecting education, China-Australia relations
+4. 科技公司与AI — OpenAI, DeepMind, Google AI, biotech breakthroughs → research trends
+5. 留学生活 — cost of living, mental health, community, part-time work rules
+6. 职业与产业 — industry partnerships, career outcomes, post-PhD employment
 
 Return a JSON array: [{"title": "中文标题", "category": "category_key", "style": "professional|casual|news", "source": "Koala Research", "sourceDate": "${new Date().toISOString().slice(0, 10)}", "reason": "为什么这个主题好"}].
 
-Categories: phd_guide, application, scholarship, visa, supervisor, research, student_life, news.
+Categories: phd_guide, application, scholarship, visa, supervisor, research, student_life, news, professor_spotlight.
 
 DIVERSITY RULES:
-- At most 2 can directly mention PhD申请/申请信/导师
-- At least 3 should be broader: education policy, visa, scholarship news, research trends
-- All topics must connect naturally to PhD preparation`;
+- At most 2/8 can directly mention PhD申请/申请信/导师选择
+- At least 3 should be broader: education policy, visa, scholarship news, tech/AI trends, geopolitics
+- Each topic must connect naturally to PhD preparation using the CONNECTION FRAMEWORK:
+  * Geopolitics → research funding → scholarship
+  * Immigration policy → visa → application timeline
+  * AI/tech → research trends → hot directions
+  * Economy → cost of living → scholarship importance`;
 
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
-    const count = Math.min(10, parseInt(url.searchParams.get('count') || '6'));
+    const count = Math.min(10, parseInt(url.searchParams.get('count') || '8'));
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-    // Try fetching news from multiple queries (pick 4 random queries)
     const shuffled = [...NEWS_SEARCH_QUERIES].sort(() => Math.random() - 0.5).slice(0, 4);
     const newsResults = await Promise.all(shuffled.map(q => fetchGoogleNewsRSS(q)));
     const allNews = newsResults.flat();
@@ -83,9 +82,23 @@ export async function GET(req: NextRequest) {
 
     if (allNews.length > 0) {
       const newsContext = allNews.map((n, i) => `${i + 1}. [${n.source}] ${n.title} (${n.date})`).join('\n');
-      prompt = `Based on the following real news, suggest ${count} blog article topics for Koala PhD (koalaphd.com).\n\nNEWS:\n${newsContext}\n\nReturn a JSON array of objects: [{"title": "中文标题", "category": "category_key", "style": "professional|casual|news", "source": "news source name", "sourceDate": "date string", "reason": "为什么这个主题好"}].\n\nCategories: phd_guide, application, scholarship, visa, supervisor, research, student_life, news.\n\nDIVERSITY RULES:\n- At most 2 can directly mention PhD申请/申请信/导师\n- At least 3 should be broader: education policy, visa, scholarship news, research trends\n- All topics must connect naturally to PhD preparation`;
+      prompt = `Based on the following real news, suggest ${count} blog article topics for Koala PhD (koalaphd.com), an academic matching platform connecting Chinese students with Australian PhD supervisors.
+
+NEWS:
+${newsContext}
+
+Consider these 6 news source categories when selecting angles:
+1. 澳洲教���政策 2. 学术圈动态 3. 国际时事与留学 4. 科技公司与AI 5. 留学生活 6. 职业与产业
+
+Return a JSON array of objects: [{"title": "中文标题", "category": "category_key", "style": "professional|casual|news", "source": "news source name", "sourceDate": "date string", "reason": "为什么这个主题好"}].
+
+Categories: phd_guide, application, scholarship, visa, supervisor, research, student_life, news, professor_spotlight.
+
+DIVERSITY RULES:
+- At most 2/${count} can directly mention PhD申请/申请信/导师选择
+- At least 3 should be broader: education policy, visa, scholarship news, tech/AI trends
+- All topics must connect naturally to PhD preparation`;
     } else {
-      // Fallback: generate topics without news
       prompt = FALLBACK_PROMPT.replace('{count}', String(count));
       newsCount = 0;
     }
@@ -94,7 +107,7 @@ export async function GET(req: NextRequest) {
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }],
-      system: 'You are a content strategist for Koala PhD (koalaphd.com), an Australian PhD advisory platform. Return valid JSON array only, no markdown code blocks or extra text.',
+      system: 'You are a content strategist for Koala PhD (koalaphd.com), an academic matching platform connecting Chinese students with Australian PhD supervisors. Return valid JSON array only, no markdown code blocks or extra text.',
     });
 
     const text = response.content[0].type === 'text' ? response.content[0].text : '[]';

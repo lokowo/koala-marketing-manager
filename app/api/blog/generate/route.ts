@@ -26,13 +26,33 @@ const COVER_IMAGE_PROMPTS: Record<string, string> = {
   research: 'scientific research laboratory with modern equipment',
   student_life: 'international students enjoying campus life at Australian university',
   news: 'Australian university campus aerial view',
+  professor_spotlight: 'distinguished professor in modern university research lab',
 };
 
 const STYLE_PROMPTS: Record<string, string> = {
   professional: '写作风格：专业权威 — 像学术顾问的分析报告，用数据和事实说话，语气严谨。',
-  casual: '写作风格：学长分享 — 像学长学姐的经验分享，亲切真实，可以用口语化表达。',
+  casual: '写作风格：学长分享 — 像考拉学长的经验分享，温暖专业，亲切真实，可以用口语化表达。',
   news: '写作风格：新闻报道 — 事实为主，配专家解读，客观中立。',
 };
+
+const SYSTEM_PROMPT = `You are 考拉学长 (Koala Senior), the content voice of Koala PhD (koalaphd.com) — an academic matching platform connecting Chinese students with Australian PhD supervisors.
+
+PERSONALITY: Warm, professional, like a senior PhD student sharing real experience. Supportive but data-driven.
+
+CONTENT RATIO: 80% deep analysis of the topic itself, 20% natural connection to PhD application.
+
+BRAND RULES:
+- Mention Koala PhD at most 1-2 sentences, placed at the end of the article
+- Never hard-sell or sound like an ad
+- Use CONNECTION FRAMEWORK to link topics naturally:
+  * Geopolitics → research funding → scholarship opportunities
+  * Immigration policy → visa → application timeline
+  * AI/tech → research trends → hot research directions
+  * Economy → cost of living → scholarship importance
+
+SEO KEYWORDS to weave in naturally: 澳洲, PhD, 博士, 留学, scholarship, 申请, supervisor
+
+Always return valid JSON only, no markdown code blocks.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,12 +66,11 @@ export async function POST(req: NextRequest) {
     const catLabel = CATEGORIES[category]?.zh || 'PhD指南';
     const stylePrompt = STYLE_PROMPTS[style] || STYLE_PROMPTS.casual;
 
-    // Step 1: Generate Chinese article
     const zhResponse = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 3000,
-      messages: [{ role: 'user', content: `请根据以下主题写一篇博客文章。\n\n主题：${topic}\n分类：${catLabel}\n${stylePrompt}\n\n要求：\n- Markdown格式，1200-2000字\n- 80%是主题本身的分析，20%自然关联到澳洲PhD申请\n- 包含真实数据和统计（如有）\n- 自然融入SEO关键词：澳洲、PhD、博士、留学、scholarship\n- Koala PhD提及最多1-2句放在末尾\n\n请返回JSON格式：\n{"titleZh": "中文标题", "excerptZh": "100字摘要", "contentZh": "正文markdown", "tags": ["标签1","标签2",...], "imageKeywords": ["封面图关键词"]}` }],
-      system: 'You are a senior education content writer for Koala PhD (koalaphd.com). Always return valid JSON only, no markdown code blocks.',
+      messages: [{ role: 'user', content: `请根据以下主题写一篇博客文章。\n\n主题：${topic}\n分类：${catLabel}\n${stylePrompt}\n\n要求：\n- Markdown格式，1200-2000字\n- 80%是主题本身的深度分析，20%自然关联到澳洲PhD申请\n- 包含真实数据和统计（如有）\n- 自然融入SEO关键词：澳洲、PhD、博士、留学、scholarship、申请、supervisor\n- Koala PhD提及最多1-2句放在文章末尾\n- 语气像考拉学长：温暖专业的学长分享\n\n请返回JSON格式：\n{"titleZh": "中文标题", "excerptZh": "100字摘要", "contentZh": "正文markdown", "tags": ["标签1","标签2",...], "imageKeywords": ["封面图关键词"]}` }],
+      system: SYSTEM_PROMPT,
     });
 
     const zhText = zhResponse.content[0].type === 'text' ? zhResponse.content[0].text : '';
@@ -63,7 +82,6 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'AI generation failed - invalid JSON response', raw: zhText.slice(0, 200) }, { status: 500 });
     }
 
-    // Step 2 & 3: Translate to English + Generate SEO (parallel)
     const [enResponse, seoZhResponse, seoEnResponse] = await Promise.all([
       anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
@@ -74,13 +92,13 @@ export async function POST(req: NextRequest) {
       anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 500,
-        messages: [{ role: 'user', content: `Generate SEO metadata in Chinese for this blog article about Australian PhD study.\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\n\nReturn JSON: {"seoTitle": "max 60 chars", "seoDescription": "max 160 chars", "seoKeywords": "comma-separated, max 10"}` }],
+        messages: [{ role: 'user', content: `Generate SEO metadata in Chinese for this blog article about Australian PhD study.\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\n\nReturn JSON: {"seoTitle": "max 60 chars", "seoDescription": "max 160 chars", "seoKeywords": "comma-separated, include: 澳洲PhD, 博士留学, scholarship"}` }],
         system: 'Return valid JSON only.',
       }),
       anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 500,
-        messages: [{ role: 'user', content: `Generate SEO metadata in English for this blog article about Australian PhD study.\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\n\nReturn JSON: {"seoTitle": "max 60 chars", "seoDescription": "max 160 chars", "seoKeywords": "comma-separated, max 10"}` }],
+        messages: [{ role: 'user', content: `Generate SEO metadata in English for this blog article about Australian PhD study.\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\n\nReturn JSON: {"seoTitle": "max 60 chars", "seoDescription": "max 160 chars", "seoKeywords": "comma-separated, include: Australia PhD, scholarship, supervisor"}` }],
         system: 'Return valid JSON only.',
       }),
     ]);
@@ -98,11 +116,11 @@ export async function POST(req: NextRequest) {
     try { seoZh = JSON.parse(cleanJson(seoZhText)); } catch { /* use defaults */ }
     try { seoEn = JSON.parse(cleanJson(seoEnText)); } catch { /* use defaults */ }
 
-    // Step 4: Calculate reading time
     const charCount = (zhData.contentZh || '').length;
-    const readingTime = Math.max(3, Math.ceil(charCount / 400));
+    const readingTimeZh = Math.max(3, Math.ceil(charCount / 400));
+    const wordCount = (enData.contentEn || '').split(/\s+/).length;
+    const readingTimeEn = Math.max(2, Math.ceil(wordCount / 200));
 
-    // Step 5: Save to database
     const status = publishMode === 'publish' ? 'published' : 'draft';
     const row = {
       title_zh: zhData.titleZh,
@@ -113,15 +131,16 @@ export async function POST(req: NextRequest) {
       content_en: enData.contentEn,
       category: category || 'phd_guide',
       tags: zhData.tags || [],
-      author: 'AI Generated',
       status,
       published_at: status === 'published' ? new Date().toISOString() : null,
       seo_title_zh: seoZh.seoTitle,
       seo_title_en: seoEn.seoTitle,
       seo_description_zh: seoZh.seoDescription,
       seo_description_en: seoEn.seoDescription,
-      seo_keywords: [seoZh.seoKeywords, seoEn.seoKeywords].filter(Boolean).join(', '),
-      reading_time: readingTime,
+      seo_keywords_zh: seoZh.seoKeywords,
+      seo_keywords_en: seoEn.seoKeywords,
+      reading_time_zh: readingTimeZh,
+      reading_time_en: readingTimeEn,
       cover_image_url: null,
     };
 

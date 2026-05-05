@@ -16,6 +16,15 @@ interface BlogPost {
   tags: string[];
 }
 
+interface Professor {
+  id: string;
+  name: string;
+  name_en: string;
+  institution: string;
+  research_tags?: string[];
+  research_areas?: string[];
+}
+
 const CATEGORIES: Record<string, string> = {
   phd_guide: 'PhD指南',
   application: '申请攻略',
@@ -43,6 +52,7 @@ export default function BlogPage() {
   const [category, setCategory] = useState('all');
   const [sort, setSort] = useState('date');
   const [counts, setCounts] = useState({ draft: 0, published: 0, scheduled: 0, all: 0 });
+  const [showProfModal, setShowProfModal] = useState(false);
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -112,6 +122,9 @@ export default function BlogPage() {
           <Link href="/dashboard/koala/ai-content/batch" className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
             ✨ 批量SEO
           </Link>
+          <button onClick={() => setShowProfModal(true)} className="px-4 py-2 text-sm border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50">
+            🎓 教授推荐
+          </button>
           <Link href="/dashboard/koala/ai-content" className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
             ✏️ AI生成
           </Link>
@@ -233,6 +246,119 @@ export default function BlogPage() {
       {total > 20 && (
         <p className="text-sm text-center text-gray-500">显示 {posts.length} / {total} 篇文章</p>
       )}
+
+      {/* Professor Spotlight Modal */}
+      {showProfModal && (
+        <ProfessorSpotlightModal
+          onClose={() => setShowProfModal(false)}
+          onGenerated={() => { setShowProfModal(false); fetchPosts(); fetchCounts(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void; onGenerated: () => void }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [results, setResults] = useState<Professor[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSearch() {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/professors?search=${encodeURIComponent(searchQuery)}&limit=10`);
+      const data = await res.json();
+      setResults(data.professors || []);
+      if ((data.professors || []).length === 0) setError('未找到匹配的教授');
+    } catch {
+      setError('搜索失败');
+    }
+    setSearching(false);
+  }
+
+  async function handleGenerate(prof: Professor) {
+    setGenerating(true);
+    setError('');
+    try {
+      const res = await fetch('/api/blog/generate-professor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ professorId: prof.id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        onGenerated();
+      } else {
+        setError(data.error || '生成失败');
+        setGenerating(false);
+      }
+    } catch {
+      setError('生成失败，请重试');
+      setGenerating(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="bg-white rounded-xl p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900">🎓 生成教授推荐文章</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+        </div>
+
+        <div className="flex gap-2 mb-4">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSearch()}
+            placeholder="输入教授姓名搜索..."
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+          <button
+            onClick={handleSearch}
+            disabled={searching}
+            className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+          >
+            {searching ? '搜索中...' : '搜索'}
+          </button>
+        </div>
+
+        {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
+
+        {generating && (
+          <div className="text-center py-8">
+            <p className="text-sm text-gray-600 animate-pulse">正在生成教授推荐文章，请稍候...</p>
+            <p className="text-xs text-gray-400 mt-2">AI 正在搜索最新信息并撰写文章（约30秒）</p>
+          </div>
+        )}
+
+        {!generating && results.length > 0 && (
+          <div className="space-y-2">
+            {results.map(prof => (
+              <div key={prof.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{prof.name || prof.name_en}</p>
+                  <p className="text-xs text-gray-500">{prof.institution}</p>
+                  {(prof.research_tags || prof.research_areas || []).length > 0 && (
+                    <p className="text-xs text-purple-600 mt-0.5">{(prof.research_tags || prof.research_areas || []).slice(0, 3).join(', ')}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleGenerate(prof)}
+                  className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                >
+                  生成文章
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
