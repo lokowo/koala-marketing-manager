@@ -124,42 +124,46 @@ ${webContext ? `最新动态（来自网络搜索）：\n${webContext}` : ''}
     return Response.json({ error: 'Chinese article generation failed', details: (e as Error).message }, { status: 500 });
   }
 
-  // Step 5: Translate to English
-  console.log('[generate-professor] Step 5: Translating to English...');
+  // Step 5 + 6 (parallel): Translate to English + Generate SEO metadata
+  console.log('[generate-professor] Step 5+6: Translating + SEO (parallel, Haiku)...');
   let enData = { titleEn: '', excerptEn: '', contentEn: '' };
-  try {
-    const enResponse = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+  let seo = { seoTitleZh: '', seoDescriptionZh: '', seoKeywordsZh: '' };
+
+  const [enResult, seoResult] = await Promise.allSettled([
+    anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 3000,
       messages: [{ role: 'user', content: `Translate this Chinese professor profile article to English. Keep markdown format.\n\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\nContent:\n${zhData.contentZh}\n\nReturn JSON: {"titleEn": "...", "excerptEn": "...", "contentEn": "..."}` }],
       system: 'Professional translator. Return valid JSON only, no markdown code blocks.',
-    });
-
-    const enText = enResponse.content[0].type === 'text' ? enResponse.content[0].text : '{}';
-    const cleaned = enText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    enData = JSON.parse(cleaned);
-    console.log('[generate-professor] Step 5 done');
-  } catch (e) {
-    console.log('[generate-professor] Step 5: Translation failed, continuing:', (e as Error).message);
-  }
-
-  // Step 6: Generate SEO metadata
-  console.log('[generate-professor] Step 6: Generating SEO metadata...');
-  let seo = { seoTitleZh: '', seoDescriptionZh: '', seoKeywordsZh: '' };
-  try {
-    const seoResponse = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+    }),
+    anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 500,
       messages: [{ role: 'user', content: `Generate Chinese SEO metadata for a professor profile article.\nProfessor: ${profName} at ${university}\nResearch: ${researchAreas}\nTitle: ${zhData.titleZh}\n\nReturn JSON: {"seoTitleZh": "max 60 chars Chinese", "seoDescriptionZh": "max 160 chars Chinese", "seoKeywordsZh": "comma-separated Chinese keywords"}` }],
       system: 'Return valid JSON only, no markdown code blocks.',
-    });
+    }),
+  ]);
 
-    const seoText = seoResponse.content[0].type === 'text' ? seoResponse.content[0].text : '{}';
-    const cleaned = seoText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    seo = JSON.parse(cleaned);
-    console.log('[generate-professor] Step 6 done');
-  } catch (e) {
-    console.log('[generate-professor] Step 6: SEO generation failed, continuing:', (e as Error).message);
+  function cleanJson(t: string) { return t.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim(); }
+
+  if (enResult.status === 'fulfilled') {
+    try {
+      const enText = enResult.value.content[0].type === 'text' ? enResult.value.content[0].text : '{}';
+      enData = JSON.parse(cleanJson(enText));
+      console.log('[generate-professor] Step 5 done');
+    } catch (e) { console.log('[generate-professor] Step 5: parse failed:', (e as Error).message); }
+  } else {
+    console.log('[generate-professor] Step 5: Translation failed:', enResult.reason);
+  }
+
+  if (seoResult.status === 'fulfilled') {
+    try {
+      const seoText = seoResult.value.content[0].type === 'text' ? seoResult.value.content[0].text : '{}';
+      seo = JSON.parse(cleanJson(seoText));
+      console.log('[generate-professor] Step 6 done');
+    } catch (e) { console.log('[generate-professor] Step 6: parse failed:', (e as Error).message); }
+  } else {
+    console.log('[generate-professor] Step 6: SEO failed:', seoResult.reason);
   }
 
   // Step 7: Calculate reading time

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     if (action === 'recommend_category') {
       const resp = await anthropic.messages.create({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 200,
         messages: [{ role: 'user', content: `Based on this article content, recommend the most appropriate category.\nTitle: ${title}\nContent preview: ${(content || '').slice(0, 500)}\n\nAvailable: phd_guide, application, scholarship, visa, supervisor, research, student_life, news, professor_spotlight.\nReturn ONLY a JSON object: {"category": "key", "reason": "一句话理由"}` }],
         system: 'You are a content strategist for Koala PhD (koalaphd.com), an academic matching platform connecting Chinese students with Australian PhD supervisors. Return valid JSON only.',
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     if (action === 'generate_tags') {
       const resp = await anthropic.messages.create({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 300,
         messages: [{ role: 'user', content: `Generate 5-8 relevant tags for a blog article on Koala PhD (koalaphd.com) about Australian PhD application and academic life.\nTitle: ${title}\nCategory: ${category}\nContent preview: ${(content || '').slice(0, 500)}\n\nMix Chinese and English tags. Include relevant: 澳洲PhD, supervisor, scholarship keywords where appropriate. Return ONLY a JSON array of strings.` }],
         system: 'Return valid JSON array only.',
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     if (action === 'translate') {
       const resp = await anthropic.messages.create({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 3000,
         messages: [{ role: 'user', content: `Translate the following Chinese blog article to English. Keep markdown format. Context: this is content from Koala PhD, an academic matching platform for Australian PhD applications.\n\nTitle: ${title}\nContent:\n${content}\n\nReturn JSON: {"titleEn": "...", "excerptEn": "one sentence summary", "contentEn": "full translation"}` }],
         system: 'Professional translator. Return valid JSON only.',
