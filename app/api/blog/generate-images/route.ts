@@ -65,11 +65,11 @@ export async function POST(req: NextRequest) {
 
       try {
         const response = await openai.images.generate({
-          model: 'dall-e-3',
+          model: 'gpt-image-1',
           prompt: `${placement.promptEn}. Style: clean, modern editorial photography. No text or words in the image.`,
           n: 1,
           size: '1024x1024',
-          quality: 'standard',
+          quality: 'low',
         });
         imageUrl = response.data?.[0]?.url || null;
       } catch {

@@ -1,20 +1,21 @@
 import { NextRequest } from 'next/server';
+import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
-const CATEGORY_STYLES: Record<string, string> = {
-  phd_guide: 'modern university campus, warm lighting, academic atmosphere',
-  application: 'laptop with documents, clean desk, professional workspace',
-  scholarship: 'graduation cap, golden theme, achievement concept',
-  visa: 'travel documents, Australian landmarks in background',
-  supervisor: 'professor and student in discussion, university office',
-  research: 'scientific laboratory, modern research equipment',
-  student_life: 'diverse students on campus, Australian university',
-  news: 'Australian university aerial view, modern architecture',
-  professor_spotlight: 'distinguished academic in modern research environment',
+const CATEGORY_CONTEXT: Record<string, string> = {
+  phd_guide: 'Australian university campus, academic atmosphere, warm natural light',
+  application: 'documents and laptop on clean desk, PhD application preparation',
+  scholarship: 'golden graduation cap, academic achievement, Australian university',
+  visa: 'Australian landmarks, travel documents, student visa concept',
+  supervisor: 'professor mentoring student in modern university office',
+  research: 'scientific laboratory with modern research equipment',
+  student_life: 'international students enjoying Australian campus life',
+  news: 'modern Australian university architecture, aerial perspective',
+  professor_spotlight: 'distinguished professor in research lab environment',
 };
 
 const CATEGORY_KEYWORDS: Record<string, string> = {
@@ -40,24 +41,33 @@ export async function POST(req: NextRequest) {
     let imageUrl: string | null = null;
 
     try {
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-      const baseStyle = CATEGORY_STYLES[category] || CATEGORY_STYLES.phd_guide;
-      const prompt = customPrompt
-        ? customPrompt
-        : `Create a professional blog cover image. Theme: ${baseStyle}. The image should relate to: "${title}". Style: clean, modern, editorial photography look, suitable for an academic blog. No text or words in the image. Aspect ratio 16:9.`;
+      let prompt = customPrompt;
+      if (!prompt) {
+        const categoryCtx = CATEGORY_CONTEXT[category] || CATEGORY_CONTEXT.phd_guide;
+        const kwRes = await anthropic.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 200,
+          messages: [{ role: 'user', content: `Given this blog title and category context, generate a concise English image prompt (30-50 words) for a professional blog cover photo.\n\nTitle: ${title}\nCategory context: ${categoryCtx}\n\nRequirements: photographic style, no text in image, clean modern editorial look, 16:9 composition.\n\nReturn ONLY the prompt text, nothing else.` }],
+          system: 'Return only the image prompt text. No quotes, no explanation.',
+        });
+        prompt = kwRes.content[0].type === 'text' ? kwRes.content[0].text.trim() : '';
+        if (!prompt) prompt = `Professional blog cover: ${categoryCtx}. Clean editorial photography, no text.`;
+      }
 
       const response = await openai.images.generate({
-        model: 'dall-e-3',
-        prompt,
+        model: 'gpt-image-1',
+        prompt: `${prompt}. Style: clean, modern editorial photography. No text or words in the image.`,
         n: 1,
-        size: '1792x1024',
-        quality: 'standard',
+        size: '1536x1024',
+        quality: 'high',
       });
 
       imageUrl = response.data?.[0]?.url || null;
-    } catch (dalleError) {
-      console.error('[blog/generate-cover] DALL-E failed, using Unsplash fallback:', dalleError);
+    } catch (imgError) {
+      console.error('[blog/generate-cover] Image generation failed, using Unsplash fallback:', imgError);
     }
 
     if (!imageUrl) {

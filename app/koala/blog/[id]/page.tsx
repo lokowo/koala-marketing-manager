@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { marked } from 'marked';
-import { ChevronLeft, Copy, MoreHorizontal, Clock, Eye } from 'lucide-react';
+import { Clock, Eye, Copy, MoreHorizontal } from 'lucide-react';
 
 interface BlogPost {
   id: string;
@@ -35,10 +35,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   professor_spotlight: '教授推荐',
 };
 
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-});
+marked.setOptions({ breaks: true, gfm: true });
 
 export default function BlogDetailPage() {
   const { id } = useParams();
@@ -46,7 +43,7 @@ export default function BlogDetailPage() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [canNativeShare, setCanNativeShare] = useState(false);
-  const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
+  const [relatedPosts, setRelatedPosts] = useState<(BlogPost & { cover_image_url?: string | null })[]>([]);
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
 
   useEffect(() => {
@@ -136,7 +133,7 @@ export default function BlogDetailPage() {
   if (loading) {
     return (
       <div style={{ background: '#080c10', minHeight: '100vh' }} className="flex items-center justify-center">
-        <p className="text-sm" style={{ color: '#6a7a7e' }}>加载中...</p>
+        <p style={{ color: '#6a7a7e', fontSize: 14 }}>加载中...</p>
       </div>
     );
   }
@@ -144,8 +141,8 @@ export default function BlogDetailPage() {
   if (!post) {
     return (
       <div style={{ background: '#080c10', minHeight: '100vh' }} className="flex flex-col items-center justify-center gap-3">
-        <p className="text-sm" style={{ color: '#6a7a7e' }}>文章不存在</p>
-        <Link href="/koala/blog" className="text-sm" style={{ color: '#c9a96e' }}>← 返回博客</Link>
+        <p style={{ color: '#6a7a7e', fontSize: 14 }}>文章不存在</p>
+        <Link href="/koala/blog" style={{ color: '#c9a96e', fontSize: 14 }}>← 返回博客</Link>
       </div>
     );
   }
@@ -153,105 +150,94 @@ export default function BlogDetailPage() {
   const hasBilingual = !!(post.content_zh && post.content_en);
 
   return (
-    <div style={{ background: '#080c10', minHeight: '100vh', paddingBottom: 120 }}>
+    <div style={{ background: '#080c10', minHeight: '100vh' }}>
       {/* Toast */}
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-medium" style={{ background: '#c9a96e', color: '#080c10' }}>
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50" style={{ background: '#c9a96e', color: '#080c10', padding: '8px 16px', borderRadius: 20, fontSize: 12, fontWeight: 500 }}>
           {toast}
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex px-4 pt-4 pb-2 items-center sticky top-0 z-10 max-w-[720px] mx-auto" style={{ background: '#080c10' }}>
-        <Link href="/koala/blog" className="flex items-center gap-1.5 text-sm no-underline" style={{ color: '#a8b8ac' }}>
-          <ChevronLeft className="size-4" />
-          返回博客
-        </Link>
-      </div>
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 20px' }}>
+        {/* 1. Back button */}
+        <div style={{ paddingTop: 16 }}>
+          <Link href="/koala/blog" className="no-underline" style={{ fontSize: 14, color: '#6a7a7e' }}>
+            ← 返回博客
+          </Link>
+        </div>
 
-      <article className="px-5 md:px-0 max-w-[720px] mx-auto">
-        {/* Meta info */}
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}>
+        {/* 2. Meta info */}
+        <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, background: 'rgba(201,169,110,0.06)', color: '#c9a96e' }}>
             {CATEGORY_LABELS[post.category] || post.category}
           </span>
-          <span className="text-xs" style={{ color: '#6a7a7e' }}>
+          <span style={{ fontSize: 12, color: '#6a7a7e' }}>
             {new Date(post.published_at).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}
           </span>
-          <span className="text-xs flex items-center gap-0.5" style={{ color: '#6a7a7e' }}>
-            <Clock className="size-3" /> {post.reading_time_zh} min
+          <span style={{ fontSize: 12, color: '#6a7a7e', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <Clock size={12} /> {post.reading_time_zh} min
           </span>
-          {post.view_count !== undefined && (
-            <span className="text-xs flex items-center gap-0.5" style={{ color: '#6a7a7e' }}>
-              <Eye className="size-3" /> {post.view_count}
+          {post.view_count !== undefined && post.view_count > 0 && (
+            <span style={{ fontSize: 12, color: '#6a7a7e', display: 'flex', alignItems: 'center', gap: 3 }}>
+              <Eye size={12} /> {post.view_count}
             </span>
           )}
         </div>
 
-        {/* Title */}
-        <h1 className="text-xl md:text-2xl font-bold leading-tight mb-4" style={{ color: '#e8e4dc' }}>
+        {/* 3. Title */}
+        <h1 className="blog-detail-title" style={{ marginTop: 16, fontWeight: 700, color: '#e8e4dc', lineHeight: 1.35 }}>
           {lang === 'zh' ? (post.title_zh || post.title_en) : (post.title_en || post.title_zh)}
         </h1>
 
-        {/* Cover Image */}
+        {/* 4. Cover image */}
         {post.cover_image_url && (
-          <div className="mb-6 -mx-5 md:mx-0">
+          <div className="blog-cover-wrap" style={{ marginTop: 20 }}>
             <img
               src={post.cover_image_url}
               alt={post.title_zh || post.title_en || ''}
-              className="w-full object-cover blog-cover-img"
-              style={{ maxHeight: '200px' }}
+              className="blog-cover-img"
+              style={{ width: '100%', objectFit: 'cover', borderRadius: 12 }}
             />
           </div>
         )}
 
-        {/* Language Switch */}
+        {/* 5. Language switch */}
         {hasBilingual && (
-          <div className="flex items-center gap-3 mb-6 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
-            <span className="text-xs" style={{ color: '#a8b8ac' }}>
+          <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 8, background: 'rgba(201,169,110,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: '#a8b8ac' }}>
               {lang === 'zh' ? '此文章提供英文版本' : 'This article is available in Chinese'}
             </span>
             <button
               onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
-              className="text-xs font-medium px-2.5 py-1 rounded-full"
-              style={{ background: '#c9a96e', color: '#080c10' }}
+              style={{ fontSize: 13, color: '#c9a96e', cursor: 'pointer', background: 'none', border: 'none' }}
             >
               {lang === 'zh' ? '切换英文' : '切换中文'}
             </button>
           </div>
         )}
 
-        {/* Author */}
-        <div className="flex items-center gap-2 mb-6">
-          <div className="size-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: '#c9a96e' }}>
-            {(post.author || 'K')[0]}
-          </div>
-          <div>
-            <span className="text-sm font-medium" style={{ color: '#e8e4dc' }}>{post.author}</span>
-          </div>
-        </div>
-
-        {/* Content */}
+        {/* 6. Content */}
         <div
           className="blog-content"
+          style={{ marginTop: 24 }}
           dangerouslySetInnerHTML={{ __html: renderedContent }}
         />
 
-        {/* Tags */}
+        {/* 7. Tags */}
         {post.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-8 pt-6" style={{ borderTop: '1px solid rgba(201,169,110,0.1)' }}>
+          <div style={{ marginTop: 32, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {post.tags.map(tag => (
-              <span key={tag} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: 'rgba(201,169,110,0.06)', color: '#a8b8ac' }}>
+              <span key={tag} style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(201,169,110,0.15)', color: '#a8b8ac' }}>
                 {tag}
               </span>
             ))}
           </div>
         )}
 
-        {/* Share Bar */}
-        <div className="mt-8 pt-6" style={{ borderTop: '1px solid rgba(201,169,110,0.1)' }}>
-          <p className="text-sm font-medium mb-3" style={{ color: '#a8b8ac' }}>分享文章</p>
-          <div className="flex items-center gap-2 flex-wrap">
+        {/* 8. Share bar */}
+        <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid rgba(201,169,110,0.1)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, color: '#6a7a7e' }}>分享:</span>
             <ShareBtn onClick={shareFacebook} label="f" title="Facebook" />
             <ShareBtn onClick={shareTwitter} label="𝕏" title="X" />
             <ShareBtn onClick={shareLinkedIn} label="in" title="LinkedIn" />
@@ -259,72 +245,89 @@ export default function BlogDetailPage() {
             <ShareBtn onClick={shareWechat} label="💬" title="微信" />
             <ShareBtn onClick={shareXiaohongshu} label="📕" title="小红书" />
             <ShareBtn onClick={shareEmail} label="✉" title="邮件" />
-            <button onClick={copyLink} title="复制链接" className="size-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(201,169,110,0.06)' }}>
-              <Copy className="size-3.5" style={{ color: '#c9a96e' }} />
+            <button onClick={copyLink} title="复制链接" style={{ width: 40, height: 40, borderRadius: '50%', border: '1px solid rgba(201,169,110,0.15)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Copy size={14} style={{ color: '#c9a96e' }} />
             </button>
             {canNativeShare && (
-              <button onClick={shareNative} title="更多" className="size-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(201,169,110,0.06)' }}>
-                <MoreHorizontal className="size-3.5" style={{ color: '#c9a96e' }} />
+              <button onClick={shareNative} title="更多" style={{ width: 40, height: 40, borderRadius: '50%', border: '1px solid rgba(201,169,110,0.15)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <MoreHorizontal size={14} style={{ color: '#c9a96e' }} />
               </button>
             )}
           </div>
         </div>
 
-        {/* Related Posts */}
+        {/* 9. Related posts */}
         {relatedPosts.length > 0 && (
-          <div className="mt-8 pt-6" style={{ borderTop: '1px solid rgba(201,169,110,0.1)' }}>
-            <p className="text-sm font-medium mb-3" style={{ color: '#a8b8ac' }}>相关文章</p>
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 md:grid md:grid-cols-3 md:overflow-visible" style={{ scrollbarWidth: 'none' }}>
+          <div style={{ marginTop: 40 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 600, color: '#e8e4dc', marginBottom: 16 }}>相关文章</h3>
+            <div className="related-grid">
               {relatedPosts.map(rp => (
                 <Link
                   key={rp.id}
                   href={`/koala/blog/${rp.id}`}
-                  className="related-card flex-shrink-0 w-56 md:w-auto p-3 rounded-xl no-underline transition-all"
-                  style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid transparent' }}
+                  className="related-card no-underline"
                 >
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full inline-block mb-2" style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}>
-                    {CATEGORY_LABELS[rp.category] || rp.category}
-                  </span>
-                  <p className="text-sm font-medium line-clamp-2 leading-snug mb-1.5" style={{ color: '#e8e4dc' }}>
-                    {rp.title_zh || rp.title_en}
-                  </p>
-                  <span className="text-[11px] flex items-center gap-1" style={{ color: '#6a7a7e' }}>
-                    <Clock className="size-3" /> {rp.reading_time_zh} min
-                  </span>
+                  <div
+                    className="related-cover"
+                    style={{
+                      height: 140,
+                      background: rp.cover_image_url
+                        ? `url(${rp.cover_image_url}) center/cover`
+                        : 'linear-gradient(135deg, rgba(201,169,110,0.12), rgba(201,169,110,0.04))',
+                      borderRadius: '8px 8px 0 0',
+                    }}
+                  />
+                  <div style={{ padding: 12 }}>
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 12, background: 'rgba(201,169,110,0.08)', color: '#c9a96e' }}>
+                      {CATEGORY_LABELS[rp.category] || rp.category}
+                    </span>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: '#e8e4dc', lineHeight: 1.4, marginTop: 8, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {rp.title_zh || rp.title_en}
+                    </p>
+                    <span style={{ fontSize: 11, color: '#6a7a7e', marginTop: 6, display: 'block' }}>
+                      {new Date(rp.published_at).toLocaleDateString('zh-CN')}
+                    </span>
+                  </div>
                 </Link>
               ))}
             </div>
           </div>
         )}
 
-        {/* CTA */}
-        <div className="mt-6 p-4 rounded-2xl" style={{ background: 'rgba(201,169,110,0.08)', border: '1px solid rgba(201,169,110,0.1)' }}>
-          <p className="text-sm font-medium" style={{ color: '#e8e4dc' }}>有问题？直接问 Koala</p>
-          <p className="text-xs mt-1 mb-3" style={{ color: '#6a7a7e' }}>AI 学术顾问随时为你解答 PhD 申请问题</p>
-          <Link href="/koala/chat" className="inline-block text-xs px-4 py-2 rounded-full no-underline font-medium" style={{ background: '#c9a96e', color: '#080c10' }}>
-            开始对话 →
+        {/* 10. CTA */}
+        <div style={{ marginTop: 40, marginBottom: 120, padding: 20, borderRadius: 12, background: 'rgba(201,169,110,0.06)' }}>
+          <Link href="/koala/chat" className="no-underline" style={{ fontSize: 15, fontWeight: 500, color: '#e8e4dc' }}>
+            有问题？直接问 Koala →
           </Link>
         </div>
-      </article>
+      </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .blog-content { color: #e8e4dc; line-height: 1.85; font-size: 15px; }
-        .blog-content h1 { font-size: 1.5rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.75rem; color: #e8e4dc; }
-        .blog-content h2 { font-size: 1.25rem; font-weight: 700; margin-top: 1.75rem; margin-bottom: 0.6rem; color: #e8e4dc; }
-        .blog-content h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #e8e4dc; }
-        .blog-content p { margin-bottom: 1rem; color: #c8d0cc; }
+        .blog-detail-title { font-size: 20px; }
+        @media (min-width: 768px) { .blog-detail-title { font-size: 24px; } }
+        .blog-cover-img { max-height: 200px; }
+        @media (min-width: 768px) { .blog-cover-img { max-height: 400px; } }
+        .blog-content h2 { font-size: 18px; font-weight: 600; color: #e8e4dc; margin: 28px 0 12px; }
+        .blog-content h3 { font-size: 16px; font-weight: 600; color: #e8e4dc; margin: 24px 0 10px; }
+        .blog-content p { font-size: 15px; color: #e8e4dc; line-height: 1.85; margin-bottom: 16px; }
+        .blog-content strong { color: #e8e4dc; }
+        .blog-content em { color: #a8b8ac; }
+        .blog-content ul, .blog-content ol { margin-left: 20px; color: #e8e4dc; }
+        .blog-content li { margin-bottom: 8px; }
         .blog-content a { color: #c9a96e; text-decoration: underline; }
-        .blog-content strong { color: #e8e4dc; font-weight: 600; }
-        .blog-content ul, .blog-content ol { margin: 0.75rem 0; padding-left: 1.5rem; }
-        .blog-content li { margin-bottom: 0.4rem; color: #c8d0cc; }
-        .blog-content blockquote { border-left: 3px solid #c9a96e; padding-left: 1rem; margin: 1rem 0; color: #a8b8ac; font-style: italic; }
-        .blog-content code { background: rgba(201,169,110,0.1); color: #c9a96e; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.875em; }
-        .blog-content pre { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 1rem 0; }
+        .blog-content img { width: 100%; border-radius: 8px; margin: 16px 0; }
+        .blog-content code { background: rgba(201,169,110,0.08); color: #c9a96e; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+        .blog-content pre { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 16px; overflow-x: auto; margin: 16px 0; }
         .blog-content pre code { background: none; color: #a8b8ac; padding: 0; }
-        .blog-content img { width: 100%; border-radius: 12px; margin: 1.5rem 0; }
-        .blog-content hr { border: none; border-top: 1px solid rgba(201,169,110,0.1); margin: 2rem 0; }
-        .related-card:hover { border-color: rgba(201,169,110,0.2) !important; }
-        @media (min-width: 768px) { .blog-cover-img { max-height: 400px !important; border-radius: 12px !important; } }
+        .blog-content blockquote { border-left: 3px solid #c9a96e; padding-left: 16px; color: #a8b8ac; margin: 16px 0; }
+        .blog-content hr { border: none; border-top: 1px solid rgba(201,169,110,0.1); margin: 24px 0; }
+        .related-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
+        .related-card { flex-shrink: 0; width: 260px; border-radius: 8px; overflow: hidden; background: linear-gradient(180deg, #111c28, #0d1520); border: 1px solid rgba(201,169,110,0.08); transition: border-color 0.2s; }
+        .related-card:hover { border-color: rgba(201,169,110,0.2); }
+        @media (min-width: 768px) {
+          .related-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; overflow: visible; }
+          .related-card { width: auto; }
+        }
       ` }} />
     </div>
   );
@@ -332,7 +335,17 @@ export default function BlogDetailPage() {
 
 function ShareBtn({ onClick, label, title }: { onClick: () => void; label: string; title: string }) {
   return (
-    <button onClick={onClick} title={title} className="size-9 rounded-full flex items-center justify-center text-sm" style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e' }}>
+    <button
+      onClick={onClick}
+      title={title}
+      style={{
+        width: 40, height: 40, borderRadius: '50%',
+        border: '1px solid rgba(201,169,110,0.15)',
+        background: 'transparent', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 14, color: '#c9a96e',
+      }}
+    >
       {label}
     </button>
   );

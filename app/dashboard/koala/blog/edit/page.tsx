@@ -225,7 +225,40 @@ export default function BlogEditPage() {
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
           />
           {form.cover_image_url && !form.cover_image_url.startsWith('[') && form.cover_image_url.startsWith('http') && (
-            <img src={form.cover_image_url} alt="cover preview" className="mt-2 rounded-lg w-full max-h-40 object-cover" />
+            <div className="mt-2 relative">
+              <img src={form.cover_image_url} alt="cover preview" className="rounded-lg w-full max-h-40 object-cover" />
+              {editId && (
+                <button
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    if (aiWorking === 'cover_image') return;
+                    setAiWorking('cover_image');
+                    try {
+                      const res = await fetch('/api/blog/generate-cover', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          postId: editId,
+                          title: form.title_zh || form.title_en,
+                          category: form.category,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (data.imageUrl) {
+                        setForm(prev => ({ ...prev, cover_image_url: data.imageUrl }));
+                      } else {
+                        alert(data.error || '换一张失败');
+                      }
+                    } catch { alert('换一张失败'); }
+                    setAiWorking(null);
+                  }}
+                  disabled={aiWorking === 'cover_image'}
+                  className="absolute top-2 right-2 px-2.5 py-1 text-xs bg-white/90 text-amber-700 rounded-lg hover:bg-white disabled:opacity-50 font-medium shadow"
+                >
+                  {aiWorking === 'cover_image' ? '⏳ 生成中...' : '🔄 换一张'}
+                </button>
+              )}
+            </div>
           )}
         </div>
 
