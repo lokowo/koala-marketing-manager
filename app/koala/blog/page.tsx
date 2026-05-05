@@ -199,11 +199,7 @@ export default function BlogPage() {
         )}
       </div>
 
-      <style jsx>{`
-        .blog-card:hover {
-          border-color: rgba(201,169,110,0.2) !important;
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{ __html: `.blog-card:hover { border-color: rgba(201,169,110,0.2) !important; }` }} />
     </div>
   );
 }

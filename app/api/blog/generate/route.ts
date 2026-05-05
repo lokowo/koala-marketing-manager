@@ -178,6 +178,17 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
+    if (imageCount && imageCount > 0 && post?.id) {
+      try {
+        const baseUrl = req.nextUrl.origin;
+        fetch(`${baseUrl}/api/blog/generate-images`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postId: post.id, imageCount }),
+        });
+      } catch { /* fire and forget */ }
+    }
+
     return Response.json({
       success: true,
       post,

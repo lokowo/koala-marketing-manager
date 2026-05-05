@@ -17,6 +17,18 @@ const CATEGORY_STYLES: Record<string, string> = {
   professor_spotlight: 'distinguished academic in modern research environment',
 };
 
+const CATEGORY_KEYWORDS: Record<string, string> = {
+  phd_guide: 'university,campus,study',
+  application: 'documents,laptop,workspace',
+  scholarship: 'graduation,achievement,academic',
+  visa: 'travel,passport,australia',
+  supervisor: 'professor,meeting,office',
+  research: 'laboratory,science,research',
+  student_life: 'students,campus,university',
+  news: 'university,architecture,modern',
+  professor_spotlight: 'academic,professor,research',
+};
+
 export async function POST(req: NextRequest) {
   try {
     const { postId, title, category, customPrompt } = await req.json();
@@ -25,24 +37,32 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'postId required' }, { status: 400 });
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+    let imageUrl: string | null = null;
 
-    const baseStyle = CATEGORY_STYLES[category] || CATEGORY_STYLES.phd_guide;
-    const prompt = customPrompt
-      ? customPrompt
-      : `Create a professional blog cover image. Theme: ${baseStyle}. The image should relate to: "${title}". Style: clean, modern, editorial photography look, suitable for an academic blog. No text or words in the image. Aspect ratio 16:9.`;
+    try {
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-    const response = await openai.images.generate({
-      model: 'dall-e-3',
-      prompt,
-      n: 1,
-      size: '1792x1024',
-      quality: 'standard',
-    });
+      const baseStyle = CATEGORY_STYLES[category] || CATEGORY_STYLES.phd_guide;
+      const prompt = customPrompt
+        ? customPrompt
+        : `Create a professional blog cover image. Theme: ${baseStyle}. The image should relate to: "${title}". Style: clean, modern, editorial photography look, suitable for an academic blog. No text or words in the image. Aspect ratio 16:9.`;
 
-    const imageUrl = response.data?.[0]?.url;
+      const response = await openai.images.generate({
+        model: 'dall-e-3',
+        prompt,
+        n: 1,
+        size: '1792x1024',
+        quality: 'standard',
+      });
+
+      imageUrl = response.data?.[0]?.url || null;
+    } catch (dalleError) {
+      console.error('[blog/generate-cover] DALL-E failed, using Unsplash fallback:', dalleError);
+    }
+
     if (!imageUrl) {
-      return Response.json({ error: 'Image generation failed' }, { status: 500 });
+      const keywords = CATEGORY_KEYWORDS[category] || 'university,academic';
+      imageUrl = `https://source.unsplash.com/1200x630/?${keywords}`;
     }
 
     const { error } = await db

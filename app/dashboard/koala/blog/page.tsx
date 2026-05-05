@@ -7,6 +7,8 @@ interface BlogPost {
   id: string;
   title_zh: string | null;
   title_en: string | null;
+  excerpt_zh: string | null;
+  excerpt_en: string | null;
   category: string;
   author: string;
   status: string;
@@ -15,6 +17,10 @@ interface BlogPost {
   published_at: string | null;
   tags: string[];
   cover_image_url: string | null;
+  seo_title_zh?: string | null;
+  seo_description_zh?: string | null;
+  content_en?: string | null;
+  is_pinned?: boolean;
 }
 
 interface Professor {
@@ -30,16 +36,16 @@ interface Professor {
   paperCount?: number;
 }
 
-const CATEGORIES: Record<string, string> = {
-  phd_guide: 'PhD指南',
-  application: '申请攻略',
-  scholarship: '奖学金',
-  visa: '签证攻略',
-  supervisor: '导师关系',
-  research: '科研方法',
-  student_life: '留学生活',
-  news: '行业新闻',
-  professor_spotlight: '教授推荐',
+const CATEGORIES: Record<string, { zh: string; en: string }> = {
+  phd_guide: { zh: 'PhD指南', en: 'PhD Guide' },
+  application: { zh: '申请攻略', en: 'Application' },
+  scholarship: { zh: '奖学金', en: 'Scholarship' },
+  visa: { zh: '签证攻略', en: 'Visa' },
+  supervisor: { zh: '导师关系', en: 'Supervisor' },
+  research: { zh: '科研方法', en: 'Research' },
+  student_life: { zh: '留学生活', en: 'Student Life' },
+  news: { zh: '行业新闻', en: 'News' },
+  professor_spotlight: { zh: '教授推荐', en: 'Professor' },
 };
 
 const STATUS_LABELS: Record<string, { label: string; class: string }> = {
@@ -69,7 +75,10 @@ export default function BlogPage() {
 
     const res = await fetch(`/api/blog?${params}`);
     const data = await res.json();
-    setPosts(data.posts || []);
+    const allPosts: BlogPost[] = data.posts || [];
+    const pinned = allPosts.filter(p => p.is_pinned);
+    const unpinned = allPosts.filter(p => !p.is_pinned);
+    setPosts([...pinned, ...unpinned]);
     setTotal(data.total || 0);
     setLoading(false);
   }, [tab, category, search, sort]);
@@ -103,6 +112,15 @@ export default function BlogPage() {
     await fetch('/api/blog', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status: 'published', published_at: new Date().toISOString() }) });
     fetchPosts();
     fetchCounts();
+  }
+
+  async function handlePin(id: string, currentlyPinned: boolean) {
+    await fetch('/api/blog', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, is_pinned: !currentlyPinned, pin_order: currentlyPinned ? null : 1 }),
+    });
+    fetchPosts();
   }
 
   const tabs = [
@@ -172,7 +190,7 @@ export default function BlogPage() {
         >
           <option value="all">全部分类</option>
           {Object.entries(CATEGORIES).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
+            <option key={k} value={k}>{v.zh}</option>
           ))}
         </select>
         <select
@@ -189,7 +207,7 @@ export default function BlogPage() {
       <div className="border-2 border-green-200 bg-green-50 rounded-lg p-4 flex items-center justify-between">
         <div>
           <h4 className="font-semibold text-green-800">AI批量生成SEO文章</h4>
-          <p className="text-sm text-green-700 mt-0.5">选择推荐主题，一键生成中英文双语文章并自动发布，提升Google搜索排名</p>
+          <p className="text-sm text-green-700 mt-0.5">选择推荐主题，一键生成中英文双语文章并自动发布</p>
         </div>
         <Link href="/dashboard/koala/ai-content/batch" className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
           ⚡ 开始生成
@@ -201,8 +219,14 @@ export default function BlogPage() {
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
             <div key={i} className="bg-white rounded-lg shadow p-4 animate-pulse">
-              <div className="h-5 bg-gray-200 rounded w-2/3 mb-2" />
-              <div className="h-3 bg-gray-100 rounded w-1/3" />
+              <div className="flex gap-3">
+                <div className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-2/3" />
+                  <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  <div className="h-3 bg-gray-100 rounded w-1/3" />
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -215,32 +239,95 @@ export default function BlogPage() {
         <div className="space-y-3">
           {posts.map(post => {
             const statusInfo = STATUS_LABELS[post.status] || STATUS_LABELS.draft;
+            const cat = CATEGORIES[post.category] || { zh: post.category, en: '' };
+            const hasSeo = !!(post.seo_title_zh || post.seo_description_zh);
+            const hasBilingual = !!(post.title_zh && post.title_en);
+            const displayTags = post.tags?.slice(0, 3) || [];
+            const extraTagCount = (post.tags?.length || 0) - 3;
+
             return (
-              <div key={post.id} className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+              <div
+                key={post.id}
+                className={`bg-white rounded-lg shadow p-4 flex gap-3 ${post.is_pinned ? 'ring-2 ring-amber-200' : ''}`}
+              >
+                {/* Thumbnail */}
+                <div
+                  className="w-20 h-20 rounded-lg flex-shrink-0 bg-gray-100"
+                  style={{
+                    background: post.cover_image_url
+                      ? `url(${post.cover_image_url}) center/cover`
+                      : '#f3f4f6',
+                  }}
+                />
+
+                {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-gray-900 truncate">{post.title_zh || post.title_en || '无标题'}</h4>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${statusInfo.class}`}>{statusInfo.label}</span>
+                  {/* Top badges */}
+                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                    {post.is_pinned && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">📌 置顶</span>
+                    )}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusInfo.class}`}>{statusInfo.label}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                      {cat.zh} / {cat.en}
+                    </span>
+                    {hasSeo && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">SEO</span>
+                    )}
+                    {hasBilingual && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">双语</span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-gray-500">
-                    <span className="px-1.5 py-0.5 bg-gray-100 rounded">{CATEGORIES[post.category] || post.category}</span>
-                    <span>{post.author}</span>
-                    <span>{new Date(post.created_at).toLocaleDateString('zh-CN')}</span>
-                    <span>👁 {post.view_count}</span>
+
+                  {/* Chinese title */}
+                  <h4 className="font-semibold text-gray-900 text-sm truncate">
+                    {post.title_zh || post.title_en || '无标题'}
+                  </h4>
+
+                  {/* English title */}
+                  {post.title_en && post.title_zh && (
+                    <p className="text-xs text-gray-400 truncate mt-0.5">{post.title_en}</p>
+                  )}
+
+                  {/* Excerpt */}
+                  {(post.excerpt_zh || post.excerpt_en) && (
+                    <p className="text-xs text-gray-500 truncate mt-1">{post.excerpt_zh || post.excerpt_en}</p>
+                  )}
+
+                  {/* Tags + meta */}
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    {displayTags.map(tag => (
+                      <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{tag}</span>
+                    ))}
+                    {extraTagCount > 0 && (
+                      <span className="text-[10px] text-gray-400">+{extraTagCount}</span>
+                    )}
+                    <span className="text-[10px] text-gray-400 ml-auto">
+                      {new Date(post.created_at).toLocaleDateString('zh-CN')} · 👁 {post.view_count}
+                    </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 ml-4">
-                  <CoverButton post={post} onDone={fetchPosts} />
-                  <Link href={`/dashboard/koala/blog/edit?id=${post.id}`} className="text-sm text-gray-600 hover:text-amber-600 px-2 py-1">
-                    编辑
-                  </Link>
+
+                {/* Actions */}
+                <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => handlePin(post.id, !!post.is_pinned)}
+                    title={post.is_pinned ? '取消置顶' : '置顶'}
+                    className={`text-sm px-1.5 py-1 rounded hover:bg-gray-100 ${post.is_pinned ? 'text-amber-600' : 'text-gray-400'}`}
+                  >
+                    📌
+                  </button>
                   {post.status === 'draft' && (
-                    <button onClick={() => handlePublish(post.id)} className="text-sm text-green-600 hover:text-green-700 px-2 py-1">
-                      发布
+                    <button onClick={() => handlePublish(post.id)} title="发布" className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 text-green-600">
+                      ✈️
                     </button>
                   )}
-                  <button onClick={() => handleDelete(post.id)} className="text-sm text-red-500 hover:text-red-700 px-2 py-1">
-                    删除
+                  <Link href={`/dashboard/koala/blog/edit?id=${post.id}`} title="编辑" className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 text-gray-600">
+                    ✏️
+                  </Link>
+                  <CoverButton post={post} onDone={fetchPosts} />
+                  <button onClick={() => handleDelete(post.id)} title="删除" className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 text-red-400">
+                    🗑️
                   </button>
                 </div>
               </div>
@@ -451,7 +538,6 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
 
         {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
 
-        {/* Search Step */}
         {(step === 'search' || step === 'web-searching') && (
           <>
             <div className="relative mb-4">
@@ -480,7 +566,6 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                 {loadingRandom ? '加载中...' : '🎲 随机推荐'}
               </button>
 
-              {/* Typeahead Dropdown */}
               {showDropdown && (
                 <div className="absolute z-10 left-0 right-12 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {suggestions.map(prof => (
@@ -500,7 +585,6 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
               )}
             </div>
 
-            {/* Selected Professor Card */}
             {selectedProf && (
               <div className="border border-purple-200 bg-purple-50 rounded-lg p-4 mb-4">
                 <div className="flex items-start justify-between">
@@ -544,7 +628,6 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
           </>
         )}
 
-        {/* Web Search Result */}
         {step === 'web-result' && webResult && (
           <div className="border border-green-200 bg-green-50 rounded-lg p-4 mb-4">
             <p className="text-xs text-green-700 font-medium mb-2">🌐 网络搜索结果</p>
@@ -580,7 +663,6 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
           </div>
         )}
 
-        {/* Generating Step */}
         {step === 'generating' && (
           <div className="text-center py-8">
             <div className="inline-block w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mb-4" />
@@ -593,7 +675,6 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
           </div>
         )}
 
-        {/* Done Step */}
         {step === 'done' && (
           <div className="text-center py-8">
             <p className="text-3xl mb-3">✅</p>
@@ -640,9 +721,10 @@ function CoverButton({ post, onDone }: { post: BlogPost; onDone: () => void }) {
     <button
       onClick={handleGenerate}
       disabled={generating}
-      className="text-sm text-purple-600 hover:text-purple-700 px-2 py-1 disabled:opacity-50"
+      title="生成封面"
+      className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 text-purple-500 disabled:opacity-50"
     >
-      {generating ? '⏳...' : '🎨 封面'}
+      {generating ? '⏳' : '🎨'}
     </button>
   );
 }
