@@ -105,14 +105,14 @@ const MODES: {
 function ConfidenceBadgeInline({ level, count }: { level: ConfidenceLevel; count?: number }) {
   const map: Record<ConfidenceLevel, { icon: string; label: string; color: string }> = {
     high:    { icon: '🟢', label: count ? `高置信 · ${count} 篇论文` : '高置信', color: '#5a8060' },
-    medium:  { icon: '🟡', label: count ? `中置信 · ${count} 篇论文` : '中置信', color: '#8a6c30' },
+    medium:  { icon: '🟡', label: count ? `中置信 · ${count} 篇论文` : '中置信', color: '#c9a96e' },
     low:     { icon: '🔴', label: '低置信', color: '#b06040' },
-    warning: { icon: '⚠️', label: '待验证', color: '#8a6c30' },
-    unknown: { icon: '⚪', label: '未知来源', color: '#907858' },
+    warning: { icon: '⚠️', label: '待验证', color: '#c9a96e' },
+    unknown: { icon: '⚪', label: '未知来源', color: '#6a7a7e' },
   };
   const cfg = map[level];
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ml-1" style={{ background: '#f2ead6', color: cfg.color }}>
+    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ml-1" style={{ background: 'rgba(255,255,255,0.1)', color: cfg.color }}>
       {cfg.icon} {cfg.label}
     </span>
   );
@@ -120,24 +120,24 @@ function ConfidenceBadgeInline({ level, count }: { level: ConfidenceLevel; count
 
 function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
   const score = match.matchScore;
-  const color = score >= 75 ? '#5a8060' : score >= 50 ? '#c4a050' : '#b06040';
+  const color = score >= 75 ? '#5a8060' : score >= 50 ? '#c9a96e' : '#b06040';
   const hasStats = match.hIndex != null || match.paperCount != null || match.citationCount != null;
   return (
-    <div className="rounded-xl p-3 mt-2" style={{ background: '#fff', border: '1px solid #e8dcc8' }}>
+    <div className="rounded-xl p-3 mt-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
       <Link href={`/koala/professors/${match.professorId}`} style={{ textDecoration: 'none' }}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="text-xs font-semibold" style={{ color: '#1a2332' }}>🎓 {match.name}</div>
-            <div className="text-[11px] mt-0.5" style={{ color: '#907858' }}>{match.institution}</div>
-            {match.positionTitle && <div className="text-[10px]" style={{ color: '#b09878' }}>{match.positionTitle}</div>}
+            <div className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>🎓 {match.name}</div>
+            <div className="text-[11px] mt-0.5" style={{ color: '#8a8078' }}>{match.institution}</div>
+            {match.positionTitle && <div className="text-[10px]" style={{ color: '#6a6058' }}>{match.positionTitle}</div>}
           </div>
           <div className="flex-shrink-0 text-center">
             <div className="text-lg font-bold" style={{ color }}>{score}</div>
-            <div className="text-[10px]" style={{ color: '#b09878' }}>匹配度</div>
+            <div className="text-[10px]" style={{ color: '#6a6058' }}>匹配度</div>
           </div>
         </div>
         {hasStats && (
-          <div className="flex gap-3 mt-1.5 text-[10px]" style={{ color: '#6b6055' }}>
+          <div className="flex gap-3 mt-1.5 text-[10px]" style={{ color: '#8a8078' }}>
             {match.hIndex != null && <span>H:{match.hIndex}</span>}
             {match.paperCount != null && <span>{match.paperCount}篇论文</span>}
             {match.citationCount != null && <span>{match.citationCount >= 1000 ? `${(match.citationCount / 1000).toFixed(1)}k` : match.citationCount}引用</span>}
@@ -146,29 +146,29 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
         {match.researchTags && match.researchTags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {match.researchTags.slice(0, 3).map(tag => (
-              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#f2ead6', color: '#7d6340' }}>{tag}</span>
+              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.08)', color: '#c9a96e' }}>{tag}</span>
             ))}
           </div>
         )}
         {match.reason && (
-          <div className="text-[11px] mt-2 pt-2 leading-relaxed" style={{ color: '#584838', borderTop: '1px solid #f0e8d4' }}>{match.reason}</div>
+          <div className="text-[11px] mt-2 pt-2 leading-relaxed" style={{ color: '#a09888', borderTop: '1px solid rgba(255,255,255,0.08)' }}>{match.reason}</div>
         )}
         {match.opportunityLabel && (
-          <div className="inline-block text-[10px] px-2 py-0.5 rounded-full mt-1" style={{ background: '#f0f8f2', color: '#5a8060' }}>{match.opportunityLabel}</div>
+          <div className="inline-block text-[10px] px-2 py-0.5 rounded-full mt-1" style={{ background: 'rgba(90,128,96,0.15)', color: '#5a8060' }}>{match.opportunityLabel}</div>
         )}
       </Link>
-      <div className="flex gap-2 mt-2 pt-2" style={{ borderTop: '1px solid #f0e8d4' }}>
+      <div className="flex gap-2 mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <Link
           href={`/koala/professors/${match.professorId}`}
           className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg no-underline"
-          style={{ background: '#f0e9d6', color: '#1a2332' }}
+          style={{ background: 'rgba(255,255,255,0.08)', color: '#e8e4dc' }}
         >
           查看详情
         </Link>
         <Link
           href={`/koala/chat?action=outreach&prof=${match.professorId}&name=${encodeURIComponent(match.name)}`}
           className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg no-underline"
-          style={{ background: '#c4a050', color: '#fff' }}
+          style={{ background: '#c9a96e', color: '#080c10' }}
         >
           ✉️ 写申请信
         </Link>
@@ -179,20 +179,20 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
 
 function ScoreCardBlock({ card }: { card: ScoreCard }) {
   return (
-    <div className="rounded-xl p-3 mt-2" style={{ background: '#fff', border: '1px solid #e8dcc8' }}>
+    <div className="rounded-xl p-3 mt-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold" style={{ color: '#1a2332' }}>📊 申请潜力初评</span>
-        <span className="text-lg font-bold" style={{ color: '#c4a050' }}>{card.totalScore}<span className="text-xs font-normal text-stone-400">/100</span></span>
+        <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>📊 申请潜力初评</span>
+        <span className="text-lg font-bold" style={{ color: '#c9a96e' }}>{card.totalScore}<span className="text-xs font-normal" style={{ color: '#6a6058' }}>/100</span></span>
       </div>
       <div className="space-y-1.5">
         {card.dimensions.map(dim => (
           <div key={dim.name}>
             <div className="flex justify-between text-[11px] mb-0.5">
-              <span style={{ color: '#584838' }}>{dim.name}</span>
-              <span style={{ color: '#7d6340' }}>{dim.score}</span>
+              <span style={{ color: '#a09888' }}>{dim.name}</span>
+              <span style={{ color: '#c9a96e' }}>{dim.score}</span>
             </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#f0e8d4' }}>
-              <div className="h-full rounded-full" style={{ width: `${dim.score}%`, background: '#c4a050' }} />
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <div className="h-full rounded-full" style={{ width: `${dim.score}%`, background: '#c9a96e' }} />
             </div>
           </div>
         ))}
@@ -260,32 +260,32 @@ function FileUploadSheet({ onClose, onFile }: { onClose: () => void; onFile: (f:
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.3)' }} onClick={onClose}>
-      <div className="w-full rounded-t-3xl p-6" style={{ background: '#faf6ec', maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
-        <div className="text-sm font-semibold mb-4" style={{ color: '#1a2332' }}>上传文件</div>
+    <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
+      <div className="w-full rounded-t-3xl p-6" style={{ background: '#0d1520', maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
+        <div className="text-sm font-semibold mb-4" style={{ color: '#e8e4dc' }}>上传文件</div>
         <div className="space-y-2">
           {options.map(opt => (
-            <button key={opt.type} onClick={() => handleSelect(opt.type)} className="w-full flex items-center gap-3 rounded-2xl p-4 text-left" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+            <button key={opt.type} onClick={() => handleSelect(opt.type)} className="w-full flex items-center gap-3 rounded-2xl p-4 text-left" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <span className="text-xl">{opt.icon}</span>
               <div>
-                <span className="text-sm font-medium" style={{ color: '#1a2332' }}>{opt.label}</span>
-                <span className="text-[11px] ml-2" style={{ color: '#907858' }}>({opt.desc})</span>
+                <span className="text-sm font-medium" style={{ color: '#e8e4dc' }}>{opt.label}</span>
+                <span className="text-[11px] ml-2" style={{ color: '#8a8078' }}>({opt.desc})</span>
               </div>
             </button>
           ))}
         </div>
         {selectedType === 'other' && (
-          <p className="text-[11px] mt-2 px-1" style={{ color: '#907858' }}>
+          <p className="text-[11px] mt-2 px-1" style={{ color: '#8a8078' }}>
             例如：证书、论文草稿、研究计划、推荐信等
           </p>
         )}
         {error && (
-          <div className="mt-3 rounded-xl px-3 py-2 text-xs" style={{ background: '#fff0f0', color: '#b06040', border: '1px solid #f0c0c0' }}>
+          <div className="mt-3 rounded-xl px-3 py-2 text-xs" style={{ background: 'rgba(176,96,64,0.15)', color: '#e08060', border: '1px solid rgba(176,96,64,0.3)' }}>
             {error}
           </div>
         )}
         <input ref={inputRef} type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" className="hidden" onChange={handleFileChange} />
-        <button className="w-full mt-4 py-3 rounded-2xl text-sm font-medium" style={{ background: '#f2ead6', color: '#907858' }} onClick={onClose}>取消</button>
+        <button className="w-full mt-4 py-3 rounded-2xl text-sm font-medium" style={{ background: 'rgba(255,255,255,0.06)', color: '#8a8078' }} onClick={onClose}>取消</button>
       </div>
     </div>
   );
@@ -293,25 +293,25 @@ function FileUploadSheet({ onClose, onFile }: { onClose: () => void; onFile: (f:
 
 function CreditConfirmDialog({ remaining, onConfirm, onCancel }: { remaining: number; onConfirm: () => void; onCancel: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={onCancel}>
-      <div className="w-full rounded-t-3xl p-6" style={{ background: '#faf6ec', maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onCancel}>
+      <div className="w-full rounded-t-3xl p-6" style={{ background: '#0d1520', maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2 mb-1">
-          <Sparkles className="size-4" style={{ color: '#c4a050' }} />
-          <span className="text-sm font-bold" style={{ color: '#1a2332' }}>生成申请信</span>
+          <Sparkles className="size-4" style={{ color: '#c9a96e' }} />
+          <span className="text-sm font-bold" style={{ color: '#e8e4dc' }}>生成申请信</span>
         </div>
-        <p className="text-xs leading-relaxed mb-1" style={{ color: '#584838' }}>本次生成将消耗 <strong>1 积分</strong>，剩余 {remaining} 积分。</p>
-        <p className="text-[11px]" style={{ color: '#907858' }}>月度额度优先扣除；单独购买的积分永久有效。</p>
+        <p className="text-xs leading-relaxed mb-1" style={{ color: '#a09888' }}>本次生成将消耗 <strong>1 积分</strong>，剩余 {remaining} 积分。</p>
+        <p className="text-[11px]" style={{ color: '#8a8078' }}>月度额度优先扣除；单独购买的积分永久有效。</p>
         {remaining <= 0 && (
-          <div className="mt-3 rounded-xl p-3 text-xs" style={{ background: '#fff5e8', border: '1px solid #f0d0a0', color: '#8a5020' }}>
+          <div className="mt-3 rounded-xl p-3 text-xs" style={{ background: 'rgba(176,96,64,0.15)', border: '1px solid rgba(176,96,64,0.3)', color: '#e08060' }}>
             积分不足！可前往「工具 → 定价」购买积分包，或升级订阅。
           </div>
         )}
         <div className="flex gap-2 mt-4">
-          <button className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }} onClick={onCancel}>取消</button>
+          <button className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ background: 'rgba(255,255,255,0.06)', color: '#8a8078', border: '1px solid rgba(255,255,255,0.1)' }} onClick={onCancel}>取消</button>
           {remaining > 0 ? (
-            <button className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#c4a050' }} onClick={onConfirm}>确认生成（−1 积分）</button>
+            <button className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ background: '#c9a96e', color: '#080c10' }} onClick={onConfirm}>确认生成（−1 积分）</button>
           ) : (
-            <Link href="/koala/tools" className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white text-center no-underline" style={{ background: '#c4a050' }}>去购买积分</Link>
+            <Link href="/koala/tools" className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-center no-underline" style={{ background: '#c9a96e', color: '#080c10' }}>去购买积分</Link>
           )}
         </div>
       </div>
@@ -321,12 +321,12 @@ function CreditConfirmDialog({ remaining, onConfirm, onCancel }: { remaining: nu
 
 function ConsultationBanner() {
   return (
-    <div className="rounded-xl p-3 mt-2" style={{ background: '#f5e8c4', border: '1px solid #e8d098' }}>
-      <div className="text-xs font-semibold mb-1" style={{ color: '#8a6c30' }}>💡 需要更深入的分析？</div>
-      <p className="text-[11px] leading-relaxed" style={{ color: '#7d6340' }}>AI 评估有局限，真人顾问能帮你做更精准的项目匹配。</p>
+    <div className="rounded-xl p-3 mt-2" style={{ background: 'rgba(201,169,110,0.1)', border: '1px solid rgba(201,169,110,0.2)' }}>
+      <div className="text-xs font-semibold mb-1" style={{ color: '#c9a96e' }}>💡 需要更深入的分析？</div>
+      <p className="text-[11px] leading-relaxed" style={{ color: '#a09888' }}>AI 评估有局限，真人顾问能帮你做更精准的项目匹配。</p>
       <div className="flex gap-2 mt-2">
-        <a href="mailto:info@koalaphd.com" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline" style={{ background: '#c4a050', color: '#fff' }}>📧 联系顾问</a>
-        <a href="weixin://dl/chat?username=KoalaStudyAdvisor" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline" style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}>💬 微信咨询</a>
+        <a href="mailto:info@koalaphd.com" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline" style={{ background: '#c9a96e', color: '#080c10' }}>📧 联系顾问</a>
+        <a href="weixin://dl/chat?username=KoalaStudyAdvisor" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline" style={{ background: 'rgba(255,255,255,0.06)', color: '#c9a96e', border: '1px solid rgba(255,255,255,0.1)' }}>💬 微信咨询</a>
       </div>
     </div>
   );
@@ -342,16 +342,16 @@ function SettingsPanel({
   onClear: () => void; onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.35)' }} onClick={onClose}>
-      <div className="w-full rounded-t-3xl p-6 space-y-5" style={{ background: '#faf6ec', maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
+      <div className="w-full rounded-t-3xl p-6 space-y-5" style={{ background: '#080c10', maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold" style={{ color: '#1a2332' }}>设置</span>
-          <button onClick={onClose} className="text-xs" style={{ color: '#907858' }}>关闭</button>
+          <span className="text-sm font-bold" style={{ color: '#e8e4dc' }}>设置</span>
+          <button onClick={onClose} className="text-xs" style={{ color: '#8a8078' }}>关闭</button>
         </div>
 
         {/* Tone */}
         <div>
-          <div className="text-xs font-semibold mb-2" style={{ color: '#584838' }}>AI 语气偏好</div>
+          <div className="text-xs font-semibold mb-2" style={{ color: '#a09888' }}>AI 语气偏好</div>
           <div className="grid grid-cols-3 gap-2">
             {([['casual', '轻松'], ['professional', '专业'], ['direct', '直接']] as [TonePref, string][]).map(([val, label]) => (
               <button
@@ -359,9 +359,9 @@ function SettingsPanel({
                 onClick={() => onTone(val)}
                 className="py-2 rounded-xl text-xs font-medium"
                 style={{
-                  background: tone === val ? '#f5e8c4' : '#f2ead6',
-                  border: `1.5px solid ${tone === val ? '#c4a050' : '#e8dcc8'}`,
-                  color: tone === val ? '#8a6c30' : '#a08058',
+                  background: tone === val ? 'rgba(201,169,110,0.15)' : 'rgba(255,255,255,0.06)',
+                  border: `1.5px solid ${tone === val ? '#c9a96e' : 'rgba(255,255,255,0.1)'}`,
+                  color: tone === val ? '#c9a96e' : '#8a8078',
                 }}
               >
                 {label}
@@ -372,7 +372,7 @@ function SettingsPanel({
 
         {/* Language */}
         <div>
-          <div className="text-xs font-semibold mb-2" style={{ color: '#584838' }}>语言偏好</div>
+          <div className="text-xs font-semibold mb-2" style={{ color: '#a09888' }}>语言偏好</div>
           <div className="grid grid-cols-3 gap-2">
             {([['zh', '中文'], ['en', 'English'], ['mixed', '中英混合']] as [LangPref, string][]).map(([val, label]) => (
               <button
@@ -380,9 +380,9 @@ function SettingsPanel({
                 onClick={() => onLang(val)}
                 className="py-2 rounded-xl text-xs font-medium"
                 style={{
-                  background: lang === val ? '#f5e8c4' : '#f2ead6',
-                  border: `1.5px solid ${lang === val ? '#c4a050' : '#e8dcc8'}`,
-                  color: lang === val ? '#8a6c30' : '#a08058',
+                  background: lang === val ? 'rgba(201,169,110,0.15)' : 'rgba(255,255,255,0.06)',
+                  border: `1.5px solid ${lang === val ? '#c9a96e' : 'rgba(255,255,255,0.1)'}`,
+                  color: lang === val ? '#c9a96e' : '#8a8078',
                 }}
               >
                 {label}
@@ -396,7 +396,7 @@ function SettingsPanel({
           <button
             onClick={() => { onClear(); onClose(); }}
             className="w-full py-2.5 rounded-xl text-sm font-medium"
-            style={{ background: '#f2ead6', color: '#b06040', border: '1px solid #e8d8c8' }}
+            style={{ background: 'rgba(176,96,64,0.1)', color: '#e08060', border: '1px solid rgba(176,96,64,0.3)' }}
           >
             🗑️ 清除对话记录
           </button>
@@ -404,7 +404,7 @@ function SettingsPanel({
             href="/login"
             onClick={onClose}
             className="block w-full py-2.5 rounded-xl text-sm font-medium text-center no-underline"
-            style={{ background: '#f2ead6', color: '#907858', border: '1px solid #e8dcc8' }}
+            style={{ background: 'rgba(255,255,255,0.06)', color: '#8a8078', border: '1px solid rgba(255,255,255,0.1)' }}
           >
             退出登录
           </Link>
@@ -508,8 +508,8 @@ async function clearRemoteHistory(userId: string, mode: string) {
 export default function ChatPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center" style={{ height: '100dvh', background: '#faf6ec' }}>
-        <p className="text-sm" style={{ color: '#907858' }}>加载中…</p>
+      <div className="flex items-center justify-center" style={{ height: '100dvh', background: '#080c10' }}>
+        <p className="text-sm" style={{ color: '#8a8078' }}>加载中…</p>
       </div>
     }>
       <ChatPageInner />
@@ -839,7 +839,7 @@ function ChatPageInner() {
   const formatTime = (d: Date) => d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="flex flex-col" style={{ height: '100dvh', background: '#faf6ec', paddingBottom: 60 }}>
+    <div className="flex flex-col" style={{ height: '100dvh', background: '#080c10', paddingBottom: 60 }}>
 
       {/* Achievement toast */}
       {toastAchievement && (
@@ -851,30 +851,30 @@ function ChatPageInner() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ background: '#1a2332' }}>
+      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ background: '#0d1520' }}>
         <div className="flex items-center gap-2">
           <div
             className="size-9 rounded-full flex justify-center items-center flex-shrink-0"
-            style={{ background: '#c4a050' }}
+            style={{ background: '#c9a96e' }}
           >
-            <PawPrint className="size-5" style={{ color: '#1a2332' }} />
+            <PawPrint className="size-5" style={{ color: '#080c10' }} />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-base leading-6 tracking-wide" style={{ color: '#c4a050' }}>
+            <span className="font-bold text-base leading-6 tracking-wide" style={{ color: '#c9a96e' }}>
               Koala PhD
             </span>
-            <span className="text-[10px]" style={{ color: 'rgba(196,160,80,0.8)' }}>
+            <span className="text-[10px]" style={{ color: 'rgba(201,169,110,0.7)' }}>
               考拉学长 · 在线
             </span>
           </div>
         </div>
         <button onClick={() => setShowSettings(true)}>
-          <Settings className="size-5" style={{ color: '#c4a050' }} />
+          <Settings className="size-5" style={{ color: '#c9a96e' }} />
         </button>
       </div>
 
       {/* Mode tabs */}
-      <div className="flex px-2 items-stretch flex-shrink-0" style={{ background: '#f0e9d6' }}>
+      <div className="flex px-2 items-stretch flex-shrink-0" style={{ background: '#0d1520' }}>
         {MODES.map(m => {
           const active = mode === m.key;
           return (
@@ -886,7 +886,7 @@ function ChatPageInner() {
               <span
                 className="text-sm leading-5"
                 style={{
-                  color: active ? '#1a2332' : '#9a9285',
+                  color: active ? '#e8e4dc' : '#5a5550',
                   fontWeight: active ? 700 : 400,
                 }}
               >
@@ -894,7 +894,7 @@ function ChatPageInner() {
               </span>
               <div
                 className="rounded-full w-8 h-0.5"
-                style={{ background: active ? '#c4a050' : 'transparent' }}
+                style={{ background: active ? '#c9a96e' : 'transparent' }}
               />
             </button>
           );
@@ -904,9 +904,9 @@ function ChatPageInner() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-0.5">
         <div className="flex items-center gap-2 py-2 mb-1">
-          <div className="flex-1 h-px" style={{ background: '#e8dcc8' }} />
-          <span className="text-[11px] flex-shrink-0" style={{ color: '#b09878' }}>今天 {formatTime(messages[0]?.timestamp ?? new Date())}</span>
-          <div className="flex-1 h-px" style={{ background: '#e8dcc8' }} />
+          <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+          <span className="text-[11px] flex-shrink-0" style={{ color: '#5a5550' }}>今天 {formatTime(messages[0]?.timestamp ?? new Date())}</span>
+          <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
         </div>
 
         {messages.map((msg, idx) => (
@@ -921,8 +921,8 @@ function ChatPageInner() {
                 <div
                   className="px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap"
                   style={msg.role === 'user'
-                    ? { background: '#c4a050', color: '#fff', borderRadius: '1rem 0.25rem 1rem 1rem', boxShadow: '0 2px 8px rgba(196,160,80,0.20)' }
-                    : { background: '#fff', color: '#28201a', borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(196,160,80,0.12)' }
+                    ? { background: '#c9a96e', color: '#080c10', borderRadius: '1rem 0.25rem 1rem 1rem', boxShadow: '0 2px 8px rgba(201,169,110,0.20)' }
+                    : { background: 'rgba(255,255,255,0.06)', color: '#e8e4dc', borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }
                   }
                 >
                   {msg.content}
@@ -939,7 +939,7 @@ function ChatPageInner() {
                   <button
                     onClick={() => setBatchProfessors(msg.matchedProfessors!.map(p => ({ id: p.professorId, name: p.name, institution: p.institution, matchScore: p.matchScore })))}
                     className="mt-2 w-full py-2 rounded-xl text-xs font-semibold"
-                    style={{ background: '#1a2332', color: '#c4a050' }}
+                    style={{ background: '#0d1520', color: '#c9a96e', border: '1px solid rgba(201,169,110,0.3)' }}
                   >
                     📨 批量生成申请信（{msg.matchedProfessors.length} 封）
                   </button>
@@ -981,7 +981,7 @@ function ChatPageInner() {
                     {msg.quickReplies.map(qr => (
                       <button key={qr} onClick={() => sendMessage(qr)} disabled={loading}
                         className="text-xs px-3 py-1.5 rounded-full border"
-                        style={{ background: '#faf6ec', borderColor: '#d8c8a8', color: '#584838' }}
+                        style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)', color: '#a09888' }}
                       >
                         {qr}
                       </button>
@@ -1008,7 +1008,7 @@ function ChatPageInner() {
             {currentMode.initialReplies.map(qr => (
               <button key={qr} onClick={() => sendMessage(qr)}
                 className="text-xs px-3 py-1.5 rounded-full border"
-                style={{ background: '#faf6ec', borderColor: '#d8c8a8', color: '#584838' }}
+                style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)', color: '#a09888' }}
               >
                 {qr}
               </button>
@@ -1039,7 +1039,7 @@ function ChatPageInner() {
             <div className="mt-1 mr-2 flex-shrink-0">
               <KoalaAvatar size={28} />
             </div>
-            <div className="px-3.5 py-2.5 text-sm" style={{ background: '#fff', borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(196,160,80,0.12)', color: '#907858' }}>
+            <div className="px-3.5 py-2.5 text-sm" style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', color: '#8a8078' }}>
               {mode === 'research' ? (
                 <span className="animate-pulse">🔬 正在检索论文…</span>
               ) : (
@@ -1053,8 +1053,8 @@ function ChatPageInner() {
 
       {/* Profile guidance hint */}
       {profile && (profile.profile_completeness ?? 0) < 60 && (
-        <div className="flex-shrink-0 px-4 py-2" style={{ background: '#f8f5ef' }}>
-          <p className="text-[11px] leading-relaxed text-center" style={{ color: '#907858' }}>
+        <div className="flex-shrink-0 px-4 py-2" style={{ background: 'rgba(255,255,255,0.03)' }}>
+          <p className="text-[11px] leading-relaxed text-center" style={{ color: '#6a6058' }}>
             💡 多跟我聊聊你的背景和想法，你说得越多，我帮你匹配的导师就越精准哦～
           </p>
         </div>
@@ -1063,19 +1063,19 @@ function ChatPageInner() {
       {/* Input bar */}
       <div
         className="flex-shrink-0 border-t"
-        style={{ background: '#fff', borderColor: '#e8dfc8' }}
+        style={{ background: '#0d1520', borderColor: 'rgba(255,255,255,0.08)' }}
       >
         <div className="flex p-4 items-center gap-2">
           <button
             onClick={() => setShowUpload(true)}
             className="size-9 shrink-0 rounded-full flex justify-center items-center"
-            style={{ background: '#f0e9d6' }}
+            style={{ background: 'rgba(255,255,255,0.06)' }}
           >
-            <Plus className="size-5" style={{ color: '#1a2332' }} />
+            <Plus className="size-5" style={{ color: '#e8e4dc' }} />
           </button>
           <div
             className="rounded-full px-4 py-2.5 flex-1"
-            style={{ background: '#f7f1e0' }}
+            style={{ background: 'rgba(255,255,255,0.06)' }}
           >
             <textarea
               ref={textareaRef}
@@ -1088,20 +1088,20 @@ function ChatPageInner() {
               }}
               onKeyDown={handleKeyDown}
               placeholder={currentMode.placeholder}
-              className="w-full resize-none text-sm outline-none bg-transparent leading-relaxed"
-              style={{ color: '#1a2332', maxHeight: 120 }}
+              className="w-full resize-none text-sm outline-none bg-transparent leading-relaxed placeholder:text-[#5a5550]"
+              style={{ color: '#e8e4dc', maxHeight: 120 }}
             />
           </div>
           <button
             onClick={() => sendMessage()}
             disabled={!input.trim() || loading}
             className="size-9 shrink-0 rounded-full flex justify-center items-center"
-            style={{ background: input.trim() && !loading ? '#c4a050' : '#e0d8c4' }}
+            style={{ background: input.trim() && !loading ? '#c9a96e' : 'rgba(255,255,255,0.08)' }}
           >
             <Send className="size-4 fill-white text-white" />
           </button>
         </div>
-        <p className="text-center text-[10px] pb-2" style={{ color: '#c0a878' }}>
+        <p className="text-center text-[10px] pb-2" style={{ color: '#5a5550' }}>
           Koala 可能出错，重要决策请咨询人工顾问
         </p>
       </div>

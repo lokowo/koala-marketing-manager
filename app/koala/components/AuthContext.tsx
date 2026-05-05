@@ -146,7 +146,7 @@ function LoginModal({
     >
       <div
         className="rounded-t-3xl px-6 pt-6 pb-10"
-        style={{ background: '#faf6ec', maxWidth: 480, width: '100%', margin: '0 auto' }}
+        style={{ background: '#080c10', maxWidth: 480, width: '100%', margin: '0 auto' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Drag handle */}
@@ -155,14 +155,14 @@ function LoginModal({
         {registered ? (
           <div className="text-center py-6">
             <div className="text-4xl mb-3">📬</div>
-            <h2 className="text-base font-bold mb-2" style={{ color: '#1a2332' }}>请检查你的邮箱</h2>
-            <p className="text-sm leading-relaxed" style={{ color: '#907858' }}>
+            <h2 className="text-base font-bold mb-2" style={{ color: '#e8e4dc' }}>请检查你的邮箱</h2>
+            <p className="text-sm leading-relaxed" style={{ color: '#6a7a7e' }}>
               我们已向 <strong>{email}</strong> 发送了验证邮件，点击链接后即可登录。
             </p>
             <button
               onClick={onClose}
               className="mt-6 w-full py-3 rounded-full text-sm font-semibold"
-              style={{ background: '#c4a050', color: '#fff' }}
+              style={{ background: '#c9a96e', color: '#080c10' }}
             >
               好的
             </button>
@@ -170,15 +170,15 @@ function LoginModal({
         ) : (
           <>
             {/* Tabs */}
-            <div className="flex rounded-2xl p-1 mb-6" style={{ background: '#f2ead6' }}>
+            <div className="flex rounded-2xl p-1 mb-6" style={{ background: 'rgba(201,169,110,0.06)' }}>
               {(['login', 'register'] as const).map(t => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
                   className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
                   style={{
-                    background: tab === t ? '#c4a050' : 'transparent',
-                    color: tab === t ? '#fff' : '#907858',
+                    background: tab === t ? '#c9a96e' : 'transparent',
+                    color: tab === t ? '#fff' : '#6a7a7e',
                   }}
                 >
                   {t === 'login' ? '登录' : '注册'}
@@ -194,7 +194,7 @@ function LoginModal({
                   value={name}
                   onChange={e => setName(e.target.value)}
                   className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
-                  style={{ background: '#f2ead6', color: '#1a2332', border: '1px solid #e8dcc8' }}
+                  style={{ background: 'rgba(201,169,110,0.06)', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.1)' }}
                 />
               )}
               <input
@@ -204,7 +204,7 @@ function LoginModal({
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
-                style={{ background: '#f2ead6', color: '#1a2332', border: '1px solid #e8dcc8' }}
+                style={{ background: 'rgba(201,169,110,0.06)', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.1)' }}
               />
               <input
                 type="password"
@@ -214,7 +214,7 @@ function LoginModal({
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
-                style={{ background: '#f2ead6', color: '#1a2332', border: '1px solid #e8dcc8' }}
+                style={{ background: 'rgba(201,169,110,0.06)', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.1)' }}
               />
               {error && (
                 <p className="text-xs px-1" style={{ color: '#b06040' }}>{error}</p>
@@ -223,19 +223,19 @@ function LoginModal({
                 type="submit"
                 disabled={loading}
                 className="w-full py-3 rounded-full text-sm font-semibold text-white mt-2"
-                style={{ background: loading ? '#d8c8a8' : '#c4a050' }}
+                style={{ background: loading ? '#d8c8a8' : '#c9a96e' }}
               >
                 {loading ? '处理中…' : tab === 'login' ? '登录' : '注册'}
               </button>
             </form>
 
             {tab === 'login' && (
-              <p className="text-center text-xs mt-4" style={{ color: '#907858' }}>
+              <p className="text-center text-xs mt-4" style={{ color: '#6a7a7e' }}>
                 还没有账号？{' '}
                 <button
                   onClick={() => setTab('register')}
                   className="font-semibold underline"
-                  style={{ color: '#c4a050' }}
+                  style={{ color: '#c9a96e' }}
                 >
                   免费注册
                 </button>

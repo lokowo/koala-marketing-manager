@@ -109,12 +109,12 @@ export default function AuthPage() {
   // --- Success ---
   if (step === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#faf6ec' }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#080c10' }}>
         <div className="w-full max-w-sm text-center">
           <div className="text-5xl mb-4">🎉</div>
-          <h1 className="text-xl font-bold mb-2" style={{ color: '#1a2332' }}>验证成功！</h1>
-          <p className="text-sm mb-6" style={{ color: '#907858' }}>欢迎加入 Koala PhD，正在跳转…</p>
-          <div className="w-8 h-8 mx-auto rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#c4a050', borderTopColor: 'transparent' }} />
+          <h1 className="text-xl font-bold mb-2" style={{ color: '#e8e4dc' }}>验证成功！</h1>
+          <p className="text-sm mb-6" style={{ color: '#6a7a7e' }}>欢迎加入 Koala PhD，正在跳转…</p>
+          <div className="w-8 h-8 mx-auto rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#c9a96e', borderTopColor: 'transparent' }} />
         </div>
       </div>
     );
@@ -123,18 +123,18 @@ export default function AuthPage() {
   // --- Verify Code ---
   if (step === 'verify') {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#faf6ec' }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#080c10' }}>
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
             <div className="text-3xl mb-3">📧</div>
-            <h1 className="text-xl font-bold" style={{ color: '#1a2332' }}>验证你的邮箱</h1>
-            <p className="text-sm mt-2" style={{ color: '#907858' }}>
-              验证码已发送到 <span className="font-medium" style={{ color: '#584838' }}>{email}</span>
+            <h1 className="text-xl font-bold" style={{ color: '#e8e4dc' }}>验证你的邮箱</h1>
+            <p className="text-sm mt-2" style={{ color: '#6a7a7e' }}>
+              验证码已发送到 <span className="font-medium" style={{ color: '#a8b8ac' }}>{email}</span>
             </p>
           </div>
 
-          <form onSubmit={handleVerify} className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #e8dcc8', boxShadow: '0 4px 24px rgba(125,99,64,0.08)' }}>
-            <label className="block text-sm font-medium mb-2" style={{ color: '#584838' }}>6位验证码</label>
+          <form onSubmit={handleVerify} className="rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)', boxShadow: '0 4px 24px rgba(125,99,64,0.08)' }}>
+            <label className="block text-sm font-medium mb-2" style={{ color: '#a8b8ac' }}>6位验证码</label>
             <input
               type="text"
               inputMode="numeric"
@@ -142,7 +142,7 @@ export default function AuthPage() {
               value={code}
               onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
               className="w-full text-center text-2xl font-bold tracking-[8px] rounded-xl px-4 py-3 focus:outline-none"
-              style={{ background: '#f2ead6', border: '2px solid #e8dcc8', color: '#1a2332' }}
+              style={{ background: 'rgba(201,169,110,0.06)', border: '2px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
               placeholder="000000"
               autoFocus
             />
@@ -153,7 +153,7 @@ export default function AuthPage() {
               type="submit"
               disabled={loading || code.length !== 6}
               className="w-full mt-4 py-3 rounded-full font-semibold text-sm disabled:opacity-50 transition"
-              style={{ background: '#c4a050', color: '#1a2332' }}
+              style={{ background: '#c9a96e', color: '#e8e4dc' }}
             >
               {loading ? '验证中…' : '确认验证'}
             </button>
@@ -163,7 +163,7 @@ export default function AuthPage() {
               onClick={handleResend}
               disabled={loading}
               className="w-full mt-3 py-2 text-sm font-medium disabled:opacity-50"
-              style={{ color: '#907858' }}
+              style={{ color: '#6a7a7e' }}
             >
               没收到？重新发送验证码
             </button>
@@ -175,34 +175,34 @@ export default function AuthPage() {
 
   // --- Login / Register Form ---
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#faf6ec' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#080c10' }}>
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="size-14 mx-auto rounded-2xl flex items-center justify-center mb-3" style={{ background: '#1a2332' }}>
+          <div className="size-14 mx-auto rounded-2xl flex items-center justify-center mb-3" style={{ background: '#e8e4dc' }}>
             <span className="text-2xl">🐨</span>
           </div>
-          <h1 className="text-xl font-bold" style={{ color: '#1a2332' }}>
+          <h1 className="text-xl font-bold" style={{ color: '#e8e4dc' }}>
             {mode === 'register' ? '注册 Koala Study' : '登录 Koala Study'}
           </h1>
-          <p className="text-sm mt-1" style={{ color: '#907858' }}>
+          <p className="text-sm mt-1" style={{ color: '#6a7a7e' }}>
             {mode === 'register' ? '免费开始，发现你的理想导师' : '欢迎回来'}
           </p>
         </div>
 
         {/* Mode tabs */}
-        <div className="flex mb-6 rounded-full p-1" style={{ background: '#f2ead6' }}>
+        <div className="flex mb-6 rounded-full p-1" style={{ background: 'rgba(201,169,110,0.06)' }}>
           <button
             onClick={() => { setMode('register'); setError(''); }}
             className="flex-1 py-2 rounded-full text-sm font-medium transition"
-            style={{ background: mode === 'register' ? '#fff' : 'transparent', color: mode === 'register' ? '#1a2332' : '#907858', boxShadow: mode === 'register' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none' }}
+            style={{ background: mode === 'register' ? '#fff' : 'transparent', color: mode === 'register' ? '#e8e4dc' : '#6a7a7e', boxShadow: mode === 'register' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none' }}
           >
             注册
           </button>
           <button
             onClick={() => { setMode('login'); setError(''); }}
             className="flex-1 py-2 rounded-full text-sm font-medium transition"
-            style={{ background: mode === 'login' ? '#fff' : 'transparent', color: mode === 'login' ? '#1a2332' : '#907858', boxShadow: mode === 'login' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none' }}
+            style={{ background: mode === 'login' ? '#fff' : 'transparent', color: mode === 'login' ? '#e8e4dc' : '#6a7a7e', boxShadow: mode === 'login' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none' }}
           >
             登录
           </button>
@@ -212,23 +212,23 @@ export default function AuthPage() {
         <form
           onSubmit={mode === 'register' ? handleRegister : handleLogin}
           className="rounded-2xl p-6"
-          style={{ background: '#fff', border: '1px solid #e8dcc8', boxShadow: '0 4px 24px rgba(125,99,64,0.08)' }}
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)', boxShadow: '0 4px 24px rgba(125,99,64,0.08)' }}
         >
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1.5" style={{ color: '#584838' }}>邮箱</label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: '#a8b8ac' }}>邮箱</label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
               className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none"
-              style={{ background: '#f2ead6', border: '1px solid #e8dcc8', color: '#1a2332' }}
+              style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
               placeholder="your@email.com"
             />
           </div>
 
           <div className="mb-2">
-            <label className="block text-sm font-medium mb-1.5" style={{ color: '#584838' }}>密码</label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: '#a8b8ac' }}>密码</label>
             <input
               type="password"
               value={password}
@@ -236,14 +236,14 @@ export default function AuthPage() {
               required
               minLength={8}
               className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none"
-              style={{ background: '#f2ead6', border: '1px solid #e8dcc8', color: '#1a2332' }}
+              style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
               placeholder={mode === 'register' ? '至少8位' : '••••••••'}
             />
           </div>
 
           {mode === 'login' && (
             <div className="text-right mb-4">
-              <Link href="/koala/auth/forgot-password" className="text-xs no-underline" style={{ color: '#c4a050' }}>
+              <Link href="/koala/auth/forgot-password" className="text-xs no-underline" style={{ color: '#c9a96e' }}>
                 忘记密码？
               </Link>
             </div>
@@ -255,20 +255,20 @@ export default function AuthPage() {
             type="submit"
             disabled={loading}
             className="w-full py-3 rounded-full font-semibold text-sm disabled:opacity-50 transition"
-            style={{ background: '#c4a050', color: '#1a2332' }}
+            style={{ background: '#c9a96e', color: '#e8e4dc' }}
           >
             {loading ? '处理中…' : mode === 'register' ? '注册并验证邮箱' : '登录'}
           </button>
 
           {mode === 'register' && (
-            <p className="text-[11px] mt-4 text-center leading-relaxed" style={{ color: '#907858' }}>
+            <p className="text-[11px] mt-4 text-center leading-relaxed" style={{ color: '#6a7a7e' }}>
               注册即表示同意我们的服务条款和隐私政策
             </p>
           )}
         </form>
 
         <div className="mt-6 text-center">
-          <Link href="/koala/home" className="text-xs no-underline" style={{ color: '#907858' }}>
+          <Link href="/koala/home" className="text-xs no-underline" style={{ color: '#6a7a7e' }}>
             ← 返回首页
           </Link>
         </div>

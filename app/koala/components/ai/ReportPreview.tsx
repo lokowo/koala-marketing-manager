@@ -24,21 +24,21 @@ export function ReportPreview({ studentName, overallScore, matches, onExportPDF 
   const [expandedIdx, setExpandedIdx] = useState<number | null>(0);
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e8dcc8' }}>
-      <div className="p-3" style={{ background: 'linear-gradient(135deg, #1a2332, #2a3442)' }}>
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)' }}>
+      <div className="p-3" style={{ background: 'linear-gradient(135deg, #e8e4dc, #2a3442)' }}>
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs font-bold text-white/90">🎓 教授匹配报告</div>
             {studentName && <div className="text-[11px] text-white/60 mt-0.5">{studentName}</div>}
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold" style={{ color: '#c4a050' }}>{overallScore}</div>
+            <div className="text-2xl font-bold" style={{ color: '#c9a96e' }}>{overallScore}</div>
             <div className="text-[10px] text-white/60">综合评分</div>
           </div>
         </div>
       </div>
 
-      <div className="divide-y" style={{ borderColor: '#f0e8d4' }}>
+      <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.06)' }}>
         {matches.map((m, i) => (
           <div key={i}>
             <button
@@ -48,31 +48,31 @@ export function ReportPreview({ studentName, overallScore, matches, onExportPDF 
               <div className="flex items-center gap-2">
                 <span
                   className="size-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
-                  style={{ background: i === 0 ? '#c4a050' : i === 1 ? '#a08058' : '#7d6340' }}
+                  style={{ background: i === 0 ? '#c9a96e' : i === 1 ? '#a08058' : '#c9a96e' }}
                 >
                   {i + 1}
                 </span>
                 <div>
-                  <div className="text-xs font-semibold" style={{ color: '#1a2332' }}>{m.name}</div>
-                  <div className="text-[10px]" style={{ color: '#907858' }}>{m.institution}</div>
+                  <div className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>{m.name}</div>
+                  <div className="text-[10px]" style={{ color: '#6a7a7e' }}>{m.institution}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold" style={{ color: m.matchScore >= 75 ? '#5a8060' : '#c4a050' }}>{m.matchScore}%</span>
+                <span className="text-sm font-bold" style={{ color: m.matchScore >= 75 ? '#5a8060' : '#c9a96e' }}>{m.matchScore}%</span>
                 <span className="text-[11px]" style={{ color: '#b09878' }}>{expandedIdx === i ? '▲' : '▼'}</span>
               </div>
             </button>
 
             {expandedIdx === i && (
               <div className="px-3 pb-3 space-y-2">
-                <p className="text-[11px] leading-relaxed" style={{ color: '#584838' }}>{m.reason}</p>
+                <p className="text-[11px] leading-relaxed" style={{ color: '#a8b8ac' }}>{m.reason}</p>
 
                 {m.grants && m.grants.length > 0 && (
                   <div>
-                    <div className="text-[10px] font-semibold mb-1" style={{ color: '#7d6340' }}>🔬 在研项目</div>
+                    <div className="text-[10px] font-semibold mb-1" style={{ color: '#c9a96e' }}>🔬 在研项目</div>
                     {m.grants.map((g, j) => (
-                      <div key={j} className="text-[10px] leading-snug" style={{ color: '#584838' }}>
-                        {g.id && <span className="text-[9px] px-1 rounded" style={{ background: '#f2ead6', color: '#907858' }}>{g.id}</span>} {g.title} {g.amount && <span style={{ color: '#c4a050' }}>({g.amount})</span>}
+                      <div key={j} className="text-[10px] leading-snug" style={{ color: '#a8b8ac' }}>
+                        {g.id && <span className="text-[9px] px-1 rounded" style={{ background: 'rgba(201,169,110,0.06)', color: '#6a7a7e' }}>{g.id}</span>} {g.title} {g.amount && <span style={{ color: '#c9a96e' }}>({g.amount})</span>}
                       </div>
                     ))}
                   </div>
@@ -80,7 +80,7 @@ export function ReportPreview({ studentName, overallScore, matches, onExportPDF 
 
                 {m.papers && m.papers.length > 0 && (
                   <div>
-                    <div className="text-[10px] font-semibold mb-1" style={{ color: '#7d6340' }}>📄 近期论文</div>
+                    <div className="text-[10px] font-semibold mb-1" style={{ color: '#c9a96e' }}>📄 近期论文</div>
                     {m.papers.map((p, j) => (
                       <a
                         key={j}
@@ -102,11 +102,11 @@ export function ReportPreview({ studentName, overallScore, matches, onExportPDF 
       </div>
 
       {onExportPDF && (
-        <div className="p-3" style={{ borderTop: '1px solid #f0e8d4' }}>
+        <div className="p-3" style={{ borderTop: '1px solid rgba(201,169,110,0.06)' }}>
           <button
             onClick={onExportPDF}
             className="w-full py-2.5 rounded-xl text-xs font-semibold"
-            style={{ background: '#c4a050', color: '#fff' }}
+            style={{ background: '#c9a96e', color: '#080c10' }}
           >
             📥 导出完整报告 PDF
           </button>

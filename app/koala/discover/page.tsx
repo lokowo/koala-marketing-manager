@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../components/AuthContext';
 
 const UNI: Record<string, { bg: string; fg: string; short: string }> = {
-  'Australian National University':  { bg: '#c4a050', fg: '#1a2332', short: 'ANU' },
+  'Australian National University':  { bg: '#c9a96e', fg: '#e8e4dc', short: 'ANU' },
   'University of Melbourne':         { bg: '#003087', fg: '#fff',    short: 'MEL' },
   'University of Sydney':            { bg: '#cc0000', fg: '#fff',    short: 'SYD' },
   'UNSW Sydney':                     { bg: '#1a1a1a', fg: '#ffe600', short: 'NSW' },

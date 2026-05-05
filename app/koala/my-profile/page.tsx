@@ -38,10 +38,10 @@ function ArcProgress({ pct }: { pct: number }) {
   const offset = circumference - (pct / 100) * circumference;
   return (
     <svg width="112" height="112" className="rotate-[-90deg]">
-      <circle cx={cx} cy={cy} r={r} stroke="#e8dcc8" strokeWidth="8" fill="none" />
+      <circle cx={cx} cy={cy} r={r} stroke="rgba(201,169,110,0.1)" strokeWidth="8" fill="none" />
       <circle
         cx={cx} cy={cy} r={r}
-        stroke={pct >= 80 ? '#5a8060' : pct >= 50 ? '#c4a050' : '#b06040'}
+        stroke={pct >= 80 ? '#5a8060' : pct >= 50 ? '#c9a96e' : '#b06040'}
         strokeWidth="8" fill="none"
         strokeDasharray={circumference}
         strokeDashoffset={offset}
@@ -54,7 +54,7 @@ function ArcProgress({ pct }: { pct: number }) {
 
 // ─── Plan badge ──────────────────────────────
 const PLAN_CONFIG = {
-  free:    { label: '免费版', bg: '#e8dcc8', color: '#7d6340' },
+  free:    { label: '免费版', bg: 'rgba(201,169,110,0.1)', color: '#c9a96e' },
   starter: { label: 'Starter', bg: '#d4e8d8', color: '#3a6040' },
   pro:     { label: 'Pro ✦', bg: '#f4e4b8', color: '#8a6030' },
   elite:   { label: 'Elite ✦✦', bg: '#f8d8d0', color: '#8a3020' },
@@ -83,8 +83,8 @@ interface OutreachEntry {
 }
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
-  draft:    { label: '草稿', color: '#907858' },
-  copied:   { label: '已复制', color: '#c4a050' },
+  draft:    { label: '草稿', color: '#6a7a7e' },
+  copied:   { label: '已复制', color: '#c9a96e' },
   sent:     { label: '已发送', color: '#5a8060' },
   replied:  { label: '已回复 🎉', color: '#3a7050' },
   no_reply: { label: '未回复', color: '#b06040' },
@@ -169,21 +169,21 @@ export default function MyProfilePage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh] px-6 text-center">
         <div className="text-5xl mb-4">🐨</div>
-        <h1 className="text-lg font-bold mb-2" style={{ color: '#1a2332' }}>登录后查看个人中心</h1>
-        <p className="text-sm mb-6 leading-relaxed" style={{ color: '#907858' }}>
+        <h1 className="text-lg font-bold mb-2" style={{ color: '#e8e4dc' }}>登录后查看个人中心</h1>
+        <p className="text-sm mb-6 leading-relaxed" style={{ color: '#6a7a7e' }}>
           保存你的背景信息，收藏心仪教授，<br />查看申请信历史
         </p>
         <button
           onClick={() => showLogin()}
           className="w-full max-w-xs py-3 rounded-full text-sm font-semibold text-white mb-3"
-          style={{ background: '#c4a050' }}
+          style={{ background: '#c9a96e' }}
         >
           登录 / 注册
         </button>
         <Link
           href="/koala/home"
           className="text-xs"
-          style={{ color: '#907858' }}
+          style={{ color: '#6a7a7e' }}
         >
           先逛逛 →
         </Link>
@@ -194,7 +194,7 @@ export default function MyProfilePage() {
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
-        <div className="animate-pulse text-sm" style={{ color: '#907858' }}>加载中…</div>
+        <div className="animate-pulse text-sm" style={{ color: '#6a7a7e' }}>加载中…</div>
       </div>
     );
   }
@@ -279,23 +279,23 @@ export default function MyProfilePage() {
   }
 
   return (
-    <div className="pb-6 lg:pb-12" style={{ background: '#faf6ec' }}>
+    <div className="pb-6 lg:pb-12" style={{ background: '#080c10' }}>
       {/* ── Header card ──────────────────── */}
       <div className="px-4 lg:px-0 pt-5 pb-4">
-        <div className="rounded-3xl p-5 lg:flex lg:items-center lg:gap-8" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+        <div className="rounded-3xl p-5 lg:flex lg:items-center lg:gap-8" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
           <div className="flex items-center gap-4">
             {/* Avatar */}
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold flex-shrink-0"
-              style={{ background: '#c4a050', color: '#fff' }}
+              style={{ background: '#c9a96e', color: '#080c10' }}
             >
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-base font-bold truncate" style={{ color: '#1a2332' }}>
+              <h1 className="text-base font-bold truncate" style={{ color: '#e8e4dc' }}>
                 {displayName}
               </h1>
-              <p className="text-xs truncate mt-0.5" style={{ color: '#907858' }}>
+              <p className="text-xs truncate mt-0.5" style={{ color: '#6a7a7e' }}>
                 {user?.email}
               </p>
               <div className="flex items-center gap-2 mt-2">
@@ -319,7 +319,7 @@ export default function MyProfilePage() {
             <Link
               href="/dashboard"
               className="mt-4 lg:mt-0 lg:ml-auto flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold no-underline"
-              style={{ background: '#1a2332', color: '#c4a050', border: '2px solid #c4a050', whiteSpace: 'nowrap' }}
+              style={{ background: '#e8e4dc', color: '#c9a96e', border: '2px solid #c9a96e', whiteSpace: 'nowrap' }}
             >
               ⚙️ 超级管理后台
             </Link>
@@ -332,17 +332,17 @@ export default function MyProfilePage() {
       <div>{/* left column */}
 
       {/* ── Profile completeness ──────────── */}
-      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl p-4" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl p-4" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
         <div className="flex items-center gap-4">
           <div className="relative flex-shrink-0">
             <ArcProgress pct={pct} />
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-lg font-bold" style={{ color: '#1a2332' }}>{pct}%</span>
-              <span className="text-[9px]" style={{ color: '#907858' }}>完整度</span>
+              <span className="text-lg font-bold" style={{ color: '#e8e4dc' }}>{pct}%</span>
+              <span className="text-[9px]" style={{ color: '#6a7a7e' }}>完整度</span>
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold mb-1" style={{ color: '#1a2332' }}>
+            <p className="text-xs font-semibold mb-1" style={{ color: '#e8e4dc' }}>
               {pct >= 90 ? '资料很完整 🎉' : '完善资料，让推荐更精准'}
             </p>
             {missingFields.length > 0 ? (
@@ -358,7 +358,7 @@ export default function MyProfilePage() {
                   </button>
                 ))}
                 {missingFields.length > 4 && (
-                  <span className="text-[10px]" style={{ color: '#907858' }}>+{missingFields.length - 4}项</span>
+                  <span className="text-[10px]" style={{ color: '#6a7a7e' }}>+{missingFields.length - 4}项</span>
                 )}
               </div>
             ) : (
@@ -369,17 +369,17 @@ export default function MyProfilePage() {
       </div>
 
       {/* ── Personal info ─────────────────── */}
-      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
         <div
           className="flex items-center justify-between px-4 py-3"
-          style={{ borderBottom: editing ? '1px solid #e8dcc8' : undefined }}
+          style={{ borderBottom: editing ? '1px solid rgba(201,169,110,0.1)' : undefined }}
         >
-          <span className="text-xs font-semibold" style={{ color: '#1a2332' }}>📋 个人背景</span>
+          <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>📋 个人背景</span>
           {!editing ? (
             <button
               onClick={() => { setEditing(true); setEditData(profile ? profileToEdit(profile) : profileToEdit({} as UserProfile)); }}
               className="text-[11px] px-3 py-1 rounded-xl"
-              style={{ background: '#e8dcc8', color: '#7d6340' }}
+              style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
             >
               编辑
             </button>
@@ -389,14 +389,14 @@ export default function MyProfilePage() {
                 onClick={saveEdit}
                 disabled={saving}
                 className="text-[11px] px-3 py-1 rounded-xl font-semibold text-white"
-                style={{ background: saving ? '#d8c8a8' : '#c4a050' }}
+                style={{ background: saving ? '#d8c8a8' : '#c9a96e' }}
               >
                 {saving ? '保存中…' : '保存'}
               </button>
               <button
                 onClick={() => setEditing(false)}
                 className="text-[11px] px-3 py-1 rounded-xl"
-                style={{ background: '#e8dcc8', color: '#7d6340' }}
+                style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
               >
                 取消
               </button>
@@ -419,24 +419,24 @@ export default function MyProfilePage() {
               { key: 'publication_details' as const, label: '论文详情', placeholder: '发表过的论文名称/期刊…' },
             ].map(({ key, label, placeholder }) => (
               <div key={key}>
-                <label className="block text-[11px] mb-1" style={{ color: '#907858' }}>{label}</label>
+                <label className="block text-[11px] mb-1" style={{ color: '#6a7a7e' }}>{label}</label>
                 <input
                   type="text"
                   placeholder={placeholder}
                   value={editData[key] as string}
                   onChange={e => setEditData(prev => prev ? { ...prev, [key]: e.target.value } : prev)}
                   className="w-full px-3 py-2 rounded-xl text-xs outline-none"
-                  style={{ background: '#fff', border: '1px solid #e8dcc8', color: '#1a2332' }}
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
                 />
               </div>
             ))}
             <div>
-              <label className="block text-[11px] mb-1" style={{ color: '#907858' }}>学历层次</label>
+              <label className="block text-[11px] mb-1" style={{ color: '#6a7a7e' }}>学历层次</label>
               <select
                 value={editData.degree_level}
                 onChange={e => setEditData(prev => prev ? { ...prev, degree_level: e.target.value } : prev)}
                 className="w-full px-3 py-2 rounded-xl text-xs outline-none"
-                style={{ background: '#fff', border: '1px solid #e8dcc8', color: '#1a2332' }}
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
               >
                 <option value="">请选择</option>
                 {['本科在读', '本科毕业', '硕士在读', '硕士毕业', '博士在读'].map(v => (
@@ -445,7 +445,7 @@ export default function MyProfilePage() {
               </select>
             </div>
             <div className="flex gap-4">
-              <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: '#584838' }}>
+              <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: '#a8b8ac' }}>
                 <input
                   type="checkbox"
                   checked={editData.has_research_experience}
@@ -454,7 +454,7 @@ export default function MyProfilePage() {
                 />
                 有科研经历
               </label>
-              <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: '#584838' }}>
+              <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: '#a8b8ac' }}>
                 <input
                   type="checkbox"
                   checked={editData.has_publications}
@@ -466,7 +466,7 @@ export default function MyProfilePage() {
             </div>
           </div>
         ) : (
-          <div className="divide-y" style={{ borderColor: '#e8dcc8' }}>
+          <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.1)' }}>
             {[
               { label: '学校', value: profile?.university },
               { label: '专业', value: profile?.major },
@@ -479,8 +479,8 @@ export default function MyProfilePage() {
               { label: '论文发表', value: profile?.has_publications ? (profile.publication_details || '有') : '无' },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-start gap-3 px-4 py-2.5">
-                <span className="text-[11px] w-20 flex-shrink-0 pt-0.5" style={{ color: '#907858' }}>{label}</span>
-                <span className="flex-1 text-xs" style={{ color: value ? '#1a2332' : '#c8b898' }}>
+                <span className="text-[11px] w-20 flex-shrink-0 pt-0.5" style={{ color: '#6a7a7e' }}>{label}</span>
+                <span className="flex-1 text-xs" style={{ color: value ? '#e8e4dc' : '#c8b898' }}>
                   {value || '未填写'}
                 </span>
               </div>
@@ -490,18 +490,18 @@ export default function MyProfilePage() {
       </div>
 
       {/* ── CV Upload ────────────────────── */}
-      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl p-4" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl p-4" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold" style={{ color: '#1a2332' }}>📄 简历 / 成绩单</span>
+          <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>📄 简历 / 成绩单</span>
           {profile?.file_name && (
-            <span className="text-[10px]" style={{ color: '#907858' }}>{profile.file_name}</span>
+            <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{profile.file_name}</span>
           )}
         </div>
         <button
           onClick={() => !uploading && fileRef.current?.click()}
           disabled={uploading}
           className="w-full py-2.5 rounded-xl text-xs font-medium border-2 border-dashed"
-          style={{ borderColor: '#c4a050', color: uploading ? '#d8c8a8' : '#c4a050', background: 'transparent' }}
+          style={{ borderColor: '#c9a96e', color: uploading ? '#d8c8a8' : '#c9a96e', background: 'transparent' }}
         >
           {uploading ? '⏳ AI 解析中…' : profile?.parsed_data ? '重新上传（AI 重新解析）' : '📎 上传简历 / 成绩单（PDF/图片）'}
         </button>
@@ -523,31 +523,31 @@ export default function MyProfilePage() {
       <div>{/* right column */}
 
       {/* ── Saved professors ──────────────── */}
-      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid #e8dcc8' }}>
-          <span className="text-xs font-semibold" style={{ color: '#1a2332' }}>
-            🔖 我的收藏 <span className="font-normal" style={{ color: '#907858' }}>({saved.length})</span>
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(201,169,110,0.1)' }}>
+          <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
+            🔖 我的收藏 <span className="font-normal" style={{ color: '#6a7a7e' }}>({saved.length})</span>
           </span>
-          <Link href="/koala/professors" className="text-[11px] no-underline" style={{ color: '#c4a050' }}>
+          <Link href="/koala/professors" className="text-[11px] no-underline" style={{ color: '#c9a96e' }}>
             找更多 →
           </Link>
         </div>
 
         {dataLoading ? (
-          <div className="px-4 py-4 text-xs text-center" style={{ color: '#907858' }}>加载中…</div>
+          <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
         ) : saved.length === 0 ? (
           <div className="px-4 py-5 text-center">
-            <p className="text-xs" style={{ color: '#907858' }}>还没有收藏教授</p>
+            <p className="text-xs" style={{ color: '#6a7a7e' }}>还没有收藏教授</p>
             <Link
               href="/koala/professors"
               className="text-xs mt-1 inline-block no-underline font-medium"
-              style={{ color: '#c4a050' }}
+              style={{ color: '#c9a96e' }}
             >
               去浏览教授库 →
             </Link>
           </div>
         ) : (
-          <div className="divide-y" style={{ borderColor: '#e8dcc8' }}>
+          <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.1)' }}>
             {saved.map(entry => {
               const prof = entry.professors;
               if (!prof) return null;
@@ -557,8 +557,8 @@ export default function MyProfilePage() {
                     href={`/koala/professors/${prof.id}`}
                     className="flex-1 no-underline"
                   >
-                    <p className="text-xs font-semibold" style={{ color: '#1a2332' }}>{prof.name}</p>
-                    <p className="text-[11px]" style={{ color: '#907858' }}>
+                    <p className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>{prof.name}</p>
+                    <p className="text-[11px]" style={{ color: '#6a7a7e' }}>
                       {prof.position_title ?? ''} · {prof.university}
                     </p>
                     {prof.research_areas.length > 0 && (
@@ -582,38 +582,38 @@ export default function MyProfilePage() {
       </div>
 
       {/* ── Outreach history ──────────────── */}
-      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-        <div className="px-4 py-3" style={{ borderBottom: '1px solid #e8dcc8' }}>
-          <span className="text-xs font-semibold" style={{ color: '#1a2332' }}>
-            ✉️ 申请信记录 <span className="font-normal" style={{ color: '#907858' }}>({emails.length})</span>
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+        <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(201,169,110,0.1)' }}>
+          <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
+            ✉️ 申请信记录 <span className="font-normal" style={{ color: '#6a7a7e' }}>({emails.length})</span>
           </span>
         </div>
 
         {dataLoading ? (
-          <div className="px-4 py-4 text-xs text-center" style={{ color: '#907858' }}>加载中…</div>
+          <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
         ) : emails.length === 0 ? (
           <div className="px-4 py-5 text-center">
-            <p className="text-xs" style={{ color: '#907858' }}>还没有生成过申请信</p>
+            <p className="text-xs" style={{ color: '#6a7a7e' }}>还没有生成过申请信</p>
             <Link
               href="/koala/chat"
               className="text-xs mt-1 inline-block no-underline font-medium"
-              style={{ color: '#c4a050' }}
+              style={{ color: '#c9a96e' }}
             >
               去生成第一封 →
             </Link>
           </div>
         ) : (
-          <div className="divide-y" style={{ borderColor: '#e8dcc8' }}>
+          <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.1)' }}>
             {emails.map(email => {
-              const st = STATUS_LABEL[email.status] ?? { label: email.status, color: '#907858' };
+              const st = STATUS_LABEL[email.status] ?? { label: email.status, color: '#6a7a7e' };
               return (
                 <div key={email.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate" style={{ color: '#1a2332' }}>
+                      <p className="text-xs font-medium truncate" style={{ color: '#e8e4dc' }}>
                         {email.professors?.name ?? '未知教授'}
                       </p>
-                      <p className="text-[11px] truncate mt-0.5" style={{ color: '#907858' }}>
+                      <p className="text-[11px] truncate mt-0.5" style={{ color: '#6a7a7e' }}>
                         {email.subject_line}
                       </p>
                       <p className="text-[10px] mt-0.5" style={{ color: '#a89878' }}>
@@ -639,28 +639,28 @@ export default function MyProfilePage() {
         <Link
           href="/koala/chat"
           className="block w-full py-3 rounded-full text-center text-sm font-semibold text-white no-underline"
-          style={{ background: '#7d6340' }}
+          style={{ background: '#c9a96e' }}
         >
           🐨 用我的背景匹配教授
         </Link>
       </div>
 
       {/* ── Settings ─────────────────────── */}
-      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
         <button
           onClick={() => setShowSettings(!showSettings)}
           className="w-full flex items-center justify-between px-4 py-3"
           style={{ background: 'transparent' }}
         >
-          <span className="text-xs font-semibold" style={{ color: '#1a2332' }}>⚙️ 设置</span>
-          <span className="text-xs" style={{ color: '#907858' }}>{showSettings ? '▲' : '▼'}</span>
+          <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>⚙️ 设置</span>
+          <span className="text-xs" style={{ color: '#6a7a7e' }}>{showSettings ? '▲' : '▼'}</span>
         </button>
 
         {showSettings && (
-          <div className="divide-y" style={{ borderColor: '#e8dcc8', borderTop: '1px solid #e8dcc8' }}>
+          <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.1)', borderTop: '1px solid rgba(201,169,110,0.1)' }}>
             <button
               className="w-full flex items-center px-4 py-3 text-xs text-left"
-              style={{ color: '#584838', background: 'transparent' }}
+              style={{ color: '#a8b8ac', background: 'transparent' }}
               onClick={() => {
                 // Password reset via Supabase magic link
                 if (user?.email) {
@@ -678,7 +678,7 @@ export default function MyProfilePage() {
             <Link
               href="/koala/tools"
               className="flex items-center px-4 py-3 text-xs no-underline"
-              style={{ color: '#584838' }}
+              style={{ color: '#a8b8ac' }}
             >
               🔧 更多工具
             </Link>
@@ -694,7 +694,7 @@ export default function MyProfilePage() {
       </div>
 
       {/* ── Data disclaimer ──────────────── */}
-      <div className="mx-4 lg:mx-0 mt-2 px-3 py-2 rounded-xl text-[10px] leading-relaxed" style={{ background: '#f0e9d6', color: '#b09878' }}>
+      <div className="mx-4 lg:mx-0 mt-2 px-3 py-2 rounded-xl text-[10px] leading-relaxed" style={{ background: 'rgba(201,169,110,0.06)', color: '#b09878' }}>
         你的个人信息仅用于 AI 推荐优化，不会与第三方共享。
       </div>
       </div>{/* end right column */}

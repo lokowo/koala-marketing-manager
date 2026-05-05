@@ -69,12 +69,12 @@ export function PaperCitationCard({ paper, compact = false, index }: PaperCitati
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-start gap-2 rounded-xl p-2.5 no-underline mt-1.5 block"
-        style={{ background: '#fff', border: '1px solid #e8dcc8' }}
+        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)' }}
       >
         <span className="text-sm flex-shrink-0 mt-0.5">📄</span>
         <div className="min-w-0">
-          <div className="text-xs font-medium leading-snug line-clamp-2" style={{ color: '#1a2332' }}>{paper.title}</div>
-          <div className="text-[10px] mt-0.5" style={{ color: '#907858' }}>
+          <div className="text-xs font-medium leading-snug line-clamp-2" style={{ color: '#e8e4dc' }}>{paper.title}</div>
+          <div className="text-[10px] mt-0.5" style={{ color: '#6a7a7e' }}>
             {authorsStr} · {paper.year}
             {paper.journal && ` · ${paper.journal}`}
             {hasFreeAccess && <span style={{ color: '#5a8060' }}> · 免费获取</span>}
@@ -87,7 +87,7 @@ export function PaperCitationCard({ paper, compact = false, index }: PaperCitati
   return (
     <div
       className="rounded-xl overflow-hidden mt-2"
-      style={{ background: '#fff', border: '1px solid #e8dcc8' }}
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)' }}
     >
       <div className="p-3">
         <div className="flex items-start gap-2">
@@ -95,7 +95,7 @@ export function PaperCitationCard({ paper, compact = false, index }: PaperCitati
             {index !== undefined ? (
               <span
                 className="inline-flex items-center justify-center size-5 rounded-full text-[10px] font-bold text-white"
-                style={{ background: '#7d6340' }}
+                style={{ background: '#c9a96e' }}
               >
                 {index + 1}
               </span>
@@ -108,14 +108,14 @@ export function PaperCitationCard({ paper, compact = false, index }: PaperCitati
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs font-semibold leading-snug no-underline hover:underline"
-                style={{ color: '#1a2332' }}
+                style={{ color: '#e8e4dc' }}
               >
                 {paper.title}
               </a>
             ) : (
-              <div className="text-xs font-semibold leading-snug" style={{ color: '#1a2332' }}>{paper.title}</div>
+              <div className="text-xs font-semibold leading-snug" style={{ color: '#e8e4dc' }}>{paper.title}</div>
             )}
-            <div className="text-[11px] mt-0.5" style={{ color: '#907858' }}>
+            <div className="text-[11px] mt-0.5" style={{ color: '#6a7a7e' }}>
               {authorsStr} · {paper.year}
               {paper.journal && ` · ${paper.journal}`}
             </div>
@@ -133,12 +133,12 @@ export function PaperCitationCard({ paper, compact = false, index }: PaperCitati
             <button
               onClick={() => setShowAbstract(s => !s)}
               className="text-[10px]"
-              style={{ color: '#c4a050' }}
+              style={{ color: '#c9a96e' }}
             >
               {showAbstract ? '收起摘要 ▲' : '查看摘要 ▼'}
             </button>
             {showAbstract && (
-              <p className="text-[11px] leading-relaxed mt-1" style={{ color: '#584838' }}>
+              <p className="text-[11px] leading-relaxed mt-1" style={{ color: '#a8b8ac' }}>
                 {paper.abstract.slice(0, 400)}{paper.abstract.length > 400 ? '...' : ''}
               </p>
             )}
@@ -155,9 +155,9 @@ export function PaperCitationCard({ paper, compact = false, index }: PaperCitati
             rel="noopener noreferrer"
             className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline"
             style={{
-              background: hasFreeAccess ? '#f0f8f2' : '#f2ead6',
-              color: hasFreeAccess ? '#5a8060' : '#7d6340',
-              border: `1px solid ${hasFreeAccess ? '#c0e0c8' : '#e8dcc8'}`,
+              background: hasFreeAccess ? '#f0f8f2' : 'rgba(201,169,110,0.06)',
+              color: hasFreeAccess ? '#5a8060' : '#c9a96e',
+              border: `1px solid ${hasFreeAccess ? '#c0e0c8' : 'rgba(201,169,110,0.1)'}`,
             }}
           >
             🔗 {hasFreeAccess ? '查看全文' : '查看论文'}
@@ -169,7 +169,7 @@ export function PaperCitationCard({ paper, compact = false, index }: PaperCitati
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline"
-            style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #e8dcc8' }}
+            style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e', border: '1px solid rgba(201,169,110,0.1)' }}
           >
             📥 PDF
           </a>
@@ -178,9 +178,9 @@ export function PaperCitationCard({ paper, compact = false, index }: PaperCitati
           onClick={copyAPA}
           className="flex-1 py-1.5 rounded-lg text-[11px] font-medium"
           style={{
-            background: copied ? '#f0f8f2' : '#f2ead6',
-            color: copied ? '#5a8060' : '#7d6340',
-            border: `1px solid ${copied ? '#c0e0c8' : '#e8dcc8'}`,
+            background: copied ? '#f0f8f2' : 'rgba(201,169,110,0.06)',
+            color: copied ? '#5a8060' : '#c9a96e',
+            border: `1px solid ${copied ? '#c0e0c8' : 'rgba(201,169,110,0.1)'}`,
           }}
         >
           {copied ? '✅ 已复制' : '📋 复制引用'}

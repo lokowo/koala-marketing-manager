@@ -68,9 +68,9 @@ export function SendTutorial() {
             onClick={() => setActiveClient(i)}
             className="flex-shrink-0 text-[11px] px-3 py-1.5 rounded-full border transition-colors"
             style={{
-              background: activeClient === i ? '#f5e8c4' : '#f2ead6',
-              borderColor: activeClient === i ? '#c4a050' : '#e8dcc8',
-              color: activeClient === i ? '#8a6c30' : '#907858',
+              background: activeClient === i ? '#f5e8c4' : 'rgba(201,169,110,0.06)',
+              borderColor: activeClient === i ? '#c9a96e' : 'rgba(201,169,110,0.1)',
+              color: activeClient === i ? '#c9a96e' : '#6a7a7e',
             }}
           >
             {t.icon} {t.client}
@@ -78,18 +78,18 @@ export function SendTutorial() {
         ))}
       </div>
 
-      <div className="rounded-xl p-3" style={{ background: '#f2ead6' }}>
+      <div className="rounded-xl p-3" style={{ background: 'rgba(201,169,110,0.06)' }}>
         {TUTORIALS[activeClient].steps.map((step, i) => (
-          <div key={i} className={`text-[11px] leading-relaxed ${step === '' ? 'mt-2' : ''}`} style={{ color: step.startsWith('💡') ? '#7d6340' : '#584838' }}>
+          <div key={i} className={`text-[11px] leading-relaxed ${step === '' ? 'mt-2' : ''}`} style={{ color: step.startsWith('💡') ? '#c9a96e' : '#a8b8ac' }}>
             {step || '\u00A0'}
           </div>
         ))}
       </div>
 
       <div className="space-y-1.5">
-        <div className="text-[10px] font-semibold" style={{ color: '#7d6340' }}>发送小贴士</div>
+        <div className="text-[10px] font-semibold" style={{ color: '#c9a96e' }}>发送小贴士</div>
         {TIPS.map((tip, i) => (
-          <div key={i} className="text-[11px] leading-relaxed" style={{ color: '#584838' }}>{tip}</div>
+          <div key={i} className="text-[11px] leading-relaxed" style={{ color: '#a8b8ac' }}>{tip}</div>
         ))}
       </div>
     </div>

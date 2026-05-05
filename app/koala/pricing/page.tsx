@@ -26,7 +26,7 @@ const TIERS = [
     label: 'Starter',
     price: 19.9,
     monthlyCredits: 10,
-    color: '#7d6340',
+    color: '#c9a96e',
     highlight: false,
     features: [
       '每月 10 积分（申请信额度）',
@@ -41,7 +41,7 @@ const TIERS = [
     label: 'Pro',
     price: 49,
     monthlyCredits: 30,
-    color: '#c4a050',
+    color: '#c9a96e',
     highlight: true,
     features: [
       '每月 30 积分（申请信额度）',
@@ -58,7 +58,7 @@ const TIERS = [
     label: 'Elite',
     price: 99,
     monthlyCredits: 100,
-    color: '#1a2332',
+    color: '#e8e4dc',
     highlight: false,
     features: [
       '每月 100 积分',
@@ -74,31 +74,31 @@ export default function PricingPage() {
   const [billingCycle] = useState<'monthly'>('monthly');
 
   return (
-    <div style={{ background: '#faf6ec', minHeight: '100vh', paddingBottom: 100 }}>
+    <div style={{ background: '#080c10', minHeight: '100vh', paddingBottom: 100 }}>
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 sticky top-0 z-10" style={{ background: '#faf6ec', borderBottom: '1px solid #eee4cc' }}>
+      <div className="px-4 pt-4 pb-3 sticky top-0 z-10" style={{ background: '#080c10', borderBottom: '1px solid #eee4cc' }}>
         <div className="flex items-center gap-2 mb-1">
-          <Link href="/koala/tools" className="text-[13px]" style={{ color: '#c4a050' }}>← 工具</Link>
+          <Link href="/koala/tools" className="text-[13px]" style={{ color: '#c9a96e' }}>← 工具</Link>
         </div>
-        <h1 className="text-base font-bold" style={{ color: '#1a2332' }}>定价与积分</h1>
-        <p className="text-[11px] mt-0.5" style={{ color: '#907858' }}>免费开始，按需升级</p>
+        <h1 className="text-base font-bold" style={{ color: '#e8e4dc' }}>定价与积分</h1>
+        <p className="text-[11px] mt-0.5" style={{ color: '#6a7a7e' }}>免费开始，按需升级</p>
       </div>
 
       <div className="px-4 py-4 space-y-6 max-w-lg mx-auto">
         {/* Free tier */}
-        <div className="rounded-2xl overflow-hidden" style={{ border: '2px solid #e8dcc8' }}>
-          <div className="p-4" style={{ background: '#f2ead6' }}>
+        <div className="rounded-2xl overflow-hidden" style={{ border: '2px solid rgba(201,169,110,0.1)' }}>
+          <div className="p-4" style={{ background: 'rgba(201,169,110,0.06)' }}>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-bold" style={{ color: '#1a2332' }}>免费版</div>
-                <div className="text-xs mt-0.5" style={{ color: '#907858' }}>永久免费，无需信用卡</div>
+                <div className="text-sm font-bold" style={{ color: '#e8e4dc' }}>免费版</div>
+                <div className="text-xs mt-0.5" style={{ color: '#6a7a7e' }}>永久免费，无需信用卡</div>
               </div>
-              <div className="text-2xl font-bold" style={{ color: '#1a2332' }}>
+              <div className="text-2xl font-bold" style={{ color: '#e8e4dc' }}>
                 AUD 0<span className="text-xs font-normal">/月</span>
               </div>
             </div>
           </div>
-          <div className="p-4 space-y-2" style={{ background: '#fff' }}>
+          <div className="p-4 space-y-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
             {FREE_FEATURES.map((f, i) => (
               <div key={i} className="flex items-center gap-2">
                 {f.ok
@@ -112,8 +112,8 @@ export default function PricingPage() {
 
         {/* Credit packages */}
         <div>
-          <h2 className="text-sm font-bold mb-1" style={{ color: '#1a2332' }}>积分包</h2>
-          <p className="text-xs mb-3" style={{ color: '#907858' }}>每封申请信消耗 1 积分，积分永久有效（不过期）</p>
+          <h2 className="text-sm font-bold mb-1" style={{ color: '#e8e4dc' }}>积分包</h2>
+          <p className="text-xs mb-3" style={{ color: '#6a7a7e' }}>每封申请信消耗 1 积分，积分永久有效（不过期）</p>
           <div className="grid grid-cols-2 gap-2.5">
             {CREDIT_PACKS.map(pack => (
               <div
@@ -121,21 +121,21 @@ export default function PricingPage() {
                 className="rounded-2xl p-3.5"
                 style={{
                   background: pack.highlight ? '#f5e8c4' : '#fff',
-                  border: pack.highlight ? '2px solid #c4a050' : '1px solid #e8dcc8',
+                  border: pack.highlight ? '2px solid #c9a96e' : '1px solid rgba(201,169,110,0.1)',
                 }}
               >
                 {pack.highlight && (
-                  <div className="text-[9px] font-bold px-1.5 py-0.5 rounded-full mb-1.5 inline-block" style={{ background: '#c4a050', color: '#fff' }}>最划算</div>
+                  <div className="text-[9px] font-bold px-1.5 py-0.5 rounded-full mb-1.5 inline-block" style={{ background: '#c9a96e', color: '#080c10' }}>最划算</div>
                 )}
-                <div className="text-sm font-bold" style={{ color: '#1a2332' }}>{pack.label}</div>
-                <div className="text-xs mt-0.5" style={{ color: '#907858' }}>{pack.credits} 积分</div>
-                <div className="text-lg font-bold mt-1" style={{ color: '#1a2332' }}>AUD {pack.price.toFixed(2)}</div>
-                <div className="text-[10px] mt-0.5" style={{ color: '#c4a050' }}>{pack.unit}</div>
+                <div className="text-sm font-bold" style={{ color: '#e8e4dc' }}>{pack.label}</div>
+                <div className="text-xs mt-0.5" style={{ color: '#6a7a7e' }}>{pack.credits} 积分</div>
+                <div className="text-lg font-bold mt-1" style={{ color: '#e8e4dc' }}>AUD {pack.price.toFixed(2)}</div>
+                <div className="text-[10px] mt-0.5" style={{ color: '#c9a96e' }}>{pack.unit}</div>
                 <button
                   className="w-full mt-3 py-2 rounded-xl text-xs font-semibold"
                   style={{
-                    background: pack.highlight ? '#c4a050' : '#f2ead6',
-                    color: pack.highlight ? '#fff' : '#7d6340',
+                    background: pack.highlight ? '#c9a96e' : 'rgba(201,169,110,0.06)',
+                    color: pack.highlight ? '#fff' : '#c9a96e',
                     border: pack.highlight ? 'none' : '1px solid #d8c8a8',
                   }}
                 >
@@ -148,15 +148,15 @@ export default function PricingPage() {
 
         {/* Subscription tiers */}
         <div>
-          <h2 className="text-sm font-bold mb-1" style={{ color: '#1a2332' }}>订阅套餐</h2>
-          <p className="text-xs mb-3" style={{ color: '#907858' }}>每月自动续订，随时取消</p>
+          <h2 className="text-sm font-bold mb-1" style={{ color: '#e8e4dc' }}>订阅套餐</h2>
+          <p className="text-xs mb-3" style={{ color: '#6a7a7e' }}>每月自动续订，随时取消</p>
           <div className="space-y-3">
             {TIERS.map(tier => (
               <div
                 key={tier.id}
                 className="rounded-2xl overflow-hidden"
                 style={{
-                  border: tier.highlight ? `2px solid ${tier.color}` : '1px solid #e8dcc8',
+                  border: tier.highlight ? `2px solid ${tier.color}` : '1px solid rgba(201,169,110,0.1)',
                 }}
               >
                 {tier.highlight && (
@@ -168,10 +168,10 @@ export default function PricingPage() {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <div className="text-sm font-bold" style={{ color: tier.color }}>{tier.label}</div>
-                      <div className="text-[11px] mt-0.5" style={{ color: '#907858' }}>每月 {tier.monthlyCredits} 积分</div>
+                      <div className="text-[11px] mt-0.5" style={{ color: '#6a7a7e' }}>每月 {tier.monthlyCredits} 积分</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xl font-bold" style={{ color: '#1a2332' }}>AUD {tier.price}</div>
+                      <div className="text-xl font-bold" style={{ color: '#e8e4dc' }}>AUD {tier.price}</div>
                       <div className="text-[10px]" style={{ color: '#b09878' }}>/月</div>
                     </div>
                   </div>
@@ -186,8 +186,8 @@ export default function PricingPage() {
                   <button
                     className="w-full py-2.5 rounded-xl text-sm font-semibold"
                     style={{
-                      background: tier.highlight ? tier.color : '#f2ead6',
-                      color: tier.highlight ? '#fff' : '#7d6340',
+                      background: tier.highlight ? tier.color : 'rgba(201,169,110,0.06)',
+                      color: tier.highlight ? '#fff' : '#c9a96e',
                       border: tier.highlight ? 'none' : '1px solid #d8c8a8',
                     }}
                   >
@@ -200,16 +200,16 @@ export default function PricingPage() {
         </div>
 
         {/* FAQ */}
-        <div className="rounded-2xl p-4" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-          <h2 className="text-xs font-bold mb-3" style={{ color: '#1a2332' }}>常见问题</h2>
+        <div className="rounded-2xl p-4" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+          <h2 className="text-xs font-bold mb-3" style={{ color: '#e8e4dc' }}>常见问题</h2>
           {[
             { q: '积分会过期吗？', a: '单独购买的积分永久有效，不过期。订阅积分在订阅有效期内可用。' },
             { q: '如何取消订阅？', a: '随时可以取消，取消后当前订阅期仍然有效，下个周期不再扣款。' },
             { q: '积分不够用了怎么办？', a: '随时可以单独购买积分包，无需升级订阅。' },
           ].map((item, i) => (
-            <div key={i} className={i > 0 ? 'mt-3 pt-3' : ''} style={i > 0 ? { borderTop: '1px solid #e8dcc8' } : {}}>
-              <div className="text-xs font-semibold mb-1" style={{ color: '#1a2332' }}>{item.q}</div>
-              <div className="text-[11px] leading-relaxed" style={{ color: '#584838' }}>{item.a}</div>
+            <div key={i} className={i > 0 ? 'mt-3 pt-3' : ''} style={i > 0 ? { borderTop: '1px solid rgba(201,169,110,0.1)' } : {}}>
+              <div className="text-xs font-semibold mb-1" style={{ color: '#e8e4dc' }}>{item.q}</div>
+              <div className="text-[11px] leading-relaxed" style={{ color: '#a8b8ac' }}>{item.a}</div>
             </div>
           ))}
         </div>

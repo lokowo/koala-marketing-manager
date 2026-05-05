@@ -26,7 +26,7 @@ const CATEGORIES = [
 const HOT_TAGS = ['AI', 'Machine Learning', 'Neuroscience', 'Data Science', 'Finance', 'Education'];
 
 const UNI_COLORS: Record<string, { bg: string; fg: string; short: string }> = {
-  'Australian National University':        { bg: '#c4a050', fg: '#1a2332', short: 'ANU' },
+  'Australian National University':        { bg: '#c9a96e', fg: '#e8e4dc', short: 'ANU' },
   'University of Melbourne':               { bg: '#003087', fg: '#fff',    short: 'MEL' },
   'University of Sydney':                  { bg: '#cc0000', fg: '#fff',    short: 'SYD' },
   'UNSW Sydney':                           { bg: '#1a1a1a', fg: '#ffe600', short: 'NSW' },
@@ -44,7 +44,7 @@ const UNI_COLORS: Record<string, { bg: string; fg: string; short: string }> = {
   'University of Newcastle':               { bg: '#1f1646', fg: '#fff',    short: 'NEW' },
   'University of Wollongong':              { bg: '#1e5799', fg: '#fff',    short: 'WOL' },
   'Flinders University':                   { bg: '#004f9f', fg: '#fff',    short: 'FLI' },
-  'Curtin University':                     { bg: '#cfb44b', fg: '#1a2332', short: 'CUR' },
+  'Curtin University':                     { bg: '#cfb44b', fg: '#e8e4dc', short: 'CUR' },
   'James Cook University':                 { bg: '#005c84', fg: '#fff',    short: 'JCU' },
   'Swinburne University of Technology':    { bg: '#bb0000', fg: '#fff',    short: 'SWI' },
   'Western Sydney University':             { bg: '#e52020', fg: '#fff',    short: 'WSY' },
@@ -411,7 +411,7 @@ function ProfessorsPageInner() {
 
       {loadingMore && (
         <div className="flex justify-center py-4">
-          <Loader2 className="size-5 animate-spin" style={{ color: '#c4a050' }} />
+          <Loader2 className="size-5 animate-spin" style={{ color: '#c9a96e' }} />
         </div>
       )}
 

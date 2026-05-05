@@ -27,16 +27,16 @@ export function ExtendedReadingPanel({
   return (
     <div
       className="rounded-xl overflow-hidden mt-2"
-      style={{ border: '1px solid #e8dcc8' }}
+      style={{ border: '1px solid rgba(201,169,110,0.1)' }}
     >
       <button
         className="w-full flex items-center justify-between px-3 py-2.5"
-        style={{ background: '#f2ead6' }}
+        style={{ background: 'rgba(201,169,110,0.06)' }}
         onClick={() => setExpanded(e => !e)}
       >
         <div className="flex items-center gap-2">
           <span className="text-sm">📚</span>
-          <span className="text-[11px] font-medium" style={{ color: '#7d6340' }}>
+          <span className="text-[11px] font-medium" style={{ color: '#c9a96e' }}>
             延伸阅读 · 共检索到 {totalFound ?? papers.length} 篇论文
           </span>
         </div>
@@ -46,7 +46,7 @@ export function ExtendedReadingPanel({
               {sources.join(' + ')}
             </span>
           )}
-          <span className="text-[11px]" style={{ color: '#c4a050' }}>
+          <span className="text-[11px]" style={{ color: '#c9a96e' }}>
             {expanded ? '▲' : '▼'}
           </span>
         </div>
@@ -55,7 +55,7 @@ export function ExtendedReadingPanel({
       {expanded && (
         <div className="px-3 pb-3">
           {searchQueries.length > 0 && (
-            <div className="py-2 text-[10px]" style={{ color: '#b09878', borderBottom: '1px solid #f0e8d4' }}>
+            <div className="py-2 text-[10px]" style={{ color: '#b09878', borderBottom: '1px solid rgba(201,169,110,0.06)' }}>
               搜索关键词：{searchQueries.map(q => `"${q}"`).join(' · ')}
             </div>
           )}
@@ -70,7 +70,7 @@ export function ExtendedReadingPanel({
             <button
               onClick={() => setShowAll(s => !s)}
               className="w-full mt-2 py-2 rounded-xl text-[11px] font-medium"
-              style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #e8dcc8' }}
+              style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e', border: '1px solid rgba(201,169,110,0.1)' }}
             >
               {showAll ? '收起 ▲' : `查看全部 ${papers.length} 篇 ▼`}
             </button>

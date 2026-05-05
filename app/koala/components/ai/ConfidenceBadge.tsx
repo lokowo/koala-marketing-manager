@@ -18,10 +18,10 @@ const CONFIG: Record<ConfidenceLevel, {
   color: string;
 }> = {
   high:    { icon: '🟢', label: '高置信', defaultDesc: '基于 3+ 篇论文的共识性结论', bg: '#f0f8f2', color: '#5a8060' },
-  medium:  { icon: '🟡', label: '中置信', defaultDesc: '基于 1-2 篇论文，或领域一般性认知', bg: '#fff8e8', color: '#8a6c30' },
+  medium:  { icon: '🟡', label: '中置信', defaultDesc: '基于 1-2 篇论文，或领域一般性认知', bg: '#fff8e8', color: '#c9a96e' },
   low:     { icon: '🔴', label: '低置信', defaultDesc: '推理性回答，无直接论文支持', bg: '#fff0f0', color: '#b06040' },
-  warning: { icon: '⚠️', label: '待验证', defaultDesc: '来自一般知识，未找到可引用来源，请自行验证', bg: '#fff8e8', color: '#8a6c30' },
-  unknown: { icon: '⚪', label: '未知', defaultDesc: '知识库中暂无相关数据', bg: '#f2ead6', color: '#907858' },
+  warning: { icon: '⚠️', label: '待验证', defaultDesc: '来自一般知识，未找到可引用来源，请自行验证', bg: '#fff8e8', color: '#c9a96e' },
+  unknown: { icon: '⚪', label: '未知', defaultDesc: '知识库中暂无相关数据', bg: 'rgba(201,169,110,0.06)', color: '#6a7a7e' },
 };
 
 export function ConfidenceBadge({ level, sourceCount, description, inline = false }: ConfidenceBadgeProps) {
@@ -41,7 +41,7 @@ export function ConfidenceBadge({ level, sourceCount, description, inline = fals
         {showTooltip && (
           <span
             className="absolute bottom-full left-0 mb-1 px-2 py-1 rounded-lg text-[10px] whitespace-nowrap z-10 shadow-md"
-            style={{ background: '#1a2332', color: '#fff', minWidth: 160 }}
+            style={{ background: '#e8e4dc', color: '#fff', minWidth: 160 }}
           >
             {desc}
           </span>

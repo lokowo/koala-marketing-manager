@@ -102,7 +102,7 @@ function ResultCard({ score, answers }: { score: number; answers: Record<string,
     summary = '目前直接申请学生签证可能面临较高拒签风险。建议先改善英语成绩和资金证明，再规划申请节奏。';
   }
 
-  const colorMap = { strong: '#5a8060', moderate: '#c4a050', weak: '#b06040' };
+  const colorMap = { strong: '#5a8060', moderate: '#c9a96e', weak: '#b06040' };
   const bgMap = { strong: '#f0f8f2', moderate: '#fff8e8', weak: '#fff0f0' };
 
   return (
@@ -115,11 +115,11 @@ function ResultCard({ score, answers }: { score: number; answers: Record<string,
         <div className="h-2 rounded-full overflow-hidden mb-3" style={{ background: '#e0e0e0' }}>
           <div className="h-full rounded-full transition-all duration-700" style={{ width: `${score}%`, background: colorMap[level] }} />
         </div>
-        <p className="text-xs leading-relaxed" style={{ color: '#584838' }}>{summary}</p>
+        <p className="text-xs leading-relaxed" style={{ color: '#a8b8ac' }}>{summary}</p>
       </div>
 
       <div className="space-y-2">
-        <div className="text-xs font-semibold" style={{ color: '#7d6340' }}>✅ 条件分析</div>
+        <div className="text-xs font-semibold" style={{ color: '#c9a96e' }}>✅ 条件分析</div>
         {[
           { label: '英语成绩', ok: hasEnglish, note: hasEnglish ? '达到基本要求' : '建议先备考 IELTS（目标 6.5+）' },
           { label: '资金证明', ok: hasFinance, note: hasFinance ? '资金条件充足' : '建议准备至少 1 年学费 + 生活费证明（约 AUD 65,000）' },
@@ -128,22 +128,22 @@ function ResultCard({ score, answers }: { score: number; answers: Record<string,
           <div key={item.label} className="flex items-start gap-2">
             <span className="flex-shrink-0 mt-0.5">{item.ok ? '🟢' : '🔴'}</span>
             <div>
-              <span className="text-xs font-medium" style={{ color: '#1a2332' }}>{item.label}：</span>
-              <span className="text-[11px]" style={{ color: '#584838' }}>{item.note}</span>
+              <span className="text-xs font-medium" style={{ color: '#e8e4dc' }}>{item.label}：</span>
+              <span className="text-[11px]" style={{ color: '#a8b8ac' }}>{item.note}</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Disclaimer */}
-      <div className="rounded-xl p-3 space-y-1.5" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-        <div className="text-[10px] font-semibold" style={{ color: '#7d6340' }}>⚖️ 重要声明</div>
-        <p className="text-[11px] leading-relaxed" style={{ color: '#584838' }}>
+      <div className="rounded-xl p-3 space-y-1.5" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+        <div className="text-[10px] font-semibold" style={{ color: '#c9a96e' }}>⚖️ 重要声明</div>
+        <p className="text-[11px] leading-relaxed" style={{ color: '#a8b8ac' }}>
           本评估由 AI 基于公开政策信息生成，<strong>不构成移民法律建议</strong>。签证审核结果取决于申请人的完整材料和澳洲移民局的个案判断。
         </p>
-        <p className="text-[11px] leading-relaxed" style={{ color: '#584838' }}>
+        <p className="text-[11px] leading-relaxed" style={{ color: '#a8b8ac' }}>
           如需专业移民建议，请联系 Koala PhD：
-          <a href="mailto:info@koalaphd.com" className="font-medium" style={{ color: '#c4a050' }}> info@koalaphd.com</a>
+          <a href="mailto:info@koalaphd.com" className="font-medium" style={{ color: '#c9a96e' }}> info@koalaphd.com</a>
         </p>
         <p className="text-[10px]" style={{ color: '#b09878' }}>
           参考法规：Migration Act 1958 (Cth) · Student Visa (Class TU) Regulations
@@ -154,14 +154,14 @@ function ResultCard({ score, answers }: { score: number; answers: Record<string,
         <Link
           href="/koala/chat"
           className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-center no-underline"
-          style={{ background: '#c4a050', color: '#fff' }}
+          style={{ background: '#c9a96e', color: '#080c10' }}
         >
           🐨 和考拉学长聊签证规划
         </Link>
         <Link
           href="/koala/tools"
           className="flex-1 py-2.5 rounded-xl text-xs font-medium text-center no-underline"
-          style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}
+          style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e', border: '1px solid #d8c8a8' }}
         >
           返回工具
         </Link>
@@ -197,14 +197,14 @@ export default function NIVPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: '#faf6ec', paddingBottom: 80 }}>
+    <div className="flex flex-col min-h-screen" style={{ background: '#080c10', paddingBottom: 80 }}>
       {/* Header */}
       <div className="px-4 pt-4 pb-3 flex-shrink-0" style={{ borderBottom: '1px solid #eee4cc' }}>
         <div className="flex items-center gap-2 mb-1">
-          <Link href="/koala/tools" className="text-[13px]" style={{ color: '#c4a050' }}>← 工具</Link>
+          <Link href="/koala/tools" className="text-[13px]" style={{ color: '#c9a96e' }}>← 工具</Link>
         </div>
-        <h1 className="text-base font-bold" style={{ color: '#1a2332' }}>签证准备自测</h1>
-        <p className="text-[11px] mt-0.5" style={{ color: '#907858' }}>
+        <h1 className="text-base font-bold" style={{ color: '#e8e4dc' }}>签证准备自测</h1>
+        <p className="text-[11px] mt-0.5" style={{ color: '#6a7a7e' }}>
           4 步评估你的澳洲学生签证申请准备情况 · 仅供参考
         </p>
       </div>
@@ -214,21 +214,21 @@ export default function NIVPage() {
           <div className="space-y-4">
             {/* Progress */}
             <div>
-              <div className="flex justify-between text-[11px] mb-1.5" style={{ color: '#907858' }}>
+              <div className="flex justify-between text-[11px] mb-1.5" style={{ color: '#6a7a7e' }}>
                 <span>第 {currentStep + 1} 步，共 {totalSteps} 步</span>
                 <span>{step.title}</span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#e8dcc8' }}>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(201,169,110,0.1)' }}>
                 <div
                   className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${progress + (100 / totalSteps)}%`, background: '#c4a050' }}
+                  style={{ width: `${progress + (100 / totalSteps)}%`, background: '#c9a96e' }}
                 />
               </div>
             </div>
 
             {/* Question */}
-            <div className="rounded-2xl p-4" style={{ background: '#fff', border: '1px solid #e8dcc8' }}>
-              <h2 className="text-sm font-bold mb-4" style={{ color: '#1a2332' }}>{step.question}</h2>
+            <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)' }}>
+              <h2 className="text-sm font-bold mb-4" style={{ color: '#e8e4dc' }}>{step.question}</h2>
               <div className="space-y-2">
                 {step.options.map(opt => (
                   <button
@@ -236,15 +236,15 @@ export default function NIVPage() {
                     onClick={() => selectOption(opt.value)}
                     className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
                     style={{
-                      background: answers[step.id] === opt.value ? '#f5e8c4' : '#f2ead6',
-                      border: answers[step.id] === opt.value ? '1.5px solid #c4a050' : '1.5px solid #e8dcc8',
+                      background: answers[step.id] === opt.value ? '#f5e8c4' : 'rgba(201,169,110,0.06)',
+                      border: answers[step.id] === opt.value ? '1.5px solid #c9a96e' : '1.5px solid rgba(201,169,110,0.1)',
                     }}
                   >
                     <span
                       className="size-4 rounded-full border-2 flex-shrink-0"
                       style={{
-                        borderColor: answers[step.id] === opt.value ? '#c4a050' : '#d8c8a8',
-                        background: answers[step.id] === opt.value ? '#c4a050' : 'transparent',
+                        borderColor: answers[step.id] === opt.value ? '#c9a96e' : '#d8c8a8',
+                        background: answers[step.id] === opt.value ? '#c9a96e' : 'transparent',
                       }}
                     />
                     <span className="text-xs leading-snug" style={{ color: '#28201a' }}>{opt.label}</span>
@@ -253,7 +253,7 @@ export default function NIVPage() {
               </div>
 
               {step.reference && (
-                <div className="mt-3 pt-3" style={{ borderTop: '1px solid #f0e8d4' }}>
+                <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(201,169,110,0.06)' }}>
                   <span className="text-[10px]" style={{ color: '#b09878' }}>参考：</span>
                   {step.referenceUrl ? (
                     <a
@@ -276,7 +276,7 @@ export default function NIVPage() {
               <button
                 onClick={() => setCurrentStep(s => s - 1)}
                 className="text-xs"
-                style={{ color: '#907858' }}
+                style={{ color: '#6a7a7e' }}
               >
                 ← 上一步
               </button>
@@ -285,8 +285,8 @@ export default function NIVPage() {
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold" style={{ color: '#1a2332' }}>📋 评估结果</h2>
-              <button onClick={reset} className="text-xs" style={{ color: '#907858' }}>重新测试</button>
+              <h2 className="text-sm font-bold" style={{ color: '#e8e4dc' }}>📋 评估结果</h2>
+              <button onClick={reset} className="text-xs" style={{ color: '#6a7a7e' }}>重新测试</button>
             </div>
             <ResultCard score={calcResult(answers)} answers={answers} />
           </div>

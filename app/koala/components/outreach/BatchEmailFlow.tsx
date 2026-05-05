@@ -183,14 +183,14 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
   // ── Step: Confirm ──
   if (step === 'confirm') {
     return (
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1.5px solid #e8dcc8' }}>
-        <div className="p-4" style={{ background: '#1a2332' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(201,169,110,0.1)' }}>
+        <div className="p-4" style={{ background: '#e8e4dc' }}>
           <div className="text-sm font-bold text-white">📨 批量生成申请信</div>
           <div className="text-[11px] text-white/60 mt-0.5">每封消耗 1 积分，生成后可单独修改和下载</div>
         </div>
 
         <div className="p-3 space-y-2">
-          <div className="text-[11px] font-semibold mb-1" style={{ color: '#584838' }}>
+          <div className="text-[11px] font-semibold mb-1" style={{ color: '#a8b8ac' }}>
             选择要发送的教授（{count}/{professors.length}）
           </div>
 
@@ -202,21 +202,21 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
                 className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors"
                 style={{
                   background: selected.has(p.id) ? '#f5e8c4' : '#f7f2e8',
-                  border: `1.5px solid ${selected.has(p.id) ? '#c4a050' : '#e8dcc8'}`,
+                  border: `1.5px solid ${selected.has(p.id) ? '#c9a96e' : 'rgba(201,169,110,0.1)'}`,
                 }}
               >
                 <div
                   className="size-4 rounded flex-shrink-0 flex items-center justify-center"
-                  style={{ background: selected.has(p.id) ? '#c4a050' : '#e8dcc8' }}
+                  style={{ background: selected.has(p.id) ? '#c9a96e' : 'rgba(201,169,110,0.1)' }}
                 >
                   {selected.has(p.id) && <span className="text-white text-[10px]">✓</span>}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold truncate" style={{ color: '#1a2332' }}>{p.name}</div>
-                  {p.institution && <div className="text-[10px] truncate" style={{ color: '#907858' }}>{p.institution}</div>}
+                  <div className="text-xs font-semibold truncate" style={{ color: '#e8e4dc' }}>{p.name}</div>
+                  {p.institution && <div className="text-[10px] truncate" style={{ color: '#6a7a7e' }}>{p.institution}</div>}
                 </div>
                 {p.matchScore !== undefined && (
-                  <div className="text-[10px] font-bold flex-shrink-0" style={{ color: '#c4a050' }}>{p.matchScore}%</div>
+                  <div className="text-[10px] font-bold flex-shrink-0" style={{ color: '#c9a96e' }}>{p.matchScore}%</div>
                 )}
               </button>
             ))}
@@ -228,7 +228,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
             </div>
           )}
 
-          <div className="rounded-xl px-3 py-2.5 text-[11px]" style={{ background: '#f5e8c4', border: '1px solid #e8d098', color: '#7d6340' }}>
+          <div className="rounded-xl px-3 py-2.5 text-[11px]" style={{ background: '#f5e8c4', border: '1px solid #e8d098', color: '#c9a96e' }}>
             共选 {count} 位教授，将消耗 <strong>{count} 积分</strong>
           </div>
 
@@ -237,7 +237,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
               <button
                 onClick={onClose}
                 className="flex-1 py-2.5 rounded-xl text-sm font-medium"
-                style={{ background: '#f2ead6', color: '#907858', border: '1px solid #d8c8a8' }}
+                style={{ background: 'rgba(201,169,110,0.06)', color: '#6a7a7e', border: '1px solid #d8c8a8' }}
               >
                 取消
               </button>
@@ -246,7 +246,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
               onClick={startGeneration}
               disabled={!count}
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity"
-              style={{ background: count ? '#c4a050' : '#d8c8a8', opacity: count ? 1 : 0.6 }}
+              style={{ background: count ? '#c9a96e' : '#d8c8a8', opacity: count ? 1 : 0.6 }}
             >
               开始生成 {count} 封申请信
             </button>
@@ -260,19 +260,19 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
   if (step === 'generating') {
     const pct = Math.round(progress * 100);
     return (
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1.5px solid #e8dcc8' }}>
-        <div className="p-4" style={{ background: '#1a2332' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(201,169,110,0.1)' }}>
+        <div className="p-4" style={{ background: '#e8e4dc' }}>
           <div className="text-sm font-bold text-white">🔄 正在生成申请信…</div>
           <div className="text-[11px] text-white/60 mt-0.5">{progressMsg}</div>
         </div>
         <div className="p-4 space-y-3">
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: '#f0e8d4' }}>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(201,169,110,0.06)' }}>
             <div
               className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${pct}%`, background: '#c4a050' }}
+              style={{ width: `${pct}%`, background: '#c9a96e' }}
             />
           </div>
-          <div className="text-center text-sm font-semibold" style={{ color: '#c4a050' }}>{pct}%</div>
+          <div className="text-center text-sm font-semibold" style={{ color: '#c9a96e' }}>{pct}%</div>
 
           {results.length > 0 && (
             <div className="space-y-1.5 max-h-32 overflow-y-auto">
@@ -289,7 +289,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
           <button
             onClick={stopGeneration}
             className="w-full py-2.5 rounded-xl text-sm font-medium"
-            style={{ background: '#f2ead6', color: '#b06040', border: '1px solid #e8d8c8' }}
+            style={{ background: 'rgba(201,169,110,0.06)', color: '#b06040', border: '1px solid #e8d8c8' }}
           >
             停止生成
           </button>
@@ -305,7 +305,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
   return (
     <div className="space-y-3">
       {/* Summary bar */}
-      <div className="rounded-2xl p-3" style={{ background: '#1a2332' }}>
+      <div className="rounded-2xl p-3" style={{ background: '#e8e4dc' }}>
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="text-sm font-bold text-white">✅ 生成完成</div>
@@ -317,12 +317,12 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
             onClick={exportDocx}
             disabled={!successful.length || exporting}
             className="shrink-0 text-[11px] font-semibold px-3 py-2 rounded-xl text-white transition-opacity"
-            style={{ background: '#c4a050', opacity: exporting ? 0.6 : 1 }}
+            style={{ background: '#c9a96e', opacity: exporting ? 0.6 : 1 }}
           >
             {exporting ? '导出中…' : '📥 下载申请信合集'}
           </button>
         </div>
-        <div className="mt-2 rounded-lg px-2.5 py-2 text-[11px]" style={{ background: 'rgba(255,255,255,0.08)', color: '#e8dcc8' }}>
+        <div className="mt-2 rounded-lg px-2.5 py-2 text-[11px]" style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(201,169,110,0.1)' }}>
           📋 申请信已生成！请下载后自行逐封发送。建议每封间隔1-2天。
         </div>
       </div>
@@ -359,7 +359,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
           onClick={exportDocx}
           disabled={exporting}
           className="w-full py-3 rounded-2xl text-sm font-semibold text-white"
-          style={{ background: '#1a2332', opacity: exporting ? 0.6 : 1 }}
+          style={{ background: '#e8e4dc', opacity: exporting ? 0.6 : 1 }}
         >
           {exporting ? '正在导出…' : `📥 下载申请信合集（${successful.length} 封）`}
         </button>

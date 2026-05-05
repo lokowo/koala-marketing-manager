@@ -9,7 +9,7 @@ import type { Professor } from '../../lib/types';
 import { useAuth } from '../components/AuthContext';
 
 const UNI_COLORS: Record<string, { bg: string; fg: string; short: string }> = {
-  'Australian National University':        { bg: '#c4a050', fg: '#1a2332', short: 'ANU' },
+  'Australian National University':        { bg: '#c9a96e', fg: '#e8e4dc', short: 'ANU' },
   'University of Melbourne':               { bg: '#003087', fg: '#fff',    short: 'MEL' },
   'University of Sydney':                  { bg: '#cc0000', fg: '#fff',    short: 'SYD' },
   'UNSW Sydney':                           { bg: '#1a1a1a', fg: '#ffe600', short: 'NSW' },
@@ -27,7 +27,7 @@ const UNI_COLORS: Record<string, { bg: string; fg: string; short: string }> = {
   'University of Newcastle':               { bg: '#1f1646', fg: '#fff',    short: 'NEW' },
   'University of Wollongong':              { bg: '#1e5799', fg: '#fff',    short: 'WOL' },
   'Flinders University':                   { bg: '#004f9f', fg: '#fff',    short: 'FLI' },
-  'Curtin University':                     { bg: '#cfb44b', fg: '#1a2332', short: 'CUR' },
+  'Curtin University':                     { bg: '#cfb44b', fg: '#e8e4dc', short: 'CUR' },
   'James Cook University':                 { bg: '#005c84', fg: '#fff',    short: 'JCU' },
   'Swinburne University of Technology':    { bg: '#bb0000', fg: '#fff',    short: 'SWI' },
   'Western Sydney University':             { bg: '#e52020', fg: '#fff',    short: 'WSY' },
@@ -114,11 +114,11 @@ export default function HomePage() {
   const displayPosts = blogPosts.length > 0 ? blogPosts : fallbackPosts;
 
   return (
-    <div style={{ background: '#faf6ec', minHeight: '100vh', paddingBottom: 100 }}>
+    <div style={{ background: '#080c10', minHeight: '100vh', paddingBottom: 100 }}>
       {/* Header — mobile only; desktop uses TopNavBar */}
       <header
         className="lg:hidden sticky top-0 z-50 px-4 pt-4 pb-3 flex justify-between items-center"
-        style={{ background: 'linear-gradient(135deg, #faf6ec 0%, #f5edd8 100%)', borderBottom: '1px solid #ebe3d0' }}
+        style={{ background: 'linear-gradient(135deg, #080c10 0%, #f5edd8 100%)', borderBottom: '1px solid #ebe3d0' }}
       >
         {/* Left: Logo + brand */}
         <Link href="/koala/home" className="flex items-center gap-2.5 no-underline">
@@ -133,12 +133,12 @@ export default function HomePage() {
               (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
             }}
           />
-          <span className="hidden size-8 rounded-lg flex items-center justify-center text-base" style={{ background: '#1a2332' }}>🐨</span>
+          <span className="hidden size-8 rounded-lg flex items-center justify-center text-base" style={{ background: '#e8e4dc' }}>🐨</span>
           <div className="flex flex-col">
-            <span className="text-sm font-bold tracking-tight leading-none" style={{ color: '#1a2332' }}>
+            <span className="text-sm font-bold tracking-tight leading-none" style={{ color: '#e8e4dc' }}>
               Koala Study
             </span>
-            <span className="text-[10px] leading-tight mt-0.5" style={{ color: '#907858' }}>
+            <span className="text-[10px] leading-tight mt-0.5" style={{ color: '#6a7a7e' }}>
               你的澳洲学术内线
             </span>
           </div>
@@ -149,14 +149,14 @@ export default function HomePage() {
           <button
             onClick={() => setShowNotif(!showNotif)}
             className="relative size-9 flex justify-center items-center rounded-full transition-colors"
-            style={{ background: showNotif ? '#f2ead6' : 'transparent' }}
+            style={{ background: showNotif ? 'rgba(201,169,110,0.06)' : 'transparent' }}
           >
-            <Bell className="size-[18px]" style={{ color: '#584838' }} />
+            <Bell className="size-[18px]" style={{ color: '#a8b8ac' }} />
           </button>
           <Link
             href="/koala/auth"
             className="size-9 rounded-full flex items-center justify-center no-underline"
-            style={{ background: '#1a2332' }}
+            style={{ background: '#e8e4dc' }}
           >
             <span className="text-xs font-medium text-white">登录</span>
           </Link>
@@ -167,19 +167,19 @@ export default function HomePage() {
       {showNotif && (
         <div
           className="mx-4 mt-1 mb-2 rounded-2xl p-4 flex items-center justify-between"
-          style={{ background: '#fff', border: '1px solid #e8dcc8', boxShadow: '0 8px 24px rgba(125,99,64,0.10)' }}
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)', boxShadow: '0 8px 24px rgba(125,99,64,0.10)' }}
         >
           <div className="flex items-center gap-3">
-            <div className="size-9 rounded-full flex items-center justify-center" style={{ background: '#f2ead6' }}>
-              <Bell className="size-4" style={{ color: '#c4a050' }} />
+            <div className="size-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(201,169,110,0.06)' }}>
+              <Bell className="size-4" style={{ color: '#c9a96e' }} />
             </div>
             <div>
-              <p className="text-xs font-medium" style={{ color: '#584838' }}>暂无新消息</p>
-              <p className="text-[10px] mt-0.5" style={{ color: '#907858' }}>有新动态时会通知你</p>
+              <p className="text-xs font-medium" style={{ color: '#a8b8ac' }}>暂无新消息</p>
+              <p className="text-[10px] mt-0.5" style={{ color: '#6a7a7e' }}>有新动态时会通知你</p>
             </div>
           </div>
-          <button onClick={() => setShowNotif(false)} className="size-6 flex items-center justify-center rounded-full" style={{ background: '#f2ead6' }}>
-            <X className="size-3" style={{ color: '#907858' }} />
+          <button onClick={() => setShowNotif(false)} className="size-6 flex items-center justify-center rounded-full" style={{ background: 'rgba(201,169,110,0.06)' }}>
+            <X className="size-3" style={{ color: '#6a7a7e' }} />
           </button>
         </div>
       )}
@@ -190,30 +190,30 @@ export default function HomePage() {
         <section>
           <div
             className="rounded-3xl p-5 lg:p-10 relative overflow-hidden lg:flex lg:items-center lg:gap-12"
-            style={{ background: '#1a2332' }}
+            style={{ background: '#e8e4dc' }}
           >
             {/* Decorative circle */}
-            <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-10" style={{ background: '#c4a050' }} />
-            <div className="absolute -right-2 bottom-4 w-24 h-24 rounded-full opacity-5" style={{ background: '#c4a050' }} />
+            <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-10" style={{ background: '#c9a96e' }} />
+            <div className="absolute -right-2 bottom-4 w-24 h-24 rounded-full opacity-5" style={{ background: '#c9a96e' }} />
 
             <div className="relative z-10 lg:flex-1">
-              <div className="text-xs font-medium mb-2 opacity-70" style={{ color: '#c4a050' }}>
+              <div className="text-xs font-medium mb-2 opacity-70" style={{ color: '#c9a96e' }}>
                 AI 导师匹配 · 免费使用
               </div>
               <h1 className="text-xl lg:text-3xl font-bold leading-tight mb-1.5" style={{ color: '#fff' }}>
                 2,847 位澳洲导师<br />AI 帮你找最匹配的那个
               </h1>
-              <p className="text-xs lg:text-sm leading-relaxed mb-4 opacity-80" style={{ color: '#e8dcc8' }}>
+              <p className="text-xs lg:text-sm leading-relaxed mb-4 opacity-80" style={{ color: 'rgba(201,169,110,0.1)' }}>
                 告诉 Koala 你的背景和兴趣，30 秒内获得个性化导师推荐
               </p>
               <Link
                 href="/koala/chat"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm no-underline"
-                style={{ background: '#c4a050', color: '#1a2332' }}
+                style={{ background: '#c9a96e', color: '#e8e4dc' }}
               >
                 开始匹配 <ArrowRight className="size-4" />
               </Link>
-              <div className="mt-3 text-[11px] opacity-50" style={{ color: '#e8dcc8' }}>
+              <div className="mt-3 text-[11px] opacity-50" style={{ color: 'rgba(201,169,110,0.1)' }}>
                 已帮助 500+ 位同学找到理想导师
               </div>
             </div>
@@ -222,7 +222,7 @@ export default function HomePage() {
 
         {/* ── Three Steps ── */}
         <section>
-          <h2 className="font-bold text-base mb-3" style={{ color: '#1a2332' }}>三步搞定 PhD 申请</h2>
+          <h2 className="font-bold text-base mb-3" style={{ color: '#e8e4dc' }}>三步搞定 PhD 申请</h2>
           <div className="grid grid-cols-3 gap-2 lg:gap-4">
             {[
               { icon: '💬', step: '01', title: '聊背景', desc: '告诉 Koala 你的专业和兴趣' },
@@ -233,7 +233,7 @@ export default function HomePage() {
                 key={s.step}
                 onClick={() => handleStepClick(STEP_LINKS[i].href)}
                 className="rounded-2xl p-3 lg:p-5 flex flex-col gap-1.5 text-left w-full transition-all active:scale-95"
-                style={{ background: '#f2ead6', border: '1px solid #e8dcc8', cursor: 'pointer' }}
+                style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', cursor: 'pointer' }}
                 onMouseEnter={e => {
                   (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
                   (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 16px rgba(125,99,64,0.15)';
@@ -244,9 +244,9 @@ export default function HomePage() {
                 }}
               >
                 <span className="text-xl">{s.icon}</span>
-                <div className="text-[10px] font-medium" style={{ color: '#c4a050' }}>{s.step}</div>
-                <div className="text-xs font-bold" style={{ color: '#1a2332' }}>{s.title}</div>
-                <div className="text-[10px] leading-relaxed" style={{ color: '#907858' }}>{s.desc}</div>
+                <div className="text-[10px] font-medium" style={{ color: '#c9a96e' }}>{s.step}</div>
+                <div className="text-xs font-bold" style={{ color: '#e8e4dc' }}>{s.title}</div>
+                <div className="text-[10px] leading-relaxed" style={{ color: '#6a7a7e' }}>{s.desc}</div>
               </button>
             ))}
           </div>
@@ -255,15 +255,15 @@ export default function HomePage() {
         {/* ── Hot Professors ── */}
         <section>
           <div className="flex justify-between items-center mb-3">
-            <h2 className="font-bold text-base" style={{ color: '#1a2332' }}>🔥 热门导师推荐</h2>
-            <Link href="/koala/professors" className="text-xs font-semibold flex items-center gap-1 no-underline" style={{ color: '#c4a050' }}>
+            <h2 className="font-bold text-base" style={{ color: '#e8e4dc' }}>🔥 热门导师推荐</h2>
+            <Link href="/koala/professors" className="text-xs font-semibold flex items-center gap-1 no-underline" style={{ color: '#c9a96e' }}>
               查看全部 <ChevronRight className="size-3" />
             </Link>
           </div>
           <div className="flex -mx-4 px-4 pb-2 gap-3 overflow-x-auto lg:overflow-visible lg:mx-0 lg:px-0 lg:grid lg:grid-cols-3 lg:gap-4" style={{ scrollbarWidth: 'none' }}>
             {(professors.length > 0 ? professors : Array(4).fill(null)).map((p, i) => {
               if (!p) return (
-                <div key={i} className="shrink-0 w-44 lg:w-auto h-52 rounded-2xl animate-pulse" style={{ background: '#f2ead6' }} />
+                <div key={i} className="shrink-0 w-44 lg:w-auto h-52 rounded-2xl animate-pulse" style={{ background: 'rgba(201,169,110,0.06)' }} />
               );
               const badge = getUniBadge(p.university);
               const status = p.acceptingStudents === 'yes' ? { label: '招生中', bg: '#d1fae5', color: '#065f46' }
@@ -274,7 +274,7 @@ export default function HomePage() {
                   key={p.id}
                   href={`/koala/professors/${p.id}`}
                   className="shrink-0 w-44 lg:w-auto rounded-2xl p-3.5 flex flex-col gap-2 no-underline"
-                  style={{ background: '#fff', border: '1px solid #e8dcc8', boxShadow: '0 4px 16px rgba(196,160,80,0.10)' }}
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)', boxShadow: '0 4px 16px rgba(196,160,80,0.10)' }}
                 >
                   {/* Uni badge + status */}
                   <div className="flex items-center justify-between">
@@ -293,9 +293,9 @@ export default function HomePage() {
 
                   {/* Name & title */}
                   <div>
-                    <div className="text-xs font-bold leading-snug" style={{ color: '#1a2332' }}>{p.name}</div>
+                    <div className="text-xs font-bold leading-snug" style={{ color: '#e8e4dc' }}>{p.name}</div>
                     {p.positionTitle && (
-                      <div className="text-[10px] mt-0.5" style={{ color: '#907858' }}>{p.positionTitle}</div>
+                      <div className="text-[10px] mt-0.5" style={{ color: '#6a7a7e' }}>{p.positionTitle}</div>
                     )}
                   </div>
 
@@ -303,7 +303,7 @@ export default function HomePage() {
                   {p.researchAreas?.[0] && (
                     <div
                       className="text-[10px] px-2 py-1 rounded-full leading-tight"
-                      style={{ background: '#f2ead6', color: '#584838' }}
+                      style={{ background: 'rgba(201,169,110,0.06)', color: '#a8b8ac' }}
                     >
                       {p.researchAreas[0].length > 30 ? p.researchAreas[0].slice(0, 28) + '…' : p.researchAreas[0]}
                     </div>
@@ -311,7 +311,7 @@ export default function HomePage() {
 
                   {/* Stats */}
                   {(p.hIndex || p.paperCount) && (
-                    <div className="flex gap-2 text-[10px]" style={{ color: '#907858' }}>
+                    <div className="flex gap-2 text-[10px]" style={{ color: '#6a7a7e' }}>
                       {p.hIndex && <span>H={p.hIndex}</span>}
                       {p.paperCount && <span>· {fmtNum(p.paperCount)} 篇</span>}
                     </div>
@@ -320,7 +320,7 @@ export default function HomePage() {
                   {/* CTA */}
                   <div
                     className="mt-auto text-[10px] font-medium text-center py-1.5 rounded-full"
-                    style={{ background: '#f2ead6', color: '#7d6340' }}
+                    style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e' }}
                   >
                     查看详情 →
                   </div>
@@ -332,17 +332,17 @@ export default function HomePage() {
 
         {/* ── Research Areas ── */}
         <section>
-          <h2 className="font-bold text-base mb-3" style={{ color: '#1a2332' }}>热门研究方向</h2>
+          <h2 className="font-bold text-base mb-3" style={{ color: '#e8e4dc' }}>热门研究方向</h2>
           <div className="grid grid-cols-4 lg:grid-cols-8 gap-2">
             {RESEARCH_AREAS.map(area => (
               <Link
                 key={area.value}
                 href={`/koala/professors?category=${area.value}`}
                 className="rounded-2xl p-2.5 flex flex-col items-center gap-1 no-underline"
-                style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}
+                style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}
               >
                 <span className="text-lg">{area.emoji}</span>
-                <span className="text-[10px] font-medium text-center leading-tight" style={{ color: '#584838' }}>
+                <span className="text-[10px] font-medium text-center leading-tight" style={{ color: '#a8b8ac' }}>
                   {area.label}
                 </span>
               </Link>
@@ -353,8 +353,8 @@ export default function HomePage() {
         {/* ── Blog ── */}
         <section>
           <div className="flex justify-between items-center mb-3">
-            <h2 className="font-bold text-base" style={{ color: '#1a2332' }}>最新博客</h2>
-            <Link href="/koala/blog" className="text-xs font-semibold flex items-center gap-1 no-underline" style={{ color: '#c4a050' }}>
+            <h2 className="font-bold text-base" style={{ color: '#e8e4dc' }}>最新博客</h2>
+            <Link href="/koala/blog" className="text-xs font-semibold flex items-center gap-1 no-underline" style={{ color: '#c9a96e' }}>
               更多 <ChevronRight className="size-3" />
             </Link>
           </div>
@@ -364,15 +364,15 @@ export default function HomePage() {
                 key={b.id}
                 href="/koala/blog"
                 className="rounded-2xl p-4 flex flex-col gap-2 no-underline"
-                style={{ background: '#fff', boxShadow: '0 4px 16px rgba(196,160,80,0.08)', border: '1px solid #f0e8d4' }}
+                style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 4px 16px rgba(196,160,80,0.08)', border: '1px solid rgba(201,169,110,0.06)' }}
               >
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full text-white" style={{ background: '#c4a050' }}>
+                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full text-white" style={{ background: '#c9a96e' }}>
                     {b.tag}
                   </span>
                   <span className="text-[10px]" style={{ color: '#b0b0b0' }}>{b.date}</span>
                 </div>
-                <h3 className="text-sm font-bold leading-snug" style={{ color: '#1a2332' }}>{b.title}</h3>
+                <h3 className="text-sm font-bold leading-snug" style={{ color: '#e8e4dc' }}>{b.title}</h3>
                 <p className="text-xs leading-relaxed" style={{ color: '#8a8a8a' }}>{b.excerpt}</p>
               </Link>
             ))}
@@ -381,14 +381,14 @@ export default function HomePage() {
 
         {/* ── Bottom CTA ── */}
         <section>
-          <div className="rounded-3xl p-5 text-center" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
+          <div className="rounded-3xl p-5 text-center" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
             <div className="text-2xl mb-2">🐨</div>
-            <h3 className="text-sm font-bold mb-1" style={{ color: '#1a2332' }}>还在犹豫？先聊聊你的想法</h3>
-            <p className="text-xs mb-4" style={{ color: '#907858' }}>免费匹配导师，不满意随时退出</p>
+            <h3 className="text-sm font-bold mb-1" style={{ color: '#e8e4dc' }}>还在犹豫？先聊聊你的想法</h3>
+            <p className="text-xs mb-4" style={{ color: '#6a7a7e' }}>免费匹配导师，不满意随时退出</p>
             <Link
               href="/koala/chat"
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm no-underline text-white"
-              style={{ background: '#7d6340' }}
+              style={{ background: '#c9a96e' }}
             >
               免费开始对话 <ArrowRight className="size-4" />
             </Link>

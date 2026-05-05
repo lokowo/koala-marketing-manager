@@ -39,7 +39,7 @@ function TierCard({
     <div
       className="rounded-2xl overflow-hidden"
       style={{
-        border: isPopular ? '2px solid #c4a050' : '1px solid #e8dcc8',
+        border: isPopular ? '2px solid #c9a96e' : '1px solid rgba(201,169,110,0.1)',
         background: isPopular ? '#fffdf5' : '#f7f2e8',
       }}
     >
@@ -47,7 +47,7 @@ function TierCard({
       {isPopular && (
         <div
           className="text-center text-xs font-semibold py-1.5"
-          style={{ background: '#c4a050', color: '#fff' }}
+          style={{ background: '#c9a96e', color: '#080c10' }}
         >
           🏆 最受欢迎
         </div>
@@ -56,16 +56,16 @@ function TierCard({
       <div className="p-4">
         {/* Header */}
         <div className="flex items-end justify-between mb-1">
-          <div className="text-base font-bold" style={{ color: '#1a2332' }}>{tier.label}</div>
+          <div className="text-base font-bold" style={{ color: '#e8e4dc' }}>{tier.label}</div>
           <div className="text-right">
-            <span className="text-xl font-bold" style={{ color: isPopular ? '#c4a050' : '#1a2332' }}>
+            <span className="text-xl font-bold" style={{ color: isPopular ? '#c9a96e' : '#e8e4dc' }}>
               AUD {tier.price}
             </span>
-            <span className="text-xs" style={{ color: '#907858' }}>/月</span>
+            <span className="text-xs" style={{ color: '#6a7a7e' }}>/月</span>
           </div>
         </div>
 
-        <div className="text-[11px] mb-3" style={{ color: '#907858' }}>
+        <div className="text-[11px] mb-3" style={{ color: '#6a7a7e' }}>
           含 {tier.monthlyCredits} 封申请信额度 · 新用户首月 5 折
         </div>
 
@@ -79,8 +79,8 @@ function TierCard({
           ))}
           {tier.notIncluded.map(f => (
             <div key={f} className="flex items-start gap-2 opacity-40">
-              <X className="size-3.5 flex-shrink-0 mt-0.5" style={{ color: '#907858' }} />
-              <span className="text-xs leading-snug" style={{ color: '#907858' }}>{f}</span>
+              <X className="size-3.5 flex-shrink-0 mt-0.5" style={{ color: '#6a7a7e' }} />
+              <span className="text-xs leading-snug" style={{ color: '#6a7a7e' }}>{f}</span>
             </div>
           ))}
         </div>
@@ -89,8 +89,8 @@ function TierCard({
         <button
           className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold transition-opacity active:opacity-70"
           style={{
-            background: isPopular ? '#c4a050' : '#f2ead6',
-            color: isPopular ? '#fff' : '#7d6340',
+            background: isPopular ? '#c9a96e' : 'rgba(201,169,110,0.06)',
+            color: isPopular ? '#fff' : '#c9a96e',
             border: isPopular ? 'none' : '1px solid #d8c8a8',
           }}
         >
@@ -116,11 +116,11 @@ export default function ToolsPage() {
   const [showCredits, setShowCredits] = useState(false);
 
   return (
-    <div className="pb-8" style={{ background: '#faf6ec' }}>
+    <div className="pb-8" style={{ background: '#080c10' }}>
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 border-b" style={{ borderColor: '#e8dcc8' }}>
-        <h1 className="text-base font-bold" style={{ color: '#1a2332' }}>工具 & 定价</h1>
-        <p className="text-xs mt-0.5" style={{ color: '#907858' }}>
+      <div className="px-4 pt-4 pb-3 border-b" style={{ borderColor: 'rgba(201,169,110,0.1)' }}>
+        <h1 className="text-base font-bold" style={{ color: '#e8e4dc' }}>工具 & 定价</h1>
+        <p className="text-xs mt-0.5" style={{ color: '#6a7a7e' }}>
           免费工具直接用 · 订阅解锁更多功能
         </p>
       </div>
@@ -128,7 +128,7 @@ export default function ToolsPage() {
       {/* ── Free Tools (first!) ── */}
       <div className="px-4 mt-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold" style={{ color: '#1a2332' }}>免费工具箱</h2>
+          <h2 className="text-sm font-bold" style={{ color: '#e8e4dc' }}>免费工具箱</h2>
           <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: '#d1fae5', color: '#065f46' }}>
             无需注册
           </span>
@@ -139,20 +139,20 @@ export default function ToolsPage() {
               key={tool.title}
               href={tool.href}
               className="rounded-2xl p-3.5 flex flex-col gap-1.5 no-underline"
-              style={{ background: '#fff', border: '1px solid #f0e8d4', boxShadow: '0 2px 8px rgba(196,160,80,0.08)' }}
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.06)', boxShadow: '0 2px 8px rgba(196,160,80,0.08)' }}
             >
               <span className="text-2xl">{tool.icon}</span>
-              <div className="text-xs font-bold" style={{ color: '#1a2332' }}>{tool.title}</div>
-              <div className="text-[11px] leading-snug" style={{ color: '#907858' }}>{tool.desc}</div>
+              <div className="text-xs font-bold" style={{ color: '#e8e4dc' }}>{tool.title}</div>
+              <div className="text-[11px] leading-snug" style={{ color: '#6a7a7e' }}>{tool.desc}</div>
             </Link>
           ))}
         </div>
       </div>
 
       {/* ── Value separator ── */}
-      <div className="mx-4 mt-5 rounded-2xl p-4" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-        <div className="text-xs font-semibold mb-1.5" style={{ color: '#1a2332' }}>想要更多？解锁完整功能</div>
-        <div className="space-y-1 text-[11px]" style={{ color: '#584838' }}>
+      <div className="mx-4 mt-5 rounded-2xl p-4" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+        <div className="text-xs font-semibold mb-1.5" style={{ color: '#e8e4dc' }}>想要更多？解锁完整功能</div>
+        <div className="space-y-1 text-[11px]" style={{ color: '#a8b8ac' }}>
           <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0" style={{ color: '#5a8060' }} />无限 AI 对话轮次</div>
           <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0" style={{ color: '#5a8060' }} />上传简历 & 成绩单自动解析</div>
           <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0" style={{ color: '#5a8060' }} />查看完整教授联系方式 & 论文</div>
@@ -162,8 +162,8 @@ export default function ToolsPage() {
 
       {/* ── Subscription tiers ── */}
       <div className="px-4 mt-4">
-        <h2 className="text-sm font-semibold mb-1" style={{ color: '#1a2332' }}>订阅套餐</h2>
-        <p className="text-[11px] mb-3" style={{ color: '#907858' }}>新用户首月 5 折 · 月度额度当月有效</p>
+        <h2 className="text-sm font-semibold mb-1" style={{ color: '#e8e4dc' }}>订阅套餐</h2>
+        <p className="text-[11px] mb-3" style={{ color: '#6a7a7e' }}>新用户首月 5 折 · 月度额度当月有效</p>
         <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-4">
           {(Object.values(SUBSCRIPTION_TIERS) as typeof SUBSCRIPTION_TIERS[keyof typeof SUBSCRIPTION_TIERS][]).map(tier => (
             <TierCard key={tier.id} tier={tier} isPopular={tier.popular} />
@@ -175,15 +175,15 @@ export default function ToolsPage() {
       <div className="px-4 mt-6">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-sm font-semibold" style={{ color: '#1a2332' }}>单独购买积分</h2>
-            <p className="text-[11px] mt-0.5" style={{ color: '#907858' }}>
+            <h2 className="text-sm font-semibold" style={{ color: '#e8e4dc' }}>单独购买积分</h2>
+            <p className="text-[11px] mt-0.5" style={{ color: '#6a7a7e' }}>
               与订阅独立 · 用完月度额度后按需购买
             </p>
           </div>
           <button
             onClick={() => setShowCredits(v => !v)}
             className="text-xs px-3 py-1.5 rounded-full"
-            style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}
+            style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e', border: '1px solid #d8c8a8' }}
           >
             {showCredits ? '收起' : '查看套餐'}
           </button>
@@ -197,23 +197,23 @@ export default function ToolsPage() {
                 className="rounded-xl p-3 flex flex-col gap-1"
                 style={{
                   background: pkg.highlight ? '#fff8e8' : '#f7f2e8',
-                  border: pkg.highlight ? '1.5px solid #c4a050' : '1px solid #e8dcc8',
+                  border: pkg.highlight ? '1.5px solid #c9a96e' : '1px solid rgba(201,169,110,0.1)',
                 }}
               >
                 {pkg.highlight && (
                   <div className="flex items-center gap-1 mb-0.5">
-                    <Zap className="size-3" style={{ color: '#c4a050' }} />
-                    <span className="text-[10px] font-medium" style={{ color: '#c4a050' }}>最划算</span>
+                    <Zap className="size-3" style={{ color: '#c9a96e' }} />
+                    <span className="text-[10px] font-medium" style={{ color: '#c9a96e' }}>最划算</span>
                   </div>
                 )}
-                <div className="text-sm font-bold" style={{ color: '#1a2332' }}>{pkg.label}</div>
-                <div className="text-[11px]" style={{ color: '#907858' }}>{pkg.desc}</div>
-                <div className="text-base font-bold mt-1" style={{ color: '#c4a050' }}>
+                <div className="text-sm font-bold" style={{ color: '#e8e4dc' }}>{pkg.label}</div>
+                <div className="text-[11px]" style={{ color: '#6a7a7e' }}>{pkg.desc}</div>
+                <div className="text-base font-bold mt-1" style={{ color: '#c9a96e' }}>
                   AUD {pkg.price}
                 </div>
                 <button
                   className="mt-1 py-1.5 rounded-lg text-xs font-medium"
-                  style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}
+                  style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e', border: '1px solid #d8c8a8' }}
                 >
                   购买
                 </button>
@@ -225,10 +225,10 @@ export default function ToolsPage() {
         {/* How credits work */}
         <div
           className="mt-3 rounded-xl p-3.5"
-          style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}
+          style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}
         >
-          <div className="text-xs font-semibold mb-2" style={{ color: '#1a2332' }}>积分使用说明</div>
-          <div className="space-y-1.5 text-[11px]" style={{ color: '#584838' }}>
+          <div className="text-xs font-semibold mb-2" style={{ color: '#e8e4dc' }}>积分使用说明</div>
+          <div className="space-y-1.5 text-[11px]" style={{ color: '#a8b8ac' }}>
             <div>• 生成 1 封申请信消耗 1 积分，确认弹窗后扣除</div>
             <div>• 订阅月度额度优先使用，用完后从积分余额扣除</div>
             <div>• 月度额度当月有效，不累积到下月</div>
@@ -240,7 +240,7 @@ export default function ToolsPage() {
 
       {/* Human consultation */}
       <div className="px-4 mt-4">
-        <div className="rounded-2xl p-4" style={{ background: '#7d6340', color: '#fff' }}>
+        <div className="rounded-2xl p-4" style={{ background: '#c9a96e', color: '#080c10' }}>
           <div className="text-sm font-semibold mb-1">📞 预约人工深度咨询</div>
           <div className="text-xs opacity-90 mb-2">AUD 999+ · 人工审核 + 完整申请策略规划</div>
           <div className="text-xs opacity-80">
@@ -252,9 +252,9 @@ export default function ToolsPage() {
 
       {/* Free tools reminder */}
       <div className="px-4 mt-4">
-        <div className="rounded-2xl p-3.5" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-          <div className="text-xs font-semibold mb-2" style={{ color: '#1a2332' }}>免费工具（无需订阅）</div>
-          <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-[11px]" style={{ color: '#584838' }}>
+        <div className="rounded-2xl p-3.5" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+          <div className="text-xs font-semibold mb-2" style={{ color: '#e8e4dc' }}>免费工具（无需订阅）</div>
+          <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-[11px]" style={{ color: '#a8b8ac' }}>
             {['GPA 换算', 'NIV 签证预评', 'ARC 项目浏览', '博客 & 指南', 'PhD 路径自评', '教授 Top 10 匹配'].map(t => (
               <div key={t} className="flex items-center gap-1.5">
                 <Check className="size-3 flex-shrink-0" style={{ color: '#5a8060' }} />
@@ -265,7 +265,7 @@ export default function ToolsPage() {
           <Link
             href="/koala/chat"
             className="inline-block mt-3 text-xs px-3 py-1.5 rounded-full text-white"
-            style={{ background: '#c4a050', textDecoration: 'none' }}
+            style={{ background: '#c9a96e', textDecoration: 'none' }}
           >
             免费开始 →
           </Link>

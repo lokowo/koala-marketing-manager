@@ -86,7 +86,7 @@ function BlogTab() {
     return (
       <div className="px-6 pt-6 space-y-4">
         {[1, 2, 3].map(i => (
-          <div key={i} className="bg-white rounded-2xl p-4 animate-pulse" style={{ boxShadow: '0 2px 8px rgba(196,160,80,0.08)' }}>
+          <div key={i} className="bg-transparent rounded-2xl p-4 animate-pulse" style={{ boxShadow: '0 2px 8px rgba(196,160,80,0.08)' }}>
             <div className="h-5 bg-gray-200 rounded w-3/4 mb-2" />
             <div className="h-3 bg-gray-100 rounded w-1/2" />
           </div>
@@ -106,11 +106,11 @@ function BlogTab() {
   return (
     <div className="pb-4">
       {/* Top CTA banner */}
-      <div className="mx-6 lg:mx-0 mt-4 rounded-2xl px-4 py-3 flex items-center justify-between gap-3" style={{ background: '#1a2332' }}>
-        <span className="text-xs leading-snug" style={{ color: '#e8dcc8' }}>
+      <div className="mx-6 lg:mx-0 mt-4 rounded-2xl px-4 py-3 flex items-center justify-between gap-3" style={{ background: '#e8e4dc' }}>
+        <span className="text-xs leading-snug" style={{ color: 'rgba(201,169,110,0.1)' }}>
           📚 看完攻略，不如直接行动
         </span>
-        <a href="/koala/chat" className="shrink-0 text-[11px] font-semibold px-3 py-1.5 rounded-full no-underline" style={{ background: '#c4a050', color: '#1a2332' }}>
+        <a href="/koala/chat" className="shrink-0 text-[11px] font-semibold px-3 py-1.5 rounded-full no-underline" style={{ background: '#c9a96e', color: '#e8e4dc' }}>
           开始规划 →
         </a>
       </div>
@@ -118,34 +118,34 @@ function BlogTab() {
       {/* Featured card */}
       {featured && (
         <div className="px-6 lg:px-0 pt-4">
-          <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', boxShadow: '0 4px 16px rgba(196,160,80,0.12)' }}>
+          <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 4px 16px rgba(196,160,80,0.12)' }}>
             <div
               className="relative w-full"
               style={{
                 height: 160,
                 background: featured.cover_image_url
                   ? `url(${featured.cover_image_url}) center/cover`
-                  : 'linear-gradient(135deg, #f5d89a 0%, #e8b878 50%, #c4a050 100%)',
+                  : 'linear-gradient(135deg, #f5d89a 0%, #e8b878 50%, #c9a96e 100%)',
               }}
             >
               <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(26,35,50,0) 40%, rgba(26,35,50,0.55) 100%)' }} />
-              <span className="font-semibold rounded-full text-white text-xs leading-4 absolute left-3 top-3 px-2.5 py-1" style={{ background: '#c4a050' }}>
+              <span className="font-semibold rounded-full text-white text-xs leading-4 absolute left-3 top-3 px-2.5 py-1" style={{ background: '#c9a96e' }}>
                 {CATEGORY_LABELS[featured.category] || featured.category}
               </span>
-              <span className="font-medium rounded-full text-xs leading-4 flex absolute right-3 top-3 px-2 py-1 items-center gap-1" style={{ background: 'rgba(255,255,255,0.85)', color: '#1a2332' }}>
+              <span className="font-medium rounded-full text-xs leading-4 flex absolute right-3 top-3 px-2 py-1 items-center gap-1" style={{ background: 'rgba(255,255,255,0.85)', color: '#e8e4dc' }}>
                 <Clock className="size-3" />
                 {featured.reading_time} min
               </span>
             </div>
             <div className="flex p-4 flex-col gap-2">
-              <h2 className="leading-snug font-bold text-base" style={{ color: '#1a2332' }}>
+              <h2 className="leading-snug font-bold text-base" style={{ color: '#e8e4dc' }}>
                 {featured.title_zh || featured.title_en}
               </h2>
               <p className="text-xs leading-relaxed" style={{ color: '#6b7280' }}>
                 {featured.excerpt_zh || featured.excerpt_en}
               </p>
               <div className="flex pt-1 items-center gap-2">
-                <div className="size-6 font-bold rounded-full text-white text-[10px] flex justify-center items-center" style={{ background: '#c4a050' }}>
+                <div className="size-6 font-bold rounded-full text-white text-[10px] flex justify-center items-center" style={{ background: '#c9a96e' }}>
                   {(featured.author || 'K')[0]}
                 </div>
                 <span className="text-xs" style={{ color: '#6b7280' }}>
@@ -155,7 +155,7 @@ function BlogTab() {
               <a
                 href={BLOG_CTAS[featured.category]?.href || '/koala/chat'}
                 className="mt-2 block text-center text-xs font-semibold py-2.5 rounded-xl no-underline"
-                style={{ background: '#1a2332', color: '#c4a050' }}
+                style={{ background: '#e8e4dc', color: '#c9a96e' }}
               >
                 {BLOG_CTAS[featured.category]?.text || '有问题？直接问 Koala →'}
               </a>
@@ -169,18 +169,18 @@ function BlogTab() {
         {listPosts.map(post => {
           const cta = BLOG_CTAS[post.category] || { text: '有问题？直接问 Koala →', href: '/koala/chat' };
           return (
-            <div key={post.id} className="rounded-xl overflow-hidden" style={{ background: '#fff', boxShadow: '0 2px 8px rgba(196,160,80,0.08)' }}>
+            <div key={post.id} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 2px 8px rgba(196,160,80,0.08)' }}>
               <Link href={`/koala/blog/${post.id}`} className="no-underline">
                 <div className="flex items-stretch">
-                  <div style={{ background: '#c4a050', width: 4, flexShrink: 0 }} />
+                  <div style={{ background: '#c9a96e', width: 4, flexShrink: 0 }} />
                   <div className="flex p-3 flex-col flex-1 gap-1">
                     <div className="flex items-start justify-between">
-                      <h3 className="font-bold text-sm leading-5 flex-1" style={{ color: '#1a2332' }}>{post.title_zh || post.title_en}</h3>
+                      <h3 className="font-bold text-sm leading-5 flex-1" style={{ color: '#e8e4dc' }}>{post.title_zh || post.title_en}</h3>
                       <button
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/koala/blog/${post.id}`); }}
-                        className="shrink-0 ml-2 size-6 rounded-full flex items-center justify-center" style={{ background: '#f0e9d6' }}
+                        className="shrink-0 ml-2 size-6 rounded-full flex items-center justify-center" style={{ background: 'rgba(201,169,110,0.06)' }}
                       >
-                        <Share2 className="size-3" style={{ color: '#c4a050' }} />
+                        <Share2 className="size-3" style={{ color: '#c9a96e' }} />
                       </button>
                     </div>
                     <p className="text-xs leading-4" style={{ color: '#6b7280' }}>{post.excerpt_zh || post.excerpt_en}</p>
@@ -193,7 +193,7 @@ function BlogTab() {
               <a
                 href={cta.href}
                 className="block text-center text-[11px] font-medium py-2 no-underline"
-                style={{ background: '#f5edd8', color: '#7d6340', borderTop: '1px solid #f0e8d4' }}
+                style={{ background: '#f5edd8', color: '#c9a96e', borderTop: '1px solid rgba(201,169,110,0.06)' }}
               >
                 {cta.text}
               </a>
@@ -205,8 +205,8 @@ function BlogTab() {
       {/* Tool grid */}
       <div className="px-6 lg:px-0 pt-8">
         <div className="flex mb-4 justify-between items-center">
-          <h2 className="font-bold text-lg leading-7" style={{ color: '#1a2332' }}>工具箱</h2>
-          <Link href="/koala/tools" className="font-medium text-xs leading-4 no-underline" style={{ color: '#c4a050' }}>
+          <h2 className="font-bold text-lg leading-7" style={{ color: '#e8e4dc' }}>工具箱</h2>
+          <Link href="/koala/tools" className="font-medium text-xs leading-4 no-underline" style={{ color: '#c9a96e' }}>
             查看全部
           </Link>
         </div>
@@ -218,12 +218,12 @@ function BlogTab() {
                 key={tool.title}
                 href={tool.href}
                 className="rounded-2xl flex p-4 flex-col gap-2 no-underline"
-                style={{ background: '#fff', boxShadow: '0 2px 10px rgba(196,160,80,0.10)' }}
+                style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 2px 10px rgba(196,160,80,0.10)' }}
               >
                 <div className="size-10 rounded-xl flex justify-center items-center" style={{ background: 'rgba(196,160,80,0.12)' }}>
-                  <Icon className="size-5" style={{ color: '#c4a050' }} />
+                  <Icon className="size-5" style={{ color: '#c9a96e' }} />
                 </div>
-                <span className="font-bold text-sm leading-5" style={{ color: '#1a2332' }}>{tool.title}</span>
+                <span className="font-bold text-sm leading-5" style={{ color: '#e8e4dc' }}>{tool.title}</span>
                 <span className="text-[11px]" style={{ color: '#6b7280' }}>{tool.desc}</span>
               </Link>
             );
@@ -242,17 +242,17 @@ function ToolsTab() {
           key={tool.title}
           href={tool.href}
           className="flex items-center gap-3 rounded-2xl p-4 no-underline"
-          style={{ background: '#fff', boxShadow: '0 2px 8px rgba(196,160,80,0.08)', border: '1px solid #f0e8d4' }}
+          style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 2px 8px rgba(196,160,80,0.08)', border: '1px solid rgba(201,169,110,0.06)' }}
         >
           <span className="text-2xl flex-shrink-0">{tool.icon}</span>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold" style={{ color: '#1a2332' }}>{tool.title}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#f0e9d6', color: '#7d6340' }}>
+              <span className="text-sm font-semibold" style={{ color: '#e8e4dc' }}>{tool.title}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e' }}>
                 {tool.tag}
               </span>
             </div>
-            <div className="text-xs mt-0.5 truncate" style={{ color: '#907858' }}>{tool.desc}</div>
+            <div className="text-xs mt-0.5 truncate" style={{ color: '#6a7a7e' }}>{tool.desc}</div>
           </div>
           <svg className="size-4 flex-shrink-0" style={{ color: '#c0a878' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
@@ -267,29 +267,29 @@ export default function BlogToolsPage() {
   const [tab, setTab] = useState<'blog' | 'tools'>('blog');
 
   return (
-    <div style={{ background: '#faf6ec', minHeight: '100vh', paddingBottom: 100 }}>
+    <div style={{ background: '#080c10', minHeight: '100vh', paddingBottom: 100 }}>
       {/* Header */}
       <div className="flex px-6 lg:px-0 pt-4 pb-2 justify-between items-center">
-        <h1 className="font-bold text-xl leading-7" style={{ color: '#1a2332' }}>博客 &amp; 工具</h1>
+        <h1 className="font-bold text-xl leading-7" style={{ color: '#e8e4dc' }}>博客 &amp; 工具</h1>
         <button className="size-8 rounded-full flex justify-center items-center" style={{ background: 'rgba(196,160,80,0.12)' }}>
-          <Search className="size-4" style={{ color: '#c4a050' }} />
+          <Search className="size-4" style={{ color: '#c9a96e' }} />
         </button>
       </div>
 
       {/* Tab switcher */}
       <div className="px-6 lg:px-0 pt-4">
-        <div className="rounded-full flex p-1 items-center lg:inline-flex lg:rounded-full" style={{ background: '#f0e8d4' }}>
+        <div className="rounded-full flex p-1 items-center lg:inline-flex lg:rounded-full" style={{ background: 'rgba(201,169,110,0.06)' }}>
           <button
             onClick={() => setTab('blog')}
             className="rounded-full text-sm leading-5 py-2 flex-1 transition-colors"
-            style={tab === 'blog' ? { background: '#c4a050', color: '#fff', fontWeight: 600 } : { color: '#1a2332', fontWeight: 500 }}
+            style={tab === 'blog' ? { background: '#c9a96e', color: '#080c10', fontWeight: 600 } : { color: '#e8e4dc', fontWeight: 500 }}
           >
             博客
           </button>
           <button
             onClick={() => setTab('tools')}
             className="rounded-full text-sm leading-5 py-2 flex-1 transition-colors"
-            style={tab === 'tools' ? { background: '#c4a050', color: '#fff', fontWeight: 600 } : { color: '#1a2332', fontWeight: 500 }}
+            style={tab === 'tools' ? { background: '#c9a96e', color: '#080c10', fontWeight: 600 } : { color: '#e8e4dc', fontWeight: 500 }}
           >
             工具
           </button>

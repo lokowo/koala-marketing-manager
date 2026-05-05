@@ -22,18 +22,18 @@ export function ProfessorLink({
   opportunityLabel,
   compact = false,
 }: ProfessorLinkProps) {
-  const color = matchScore ? (matchScore >= 75 ? '#5a8060' : matchScore >= 50 ? '#c4a050' : '#b06040') : '#7d6340';
+  const color = matchScore ? (matchScore >= 75 ? '#5a8060' : matchScore >= 50 ? '#c9a96e' : '#b06040') : '#c9a96e';
 
   if (compact) {
     return (
       <Link
         href={`/koala/professors/${professorId}`}
         className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 no-underline"
-        style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}
+        style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}
       >
         <span className="text-sm">🎓</span>
-        <span className="text-xs font-medium" style={{ color: '#1a2332' }}>{name}</span>
-        <span className="text-[11px]" style={{ color: '#907858' }}>{institution}</span>
+        <span className="text-xs font-medium" style={{ color: '#e8e4dc' }}>{name}</span>
+        <span className="text-[11px]" style={{ color: '#6a7a7e' }}>{institution}</span>
         {matchScore && <span className="ml-auto text-xs font-bold" style={{ color }}>{matchScore}%</span>}
       </Link>
     );
@@ -43,19 +43,19 @@ export function ProfessorLink({
     <Link
       href={`/koala/professors/${professorId}`}
       className="block rounded-2xl p-3 no-underline"
-      style={{ background: '#fff', border: '1px solid #e8dcc8' }}
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)' }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-xs font-semibold" style={{ color: '#1a2332' }}>🎓 {name}</div>
-          <div className="text-[11px] mt-0.5" style={{ color: '#907858' }}>{institution}</div>
+          <div className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>🎓 {name}</div>
+          <div className="text-[11px] mt-0.5" style={{ color: '#6a7a7e' }}>{institution}</div>
           {positionTitle && (
             <div className="text-[10px] mt-0.5" style={{ color: '#b09878' }}>{positionTitle}</div>
           )}
           {researchTags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1.5">
               {researchTags.slice(0, 3).map(tag => (
-                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#f2ead6', color: '#7d6340' }}>
+                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e' }}>
                   {tag}
                 </span>
               ))}

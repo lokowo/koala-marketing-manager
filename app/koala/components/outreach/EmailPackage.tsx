@@ -112,9 +112,9 @@ export function EmailPackage({
   }
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1.5px solid #e8dcc8' }}>
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(201,169,110,0.1)' }}>
       {/* Header */}
-      <div className="p-3" style={{ background: '#1a2332' }}>
+      <div className="p-3" style={{ background: '#e8e4dc' }}>
         <div className="flex items-center justify-between">
           <div>
             <div className="text-sm font-bold text-white">✉️ 申请信 · {professorName}</div>
@@ -122,7 +122,7 @@ export function EmailPackage({
           </div>
           {matchScore !== undefined && (
             <div className="text-xs font-bold px-2.5 py-1 rounded-full"
-              style={{ background: matchScore >= 75 ? '#5a8060' : '#c4a050', color: '#fff' }}>
+              style={{ background: matchScore >= 75 ? '#5a8060' : '#c9a96e', color: '#fff' }}>
               匹配 {matchScore}%
             </div>
           )}
@@ -139,23 +139,23 @@ export function EmailPackage({
 
         {/* Subject */}
         <div>
-          <div className="text-[10px] font-semibold mb-1" style={{ color: '#907858' }}>📝 主题行</div>
+          <div className="text-[10px] font-semibold mb-1" style={{ color: '#6a7a7e' }}>📝 主题行</div>
           <div className="flex items-start gap-2 rounded-xl px-3 py-2"
-            style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-            <span className="flex-1 text-xs leading-relaxed" style={{ color: '#1a2332' }}>{subjectLine}</span>
-            <button onClick={() => clipboard.copy(subjectLine)} className="text-[11px] flex-shrink-0 mt-0.5" style={{ color: '#c4a050' }}>📋</button>
+            style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+            <span className="flex-1 text-xs leading-relaxed" style={{ color: '#e8e4dc' }}>{subjectLine}</span>
+            <button onClick={() => clipboard.copy(subjectLine)} className="text-[11px] flex-shrink-0 mt-0.5" style={{ color: '#c9a96e' }}>📋</button>
           </div>
         </div>
 
         {/* Body */}
         <div>
-          <div className="text-[10px] font-semibold mb-1" style={{ color: '#907858' }}>📄 邮件正文（可修改）</div>
+          <div className="text-[10px] font-semibold mb-1" style={{ color: '#6a7a7e' }}>📄 邮件正文（可修改）</div>
           <textarea
             value={body}
             onChange={e => setBody(e.target.value)}
             rows={8}
             className="w-full rounded-xl px-3 py-2 text-xs leading-relaxed outline-none resize-none"
-            style={{ background: '#f2ead6', border: '1px solid #e8dcc8', color: '#1a2332', fontFamily: 'inherit' }}
+            style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc', fontFamily: 'inherit' }}
           />
         </div>
 
@@ -175,18 +175,18 @@ export function EmailPackage({
               value={clipboard.manualText}
               rows={5}
               className="w-full rounded-lg px-2 py-1.5 text-[10px] outline-none cursor-pointer"
-              style={{ background: '#fff', border: '1px solid #f0d0a0', color: '#584838', fontFamily: 'monospace' }}
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid #f0d0a0', color: '#a8b8ac', fontFamily: 'monospace' }}
               onClick={e => (e.target as HTMLTextAreaElement).select()}
             />
-            <button onClick={clipboard.clearManual} className="text-[11px]" style={{ color: '#907858' }}>关闭</button>
+            <button onClick={clipboard.clearManual} className="text-[11px]" style={{ color: '#6a7a7e' }}>关闭</button>
           </div>
         )}
 
         {/* ── Action buttons: different UX based on email availability ── */}
         <div className="flex items-center gap-2">
-          <div className="flex-1 h-px" style={{ background: '#e8dcc8' }} />
+          <div className="flex-1 h-px" style={{ background: 'rgba(201,169,110,0.1)' }} />
           <span className="text-[10px] flex-shrink-0" style={{ color: '#b09878' }}>发送方式</span>
-          <div className="flex-1 h-px" style={{ background: '#e8dcc8' }} />
+          <div className="flex-1 h-px" style={{ background: 'rgba(201,169,110,0.1)' }} />
         </div>
 
         {hasEmail ? (
@@ -196,21 +196,21 @@ export function EmailPackage({
               onClick={handleMailtoOpen}
               disabled={status !== 'pending'}
               className="w-full py-3 rounded-xl text-sm font-semibold"
-              style={{ background: '#c4a050', color: '#fff', opacity: status !== 'pending' ? 0.5 : 1 }}
+              style={{ background: '#c9a96e', color: '#080c10', opacity: status !== 'pending' ? 0.5 : 1 }}
             >
               📤 复制并打开邮箱
             </button>
             <button
               onClick={handleCopyAll}
               className="w-full py-2.5 rounded-xl text-sm font-medium"
-              style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}
+              style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e', border: '1px solid #d8c8a8' }}
             >
               📋 仅复制内容
             </button>
-            <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: '#f2ead6', border: '1px solid #e8dcc8' }}>
-              <span className="text-[10px]" style={{ color: '#907858' }}>收件人：</span>
-              <span className="flex-1 text-xs font-mono" style={{ color: '#1a2332' }}>{professorEmail}</span>
-              <button onClick={() => clipboard.copy(professorEmail!)} className="text-[11px]" style={{ color: '#c4a050' }}>📋</button>
+            <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+              <span className="text-[10px]" style={{ color: '#6a7a7e' }}>收件人：</span>
+              <span className="flex-1 text-xs font-mono" style={{ color: '#e8e4dc' }}>{professorEmail}</span>
+              <button onClick={() => clipboard.copy(professorEmail!)} className="text-[11px]" style={{ color: '#c9a96e' }}>📋</button>
             </div>
             {emailSource && (
               <div className="text-[10px]" style={{ color: '#b09878' }}>
@@ -233,14 +233,14 @@ export function EmailPackage({
                 window.location.href = mailtoUrl;
               }}
               className="w-full py-3 rounded-xl text-sm font-semibold"
-              style={{ background: '#c4a050', color: '#fff' }}
+              style={{ background: '#c9a96e', color: '#080c10' }}
             >
               📤 复制并打开邮箱（需手动填收件人）
             </button>
             <button
               onClick={handleCopyAll}
               className="w-full py-2.5 rounded-xl text-sm font-medium"
-              style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}
+              style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e', border: '1px solid #d8c8a8' }}
             >
               📋 仅复制内容
             </button>
@@ -251,10 +251,10 @@ export function EmailPackage({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 no-underline"
-                style={{ background: '#f2ead6', color: '#1a2332', border: '1px solid #d8c8a8' }}
+                style={{ background: 'rgba(201,169,110,0.06)', color: '#e8e4dc', border: '1px solid #d8c8a8' }}
               >
                 🔍 查找教授邮箱
-                <span className="text-[10px]" style={{ color: '#907858' }}>
+                <span className="text-[10px]" style={{ color: '#6a7a7e' }}>
                   ({professorGoogleScholar ? 'Google Scholar' : '大学主页'})
                 </span>
               </a>
@@ -266,40 +266,40 @@ export function EmailPackage({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 no-underline"
-                style={{ background: '#f2ead6', color: '#1a2332', border: '1px solid #d8c8a8' }}
+                style={{ background: 'rgba(201,169,110,0.06)', color: '#e8e4dc', border: '1px solid #d8c8a8' }}
               >
                 🔍 查找教授邮箱
-                <span className="text-[10px]" style={{ color: '#907858' }}>(Google搜索)</span>
+                <span className="text-[10px]" style={{ color: '#6a7a7e' }}>(Google搜索)</span>
               </a>
             )}
           </div>
         )}
 
         {/* Email tip */}
-        <div className="rounded-xl px-3 py-2.5 text-[11px] leading-relaxed" style={{ background: '#f8f5ef', border: '1px solid #e8dcc8', color: '#907858' }}>
+        <div className="rounded-xl px-3 py-2.5 text-[11px] leading-relaxed" style={{ background: '#f8f5ef', border: '1px solid rgba(201,169,110,0.1)', color: '#6a7a7e' }}>
           💡 澳洲教授邮箱常见格式：首字母.姓氏@university.edu.au（如 j.smith@unsw.edu.au）。你也可以在教授的大学官网主页找到联系方式。
         </div>
 
         {/* Follow-up panel */}
         {followupBody && (
-          <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e8dcc8' }}>
+          <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(201,169,110,0.1)' }}>
             <button
               className="w-full flex items-center justify-between px-3 py-2.5"
-              style={{ background: '#f2ead6' }}
+              style={{ background: 'rgba(201,169,110,0.06)' }}
               onClick={() => toggleSection('followup')}
             >
-              <span className="text-[11px] font-medium" style={{ color: '#7d6340' }}>▶ 查看 14天后的跟进邮件</span>
+              <span className="text-[11px] font-medium" style={{ color: '#c9a96e' }}>▶ 查看 14天后的跟进邮件</span>
               <span className="text-[10px]" style={{ color: '#b09878' }}>{openSection === 'followup' ? '收起' : '展开'}</span>
             </button>
             {openSection === 'followup' && (
               <div className="px-3 pb-3">
-                <pre className="text-[11px] leading-relaxed whitespace-pre-wrap mt-2" style={{ color: '#584838', fontFamily: 'inherit' }}>
+                <pre className="text-[11px] leading-relaxed whitespace-pre-wrap mt-2" style={{ color: '#a8b8ac', fontFamily: 'inherit' }}>
                   {followupBody}
                 </pre>
                 <button
                   onClick={() => clipboard.copy(followupBody)}
                   className="mt-2 text-[11px]"
-                  style={{ color: '#c4a050' }}
+                  style={{ color: '#c9a96e' }}
                 >
                   📋 复制 Follow-up
                 </button>
@@ -321,7 +321,7 @@ export function EmailPackage({
           <button
             onClick={onRegenerate}
             className="w-full py-2 rounded-xl text-xs font-medium"
-            style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}
+            style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e', border: '1px solid #d8c8a8' }}
           >
             🔄 重新生成
           </button>
@@ -330,7 +330,7 @@ export function EmailPackage({
         {/* Status */}
         {status === 'pending' ? (
           <div>
-            <div className="text-[11px] font-semibold mb-2" style={{ color: '#7d6340' }}>发出去了吗？</div>
+            <div className="text-[11px] font-semibold mb-2" style={{ color: '#c9a96e' }}>发出去了吗？</div>
             <div className="flex gap-2">
               <button
                 onClick={() => updateStatus('sent')}
@@ -342,14 +342,14 @@ export function EmailPackage({
               <button
                 onClick={() => updateStatus('later')}
                 className="flex-1 py-2 rounded-xl text-xs font-medium"
-                style={{ background: '#f2ead6', color: '#7d6340', border: '1px solid #d8c8a8' }}
+                style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e', border: '1px solid #d8c8a8' }}
               >
                 ⏳ 稍后再发
               </button>
               <button
                 onClick={() => updateStatus('abandoned')}
                 className="flex-1 py-2 rounded-xl text-xs font-medium"
-                style={{ background: '#f2ead6', color: '#b06040', border: '1px solid #d8c8a8' }}
+                style={{ background: 'rgba(201,169,110,0.06)', color: '#b06040', border: '1px solid #d8c8a8' }}
               >
                 ❌ 放弃
               </button>
@@ -359,7 +359,7 @@ export function EmailPackage({
           <div className="text-center py-2 rounded-xl text-xs font-medium"
             style={{
               background: status === 'sent' ? '#f0f8f2' : status === 'later' ? '#f5e8c4' : '#fff0f0',
-              color: status === 'sent' ? '#5a8060' : status === 'later' ? '#8a6c30' : '#b06040',
+              color: status === 'sent' ? '#5a8060' : status === 'later' ? '#c9a96e' : '#b06040',
               border: `1px solid ${status === 'sent' ? '#c0e0c8' : status === 'later' ? '#e8d098' : '#f0c0c0'}`,
             }}
           >
@@ -370,13 +370,13 @@ export function EmailPackage({
         )}
 
         {/* Tutorial */}
-        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e8dcc8' }}>
+        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(201,169,110,0.1)' }}>
           <button
             className="w-full flex items-center justify-between px-3 py-2.5"
-            style={{ background: '#f2ead6' }}
+            style={{ background: 'rgba(201,169,110,0.06)' }}
             onClick={() => toggleSection('tutorial')}
           >
-            <span className="text-[11px] font-medium" style={{ color: '#7d6340' }}>❓ 不知道怎么发？点这里看教程</span>
+            <span className="text-[11px] font-medium" style={{ color: '#c9a96e' }}>❓ 不知道怎么发？点这里看教程</span>
             <span className="text-[10px]" style={{ color: '#b09878' }}>{openSection === 'tutorial' ? '收起' : '展开'}</span>
           </button>
           {openSection === 'tutorial' && (

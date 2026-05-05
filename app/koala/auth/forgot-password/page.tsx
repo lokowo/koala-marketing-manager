@@ -52,24 +52,24 @@ export default function ForgotPasswordPage() {
 
   if (step === 'done') {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#faf6ec' }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#080c10' }}>
         <div className="text-center">
           <div className="text-4xl mb-3">✅</div>
-          <h1 className="text-lg font-bold mb-2" style={{ color: '#1a2332' }}>密码重置成功</h1>
-          <p className="text-sm" style={{ color: '#907858' }}>正在跳转到登录页…</p>
+          <h1 className="text-lg font-bold mb-2" style={{ color: '#e8e4dc' }}>密码重置成功</h1>
+          <p className="text-sm" style={{ color: '#6a7a7e' }}>正在跳转到登录页…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#faf6ec' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#080c10' }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-xl font-bold" style={{ color: '#1a2332' }}>
+          <h1 className="text-xl font-bold" style={{ color: '#e8e4dc' }}>
             {step === 'email' ? '忘记密码' : '重置密码'}
           </h1>
-          <p className="text-sm mt-1" style={{ color: '#907858' }}>
+          <p className="text-sm mt-1" style={{ color: '#6a7a7e' }}>
             {step === 'email' ? '输入注册邮箱，我们将发送重置验证码' : `验证码已发送到 ${email}`}
           </p>
         </div>
@@ -77,18 +77,18 @@ export default function ForgotPasswordPage() {
         <form
           onSubmit={step === 'email' ? handleSendCode : handleReset}
           className="rounded-2xl p-6"
-          style={{ background: '#fff', border: '1px solid #e8dcc8', boxShadow: '0 4px 24px rgba(125,99,64,0.08)' }}
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)', boxShadow: '0 4px 24px rgba(125,99,64,0.08)' }}
         >
           {step === 'email' && (
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#584838' }}>邮箱</label>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: '#a8b8ac' }}>邮箱</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
                 className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none"
-                style={{ background: '#f2ead6', border: '1px solid #e8dcc8', color: '#1a2332' }}
+                style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
                 placeholder="your@email.com"
               />
             </div>
@@ -97,7 +97,7 @@ export default function ForgotPasswordPage() {
           {step === 'code' && (
             <>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1.5" style={{ color: '#584838' }}>验证码</label>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: '#a8b8ac' }}>验证码</label>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -105,19 +105,19 @@ export default function ForgotPasswordPage() {
                   value={code}
                   onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
                   className="w-full text-center text-xl font-bold tracking-[6px] rounded-xl px-4 py-2.5 focus:outline-none"
-                  style={{ background: '#f2ead6', border: '1px solid #e8dcc8', color: '#1a2332' }}
+                  style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
                   placeholder="000000"
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1.5" style={{ color: '#584838' }}>新密码</label>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: '#a8b8ac' }}>新密码</label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
                   minLength={8}
                   className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none"
-                  style={{ background: '#f2ead6', border: '1px solid #e8dcc8', color: '#1a2332' }}
+                  style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
                   placeholder="至少8位"
                 />
               </div>
@@ -130,14 +130,14 @@ export default function ForgotPasswordPage() {
             type="submit"
             disabled={loading}
             className="w-full py-3 rounded-full font-semibold text-sm disabled:opacity-50 transition"
-            style={{ background: '#c4a050', color: '#1a2332' }}
+            style={{ background: '#c9a96e', color: '#e8e4dc' }}
           >
             {loading ? '处理中…' : step === 'email' ? '发送验证码' : '重置密码'}
           </button>
         </form>
 
         <div className="mt-6 text-center">
-          <Link href="/koala/auth" className="text-xs no-underline" style={{ color: '#907858' }}>
+          <Link href="/koala/auth" className="text-xs no-underline" style={{ color: '#6a7a7e' }}>
             ← 返回登录
           </Link>
         </div>

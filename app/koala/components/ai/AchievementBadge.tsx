@@ -50,7 +50,7 @@ export function AchievementBadge({ achievementKey, unlockedAt, mode = 'toast', o
     return (
       <div
         className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-2xl shadow-lg"
-        style={{ background: '#1a2332', color: '#fff', maxWidth: 300 }}
+        style={{ background: '#e8e4dc', color: '#fff', maxWidth: 300 }}
       >
         <span className="text-xl">{icon}</span>
         <div>
@@ -66,7 +66,7 @@ export function AchievementBadge({ achievementKey, unlockedAt, mode = 'toast', o
     return (
       <div
         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
-        style={{ background: '#f5e8c4', color: '#8a6c30' }}
+        style={{ background: '#f5e8c4', color: '#c9a96e' }}
       >
         {icon} {label}
       </div>
@@ -76,10 +76,10 @@ export function AchievementBadge({ achievementKey, unlockedAt, mode = 'toast', o
   return (
     <div
       className="flex flex-col items-center p-4 rounded-2xl text-center"
-      style={{ background: '#fff', border: '1px solid #e8dcc8' }}
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)' }}
     >
       <div className="text-4xl mb-2">{icon}</div>
-      <div className="text-xs font-bold" style={{ color: '#1a2332' }}>{label}</div>
+      <div className="text-xs font-bold" style={{ color: '#e8e4dc' }}>{label}</div>
       {unlockedAt && (
         <div className="text-[10px] mt-1" style={{ color: '#b09878' }}>
           {new Date(unlockedAt).toLocaleDateString('zh-CN')} 解锁
