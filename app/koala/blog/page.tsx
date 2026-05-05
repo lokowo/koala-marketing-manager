@@ -12,7 +12,7 @@ interface BlogPost {
   excerpt_en: string | null;
   category: string;
   author: string;
-  reading_time: number;
+  reading_time_zh: number;
   published_at: string;
   cover_image_url: string | null;
   tags: string[];
@@ -27,6 +27,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   research: '科研方法',
   student_life: '留学生活',
   news: '行业新闻',
+  professor_spotlight: '教授推荐',
 };
 
 const BLOG_CTAS: Record<string, { text: string; href: string }> = {
@@ -134,7 +135,7 @@ function BlogTab() {
               </span>
               <span className="font-medium rounded-full text-xs leading-4 flex absolute right-3 top-3 px-2 py-1 items-center gap-1" style={{ background: 'rgba(255,255,255,0.85)', color: '#e8e4dc' }}>
                 <Clock className="size-3" />
-                {featured.reading_time} min
+                {featured.reading_time_zh} min
               </span>
             </div>
             <div className="flex p-4 flex-col gap-2">

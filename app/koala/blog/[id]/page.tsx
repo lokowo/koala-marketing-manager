@@ -14,15 +14,21 @@ interface BlogPost {
   content_en: string | null;
   category: string;
   author: string;
-  reading_time: number;
+  reading_time_zh: number;
   published_at: string;
   tags: string[];
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  phd_guide: 'PhD指南', application: '申请攻略', scholarship: '奖学金',
-  visa: '签证攻略', supervisor: '导师关系', research: '科研方法',
-  student_life: '留学生活', news: '行业新闻',
+  phd_guide: 'PhD指南',
+  application: '申请攻略',
+  scholarship: '奖学金',
+  visa: '签证攻略',
+  supervisor: '导师关系',
+  research: '科研方法',
+  student_life: '留学生活',
+  news: '行业新闻',
+  professor_spotlight: '教授推荐',
 };
 
 export default function BlogDetailPage() {
@@ -31,13 +37,13 @@ export default function BlogDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showShare, setShowShare] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [wechatCopied, setWechatCopied] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/blog?public=true&limit=50`)
+    fetch(`/api/blog/${id}`)
       .then(r => r.json())
       .then(data => {
-        const found = data.posts?.find((p: BlogPost) => p.id === id);
-        setPost(found || null);
+        setPost(data.post || null);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -51,6 +57,12 @@ export default function BlogDetailPage() {
     navigator.clipboard.writeText(getShareUrl());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function copyForWechat() {
+    navigator.clipboard.writeText(getShareUrl());
+    setWechatCopied(true);
+    setTimeout(() => setWechatCopied(false), 3000);
   }
 
   function shareTwitter() {
@@ -110,14 +122,11 @@ export default function BlogDetailPage() {
               </div>
               <span className="text-[10px]" style={{ color: '#a8b8ac' }}>{copied ? '已复制' : '复制链接'}</span>
             </button>
-            <button onClick={() => {
-              const url = getShareUrl();
-              window.open(`https://service.weibo.com/share/share.php?url=${encodeURIComponent(url)}&title=${encodeURIComponent(post.title_zh || '')}`, '_blank');
-            }} className="flex flex-col items-center gap-1.5">
-              <div className="size-10 rounded-full flex items-center justify-center" style={{ background: '#e6f7e6' }}>
-                <span className="text-lg">💬</span>
+            <button onClick={copyForWechat} className="flex flex-col items-center gap-1.5">
+              <div className="size-10 rounded-full flex items-center justify-center" style={{ background: wechatCopied ? '#d1fae5' : '#e6f7e6' }}>
+                {wechatCopied ? <Check className="size-4 text-green-600" /> : <span className="text-lg">💬</span>}
               </div>
-              <span className="text-[10px]" style={{ color: '#a8b8ac' }}>微信</span>
+              <span className="text-[10px]" style={{ color: '#a8b8ac' }}>{wechatCopied ? '已复制，请在微信中粘贴分享' : '微信'}</span>
             </button>
             <button onClick={shareTwitter} className="flex flex-col items-center gap-1.5">
               <div className="size-10 rounded-full flex items-center justify-center" style={{ background: '#e8f4fd' }}>
@@ -142,7 +151,7 @@ export default function BlogDetailPage() {
             {CATEGORY_LABELS[post.category] || post.category}
           </span>
           <span className="text-xs" style={{ color: '#6a7a7e' }}>
-            {post.reading_time} min · {new Date(post.published_at).toLocaleDateString('zh-CN')}
+            {post.reading_time_zh} min · {new Date(post.published_at).toLocaleDateString('zh-CN')}
           </span>
         </div>
 
@@ -192,9 +201,9 @@ export default function BlogDetailPage() {
         </div>
 
         {/* CTA */}
-        <div className="mt-6 p-4 rounded-2xl" style={{ background: '#e8e4dc' }}>
-          <p className="text-sm font-medium" style={{ color: 'rgba(201,169,110,0.1)' }}>想了解更多？让 Koala AI 帮你</p>
-          <Link href="/koala/chat" className="mt-2 inline-block text-xs px-4 py-2 rounded-full no-underline font-medium" style={{ background: '#c9a96e', color: '#e8e4dc' }}>
+        <div className="mt-6 p-4 rounded-2xl" style={{ background: 'rgba(201,169,110,0.1)' }}>
+          <p className="text-sm font-medium" style={{ color: '#e8e4dc' }}>想了解更多？让 Koala AI 帮你</p>
+          <Link href="/koala/chat" className="mt-2 inline-block text-xs px-4 py-2 rounded-full no-underline font-medium" style={{ background: '#c9a96e', color: '#080c10' }}>
             开始对话 →
           </Link>
         </div>
@@ -205,6 +214,10 @@ export default function BlogDetailPage() {
 
 function renderMarkdown(md: string): string {
   return md
+    .replace(/```([\s\S]*?)```/g, '<pre class="bg-black/30 rounded-lg p-3 overflow-x-auto my-3"><code class="text-sm" style="color:#a8b8ac">$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code class="text-sm px-1.5 py-0.5 rounded" style="background:rgba(201,169,110,0.1);color:#c9a96e">$1</code>')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="rounded-xl my-4 w-full" />')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="underline" style="color:#c9a96e">$1</a>')
     .replace(/^### (.*$)/gm, '<h3 class="text-base font-bold mt-5 mb-2">$1</h3>')
     .replace(/^## (.*$)/gm, '<h2 class="text-lg font-bold mt-6 mb-3">$1</h2>')
     .replace(/^# (.*$)/gm, '<h1 class="text-xl font-bold mt-6 mb-3">$1</h1>')

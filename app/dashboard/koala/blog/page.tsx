@@ -10,7 +10,7 @@ interface BlogPost {
   category: string;
   author: string;
   status: string;
-  views: number;
+  view_count: number;
   created_at: string;
   published_at: string | null;
   tags: string[];
@@ -25,6 +25,7 @@ const CATEGORIES: Record<string, string> = {
   research: '科研方法',
   student_life: '留学生活',
   news: '行业新闻',
+  professor_spotlight: '教授推荐',
 };
 
 const STATUS_LABELS: Record<string, { label: string; class: string }> = {
@@ -207,7 +208,7 @@ export default function BlogPage() {
                     <span className="px-1.5 py-0.5 bg-gray-100 rounded">{CATEGORIES[post.category] || post.category}</span>
                     <span>{post.author}</span>
                     <span>{new Date(post.created_at).toLocaleDateString('zh-CN')}</span>
-                    <span>👁 {post.views}</span>
+                    <span>👁 {post.view_count}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-4">

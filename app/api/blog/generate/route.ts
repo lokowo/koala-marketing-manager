@@ -13,7 +13,8 @@ const CATEGORIES: Record<string, { zh: string; en: string }> = {
   supervisor: { zh: '导师关系', en: 'Supervisor Relations' },
   research: { zh: '科研方法', en: 'Research Methods' },
   student_life: { zh: '留学生活', en: 'Student Life' },
-  news: { zh: '行业新闻', en: 'Education News' },
+  news: { zh: '行业新闻', en: 'Industry News' },
+  professor_spotlight: { zh: '教授推荐', en: 'Professor Spotlight' },
 };
 
 const COVER_IMAGE_PROMPTS: Record<string, string> = {

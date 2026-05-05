@@ -12,6 +12,7 @@ const CATEGORIES: Record<string, string> = {
   research: '科研方法',
   student_life: '留学生活',
   news: '行业新闻',
+  professor_spotlight: '教授推荐',
 };
 
 export default function BlogEditPage() {

@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (sort === 'views') {
-      query = query.order('views', { ascending: false });
+      query = query.order('view_count', { ascending: false });
     } else {
       query = query.order('created_at', { ascending: false });
     }
@@ -59,9 +59,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       title_zh, title_en, excerpt_zh, excerpt_en, content_zh, content_en,
-      category, tags, cover_image_url, author, status, scheduled_at,
+      category, tags, cover_image_url, status, scheduled_at,
       seo_title_zh, seo_title_en, seo_description_zh, seo_description_en,
-      seo_keywords, reading_time,
+      seo_keywords_zh, seo_keywords_en, reading_time_zh, reading_time_en,
     } = body;
 
     if (!title_zh && !title_en) {
@@ -73,12 +73,12 @@ export async function POST(req: NextRequest) {
       category: category || 'phd_guide',
       tags: tags || [],
       cover_image_url,
-      author: author || 'Koala PhD',
       status: status || 'draft',
       scheduled_at: scheduled_at || null,
       seo_title_zh, seo_title_en, seo_description_zh, seo_description_en,
-      seo_keywords,
-      reading_time: reading_time || 5,
+      seo_keywords_zh, seo_keywords_en,
+      reading_time_zh: reading_time_zh || 5,
+      reading_time_en: reading_time_en || null,
     };
 
     if (status === 'published') {
