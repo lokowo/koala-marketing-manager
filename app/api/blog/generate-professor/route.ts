@@ -6,23 +6,34 @@ import { supabaseAdmin } from '../../../lib/supabase/server';
 const db = supabaseAdmin as any;
 
 export async function POST(req: NextRequest) {
+  const { professorId } = await req.json().catch(() => ({ professorId: null }));
+
+  if (!professorId) {
+    return Response.json({ error: 'professorId required' }, { status: 400 });
+  }
+
+  // Step 1: Read professor from DB
+  console.log('[generate-professor] Step 1: Reading professor from DB...');
+  const { data: professor, error: profError } = await db
+    .from('professors')
+    .select('*')
+    .eq('id', professorId)
+    .single();
+
+  if (profError || !professor) {
+    console.error('[generate-professor] Step 1 failed:', profError);
+    return Response.json({ error: 'Professor not found', details: profError?.message }, { status: 404 });
+  }
+
+  const profName = professor.name || professor.name_en || 'Unknown';
+  const university = professor.university || professor.institution || '';
+  const researchAreas = (professor.research_areas || professor.research_tags || []).join(', ');
+  console.log(`[generate-professor] Step 1 done: ${profName} at ${university}`);
+
+  // Step 2: Read papers
+  console.log('[generate-professor] Step 2: Reading papers...');
+  let papersContext = '';
   try {
-    const { professorId } = await req.json();
-
-    if (!professorId) {
-      return Response.json({ error: 'professorId required' }, { status: 400 });
-    }
-
-    const { data: professor, error: profError } = await db
-      .from('professors')
-      .select('*')
-      .eq('id', professorId)
-      .single();
-
-    if (profError || !professor) {
-      return Response.json({ error: 'Professor not found' }, { status: 404 });
-    }
-
     const { data: papers } = await db
       .from('papers')
       .select('title, year, journal, citation_count')
@@ -30,34 +41,58 @@ export async function POST(req: NextRequest) {
       .order('citation_count', { ascending: false })
       .limit(5);
 
-    const papersContext = (papers || [])
+    papersContext = (papers || [])
       .map((p: { title: string; year: number; journal: string; citation_count: number }) =>
         `- ${p.title} (${p.year}, ${p.journal}, ${p.citation_count} citations)`)
       .join('\n');
+    console.log(`[generate-professor] Step 2 done: ${(papers || []).length} papers found`);
+  } catch (e) {
+    console.log('[generate-professor] Step 2: No papers table or error, continuing...', (e as Error).message);
+  }
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-    const profName = professor.name || professor.name_en || 'Unknown';
-    const institution = professor.institution || professor.university || '';
-    const researchAreas = (professor.research_tags || professor.research_areas || []).join(', ');
+  // Step 3: Web search for latest info
+  console.log('[generate-professor] Step 3: Web searching professor...');
+  let webContext = '';
+  try {
+    const searchResponse = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2000,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }] as any[],
+      messages: [{
+        role: 'user',
+        content: `Search for professor ${profName} at ${university}. Find their latest research achievements, awards, grants, projects, and any recent news. Summarize what you find in a concise paragraph.`,
+      }],
+    });
 
+    const textBlocks = searchResponse.content.filter((b: any) => b.type === 'text');
+    webContext = textBlocks.map((b: any) => b.text).join('\n').trim();
+    console.log(`[generate-professor] Step 3 done: ${webContext.length} chars of web context`);
+  } catch (e) {
+    console.log('[generate-professor] Step 3: Web search failed, continuing without:', (e as Error).message);
+  }
+
+  // Step 4: Generate Chinese article
+  console.log('[generate-professor] Step 4: Generating Chinese article...');
+  let zhData: { titleZh: string; excerptZh: string; contentZh: string; tags: string[] };
+  try {
     const zhResponse = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 3000,
-      tools: [{ type: 'web_search_20260209', name: 'web_search' }],
       messages: [{ role: 'user', content: `请为以下教授撰写一篇800-1200字的中文人物介绍文章。
 
 教授信息：
 - 姓名：${profName}
-- 机构：${institution}
+- 机构：${university}
 - 研究方向：${researchAreas}
 - H-index: ${professor.h_index || 'N/A'}
-- 职称：${professor.title || professor.position || 'N/A'}
+- 职称：${professor.position_title || professor.title || 'N/A'}
 
 代表论文：
 ${papersContext || '暂无论文数据'}
 
-请先用 web_search 搜索该教授的最新动态、获奖、项目等信息。
+${webContext ? `最新动态（来自网络搜索）：\n${webContext}` : ''}
 
 文章结构：
 1. 开头亮点（1-2句话总结教授最突出的成就或特点）
@@ -73,90 +108,94 @@ ${papersContext || '暂无论文数据'}
 - Markdown 格式
 
 返回JSON：{"titleZh": "中文标题", "excerptZh": "100字摘要", "contentZh": "正文markdown", "tags": ["标签1","标签2",...]}` }],
-      system: 'You are 考拉学长, content writer for Koala PhD (koalaphd.com). Return valid JSON only after using web_search.',
+      system: 'You are 考拉学长, content writer for Koala PhD (koalaphd.com). Return valid JSON only, no markdown code blocks.',
     });
 
     let zhText = '';
     for (const block of zhResponse.content) {
-      if (block.type === 'text') {
-        zhText = block.text;
-        break;
-      }
+      if (block.type === 'text') { zhText = block.text; break; }
     }
 
-    let zhData: { titleZh: string; excerptZh: string; contentZh: string; tags: string[] };
-    try {
-      const cleaned = zhText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      zhData = JSON.parse(cleaned);
-    } catch {
-      return Response.json({ error: 'AI generation failed - invalid JSON', raw: zhText.slice(0, 200) }, { status: 500 });
-    }
+    const cleaned = zhText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    zhData = JSON.parse(cleaned);
+    console.log(`[generate-professor] Step 4 done: "${zhData.titleZh}"`);
+  } catch (e) {
+    console.error('[generate-professor] Step 4 failed:', e);
+    return Response.json({ error: 'Chinese article generation failed', details: (e as Error).message }, { status: 500 });
+  }
 
-    const [enResponse, seoResponse] = await Promise.all([
-      anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 3000,
-        messages: [{ role: 'user', content: `Translate this Chinese professor profile article to English. Keep markdown format.\n\nTitle: ${zhData.titleZh}\nContent:\n${zhData.contentZh}\n\nReturn JSON: {"titleEn": "...", "excerptEn": "...", "contentEn": "..."}` }],
-        system: 'Professional translator. Return valid JSON only.',
-      }),
-      anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 500,
-        messages: [{ role: 'user', content: `Generate bilingual SEO metadata for a professor profile article.\nProfessor: ${profName} at ${institution}\nResearch: ${researchAreas}\nTitle: ${zhData.titleZh}\n\nReturn JSON: {"seoTitleZh": "max 60 chars", "seoTitleEn": "max 60 chars", "seoDescriptionZh": "max 160 chars", "seoDescriptionEn": "max 160 chars", "seoKeywordsZh": "comma-separated", "seoKeywordsEn": "comma-separated"}` }],
-        system: 'Return valid JSON only.',
-      }),
-    ]);
+  // Step 5: Translate to English
+  console.log('[generate-professor] Step 5: Translating to English...');
+  let enData = { titleEn: '', excerptEn: '', contentEn: '' };
+  try {
+    const enResponse = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 3000,
+      messages: [{ role: 'user', content: `Translate this Chinese professor profile article to English. Keep markdown format.\n\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\nContent:\n${zhData.contentZh}\n\nReturn JSON: {"titleEn": "...", "excerptEn": "...", "contentEn": "..."}` }],
+      system: 'Professional translator. Return valid JSON only, no markdown code blocks.',
+    });
 
     const enText = enResponse.content[0].type === 'text' ? enResponse.content[0].text : '{}';
-    const seoText = seoResponse.content[0].type === 'text' ? seoResponse.content[0].text : '{}';
-
-    function cleanJson(t: string) { return t.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim(); }
-
-    let enData = { titleEn: '', excerptEn: '', contentEn: '' };
-    let seo = { seoTitleZh: '', seoTitleEn: '', seoDescriptionZh: '', seoDescriptionEn: '', seoKeywordsZh: '', seoKeywordsEn: '' };
-    try { enData = JSON.parse(cleanJson(enText)); } catch { /* defaults */ }
-    try { seo = JSON.parse(cleanJson(seoText)); } catch { /* defaults */ }
-
-    const charCount = (zhData.contentZh || '').length;
-    const readingTimeZh = Math.max(3, Math.ceil(charCount / 400));
-    const wordCount = (enData.contentEn || '').split(/\s+/).length;
-    const readingTimeEn = Math.max(2, Math.ceil(wordCount / 200));
-
-    const tags = [...(zhData.tags || [])];
-    if (!tags.includes(profName)) tags.unshift(profName);
-    if (institution && !tags.includes(institution)) tags.push(institution);
-
-    const row = {
-      title_zh: zhData.titleZh,
-      title_en: enData.titleEn,
-      excerpt_zh: zhData.excerptZh,
-      excerpt_en: enData.excerptEn,
-      content_zh: zhData.contentZh,
-      content_en: enData.contentEn,
-      category: 'professor_spotlight',
-      tags,
-      status: 'draft',
-      seo_title_zh: seo.seoTitleZh,
-      seo_title_en: seo.seoTitleEn,
-      seo_description_zh: seo.seoDescriptionZh,
-      seo_description_en: seo.seoDescriptionEn,
-      seo_keywords_zh: seo.seoKeywordsZh,
-      seo_keywords_en: seo.seoKeywordsEn,
-      reading_time_zh: readingTimeZh,
-      reading_time_en: readingTimeEn,
-      cover_image_url: null,
-    };
-
-    const { data: post, error } = await db.from('blog_posts').insert(row).select().single();
-
-    if (error) {
-      console.error('[blog/generate-professor]', error);
-      return Response.json({ error: error.message }, { status: 500 });
-    }
-
-    return Response.json({ success: true, post });
-  } catch (error) {
-    console.error('[blog/generate-professor]', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    const cleaned = enText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    enData = JSON.parse(cleaned);
+    console.log('[generate-professor] Step 5 done');
+  } catch (e) {
+    console.log('[generate-professor] Step 5: Translation failed, continuing:', (e as Error).message);
   }
+
+  // Step 6: Generate SEO metadata
+  console.log('[generate-professor] Step 6: Generating SEO metadata...');
+  let seo = { seoTitleZh: '', seoDescriptionZh: '', seoKeywordsZh: '' };
+  try {
+    const seoResponse = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 500,
+      messages: [{ role: 'user', content: `Generate Chinese SEO metadata for a professor profile article.\nProfessor: ${profName} at ${university}\nResearch: ${researchAreas}\nTitle: ${zhData.titleZh}\n\nReturn JSON: {"seoTitleZh": "max 60 chars Chinese", "seoDescriptionZh": "max 160 chars Chinese", "seoKeywordsZh": "comma-separated Chinese keywords"}` }],
+      system: 'Return valid JSON only, no markdown code blocks.',
+    });
+
+    const seoText = seoResponse.content[0].type === 'text' ? seoResponse.content[0].text : '{}';
+    const cleaned = seoText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    seo = JSON.parse(cleaned);
+    console.log('[generate-professor] Step 6 done');
+  } catch (e) {
+    console.log('[generate-professor] Step 6: SEO generation failed, continuing:', (e as Error).message);
+  }
+
+  // Step 7: Calculate reading time
+  const charCount = (zhData.contentZh || '').length;
+  const readingTimeZh = Math.max(3, Math.ceil(charCount / 400));
+  console.log(`[generate-professor] Step 7: reading_time_zh = ${readingTimeZh} min (${charCount} chars)`);
+
+  // Step 8: Insert to blog_posts
+  console.log('[generate-professor] Step 8: Inserting to blog_posts...');
+  const tags = [...(zhData.tags || [])];
+  if (!tags.includes(profName)) tags.unshift(profName);
+  if (university && !tags.includes(university)) tags.push(university);
+
+  const row = {
+    title_zh: zhData.titleZh,
+    title_en: enData.titleEn || null,
+    excerpt_zh: zhData.excerptZh,
+    excerpt_en: enData.excerptEn || null,
+    content_zh: zhData.contentZh,
+    content_en: enData.contentEn || null,
+    category: 'professor_spotlight',
+    tags,
+    status: 'draft',
+    reading_time_zh: readingTimeZh,
+    seo_title_zh: seo.seoTitleZh || null,
+    seo_description_zh: seo.seoDescriptionZh || null,
+    seo_keywords_zh: seo.seoKeywordsZh || null,
+  };
+
+  const { data: post, error: insertError } = await db.from('blog_posts').insert(row).select().single();
+
+  if (insertError) {
+    console.error('[generate-professor] Step 8 failed:', insertError);
+    return Response.json({ error: 'Failed to save article', details: insertError.message }, { status: 500 });
+  }
+
+  console.log(`[generate-professor] Step 8 done: post id = ${post.id}`);
+  return Response.json({ success: true, title: zhData.titleZh, post });
 }
