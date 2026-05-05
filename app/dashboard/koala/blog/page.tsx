@@ -64,6 +64,22 @@ export default function BlogPage() {
   const [sort, setSort] = useState('date');
   const [counts, setCounts] = useState({ draft: 0, published: 0, scheduled: 0, all: 0 });
   const [showProfModal, setShowProfModal] = useState(false);
+  const [bulkCoverLoading, setBulkCoverLoading] = useState(false);
+
+  async function handleBulkCovers() {
+    setBulkCoverLoading(true);
+    try {
+      const res = await fetch('/api/blog/regenerate-all-covers', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        alert(`已触发 ${data.triggered} 篇文章的封面生成，约15-30秒后刷新查看`);
+        setTimeout(fetchPosts, 20000);
+      } else {
+        alert(data.error || '批量生成失败');
+      }
+    } catch { alert('批量生成失败'); }
+    setBulkCoverLoading(false);
+  }
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -145,6 +161,13 @@ export default function BlogPage() {
           <Link href="/dashboard/koala/ai-content/batch" className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
             ✨ 批量SEO
           </Link>
+          <button
+            onClick={handleBulkCovers}
+            disabled={bulkCoverLoading}
+            className="px-4 py-2 text-sm border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 disabled:opacity-50"
+          >
+            {bulkCoverLoading ? '⏳ 生成中...' : '🎨 补齐所有封面图'}
+          </button>
           <button onClick={() => setShowProfModal(true)} className="px-4 py-2 text-sm border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50">
             🎓 教授推荐
           </button>
@@ -696,19 +719,13 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
 function CoverButton({ post, onDone }: { post: BlogPost; onDone: () => void }) {
   const [generating, setGenerating] = useState(false);
 
-  if (post.cover_image_url) return null;
-
   async function handleGenerate() {
     setGenerating(true);
     try {
       const res = await fetch('/api/blog/generate-cover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          postId: post.id,
-          title: post.title_zh || post.title_en || '',
-          category: post.category,
-        }),
+        body: JSON.stringify({ postId: post.id }),
       });
       const data = await res.json();
       if (data.success) onDone();
@@ -717,14 +734,16 @@ function CoverButton({ post, onDone }: { post: BlogPost; onDone: () => void }) {
     setGenerating(false);
   }
 
+  const hasImage = !!post.cover_image_url;
+
   return (
     <button
       onClick={handleGenerate}
       disabled={generating}
-      title="生成封面"
-      className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 text-purple-500 disabled:opacity-50"
+      title={hasImage ? '重新生成封面' : '生成封面'}
+      className={`text-sm px-1.5 py-1 rounded hover:bg-gray-100 disabled:opacity-50 ${hasImage ? 'text-gray-400' : 'text-purple-500'}`}
     >
-      {generating ? '⏳' : '🎨'}
+      {generating ? '⏳' : hasImage ? '🔄' : '🎨'}
     </button>
   );
 }
