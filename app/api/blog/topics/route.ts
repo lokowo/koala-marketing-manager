@@ -52,16 +52,11 @@ export async function GET(req: NextRequest) {
     try {
       const searchResponse = await anthropic.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
-        tools: [{ type: 'web_search_20250305' as any, name: 'web_search' }] as any,
+        max_tokens: 4096,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }] as any[],
         messages: [{
           role: 'user',
-          content: `Search for recent news about these topics: ${selectedQueries.join(', ')}.
-Return a numbered list of 8-10 recent news items. For each item include:
-- Title
-- Source name and date
-- One sentence summary
-Only return the list, no other text.`,
+          content: `Search for 8 recent news articles about: Australia PhD, Australian university policy, AI technology research, international students Australia. For each article return: title, source, date, one-sentence summary. Return as a numbered list.`,
         }],
       });
 

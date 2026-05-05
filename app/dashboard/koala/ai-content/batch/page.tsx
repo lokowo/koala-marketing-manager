@@ -88,7 +88,7 @@ export default function BatchGeneratePage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">⚡ 批量生成（推荐主题）</h2>
-          <p className="text-sm text-gray-500 mt-1">基于 Google News 实时新闻推荐主题，一键生成中英双语文章</p>
+          <p className="text-sm text-gray-500 mt-1">基于 AI 实时搜索推荐主题，一键生成中英双语文章</p>
         </div>
         <Link href="/dashboard/koala/ai-content" className="text-sm text-gray-500 hover:text-gray-700">← 单篇生成</Link>
       </div>
@@ -116,7 +116,7 @@ export default function BatchGeneratePage() {
       {/* News Source Header */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600">
-          基于 Google + Bing 双源实时新闻推荐主题（<span className="font-medium text-amber-700">{newsCount} 条新闻源</span>）
+          基于 AI 实时搜索推荐主题（<span className="font-medium text-amber-700">{newsCount} 条新闻源</span>）
         </p>
         <button
           onClick={fetchTopics}

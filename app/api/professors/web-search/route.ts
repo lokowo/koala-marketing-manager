@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 2000,
-      tools: [{ type: 'web_search' as any, name: 'web_search' }] as any,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }] as any[],
       messages: [{
         role: 'user',
         content: `Search for ${searchTarget}. Find their: full name, current university, faculty/department, position title, email address, research areas (as an array of keywords), H-index, number of papers, citation count, university profile URL, and Google Scholar URL.
