@@ -40,6 +40,7 @@ export default function BlogEditPage() {
   const [saving, setSaving] = useState(false);
   const [aiWorking, setAiWorking] = useState<string | null>(null);
   const [contentTab, setContentTab] = useState<'zh' | 'en'>('zh');
+  const [imageCount, setImageCount] = useState(1);
   const [form, setForm] = useState({
     category: 'phd_guide',
     tags: '',
@@ -51,6 +52,7 @@ export default function BlogEditPage() {
     content_zh: '',
     content_en: '',
     status: 'draft' as string,
+    scheduled_at: '',
   });
 
   useEffect(() => {
@@ -71,6 +73,7 @@ export default function BlogEditPage() {
               content_zh: post.content_zh || '',
               content_en: post.content_en || '',
               status: post.status || 'draft',
+              scheduled_at: post.scheduled_at ? new Date(post.scheduled_at).toISOString().slice(0, 16) : '',
             });
           }
           setLoading(false);
@@ -126,8 +129,9 @@ export default function BlogEditPage() {
         body: JSON.stringify({ postId: editId }),
       });
       const data = await res.json();
-      if (data.imageUrl) {
-        setForm(prev => ({ ...prev, cover_image_url: data.imageUrl }));
+      const url = data.imageUrl || data.coverUrl;
+      if (url) {
+        setForm(prev => ({ ...prev, cover_image_url: url }));
       } else {
         alert(data.error || 'AI封面生成失败');
       }
@@ -142,14 +146,14 @@ export default function BlogEditPage() {
     }));
   }
 
-  async function addInlineImage() {
-    if (!editId || aiWorking === 'add_inline') return;
+  async function generateInlineImages() {
+    if (!editId || aiWorking === 'add_inline' || imageCount < 1) return;
     setAiWorking('add_inline');
     try {
       const res = await fetch('/api/blog/generate-images', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId: editId, imageCount: 1 }),
+        body: JSON.stringify({ postId: editId, imageCount }),
       });
       const data = await res.json();
       if (data.success && data.imagesInserted > 0) {
@@ -180,6 +184,8 @@ export default function BlogEditPage() {
       tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
       cover_image_url: form.cover_image_url?.startsWith('[AI Prompt]') ? null : (form.cover_image_url || null),
       status: form.status,
+      scheduled_at: form.status === 'scheduled' && form.scheduled_at ? new Date(form.scheduled_at).toISOString() : null,
+      published_at: form.status === 'published' ? new Date().toISOString() : undefined,
     };
 
     const res = await fetch('/api/blog', {
@@ -252,22 +258,26 @@ export default function BlogEditPage() {
         </div>
 
         {/* Cover Image */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            封面图 Cover Image
-          </label>
+        <div className="border border-gray-200 rounded-xl p-4">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">封面图 Cover Image</h3>
           {hasCover ? (
-            <div className="relative">
-              <img src={form.cover_image_url} alt="cover preview" className="rounded-lg w-full max-h-40 object-cover" />
-              {editId && (
+            <div>
+              <img src={form.cover_image_url} alt="cover preview" className="rounded-lg w-full max-h-48 object-cover" />
+              <div className="flex gap-2 mt-3">
                 <button
                   onClick={generateCover}
-                  disabled={aiWorking === 'cover_image'}
-                  className="absolute top-2 right-2 px-2.5 py-1 text-xs bg-white/90 text-amber-700 rounded-lg hover:bg-white disabled:opacity-50 font-medium shadow"
+                  disabled={!editId || aiWorking === 'cover_image'}
+                  className="px-3 py-1.5 text-xs border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 disabled:opacity-50"
                 >
                   {aiWorking === 'cover_image' ? '⏳ 生成中(~15s)...' : '🔄 重新生成'}
                 </button>
-              )}
+                <button
+                  onClick={() => setForm(prev => ({ ...prev, cover_image_url: '' }))}
+                  className="px-3 py-1.5 text-xs border border-red-200 text-red-500 rounded-lg hover:bg-red-50"
+                >
+                  🗑 删除封面
+                </button>
+              </div>
             </div>
           ) : (
             <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
@@ -278,7 +288,7 @@ export default function BlogEditPage() {
                   onClick={generateCover}
                   className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700"
                 >
-                  🎨 生成封面图
+                  🎨 AI 生成封面图
                 </button>
               ) : (
                 <p className="text-sm text-gray-400">保存文章后可生成封面图</p>
@@ -290,7 +300,7 @@ export default function BlogEditPage() {
             value={form.cover_image_url}
             onChange={e => setForm(prev => ({ ...prev, cover_image_url: e.target.value }))}
             placeholder="图片URL（或点击上方按钮AI生成）"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-3"
           />
         </div>
 
@@ -370,11 +380,11 @@ export default function BlogEditPage() {
         </div>
 
         {/* Inline Images Management */}
-        {editId && contentTab === 'zh' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">文内插图 Inline Images ({inlineImages.length})</label>
-            {inlineImages.length > 0 ? (
-              <div className="space-y-2">
+        {editId && (
+          <div className="border border-gray-200 rounded-xl p-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">文内插图 Inline Images ({inlineImages.length})</h3>
+            {inlineImages.length > 0 && (
+              <div className="space-y-2 mb-3">
                 {inlineImages.map((img, i) => (
                   <div key={i} className="flex items-center gap-3 p-2 border border-gray-200 rounded-lg">
                     <img src={img.url} alt={img.alt} className="w-16 h-16 rounded object-cover flex-shrink-0" />
@@ -391,30 +401,50 @@ export default function BlogEditPage() {
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-xs text-gray-400">暂无文内插图</p>
             )}
-            <button
-              onClick={addInlineImage}
-              disabled={aiWorking === 'add_inline'}
-              className="mt-2 px-3 py-1.5 text-xs border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 disabled:opacity-50"
-            >
-              {aiWorking === 'add_inline' ? '⏳ 生成中(~20s)...' : '➕ 追加 1 张插图'}
-            </button>
+            <div className="flex items-center gap-2">
+              <select
+                value={String(imageCount)}
+                onChange={e => setImageCount(Number(e.target.value))}
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              >
+                <option value="1">1 张</option>
+                <option value="2">2 张</option>
+                <option value="3">3 张</option>
+              </select>
+              <button
+                onClick={generateInlineImages}
+                disabled={aiWorking === 'add_inline'}
+                className="px-3 py-1.5 text-xs border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 disabled:opacity-50"
+              >
+                {aiWorking === 'add_inline' ? '⏳ 生成中(~20s)...' : '🎨 生成插图'}
+              </button>
+            </div>
           </div>
         )}
 
         {/* Status + Save */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-          <select
-            value={form.status}
-            onChange={e => setForm(prev => ({ ...prev, status: e.target.value }))}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-          >
-            <option value="draft">草稿 Draft</option>
-            <option value="published">发布 Published</option>
-            <option value="scheduled">定时 Scheduled</option>
-          </select>
+          <div className="flex items-center gap-3">
+            <select
+              value={form.status}
+              onChange={e => setForm(prev => ({ ...prev, status: e.target.value }))}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="draft">草稿 Draft</option>
+              <option value="published">发布 Published</option>
+              <option value="scheduled">定时 Scheduled</option>
+            </select>
+            {form.status === 'scheduled' && (
+              <input
+                type="datetime-local"
+                value={form.scheduled_at}
+                onChange={e => setForm(prev => ({ ...prev, scheduled_at: e.target.value }))}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                min={new Date().toISOString().slice(0, 16)}
+              />
+            )}
+          </div>
           <div className="flex gap-3">
             <button onClick={() => router.back()} className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
               取消
