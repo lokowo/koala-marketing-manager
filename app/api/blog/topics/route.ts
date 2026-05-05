@@ -1,43 +1,33 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 
-const NEWS_SEARCH_QUERIES = [
-  'Australia education policy international students 2026',
-  'Australia university research grant ARC',
-  'geopolitics impact international education Australia China',
-  'OpenAI DeepMind Google AI biotech research breakthrough',
-  'Australia student visa immigration policy changes',
-  'PhD student life cost living mental health Australia',
-  'Australia academic job market career industry',
-  'world university ranking QS THE 2026',
-  'Australia China relations education research',
-  'scholarship RTP CSIRO research fellowship Australia',
-];
+const NEWS_CATEGORIES: Record<string, string[]> = {
+  '澳洲教育政策': ['Australia international student policy 2026', 'Australia university funding cap changes'],
+  '学术圈动态': ['Australia ARC research grant 2026', 'world university ranking QS THE 2026'],
+  '国际时事与留学': ['China Australia education relations 2026', 'geopolitics international students'],
+  '科技公司与AI': ['AI research breakthrough 2026', 'OpenAI DeepMind biotech discovery'],
+  '留学生活': ['Australia student cost of living 2026', 'PhD student mental health support'],
+  '职业与产业': ['Australia PhD career outcomes industry', 'academic job market Australia 2026'],
+};
 
-async function fetchGoogleNewsRSS(query: string): Promise<{ title: string; source: string; date: string; link: string }[]> {
+async function fetchNewsWithWebSearch(anthropic: Anthropic, keywords: string[]): Promise<string> {
   try {
-    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-AU&gl=AU&ceid=AU:en`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeout);
-    if (!res.ok) return [];
-    const xml = await res.text();
+    const searchQuery = keywords.join('; ');
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2000,
+      tools: [{ type: 'web_search' as any, name: 'web_search' }] as any,
+      messages: [{
+        role: 'user',
+        content: `Search for the latest news about each of these topics and return a summary of 8-10 recent news items with title, source, date, and a one-sentence summary:\n\n${searchQuery}\n\nFormat each item as: [Source] Title (Date) - Summary`,
+      }],
+    });
 
-    const items: { title: string; source: string; date: string; link: string }[] = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    let match;
-    while ((match = itemRegex.exec(xml)) !== null && items.length < 3) {
-      const itemXml = match[1];
-      const title = itemXml.match(/<title>(.*?)<\/title>/)?.[1]?.replace(/<!\[CDATA\[(.*?)\]\]>/, '$1') || '';
-      const link = itemXml.match(/<link>(.*?)<\/link>/)?.[1] || '';
-      const pubDate = itemXml.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || '';
-      const source = itemXml.match(/<source.*?>(.*?)<\/source>/)?.[1] || 'Google News';
-      items.push({ title, source, date: pubDate, link });
-    }
-    return items;
-  } catch {
-    return [];
+    const textBlocks = response.content.filter((b: any) => b.type === 'text');
+    return textBlocks.map((b: any) => b.text).join('\n');
+  } catch (error) {
+    console.error('[blog/topics] web_search failed:', error);
+    return '';
   }
 }
 
@@ -73,22 +63,27 @@ export async function GET(req: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-    const shuffled = [...NEWS_SEARCH_QUERIES].sort(() => Math.random() - 0.5).slice(0, 4);
-    const newsResults = await Promise.all(shuffled.map(q => fetchGoogleNewsRSS(q)));
-    const allNews = newsResults.flat();
+    const categoryKeys = Object.keys(NEWS_CATEGORIES);
+    const selectedCategories = categoryKeys.sort(() => Math.random() - 0.5).slice(0, 4);
+    const keywords = selectedCategories.map(cat => {
+      const queries = NEWS_CATEGORIES[cat];
+      return queries[Math.floor(Math.random() * queries.length)];
+    });
+
+    const newsContext = await fetchNewsWithWebSearch(anthropic, keywords);
 
     let prompt: string;
-    let newsCount = allNews.length;
+    let newsCount = 0;
 
-    if (allNews.length > 0) {
-      const newsContext = allNews.map((n, i) => `${i + 1}. [${n.source}] ${n.title} (${n.date})`).join('\n');
-      prompt = `Based on the following real news, suggest ${count} blog article topics for Koala PhD (koalaphd.com), an academic matching platform connecting Chinese students with Australian PhD supervisors.
+    if (newsContext.trim().length > 0) {
+      newsCount = (newsContext.match(/\[.*?\]/g) || []).length;
+      prompt = `Based on the following real-time news gathered via web search, suggest ${count} blog article topics for Koala PhD (koalaphd.com), an academic matching platform connecting Chinese students with Australian PhD supervisors.
 
 NEWS:
 ${newsContext}
 
 Consider these 6 news source categories when selecting angles:
-1. 澳洲教���政策 2. 学术圈动态 3. 国际时事与留学 4. 科技公司与AI 5. 留学生活 6. 职业与产业
+1. 澳洲教育政策 2. 学术圈动态 3. 国际时事与留学 4. 科技公司与AI 5. 留学生活 6. 职业与产业
 
 Return a JSON array of objects: [{"title": "中文标题", "category": "category_key", "style": "professional|casual|news", "source": "news source name", "sourceDate": "date string", "reason": "为什么这个主题好"}].
 
@@ -100,7 +95,6 @@ DIVERSITY RULES:
 - All topics must connect naturally to PhD preparation`;
     } else {
       prompt = FALLBACK_PROMPT.replace('{count}', String(count));
-      newsCount = 0;
     }
 
     const response = await anthropic.messages.create({
