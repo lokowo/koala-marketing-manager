@@ -170,14 +170,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fetch full professor data for write mode outreach
+    // Fetch full professor data when professorId is provided
     let outreachProfessor: Professor | null = null;
-    if (professorId && mode === 'write') {
+    const activeProfId = professorId || professorContext?.professorId;
+
+    if (activeProfId) {
       try {
-        const prof = await getProfessor(professorId);
-        outreachProfessor = prof;
+        const prof = await getProfessor(activeProfId);
         if (prof) {
-          extraContext += `\n\n## 套磁目标教授（完整资料）
+          outreachProfessor = prof;
+
+          if (mode === 'write') {
+            extraContext += `\n\n## 套磁目标教授（完整资料）
 姓名：${prof.name}
 大学：${prof.university}
 院系：${prof.faculty || '未知'}
@@ -196,6 +200,31 @@ Google Scholar：${prof.googleScholarUrl || '无'}
 2. 说明与学生研究兴趣的契合点
 3. 提到该教授所在大学和院系
 4. 语气专业但不过分拘谨`;
+          } else {
+            extraContext += `\n\n## 用户正在了解的教授
+姓名：${prof.name}
+大学：${prof.university}
+研究方向：${prof.researchAreas.join('、')}
+H指数：${prof.hIndex ?? '未知'}`;
+          }
+
+          // Fetch professor spotlight article for richer context
+          try {
+            const { createClient } = await import('@supabase/supabase-js');
+            const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+            const { data: article } = await supabase
+              .from('blog_posts')
+              .select('content_zh')
+              .eq('professor_id', activeProfId)
+              .eq('category', 'professor_spotlight')
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (article?.content_zh) {
+              extraContext += `\n\n## 关于 ${prof.name} 的详细介绍文章（可作为回答参考）\n${article.content_zh}`;
+            }
+          } catch { /* no article available */ }
         }
       } catch (err) {
         console.error('[Prof Fetch]', err);

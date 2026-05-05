@@ -184,6 +184,7 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
     category: 'professor_spotlight',
     tags,
     status: 'draft',
+    professor_id: professorId,
     seo_title_zh: seo.seoTitleZh || null,
     seo_description_zh: seo.seoDescriptionZh || null,
     seo_keywords_zh: seo.seoKeywordsZh || null,
