@@ -416,9 +416,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
   }
 
   async function generateArticle(professorId: string) {
-    setGenStep('搜索教授最新信息...');
-    await new Promise(r => setTimeout(r, 500));
-    setGenStep('生成中文文章...');
+    setGenStep('读取教授数据、论文、经费...');
 
     try {
       const res = await fetch('/api/blog/generate-professor', {
@@ -426,7 +424,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ professorId }),
       });
-      setGenStep('翻译英文 + SEO优化...');
+      setGenStep('撰写文章 + 翻译 + SEO...');
       const data = await res.json();
       if (data.success) {
         setGeneratedTitle(data.title || '文章已生成');
@@ -507,6 +505,10 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">{selectedProf.name || selectedProf.name_en}</p>
                     <p className="text-sm text-gray-600">{selectedProf.university || selectedProf.institution}</p>
+                    <div className="flex gap-3 mt-1.5 text-xs text-gray-600">
+                      {selectedProf.hIndex && <span>H-index: {selectedProf.hIndex}</span>}
+                      {selectedProf.paperCount && <span>论文: {selectedProf.paperCount}</span>}
+                    </div>
                     {(selectedProf.researchAreas || selectedProf.research_tags || selectedProf.research_areas || []).length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {(selectedProf.researchAreas || selectedProf.research_tags || selectedProf.research_areas || []).slice(0, 5).map((tag, i) => (
@@ -582,9 +584,9 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
             <div className="inline-block w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mb-4" />
             <p className="text-sm text-gray-700 font-medium">{genStep}</p>
             <div className="mt-4 space-y-2 text-xs text-gray-500">
-              <p className={genStep.includes('搜索') ? 'text-purple-600 font-medium' : ''}>1. 搜索教授信息</p>
-              <p className={genStep.includes('中文') ? 'text-purple-600 font-medium' : ''}>2. 生成中文文章</p>
-              <p className={genStep.includes('翻译') ? 'text-purple-600 font-medium' : ''}>3. 翻译英文 + SEO优化</p>
+              <p className={genStep.includes('读取') ? 'text-purple-600 font-medium' : ''}>1. 读取教授数据 + 论文 + 经费</p>
+              <p className={genStep.includes('撰写') ? 'text-purple-600 font-medium' : ''}>2. 撰写中文文章 + 翻译 + SEO</p>
+              <p className={genStep.includes('完成') ? 'text-purple-600 font-medium' : ''}>3. 保存到草稿箱</p>
             </div>
           </div>
         )}

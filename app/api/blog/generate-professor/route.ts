@@ -5,6 +5,15 @@ import { supabaseAdmin } from '../../../lib/supabase/server';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
+const TOP_JOURNALS = ['Nature', 'Science', 'Cell', 'Nature Materials', 'Nature Energy',
+  'Nature Chemistry', 'Nature Communications', 'PNAS', 'Advanced Materials',
+  'Chemical Reviews', 'Chemical Society Reviews', 'Energy & Environmental Science',
+  'Joule', 'Angewandte Chemie', 'Advanced Energy Materials', 'ACS Nano',
+  'Journal of the American Chemical Society', 'Nano Letters'];
+
+const isTopJournal = (journal: string) =>
+  TOP_JOURNALS.some(t => journal?.toLowerCase().includes(t.toLowerCase()));
+
 export async function POST(req: NextRequest) {
   const { professorId } = await req.json().catch(() => ({ professorId: null }));
 
@@ -12,8 +21,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'professorId required' }, { status: 400 });
   }
 
-  // Step 1: Read professor from DB
-  console.log('[generate-professor] Step 1: Reading professor from DB...');
+  // Step 1: Read professor
   const { data: professor, error: profError } = await db
     .from('professors')
     .select('*')
@@ -21,91 +29,89 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (profError || !professor) {
-    console.error('[generate-professor] Step 1 failed:', profError);
     return Response.json({ error: 'Professor not found', details: profError?.message }, { status: 404 });
   }
 
   const profName = professor.name || professor.name_en || 'Unknown';
   const university = professor.university || professor.institution || '';
+  const faculty = professor.faculty || '';
+  const positionTitle = professor.position_title || professor.title || 'Researcher';
   const researchAreas = (professor.research_areas || professor.research_tags || []).join(', ');
-  console.log(`[generate-professor] Step 1 done: ${profName} at ${university}`);
 
-  // Step 2: Read papers
-  console.log('[generate-professor] Step 2: Reading papers...');
-  let papersContext = '';
+  // Step 2: Read papers (top 10 by citations)
+  let papers: { title: string; year: number; journal: string; citation_count: number; doi_url?: string }[] = [];
   try {
-    const { data: papers } = await db
+    const { data } = await db
       .from('papers')
-      .select('title, year, journal, citation_count')
+      .select('title, year, journal, citation_count, doi_url')
       .eq('professor_id', professorId)
       .order('citation_count', { ascending: false })
-      .limit(5);
+      .limit(10);
+    papers = data || [];
+  } catch { /* papers table may not exist */ }
 
-    papersContext = (papers || [])
-      .map((p: { title: string; year: number; journal: string; citation_count: number }) =>
-        `- ${p.title} (${p.year}, ${p.journal}, ${p.citation_count} citations)`)
-      .join('\n');
-    console.log(`[generate-professor] Step 2 done: ${(papers || []).length} papers found`);
-  } catch (e) {
-    console.log('[generate-professor] Step 2: No papers table or error, continuing...', (e as Error).message);
-  }
+  // Step 3: Read grants
+  let grants: { grant_name: string; funding_body: string; year: number; amount: number; project_title: string; phd_relevance: string; industry_scholarship_potential: string }[] = [];
+  try {
+    const { data } = await db
+      .from('grants')
+      .select('grant_name, funding_body, year, amount, project_title, phd_relevance, industry_scholarship_potential')
+      .eq('lead_professor_id', professorId)
+      .order('year', { ascending: false });
+    grants = data || [];
+  } catch { /* grants table may not exist */ }
+
+  // Build context for AI
+  const papersContext = papers.length > 0
+    ? papers.map((p, i) =>
+      `${isTopJournal(p.journal) ? '⭐' : '  '} ${i + 1}. "${p.title}" — ${p.journal}, ${p.year}, cited ${p.citation_count} times`
+    ).join('\n')
+    : '暂无论文数据';
+
+  const grantsContext = grants.length > 0
+    ? grants.map(g =>
+      `- ${g.grant_name} (${g.funding_body}, ${g.year}): $${g.amount?.toLocaleString() || 'N/A'}\n  Project: "${g.project_title}"\n  PhD Relevance: ${g.phd_relevance || 'N/A'}`
+    ).join('\n')
+    : '';
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-  // Step 3: Web search for latest info
-  console.log('[generate-professor] Step 3: Web searching professor...');
-  let webContext = '';
-  try {
-    const searchResponse = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }] as any[],
-      messages: [{
-        role: 'user',
-        content: `Search for professor ${profName} at ${university}. Find their latest research achievements, awards, grants, projects, and any recent news. Summarize what you find in a concise paragraph.`,
-      }],
-    });
-
-    const textBlocks = searchResponse.content.filter((b: any) => b.type === 'text');
-    webContext = textBlocks.map((b: any) => b.text).join('\n').trim();
-    console.log(`[generate-professor] Step 3 done: ${webContext.length} chars of web context`);
-  } catch (e) {
-    console.log('[generate-professor] Step 3: Web search failed, continuing without:', (e as Error).message);
-  }
-
-  // Step 4: Generate Chinese article
-  console.log('[generate-professor] Step 4: Generating Chinese article...');
+  // Step 4: Generate Chinese article (Sonnet)
   let zhData: { titleZh: string; excerptZh: string; contentZh: string; tags: string[] };
   try {
     const zhResponse = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 3000,
-      messages: [{ role: 'user', content: `请为以下教授撰写一篇800-1200字的中文人物介绍文章。
+      messages: [{ role: 'user', content: `请为以下教授撰写一篇800-1200字的中文教授推荐文章。
 
-教授信息：
-- 姓名：${profName}
-- 机构：${university}
-- 研究方向：${researchAreas}
-- H-index: ${professor.h_index || 'N/A'}
-- 职称：${professor.position_title || professor.title || 'N/A'}
+PROFESSOR PROFILE:
+Name: ${profName}
+University: ${university}${faculty ? ` · ${faculty}` : ''}
+Position: ${positionTitle}
+Research Areas: ${researchAreas}
+H-Index: ${professor.h_index || 'N/A'} | Papers: ${professor.paper_count || papers.length} | Citations: ${professor.citation_count || 'N/A'}
+Accepting Students: ${professor.accepting_students ? '是' : '未知'}
+Suitable Backgrounds: ${(professor.suitable_student_backgrounds || []).join(', ') || 'N/A'}
+Potential RP Topics: ${(professor.potential_rp_topics || []).join(', ') || 'N/A'}
 
-代表论文：
-${papersContext || '暂无论文数据'}
+TOP PUBLICATIONS (⭐ = top-tier journal):
+${papersContext}
 
-${webContext ? `最新动态（来自网络搜索）：\n${webContext}` : ''}
+${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}` : '(无经费数据)'}
 
 文章结构：
-1. 开头亮点（1-2句话总结教授最突出的成就或特点）
-2. 研究方向解读（用通俗语言解释研究领域的意义和前沿）
-3. 代表成果（突出高引论文或重要项目）
-4. 对PhD学生的价值（为什么跟这位教授读博有优势）
-5. 申请建议（如何准备、注意事项）
+1. 开头亮点 — 如果有 Nature/Science 等顶刊论文，开头就提；如果有大额 grant，也值得强调
+2. 研究方向解读 — 用通俗语言，让本科生也能理解这个领域在做什么、为什么重要
+3. 代表性论文 — 顶刊论文重点用2-3句解释为什么这篇论文重要
+4. 在研经费与项目 — 有 grant 说明有钱，有钱意味着有奖学��名额（如果没有 grant 数据跳过这段）
+5. 对PhD学生的价值 — 跟这位教授读博能获得什么
+6. 申请建议 — 什么背景适合，如何准备申请信
 
 要求：
-- 语气：考拉学长风格，温暖专业
-- 不要编造数据，如果信息不确定就用模糊表达
-- Koala PhD 提及最多1句放文末
+- 语气：考拉学长风格，温暖专业，第一人称偶尔出现
+- 不要编造任何数据，所有数字来自上面提供的数据
 - Markdown 格式
+- 文末加一句引导：想了解更多？在 Koala PhD 查看 ${profName} 教授的完整档案
 
 返回JSON：{"titleZh": "中文标题", "excerptZh": "100字摘要", "contentZh": "正文markdown", "tags": ["标签1","标签2",...]}` }],
       system: 'You are 考拉学长, content writer for Koala PhD (koalaphd.com). Return valid JSON only, no markdown code blocks.',
@@ -115,17 +121,13 @@ ${webContext ? `最新动态（来自网络搜索）：\n${webContext}` : ''}
     for (const block of zhResponse.content) {
       if (block.type === 'text') { zhText = block.text; break; }
     }
-
     const cleaned = zhText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     zhData = JSON.parse(cleaned);
-    console.log(`[generate-professor] Step 4 done: "${zhData.titleZh}"`);
   } catch (e) {
-    console.error('[generate-professor] Step 4 failed:', e);
     return Response.json({ error: 'Chinese article generation failed', details: (e as Error).message }, { status: 500 });
   }
 
-  // Step 5 + 6 (parallel): Translate to English + Generate SEO metadata
-  console.log('[generate-professor] Step 5+6: Translating + SEO (parallel, Haiku)...');
+  // Step 5+6 (parallel, Haiku): Translate + SEO
   let enData = { titleEn: '', excerptEn: '', contentEn: '' };
   let seo = { seoTitleZh: '', seoDescriptionZh: '', seoKeywordsZh: '' };
 
@@ -139,7 +141,7 @@ ${webContext ? `最新动态（来自网络搜索）：\n${webContext}` : ''}
     anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 500,
-      messages: [{ role: 'user', content: `Generate Chinese SEO metadata for a professor profile article.\nProfessor: ${profName} at ${university}\nResearch: ${researchAreas}\nTitle: ${zhData.titleZh}\n\nReturn JSON: {"seoTitleZh": "max 60 chars Chinese", "seoDescriptionZh": "max 160 chars Chinese", "seoKeywordsZh": "comma-separated Chinese keywords"}` }],
+      messages: [{ role: 'user', content: `Generate Chinese SEO metadata for a professor profile article.\nProfessor: ${profName} at ${university}\nResearch: ${researchAreas}\nTitle: ${zhData.titleZh}\n\nReturn JSON: {"seoTitleZh": "max 60 chars Chinese", "seoDescriptionZh": "max 160 chars Chinese", "seoKeywordsZh": "comma-separated Chinese keywords, include 澳洲PhD and professor name"}` }],
       system: 'Return valid JSON only, no markdown code blocks.',
     }),
   ]);
@@ -150,33 +152,28 @@ ${webContext ? `最新动态（来自网络搜索）：\n${webContext}` : ''}
     try {
       const enText = enResult.value.content[0].type === 'text' ? enResult.value.content[0].text : '{}';
       enData = JSON.parse(cleanJson(enText));
-      console.log('[generate-professor] Step 5 done');
-    } catch (e) { console.log('[generate-professor] Step 5: parse failed:', (e as Error).message); }
-  } else {
-    console.log('[generate-professor] Step 5: Translation failed:', enResult.reason);
+    } catch { /* defaults */ }
   }
 
   if (seoResult.status === 'fulfilled') {
     try {
       const seoText = seoResult.value.content[0].type === 'text' ? seoResult.value.content[0].text : '{}';
       seo = JSON.parse(cleanJson(seoText));
-      console.log('[generate-professor] Step 6 done');
-    } catch (e) { console.log('[generate-professor] Step 6: parse failed:', (e as Error).message); }
-  } else {
-    console.log('[generate-professor] Step 6: SEO failed:', seoResult.reason);
+    } catch { /* defaults */ }
   }
 
-  // Step 7: Calculate reading time
+  // Step 7: Reading time
   const charCount = (zhData.contentZh || '').length;
   const readingTimeZh = Math.max(3, Math.ceil(charCount / 400));
-  console.log(`[generate-professor] Step 7: reading_time_zh = ${readingTimeZh} min (${charCount} chars)`);
 
-  // Step 8: Insert to blog_posts
-  console.log('[generate-professor] Step 8: Inserting to blog_posts...');
+  // Step 8: Build tags
   const tags = [...(zhData.tags || [])];
   if (!tags.includes(profName)) tags.unshift(profName);
   if (university && !tags.includes(university)) tags.push(university);
+  const topPaperJournals = papers.filter(p => isTopJournal(p.journal)).map(p => p.journal);
+  topPaperJournals.slice(0, 2).forEach(j => { if (!tags.includes(j)) tags.push(j); });
 
+  // Step 9: Insert to blog_posts
   const row = {
     title_zh: zhData.titleZh,
     title_en: enData.titleEn || null,
@@ -187,19 +184,18 @@ ${webContext ? `最新动态（来自网络搜索）：\n${webContext}` : ''}
     category: 'professor_spotlight',
     tags,
     status: 'draft',
-    reading_time_zh: readingTimeZh,
     seo_title_zh: seo.seoTitleZh || null,
     seo_description_zh: seo.seoDescriptionZh || null,
     seo_keywords_zh: seo.seoKeywordsZh || null,
+    reading_time_zh: readingTimeZh,
+    cover_image_url: null,
   };
 
-  const { data: post, error: insertError } = await db.from('blog_posts').insert(row).select().single();
+  const { data: post, error } = await db.from('blog_posts').insert(row).select().single();
 
-  if (insertError) {
-    console.error('[generate-professor] Step 8 failed:', insertError);
-    return Response.json({ error: 'Failed to save article', details: insertError.message }, { status: 500 });
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 });
   }
 
-  console.log(`[generate-professor] Step 8 done: post id = ${post.id}`);
-  return Response.json({ success: true, title: zhData.titleZh, post });
+  return Response.json({ success: true, post, title: zhData.titleZh });
 }
