@@ -69,49 +69,63 @@ export async function POST(req: NextRequest) {
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+    const IMAGE_MODELS = ['gpt-image-2', 'gpt-image-1', 'dall-e-3'];
     let updatedContent = post.content_zh;
     let imagesInserted = 0;
 
     for (let idx = 0; idx < placements.length; idx++) {
       const placement = placements[idx];
       try {
-        // Step 3: Generate image via OpenAI
+        // Step 3: Generate image with model fallback chain
         console.log(`[generate-images] Step 3.${idx + 1}: Generating image for: "${placement.insertAfterHeading}"`);
-        const response = await openai.images.generate({
-          model: 'gpt-image-2',
-          prompt: `Photorealistic editorial photograph: ${placement.promptEn}. Professional DSLR, natural lighting, sharp focus. Absolutely NO text, NO words, NO letters, NO watermarks anywhere in the image.`,
-          n: 1,
-          size: '1024x1024',
-          quality: 'low',
-        });
+        const imgPrompt = `Photorealistic editorial photograph: ${placement.promptEn}. Professional DSLR, natural lighting, sharp focus. Absolutely NO text, NO words, NO letters, NO watermarks anywhere in the image.`;
 
-        const imageData = response.data?.[0];
-        if (!imageData) {
-          console.error(`[generate-images] No image data returned for placement ${idx + 1}`);
-          continue;
-        }
-        console.log(`[generate-images] Image ${idx + 1} format: b64_json=${!!imageData.b64_json}, url=${!!imageData.url}`);
+        let imageB64: string | undefined;
+        let usedModel = '';
 
-        // Step 4: Download image data
-        console.log(`[generate-images] Step 4.${idx + 1}: Preparing image buffer...`);
-        let imgBuffer: Buffer;
+        for (const model of IMAGE_MODELS) {
+          try {
+            console.log(`[generate-images] Trying model: ${model} for placement ${idx + 1}`);
+            if (model === 'dall-e-3') {
+              const response = await openai.images.generate({
+                model: 'dall-e-3',
+                prompt: imgPrompt,
+                n: 1,
+                size: '1024x1024',
+                quality: 'standard',
+                response_format: 'b64_json',
+              });
+              imageB64 = response.data?.[0]?.b64_json ?? undefined;
+            } else {
+              const response = await openai.images.generate({
+                model,
+                prompt: imgPrompt,
+                n: 1,
+                size: '1024x1024',
+                quality: 'low',
+              });
+              imageB64 = response.data?.[0]?.b64_json ?? undefined;
+            }
 
-        if (imageData.b64_json) {
-          imgBuffer = Buffer.from(imageData.b64_json, 'base64');
-          console.log(`[generate-images] Decoded b64_json, buffer size: ${imgBuffer.length}`);
-        } else if (imageData.url) {
-          console.log(`[generate-images] Downloading from temp URL: ${imageData.url.slice(0, 80)}...`);
-          const imgRes = await fetch(imageData.url);
-          if (!imgRes.ok) {
-            console.error(`[generate-images] Download failed: ${imgRes.status} ${imgRes.statusText}`);
-            continue;
+            if (imageB64) {
+              usedModel = model;
+              console.log(`[generate-images] Success with model: ${model} for placement ${idx + 1}`);
+              break;
+            }
+          } catch (err) {
+            console.error(`[generate-images] Model ${model} failed for placement ${idx + 1}:`, (err as Error).message);
           }
-          imgBuffer = Buffer.from(await imgRes.arrayBuffer());
-          console.log(`[generate-images] Downloaded, buffer size: ${imgBuffer.length}`);
-        } else {
-          console.error(`[generate-images] No b64_json or url in response for placement ${idx + 1}`);
+        }
+
+        if (!imageB64) {
+          console.error(`[generate-images] All models failed for placement ${idx + 1}, skipping`);
           continue;
         }
+
+        // Step 4: Prepare image buffer
+        console.log(`[generate-images] Step 4.${idx + 1}: Preparing buffer (model: ${usedModel})...`);
+        const imgBuffer = Buffer.from(imageB64, 'base64');
+        console.log(`[generate-images] Buffer size: ${imgBuffer.length}`);
 
         // Step 5: Upload to Supabase Storage
         const fileName = `inline/${postId}-${idx}-${Date.now()}.png`;

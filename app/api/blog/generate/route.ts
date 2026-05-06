@@ -187,15 +187,14 @@ export async function POST(req: NextRequest) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ postId: post.id }),
-      }).catch(err => console.error('[generate] Cover image trigger failed:', err));
+      }).catch(err => console.error('[generate] Auto cover failed:', err));
 
-      if (imageCount && imageCount > 0) {
-        fetch(`${baseUrl}/api/blog/generate-images`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ postId: post.id, imageCount }),
-        }).catch(err => console.error('[generate] Inline images trigger failed:', err));
-      }
+      const imgCount = imageCount && imageCount > 0 ? imageCount : 2;
+      fetch(`${baseUrl}/api/blog/generate-images`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: post.id, imageCount: imgCount }),
+      }).catch(err => console.error('[generate] Auto images failed:', err));
     }
 
     return Response.json({

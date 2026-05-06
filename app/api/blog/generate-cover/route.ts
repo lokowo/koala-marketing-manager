@@ -64,109 +64,86 @@ export async function POST(req: NextRequest) {
       keywords = ['university', 'research', 'Australia'];
     }
 
-    // Step 2: Generate image via OpenAI gpt-image-2
+    // Step 2: Generate image with model fallback chain
     const categoryContext = CATEGORY_IMAGE_CONTEXT[category] || CATEGORY_IMAGE_CONTEXT.news;
     const coverPrompt = `Background/scene: ${categoryContext}. Subject: ${keywords.join(', ')}. Key details: Professional editorial photography, golden hour natural lighting, shallow depth of field, clean composition, magazine cover quality. Constraints: Absolutely NO text, NO words, NO letters, NO numbers, NO watermarks, NO logos, NO signs anywhere in the image. No clearly visible human faces. Photorealistic style, not illustrated or CGI. IMPORTANT: The image must contain ZERO text of any kind.`;
 
-    console.log('[generate-cover] Step 2: Calling OpenAI gpt-image-2...');
+    console.log('[generate-cover] Step 2: Generating image with fallback chain...');
     console.log('[generate-cover] Prompt length:', coverPrompt.length);
 
-    let response;
-    try {
-      response = await openai.images.generate({
-        model: 'gpt-image-2',
-        prompt: coverPrompt,
-        n: 1,
-        size: '1536x1024',
-        quality: 'high',
-      });
-      console.log('[generate-cover] OpenAI response received, data length:', response.data?.length);
-    } catch (openaiErr: unknown) {
-      const errDetail = openaiErr instanceof Error ? openaiErr.message : String(openaiErr);
-      console.error('[generate-cover] OpenAI API error:', errDetail);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const status = (openaiErr as any)?.status || (openaiErr as any)?.response?.status;
-      console.error('[generate-cover] OpenAI status:', status);
-      return Response.json({ error: `OpenAI error: ${errDetail}` }, { status: 502 });
+    const IMAGE_MODELS = ['gpt-image-2', 'gpt-image-1', 'dall-e-3'];
+    let imageB64: string | undefined;
+    let usedModel = '';
+
+    for (const model of IMAGE_MODELS) {
+      try {
+        console.log(`[generate-cover] Trying model: ${model}`);
+
+        if (model === 'dall-e-3') {
+          const response = await openai.images.generate({
+            model: 'dall-e-3',
+            prompt: coverPrompt,
+            n: 1,
+            size: '1792x1024',
+            quality: 'hd',
+            response_format: 'b64_json',
+          });
+          imageB64 = response.data?.[0]?.b64_json ?? undefined;
+        } else {
+          const response = await openai.images.generate({
+            model,
+            prompt: coverPrompt,
+            n: 1,
+            size: '1536x1024',
+            quality: 'high',
+          });
+          imageB64 = response.data?.[0]?.b64_json ?? undefined;
+        }
+
+        if (imageB64) {
+          usedModel = model;
+          console.log(`[generate-cover] Success with model: ${model}`);
+          break;
+        }
+      } catch (err) {
+        console.error(`[generate-cover] Model ${model} failed:`, (err as Error).message);
+      }
     }
 
-    const imageData = response.data?.[0];
-    if (!imageData) {
-      console.error('[generate-cover] No image data returned');
-      return Response.json({ error: 'No image generated' }, { status: 500 });
+    if (!imageB64) {
+      return Response.json({ error: 'All image models failed' }, { status: 500 });
     }
-    console.log('[generate-cover] Image format: b64_json=', !!imageData.b64_json, 'url=', !!imageData.url);
 
     // Step 3: Upload to Supabase Storage
-    console.log('[generate-cover] Step 3: Uploading to Supabase Storage...');
+    console.log(`[generate-cover] Step 3: Uploading to Supabase Storage (model: ${usedModel})...`);
     let permanentUrl = '';
 
-    // gpt-image-2 returns b64_json by default, but if url is present, download it
-    if (imageData.b64_json) {
-      const buffer = Buffer.from(imageData.b64_json, 'base64');
-      const fileName = `covers/${postId}-${Date.now()}.png`;
+    const buffer = Buffer.from(imageB64, 'base64');
+    const fileName = `covers/${postId}-${Date.now()}.png`;
 
-      const { error: uploadErr } = await db.storage
-        .from('blog-images')
-        .upload(fileName, buffer, {
-          contentType: 'image/png',
-          upsert: true,
-        });
+    const { error: uploadErr } = await db.storage
+      .from('blog-images')
+      .upload(fileName, buffer, {
+        contentType: 'image/png',
+        upsert: true,
+      });
 
-      if (uploadErr) {
-        console.error('[generate-cover] Storage upload failed:', uploadErr);
-        // Fallback: try creating bucket first
-        try {
-          await db.storage.createBucket('blog-images', { public: true });
-          const { error: retryErr } = await db.storage
-            .from('blog-images')
-            .upload(fileName, buffer, { contentType: 'image/png', upsert: true });
-          if (retryErr) throw retryErr;
-        } catch (bucketErr) {
-          console.error('[generate-cover] Bucket creation/retry failed:', bucketErr);
-          return Response.json({ error: 'Storage upload failed' }, { status: 500 });
-        }
+    if (uploadErr) {
+      console.error('[generate-cover] Storage upload failed:', uploadErr);
+      try {
+        await db.storage.createBucket('blog-images', { public: true });
+        const { error: retryErr } = await db.storage
+          .from('blog-images')
+          .upload(fileName, buffer, { contentType: 'image/png', upsert: true });
+        if (retryErr) throw retryErr;
+      } catch (bucketErr) {
+        console.error('[generate-cover] Bucket creation/retry failed:', bucketErr);
+        return Response.json({ error: 'Storage upload failed' }, { status: 500 });
       }
-
-      const { data: urlData } = db.storage.from('blog-images').getPublicUrl(fileName);
-      permanentUrl = urlData.publicUrl;
-    } else if (imageData.url) {
-      // Download from temporary URL and upload to storage
-      const imgRes = await fetch(imageData.url);
-      const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
-      const fileName = `covers/${postId}-${Date.now()}.png`;
-
-      const { error: uploadErr } = await db.storage
-        .from('blog-images')
-        .upload(fileName, imgBuffer, {
-          contentType: 'image/png',
-          upsert: true,
-        });
-
-      if (uploadErr) {
-        console.error('[generate-cover] Storage upload failed:', uploadErr);
-        try {
-          await db.storage.createBucket('blog-images', { public: true });
-          const { error: retryErr } = await db.storage
-            .from('blog-images')
-            .upload(fileName, imgBuffer, { contentType: 'image/png', upsert: true });
-          if (retryErr) throw retryErr;
-        } catch (bucketErr) {
-          console.error('[generate-cover] Bucket creation/retry failed:', bucketErr);
-          // Last resort: store the temp URL (will expire)
-          permanentUrl = imageData.url;
-          console.warn('[generate-cover] Using temporary URL as fallback');
-        }
-      }
-
-      if (!permanentUrl) {
-        const { data: urlData } = db.storage.from('blog-images').getPublicUrl(fileName);
-        permanentUrl = urlData.publicUrl;
-      }
-    } else {
-      console.error('[generate-cover] No b64_json or url in response');
-      return Response.json({ error: 'Unexpected image response format' }, { status: 500 });
     }
+
+    const { data: urlData } = db.storage.from('blog-images').getPublicUrl(fileName);
+    permanentUrl = urlData.publicUrl;
 
     // Step 4: Update blog_posts
     console.log('[generate-cover] Step 4: Updating DB with URL:', permanentUrl.slice(0, 80) + '...');

@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
             category: topic.category || 'phd_guide',
             style: topic.style || 'casual',
             publishMode: publishMode || 'draft',
-            imageCount: imageCount || 0,
+            imageCount: imageCount ?? 2,
           }),
         });
 
