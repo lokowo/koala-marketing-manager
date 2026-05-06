@@ -91,15 +91,20 @@ Return as a numbered list. Reject anything older than ${cutoffStr}.`,
         const numberedLines = lines.filter(l => /^\d+[\.\)]/.test(l.trim()));
         const newsLines = numberedLines.length > 0 ? numberedLines : lines;
 
-        // Filter out news with dates clearly older than cutoff
-        const filteredLines = newsLines.filter(line => {
+        const datedLines: string[] = [];
+        const undatedLines: string[] = [];
+        for (const line of newsLines) {
           const dateMatch = line.match(/(\d{4}-\d{2}-\d{2})/);
           if (dateMatch) {
-            return dateMatch[1] >= cutoffStr;
+            if (dateMatch[1] >= cutoffStr) datedLines.push(line);
+          } else {
+            undatedLines.push(line);
           }
-          // If no parseable date, keep the line (avoid false negatives)
-          return true;
-        });
+        }
+
+        const filteredLines = datedLines.length >= 3
+          ? datedLines
+          : [...datedLines, ...undatedLines.slice(0, 4)];
 
         newsCount = filteredLines.length;
         newsData = filteredLines.join('\n');

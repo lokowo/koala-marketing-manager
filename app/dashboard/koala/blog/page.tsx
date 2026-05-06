@@ -64,22 +64,6 @@ export default function BlogPage() {
   const [sort, setSort] = useState('date');
   const [counts, setCounts] = useState({ draft: 0, published: 0, scheduled: 0, all: 0 });
   const [showProfModal, setShowProfModal] = useState(false);
-  const [bulkCoverLoading, setBulkCoverLoading] = useState(false);
-
-  async function handleBulkCovers() {
-    setBulkCoverLoading(true);
-    try {
-      const res = await fetch('/api/blog/regenerate-all-covers', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        alert(`已触发 ${data.triggered} 篇文章的封面生成，约15-30秒后刷新查看`);
-        setTimeout(fetchPosts, 20000);
-      } else {
-        alert(data.error || '批量生成失败');
-      }
-    } catch { alert('批量生成失败'); }
-    setBulkCoverLoading(false);
-  }
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -155,23 +139,16 @@ export default function BlogPage() {
           <p className="text-sm text-gray-500 mt-1">AI生成文章自动保存到草稿箱，编辑确认后点击发布</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/koala/blog" target="_blank" className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+          <Link href="/koala/blog" target="_blank" className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
             🌐 查看博客
           </Link>
-          <Link href="/dashboard/koala/ai-content/batch" className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
-            ✨ 批量SEO
+          <Link href="/dashboard/koala/ai-content/batch" className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+            ✨ 批量生成
           </Link>
-          <button
-            onClick={handleBulkCovers}
-            disabled={bulkCoverLoading}
-            className="px-4 py-2 text-sm border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 disabled:opacity-50"
-          >
-            {bulkCoverLoading ? '⏳ 生成中...' : '🎨 补齐所有封面图'}
-          </button>
           <button onClick={() => setShowProfModal(true)} className="px-4 py-2 text-sm border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50">
             🎓 教授推荐
           </button>
-          <Link href="/dashboard/koala/ai-content" className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+          <Link href="/dashboard/koala/ai-content" className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
             ✏️ AI生成
           </Link>
           <Link href="/dashboard/koala/blog/edit" className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700">
@@ -542,7 +519,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
         setGeneratedTitle(data.title || '文章已生成');
         setStep('done');
       } else {
-        setError(data.error || '生成失败');
+        setError(data.details || data.error || '生成失败');
         setStep('search');
       }
     } catch {

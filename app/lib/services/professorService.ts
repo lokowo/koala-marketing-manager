@@ -46,17 +46,17 @@ function toInsert(data: Omit<Professor, 'id' | 'createdAt' | 'updatedAt'>) {
     faculty: data.faculty || null,
     title: data.title || null,
     position_title: data.positionTitle || null,
-    research_areas: data.researchAreas,
+    research_areas: data.researchAreas || [],
     email: data.email || null,
     profile_url: data.profileUrl || null,
     google_scholar_url: data.googleScholarUrl || null,
     linkedin_url: data.linkedinUrl || null,
     lab_url: data.labUrl || null,
-    grant_status: data.grantStatus,
-    suitable_student_backgrounds: data.suitableStudentBackgrounds,
-    potential_rp_topics: data.potentialRpTopics,
+    grant_status: data.grantStatus || 'unknown',
+    suitable_student_backgrounds: data.suitableStudentBackgrounds || [],
+    potential_rp_topics: data.potentialRpTopics || [],
     'references': data.references || null,
-    verification_status: data.verificationStatus,
+    verification_status: data.verificationStatus || 'unverified',
     source_candidate_id: data.sourceCandidateId || null,
     arc_project_ids: data.arcProjectIds || null,
     semantic_scholar_id: data.semanticScholarId || null,
@@ -123,20 +123,64 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
   if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
   if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
   if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
+  const UNI_ABBREVIATIONS: Record<string, string> = {
+    uts: 'University of Technology Sydney',
+    unsw: 'UNSW Sydney',
+    anu: 'Australian National University',
+    uq: 'University of Queensland',
+    uwa: 'University of Western Australia',
+    usyd: 'University of Sydney',
+    unimelb: 'University of Melbourne',
+    monash: 'Monash University',
+    rmit: 'RMIT University',
+    qut: 'Queensland University of Technology',
+    deakin: 'Deakin University',
+    macquarie: 'Macquarie University',
+    griffith: 'Griffith University',
+    latrobe: 'La Trobe University',
+    curtin: 'Curtin University',
+    flinders: 'Flinders University',
+    jcu: 'James Cook University',
+    swinburne: 'Swinburne University of Technology',
+    wsu: 'Western Sydney University',
+    adelaide: 'University of Adelaide',
+    wollongong: 'University of Wollongong',
+    newcastle: 'University of Newcastle',
+  };
+
+  const CHINESE_STOP_WORDS = ['的', '中国', '教授', '老师', '博士', '大学', '在', '和', '与', '了', '是'];
+
   const searchTerm = filters?.search?.trim();
   if (searchTerm) {
-    q = q.or(`name.ilike.%${searchTerm}%,university.ilike.%${searchTerm}%,faculty.ilike.%${searchTerm}%`);
+    const parts = searchTerm.split(/[\s,;，；]+/).filter(s => s.length > 0);
+
+    const expandedParts: string[] = [];
+    for (const part of parts) {
+      const lower = part.toLowerCase();
+      if (UNI_ABBREVIATIONS[lower]) {
+        expandedParts.push(UNI_ABBREVIATIONS[lower]);
+      }
+      const chineseChars = part.replace(new RegExp(`[${CHINESE_STOP_WORDS.join('')}]`, 'g'), '');
+      if (chineseChars.length > 0 && chineseChars !== part) {
+        expandedParts.push(chineseChars);
+      }
+    }
+
+    const allTerms = Array.from(new Set([...parts, ...expandedParts]))
+      .filter(t => !CHINESE_STOP_WORDS.includes(t) && t.length > 0);
+
+    const orClauses = allTerms.map(t => `name.ilike.%${t}%,university.ilike.%${t}%,faculty.ilike.%${t}%`).join(',');
+    q = q.or(orClauses);
   }
   const { data, error } = await q;
   if (error) throw new Error(error.message);
 
   let results = (data ?? []).map(fromRow);
 
-  // Also filter by research_areas in JS (PostgREST can't ilike on text[])
   if (searchTerm) {
-    const term = searchTerm.toLowerCase();
+    const parts = searchTerm.split(/[\s,;，；]+/).filter(s => s.length > 0);
+    const searchTerms = parts.map(t => t.toLowerCase());
     const nameUniMatched = new Set(results.map((p: Professor) => p.id));
-    // If we got results from the DB query, also add professors whose research areas match
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let allQ: any = supabaseAdmin.from('professors').select('*').order(sortField, { ascending: false, nullsFirst: false }).limit(500);
     if (filters?.university) allQ = allQ.eq('university', filters.university);
@@ -147,7 +191,7 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
       const areaMatched = allData.map(fromRow).filter((p: Professor) => {
         if (nameUniMatched.has(p.id)) return false;
         const areasText = p.researchAreas.join(' ').toLowerCase();
-        return areasText.includes(term);
+        return searchTerms.some(t => areasText.includes(t));
       });
       results = [...results, ...areaMatched];
     }

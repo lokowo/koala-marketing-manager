@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
         // Step 3: Generate image via OpenAI
         console.log(`[generate-images] Step 3.${idx + 1}: Generating image for: "${placement.insertAfterHeading}"`);
         const response = await openai.images.generate({
-          model: 'gpt-image-1',
+          model: 'gpt-image-2',
           prompt: `Photorealistic editorial photograph: ${placement.promptEn}. Professional DSLR, natural lighting, sharp focus. Absolutely NO text, NO words, NO letters, NO watermarks anywhere in the image.`,
           n: 1,
           size: '1024x1024',

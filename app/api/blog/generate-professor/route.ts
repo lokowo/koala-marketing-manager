@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
   try {
     const zhResponse = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 3000,
+      max_tokens: 4096,
       messages: [{ role: 'user', content: `请为以下教授撰写一篇800-1200字的中文教授推荐文章。
 
 PROFESSOR PROFILE:
@@ -136,10 +136,10 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
     } catch {
       const fixResponse = await anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4000,
+        max_tokens: 6000,
         messages: [{
           role: 'user',
-          content: `The following text is malformed JSON. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), contentZh (string), tags (array of strings). Ensure all string values properly escape quotes and newlines.\n\n${candidate.slice(0, 6000)}`,
+          content: `The following text is malformed JSON. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), contentZh (string), tags (array of strings). Ensure all string values properly escape quotes and newlines.\n\n${candidate.slice(0, 8000)}`,
         }],
         system: 'Return ONLY valid JSON. No markdown, no explanation, no code fences.',
       });
@@ -149,6 +149,7 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
       zhData = JSON.parse(fixMatch ? fixMatch[0] : fixCleaned);
     }
   } catch (e) {
+    console.error('[generate-professor] Chinese article generation failed:', (e as Error).stack || e);
     return Response.json({ error: 'Chinese article generation failed', details: (e as Error).message }, { status: 500 });
   }
 
@@ -237,6 +238,12 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ postId: post.id }),
     }).catch(err => console.error('[generate-professor] Cover image trigger failed:', err));
+
+    fetch(`${baseUrl}/api/blog/generate-images`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postId: post.id, imageCount: 1 }),
+    }).catch(err => console.error('[generate-professor] Inline image trigger failed:', err));
   }
 
   return Response.json({ success: true, post, title: zhData.titleZh });

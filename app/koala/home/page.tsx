@@ -8,6 +8,18 @@ import { ArrowRight, Bell, ChevronRight, X } from 'lucide-react';
 import type { Professor } from '../../lib/types';
 import { useAuth } from '../components/AuthContext';
 
+const CATEGORY_LABELS: Record<string, string> = {
+  phd_guide: 'PhD指南',
+  application: '申请攻略',
+  scholarship: '奖学金',
+  visa: '签证攻略',
+  supervisor: '导师关系',
+  research: '科研方法',
+  student_life: '留学生活',
+  news: '行业新闻',
+  professor_spotlight: '教授推荐',
+};
+
 const UNI_COLORS: Record<string, { bg: string; fg: string; short: string }> = {
   'Australian National University':        { bg: '#c9a96e', fg: '#e8e4dc', short: 'ANU' },
   'University of Melbourne':               { bg: '#003087', fg: '#fff',    short: 'MEL' },
@@ -91,16 +103,17 @@ export default function HomePage() {
       .then(d => setProfessors(d.data ?? []))
       .catch(() => {});
 
-    fetch('/api/blog?limit=2')
+    fetch('/api/blog?limit=2&public=true')
       .then(r => r.json())
       .then(d => {
         const posts = d.posts ?? [];
-        setBlogPosts(posts.map((p: { id: string; tag: string; date: string; title: string; excerpt: string }) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setBlogPosts(posts.map((p: any) => ({
           id: p.id,
-          tag: p.tag,
-          date: new Date(p.date).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' }),
-          title: p.title,
-          excerpt: p.excerpt,
+          tag: CATEGORY_LABELS[p.category] || p.category || '',
+          date: new Date(p.published_at || p.created_at).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' }),
+          title: p.title_zh || p.title_en || '',
+          excerpt: p.excerpt_zh || p.excerpt_en || '',
         })));
       })
       .catch(() => {});

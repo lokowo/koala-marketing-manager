@@ -64,17 +64,17 @@ export async function POST(req: NextRequest) {
       keywords = ['university', 'research', 'Australia'];
     }
 
-    // Step 2: Generate image via OpenAI gpt-image-1
+    // Step 2: Generate image via OpenAI gpt-image-2
     const categoryContext = CATEGORY_IMAGE_CONTEXT[category] || CATEGORY_IMAGE_CONTEXT.news;
     const coverPrompt = `Background/scene: ${categoryContext}. Subject: ${keywords.join(', ')}. Key details: Professional editorial photography, golden hour natural lighting, shallow depth of field, clean composition, magazine cover quality. Constraints: Absolutely NO text, NO words, NO letters, NO numbers, NO watermarks, NO logos, NO signs anywhere in the image. No clearly visible human faces. Photorealistic style, not illustrated or CGI. IMPORTANT: The image must contain ZERO text of any kind.`;
 
-    console.log('[generate-cover] Step 2: Calling OpenAI gpt-image-1...');
+    console.log('[generate-cover] Step 2: Calling OpenAI gpt-image-2...');
     console.log('[generate-cover] Prompt length:', coverPrompt.length);
 
     let response;
     try {
       response = await openai.images.generate({
-        model: 'gpt-image-1',
+        model: 'gpt-image-2',
         prompt: coverPrompt,
         n: 1,
         size: '1536x1024',
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
     console.log('[generate-cover] Step 3: Uploading to Supabase Storage...');
     let permanentUrl = '';
 
-    // gpt-image-1 returns b64_json by default, but if url is present, download it
+    // gpt-image-2 returns b64_json by default, but if url is present, download it
     if (imageData.b64_json) {
       const buffer = Buffer.from(imageData.b64_json, 'base64');
       const fileName = `covers/${postId}-${Date.now()}.png`;
