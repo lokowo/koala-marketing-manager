@@ -1,10 +1,9 @@
 interface KoalaAvatarProps {
   size?: number;
-  bg?: string;
   className?: string;
 }
 
-export function KoalaAvatar({ size = 32, bg = '#e8e4dc', className }: KoalaAvatarProps) {
+export function KoalaAvatar({ size = 32, className }: KoalaAvatarProps) {
   return (
     <svg
       width={size}
@@ -13,29 +12,33 @@ export function KoalaAvatar({ size = 32, bg = '#e8e4dc', className }: KoalaAvata
       fill="none"
       className={className}
     >
+      <defs>
+        <linearGradient id="koalaBg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#1a2a20" />
+          <stop offset="100%" stopColor="#0d1a14" />
+        </linearGradient>
+      </defs>
       {/* Background circle */}
-      <circle cx="20" cy="20" r="20" fill={bg} />
-      {/* Left outer ear */}
-      <circle cx="8" cy="9" r="7" fill={bg} />
-      <circle cx="8" cy="9" r="5" fill="#c9a96e" opacity="0.25" />
-      <circle cx="8" cy="9" r="3" fill="#c9a96e" opacity="0.45" />
-      {/* Right outer ear */}
-      <circle cx="32" cy="9" r="7" fill={bg} />
-      <circle cx="32" cy="9" r="5" fill="#c9a96e" opacity="0.25" />
-      <circle cx="32" cy="9" r="3" fill="#c9a96e" opacity="0.45" />
+      <circle cx="20" cy="20" r="20" fill="url(#koalaBg)" />
+      {/* Left ear */}
+      <circle cx="9" cy="10" r="7.5" fill="#3a4a4e" />
+      <circle cx="9" cy="10" r="4.5" fill="rgba(201,169,110,0.3)" />
+      {/* Right ear */}
+      <circle cx="31" cy="10" r="7.5" fill="#3a4a4e" />
+      <circle cx="31" cy="10" r="4.5" fill="rgba(201,169,110,0.3)" />
       {/* Face */}
-      <circle cx="20" cy="22" r="13" fill="#f5e8c4" />
-      {/* Eyes */}
-      <ellipse cx="15.5" cy="19.5" rx="2" ry="2.2" fill="#e8e4dc" />
-      <ellipse cx="24.5" cy="19.5" rx="2" ry="2.2" fill="#e8e4dc" />
-      {/* Eye shine */}
-      <circle cx="16.3" cy="18.6" r="0.65" fill="white" />
-      <circle cx="25.3" cy="18.6" r="0.65" fill="white" />
+      <circle cx="20" cy="22" r="12" fill="#f0e8d4" />
+      {/* Left eye */}
+      <circle cx="15" cy="20" r="1.8" fill="#2a2a2a" />
+      <circle cx="15.6" cy="19.2" r="0.6" fill="white" />
+      {/* Right eye */}
+      <circle cx="25" cy="20" r="1.8" fill="#2a2a2a" />
+      <circle cx="25.6" cy="19.2" r="0.6" fill="white" />
       {/* Nose */}
-      <ellipse cx="20" cy="24.5" rx="4.5" ry="3.2" fill="#e8e4dc" opacity="0.7" />
-      <ellipse cx="18.5" cy="23.5" rx="1.1" ry="0.8" fill="white" opacity="0.45" />
+      <ellipse cx="20" cy="24.5" rx="3.8" ry="2.8" fill="#5a4a3a" />
+      <ellipse cx="18.8" cy="23.8" rx="0.8" ry="0.5" fill="white" opacity="0.35" />
       {/* Smile */}
-      <path d="M16.5 27.5 Q20 29.5 23.5 27.5" stroke="#e8e4dc" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.5" />
+      <path d="M17 27.5 Q20 29.5 23 27.5" stroke="#5a4a3a" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.6" />
     </svg>
   );
 }
@@ -43,9 +46,26 @@ export function KoalaAvatar({ size = 32, bg = '#e8e4dc', className }: KoalaAvata
 interface UserAvatarProps {
   name?: string | null;
   size?: number;
+  avatarUrl?: string | null;
 }
 
-export function UserAvatar({ name, size = 28 }: UserAvatarProps) {
+export function UserAvatar({ name, size = 28, avatarUrl }: UserAvatarProps) {
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name || 'User'}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          objectFit: 'cover',
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
+
   const initials = name
     ? name.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()
     : 'U';
@@ -56,14 +76,14 @@ export function UserAvatar({ name, size = 28 }: UserAvatarProps) {
         width: size,
         height: size,
         borderRadius: '50%',
-        background: '#e8e4dc',
+        background: '#c9a96e',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
         fontSize,
         fontWeight: 700,
-        color: '#c9a96e',
+        color: '#080c10',
         letterSpacing: '0.02em',
       }}
     >

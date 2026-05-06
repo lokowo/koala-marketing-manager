@@ -991,7 +991,7 @@ function ChatPageInner() {
               </div>
               {msg.role === 'user' && (
                 <div className="mt-1 ml-2 flex-shrink-0">
-                  <UserAvatar size={28} />
+                  <UserAvatar size={28} name={profile?.display_name} avatarUrl={profile?.avatar_url} />
                 </div>
               )}
             </div>

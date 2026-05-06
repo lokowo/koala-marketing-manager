@@ -85,7 +85,7 @@ const STEP_LINKS = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, showLogin, signOut } = useAuth();
+  const { user, profile, showLogin, signOut } = useAuth();
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [showNotif, setShowNotif] = useState(false);
@@ -187,10 +187,14 @@ export default function HomePage() {
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(v => !v)}
-                className="size-9 rounded-full flex items-center justify-center text-xs font-bold"
+                className="size-9 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden"
                 style={{ background: '#c9a96e', color: '#080c10' }}
               >
-                {(user.email || '?')[0].toUpperCase()}
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  (user.email || '?')[0].toUpperCase()
+                )}
               </button>
               {showUserMenu && (
                 <div

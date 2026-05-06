@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth, type UserProfile } from '../components/AuthContext';
+import { supabase } from '../../lib/supabase/client';
 
 // ─── timeAgo helper ────────────────────────
 function timeAgo(dateStr: string): string {
@@ -191,6 +192,8 @@ export default function MyProfilePage() {
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarFileRef = useRef<HTMLInputElement>(null);
 
   const loadRecommended = useCallback(() => {
     setRecLoading(true);
@@ -268,6 +271,48 @@ export default function MyProfilePage() {
     if (Array.isArray(v) && v.length === 0) return true;
     return false;
   });
+
+  // ── Avatar upload ─────────────────────────
+  function resizeImage(file: File, maxSize: number): Promise<Blob> {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = maxSize;
+        canvas.height = maxSize;
+        const ctx = canvas.getContext('2d')!;
+        const min = Math.min(img.width, img.height);
+        const sx = (img.width - min) / 2;
+        const sy = (img.height - min) / 2;
+        ctx.drawImage(img, sx, sy, min, min, 0, 0, maxSize, maxSize);
+        canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.85);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  async function handleAvatarUpload(file: File) {
+    if (!user) return;
+    setAvatarUploading(true);
+    try {
+      const resized = await resizeImage(file, 200);
+      const path = `avatars/${user.id}.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, resized, { upsert: true, contentType: 'image/jpeg' });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+      await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatar_url: publicUrl }),
+      });
+      await refreshProfile();
+    } catch (e) {
+      console.error('Avatar upload failed:', e);
+    }
+    setAvatarUploading(false);
+  }
 
   // ── Save edit ────────────────────────────
   async function saveEdit() {
@@ -361,10 +406,42 @@ export default function MyProfilePage() {
           <div className="flex items-start gap-4">
             {/* Avatar */}
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold flex-shrink-0"
-              style={{ background: '#c9a96e', color: '#080c10' }}
+              className="relative w-16 h-16 rounded-full flex-shrink-0 cursor-pointer group"
+              onClick={() => !avatarUploading && avatarFileRef.current?.click()}
             >
-              {initials}
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={displayName}
+                  className="w-16 h-16 rounded-full object-cover"
+                />
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold"
+                  style={{ background: '#c9a96e', color: '#080c10' }}
+                >
+                  {initials}
+                </div>
+              )}
+              <div className="absolute inset-0 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ background: 'rgba(0,0,0,0.5)' }}
+              >
+                {avatarUploading ? (
+                  <span className="text-[10px] text-white animate-pulse">上传中…</span>
+                ) : (
+                  <>
+                    <span className="text-sm">📷</span>
+                    <span className="text-[9px] text-white mt-0.5">更换头像</span>
+                  </>
+                )}
+              </div>
+              <input
+                ref={avatarFileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleAvatarUpload(f); }}
+              />
             </div>
             {/* Info */}
             <div className="flex-1 min-w-0">
