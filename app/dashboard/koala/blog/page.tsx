@@ -64,6 +64,12 @@ export default function BlogPage() {
   const [sort, setSort] = useState('date');
   const [counts, setCounts] = useState({ draft: 0, published: 0, scheduled: 0, all: 0 });
   const [showProfModal, setShowProfModal] = useState(false);
+  const [toast, setToast] = useState('');
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  }
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -132,6 +138,13 @@ export default function BlogPage() {
 
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-gray-800 text-white text-sm rounded-lg shadow-lg animate-pulse">
+          {toast}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -325,7 +338,7 @@ export default function BlogPage() {
                   <Link href={`/dashboard/koala/blog/edit?id=${post.id}`} title="编辑" className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 text-gray-600">
                     ✏️
                   </Link>
-                  <CoverButton post={post} onDone={fetchPosts} />
+                  <CoverButton post={post} onDone={fetchPosts} showToast={showToast} />
                   <button onClick={() => handleDelete(post.id)} title="删除" className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 text-red-400">
                     🗑️
                   </button>
@@ -693,7 +706,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
   );
 }
 
-function CoverButton({ post, onDone }: { post: BlogPost; onDone: () => void }) {
+function CoverButton({ post, onDone, showToast }: { post: BlogPost; onDone: () => void; showToast: (msg: string) => void }) {
   const [generating, setGenerating] = useState(false);
 
   async function handleGenerate() {
@@ -705,9 +718,9 @@ function CoverButton({ post, onDone }: { post: BlogPost; onDone: () => void }) {
         body: JSON.stringify({ postId: post.id }),
       });
       const data = await res.json();
-      if (data.success) onDone();
-      else alert(data.error || '封面生成失败');
-    } catch { alert('封面生成失败'); }
+      if (data.success) { onDone(); showToast('封面图已生成'); }
+      else showToast('封面图生成中，请稍候刷新查看');
+    } catch { showToast('封面图生成中，请稍候刷新查看'); }
     setGenerating(false);
   }
 

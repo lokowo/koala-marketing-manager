@@ -18,6 +18,20 @@ const CATEGORY_IMAGE_CONTEXT: Record<string, string> = {
   professor_spotlight: 'elegant university corridor with arched windows warm sunlight streaming in academic atmosphere',
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function callWithRetry(fn: () => Promise<any>, maxRetries = 3): Promise<any> {
+  for (let i = 0; i < maxRetries; i++) {
+    try { return await fn(); }
+    catch (e: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((e as any)?.status === 429 && i < maxRetries - 1) {
+        console.log(`[generate-cover] Rate limited, waiting 15s before retry ${i + 1}/${maxRetries}`);
+        await new Promise(r => setTimeout(r, 15000));
+      } else throw e;
+    }
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { postId } = await req.json();
@@ -80,23 +94,23 @@ export async function POST(req: NextRequest) {
         console.log(`[generate-cover] Trying model: ${model}`);
 
         if (model === 'dall-e-3') {
-          const response = await openai.images.generate({
+          const response = await callWithRetry(() => openai.images.generate({
             model: 'dall-e-3',
             prompt: coverPrompt,
             n: 1,
             size: '1792x1024',
             quality: 'hd',
             response_format: 'b64_json',
-          });
+          }));
           imageB64 = response.data?.[0]?.b64_json ?? undefined;
         } else {
-          const response = await openai.images.generate({
+          const response = await callWithRetry(() => openai.images.generate({
             model,
             prompt: coverPrompt,
             n: 1,
             size: '1536x1024',
             quality: 'high',
-          });
+          }));
           imageB64 = response.data?.[0]?.b64_json ?? undefined;
         }
 

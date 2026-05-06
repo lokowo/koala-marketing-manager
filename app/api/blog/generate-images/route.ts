@@ -11,6 +11,20 @@ interface ImagePlacement {
   promptEn: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function callWithRetry(fn: () => Promise<any>, maxRetries = 3): Promise<any> {
+  for (let i = 0; i < maxRetries; i++) {
+    try { return await fn(); }
+    catch (e: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((e as any)?.status === 429 && i < maxRetries - 1) {
+        console.log(`[generate-images] Rate limited, waiting 15s before retry ${i + 1}/${maxRetries}`);
+        await new Promise(r => setTimeout(r, 15000));
+      } else throw e;
+    }
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { postId, imageCount } = await req.json();
@@ -87,23 +101,23 @@ export async function POST(req: NextRequest) {
           try {
             console.log(`[generate-images] Trying model: ${model} for placement ${idx + 1}`);
             if (model === 'dall-e-3') {
-              const response = await openai.images.generate({
+              const response = await callWithRetry(() => openai.images.generate({
                 model: 'dall-e-3',
                 prompt: imgPrompt,
                 n: 1,
                 size: '1024x1024',
                 quality: 'standard',
                 response_format: 'b64_json',
-              });
+              }));
               imageB64 = response.data?.[0]?.b64_json ?? undefined;
             } else {
-              const response = await openai.images.generate({
+              const response = await callWithRetry(() => openai.images.generate({
                 model,
                 prompt: imgPrompt,
                 n: 1,
                 size: '1024x1024',
                 quality: 'low',
-              });
+              }));
               imageB64 = response.data?.[0]?.b64_json ?? undefined;
             }
 
