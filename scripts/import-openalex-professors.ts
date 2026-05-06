@@ -2,9 +2,10 @@
  * OpenAlex Professor Import Script
  *
  * Imports active researchers from Australian universities into the professors table.
- * Filters: works_count > 10, cited_by_count > 50
+ * Filters: works_count > 30, cited_by_count > 300
  *
  * Usage: npm run import:professors
+ *        npm run import:professors -- --clean   (cleanup low-quality openalex data first)
  *
  * Before running, execute these SQL statements in Supabase SQL Editor to merge
  * duplicate university names:
@@ -108,7 +109,7 @@ async function fetchAuthorsForInstitution(institutionId: string, universityName:
   let totalImported = 0;
 
   while (cursor) {
-    const url = `${OPENALEX_BASE}/authors?filter=last_known_institutions.id:${institutionId},works_count:>10,cited_by_count:>50&per_page=200&cursor=${cursor}&mailto=${EMAIL}`;
+    const url = `${OPENALEX_BASE}/authors?filter=last_known_institutions.id:${institutionId},works_count:>30,cited_by_count:>300&per_page=200&cursor=${cursor}&mailto=${EMAIL}`;
     const res = await fetch(url);
 
     if (!res.ok) {
@@ -176,8 +177,27 @@ async function fetchAuthorsForInstitution(institutionId: string, universityName:
   return totalImported;
 }
 
+async function cleanupLowQuality() {
+  console.log('=== Cleanup: removing low-quality OpenAlex imports (h_index < 15) ===\n');
+  const { count, error } = await supabase
+    .from('professors')
+    .delete({ count: 'exact' })
+    .contains('data_sources', ['openalex'])
+    .lt('h_index', 15);
+
+  if (error) {
+    console.error(`Cleanup error: ${error.message}`);
+  } else {
+    console.log(`Deleted ${count} low-quality OpenAlex professors\n`);
+  }
+}
+
 async function main() {
   console.log('=== OpenAlex Professor Import ===\n');
+
+  if (process.argv.includes('--clean')) {
+    await cleanupLowQuality();
+  }
 
   console.log('Step 1: Verifying institution IDs...\n');
   const validUnis: typeof AUSTRALIAN_UNIVERSITIES = [];
