@@ -543,7 +543,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-white rounded-xl p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 min-h-[400px] max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-gray-900">🎓 生成教授推荐文章</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
@@ -580,17 +580,17 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
               </button>
 
               {showDropdown && (
-                <div className="absolute z-10 left-0 right-12 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[50vh] overflow-y-auto">
                   {suggestions.map(prof => (
                     <button
                       key={prof.id}
                       onClick={() => handleSelectProf(prof)}
-                      className="w-full text-left px-3 py-2 hover:bg-purple-50 border-b border-gray-100 last:border-0"
+                      className="w-full text-left px-4 py-4 hover:bg-purple-50 border-b border-gray-100 last:border-0"
                     >
-                      <p className="text-sm font-medium text-gray-900">{prof.name || prof.name_en}</p>
-                      <p className="text-xs text-gray-500">{prof.university || prof.institution}</p>
+                      <p className="text-base font-semibold text-gray-900">{prof.name || prof.name_en}</p>
+                      <p className="text-sm text-gray-500 mt-0.5">{prof.university || prof.institution}</p>
                       {(prof.researchAreas || prof.research_tags || prof.research_areas || []).length > 0 && (
-                        <p className="text-xs text-purple-600">{(prof.researchAreas || prof.research_tags || prof.research_areas || []).slice(0, 3).join(', ')}</p>
+                        <p className="text-sm text-purple-600 mt-0.5">{(prof.researchAreas || prof.research_tags || prof.research_areas || []).slice(0, 3).join(', ')}</p>
                       )}
                     </button>
                   ))}
