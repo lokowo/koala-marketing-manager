@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Compass, Users, BookOpen, Heart } from 'lucide-react';
+import { APP_VERSION } from '../../lib/version';
 const LEFT_TABS = [
   { href: '/koala/discover', icon: Compass, label: '发现' },
   { href: '/koala/professors', icon: Users, label: '教授' },
@@ -26,6 +27,7 @@ export default function BottomTabBar() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50" style={{ backgroundColor: '#0a0e14', borderTop: '1px solid rgba(201,169,110,0.12)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className="text-center" style={{ fontSize: 9, color: 'rgba(201,169,110,0.3)', paddingTop: 2 }}>{APP_VERSION}</div>
       <div className="relative flex justify-around items-end px-4 pb-6 pt-2" style={{ maxWidth: 480, margin: '0 auto' }}>
         {LEFT_TABS.map(tab => {
           const active = isActive(tab.href);
