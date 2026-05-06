@@ -1,9 +1,47 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth, type UserProfile } from '../components/AuthContext';
+
+// ─── timeAgo helper ────────────────────────
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return '刚刚';
+  if (mins < 60) return `${mins}分钟前`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}小时前`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}天前`;
+  return new Date(dateStr).toLocaleDateString('zh-CN');
+}
+
+const MODE_LABELS: Record<string, { emoji: string; label: string }> = {
+  path: { emoji: '🧭', label: '选校规划' },
+  research: { emoji: '🔬', label: '学术研究' },
+  chat: { emoji: '💬', label: '自由聊天' },
+  write: { emoji: '✍️', label: '文书撰写' },
+};
+
+interface ConversationEntry {
+  id: string;
+  mode: string;
+  created_at: string;
+  messageCount: number;
+}
+
+interface RecommendedProf {
+  id: string;
+  name: string;
+  university: string;
+  position_title: string | null;
+  research_areas: string[];
+  h_index: number | null;
+  opportunity_score: number | null;
+  accepting_students: boolean | null;
+}
 
 // ─── Completeness helpers ────────────────────
 const COMPLETENESS_FIELDS: { key: keyof UserProfile; label: string }[] = [
@@ -30,19 +68,19 @@ function calcCompleteness(p: Partial<UserProfile>): number {
 }
 
 // ─── Arc progress SVG ───────────────────────
-function ArcProgress({ pct }: { pct: number }) {
-  const r = 42;
-  const cx = 56;
-  const cy = 56;
+function ArcProgress({ pct, size = 112 }: { pct: number; size?: number }) {
+  const r = (size / 2) - 8;
+  const cx = size / 2;
+  const cy = size / 2;
   const circumference = 2 * Math.PI * r;
   const offset = circumference - (pct / 100) * circumference;
   return (
-    <svg width="112" height="112" className="rotate-[-90deg]">
-      <circle cx={cx} cy={cy} r={r} stroke="rgba(201,169,110,0.1)" strokeWidth="8" fill="none" />
+    <svg width={size} height={size} className="rotate-[-90deg]">
+      <circle cx={cx} cy={cy} r={r} stroke="rgba(201,169,110,0.1)" strokeWidth="6" fill="none" />
       <circle
         cx={cx} cy={cy} r={r}
         stroke={pct >= 80 ? '#5a8060' : pct >= 50 ? '#c9a96e' : '#b06040'}
-        strokeWidth="8" fill="none"
+        strokeWidth="6" fill="none"
         strokeDasharray={circumference}
         strokeDashoffset={offset}
         strokeLinecap="round"
@@ -137,6 +175,11 @@ export default function MyProfilePage() {
   const [emails, setEmails] = useState<OutreachEntry[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
 
+  const [conversations, setConversations] = useState<ConversationEntry[]>([]);
+  const [chatStats, setChatStats] = useState<Record<string, number>>({});
+  const [recommended, setRecommended] = useState<RecommendedProf[]>([]);
+  const [recLoading, setRecLoading] = useState(false);
+
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<EditData | null>(null);
   const [saving, setSaving] = useState(false);
@@ -148,6 +191,15 @@ export default function MyProfilePage() {
   const [showSettings, setShowSettings] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const loadRecommended = useCallback(() => {
+    setRecLoading(true);
+    fetch('/api/user/recommended-professors')
+      .then(r => r.json())
+      .then(d => setRecommended(d.professors ?? []))
+      .catch(() => {})
+      .finally(() => setRecLoading(false));
+  }, []);
+
   useEffect(() => {
     if (!user) return;
     setDataLoading(true);
@@ -158,9 +210,14 @@ export default function MyProfilePage() {
     Promise.all([
       fetch('/api/user/saved-professors').then(r => r.json()),
       fetch('/api/user/outreach-history').then(r => r.json()),
-    ]).then(([s, e]) => {
+      fetch('/api/user/chat-summary').then(r => r.json()),
+      fetch('/api/user/recommended-professors').then(r => r.json()),
+    ]).then(([s, e, cs, rec]) => {
       setSaved(s.saved ?? []);
       setEmails(e.emails ?? []);
+      setConversations(cs.conversations ?? []);
+      setChatStats(cs.stats ?? {});
+      setRecommended(rec.professors ?? []);
     }).catch(() => {}).finally(() => setDataLoading(false));
   }, [user]);
 
@@ -334,11 +391,11 @@ export default function MyProfilePage() {
       {/* ── Profile completeness ──────────── */}
       <div className="mx-4 lg:mx-0 mb-3 rounded-2xl p-4" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
         <div className="flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-            <ArcProgress pct={pct} />
+          <div className="relative flex-shrink-0" style={{ width: 64, height: 64 }}>
+            <ArcProgress pct={pct} size={64} />
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-lg font-bold" style={{ color: '#e8e4dc' }}>{pct}%</span>
-              <span className="text-[9px]" style={{ color: '#6a7a7e' }}>完整度</span>
+              <span className="text-sm font-bold" style={{ color: '#e8e4dc' }}>{pct}%</span>
+              <span className="text-[8px]" style={{ color: '#6a7a7e' }}>完整度</span>
             </div>
           </div>
           <div className="flex-1 min-w-0">
@@ -630,6 +687,117 @@ export default function MyProfilePage() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* ── AI Chat history ──────────────── */}
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(201,169,110,0.1)' }}>
+          <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
+            🤖 AI 对话记录
+          </span>
+          <Link href="/koala/chat" className="text-[11px] no-underline" style={{ color: '#c9a96e' }}>
+            新对话 →
+          </Link>
+        </div>
+
+        {Object.keys(chatStats).length > 0 && (
+          <div className="flex flex-wrap gap-1.5 px-4 py-2.5" style={{ borderBottom: '1px solid rgba(201,169,110,0.1)' }}>
+            {Object.entries(chatStats).map(([mode, count]) => {
+              const ml = MODE_LABELS[mode];
+              return (
+                <span key={mode} className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}>
+                  {ml?.emoji ?? '💬'} {ml?.label ?? mode} · {count}
+                </span>
+              );
+            })}
+          </div>
+        )}
+
+        {dataLoading ? (
+          <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
+        ) : conversations.length === 0 ? (
+          <div className="px-4 py-5 text-center">
+            <p className="text-xs" style={{ color: '#6a7a7e' }}>还没有对话记录</p>
+            <Link href="/koala/chat" className="text-xs mt-1 inline-block no-underline font-medium" style={{ color: '#c9a96e' }}>
+              开始第一次对话 →
+            </Link>
+          </div>
+        ) : (
+          <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.1)' }}>
+            {conversations.map(conv => {
+              const ml = MODE_LABELS[conv.mode];
+              return (
+                <Link key={conv.id} href={`/koala/chat?mode=${conv.mode}`} className="flex items-center gap-3 px-4 py-3 no-underline hover:bg-white/[0.02]">
+                  <span className="text-base">{ml?.emoji ?? '💬'}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium" style={{ color: '#e8e4dc' }}>{ml?.label ?? conv.mode}</p>
+                    <p className="text-[10px]" style={{ color: '#6a7a7e' }}>{conv.messageCount} 条消息 · {timeAgo(conv.created_at)}</p>
+                  </div>
+                  <span className="text-[10px]" style={{ color: '#6a7a7e' }}>→</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Recommended professors ────────── */}
+      <div className="mx-4 lg:mx-0 mb-3 rounded-2xl overflow-hidden" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(201,169,110,0.1)' }}>
+          <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
+            ⭐ 为你推荐
+          </span>
+          <button
+            onClick={loadRecommended}
+            disabled={recLoading}
+            className="text-[11px] px-2 py-0.5 rounded-lg"
+            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+          >
+            {recLoading ? '刷新中…' : '🔄 换一批'}
+          </button>
+        </div>
+
+        {dataLoading ? (
+          <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
+        ) : recommended.length === 0 ? (
+          <div className="px-4 py-5 text-center">
+            <p className="text-xs" style={{ color: '#6a7a7e' }}>完善个人背景后获得个性化推荐</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 p-3">
+            {recommended.map(prof => (
+              <div key={prof.id} className="rounded-xl p-3" style={{ background: 'rgba(201,169,110,0.04)', border: '1px solid rgba(201,169,110,0.08)' }}>
+                <Link href={`/koala/professors/${prof.id}`} className="no-underline">
+                  <p className="text-xs font-semibold truncate" style={{ color: '#e8e4dc' }}>{prof.name}</p>
+                  <p className="text-[10px] truncate mt-0.5" style={{ color: '#6a7a7e' }}>
+                    {prof.position_title ?? ''} · {prof.university}
+                  </p>
+                  {prof.research_areas.length > 0 && (
+                    <p className="text-[10px] mt-1 truncate" style={{ color: '#a89878' }}>
+                      {prof.research_areas.slice(0, 2).join(' · ')}
+                    </p>
+                  )}
+                </Link>
+                <div className="flex gap-1.5 mt-2">
+                  <Link
+                    href={`/koala/professors/${prof.id}`}
+                    className="flex-1 text-center text-[10px] py-1 rounded-lg no-underline"
+                    style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                  >
+                    详情
+                  </Link>
+                  <Link
+                    href={`/koala/chat?professor=${prof.id}`}
+                    className="flex-1 text-center text-[10px] py-1 rounded-lg no-underline font-medium text-white"
+                    style={{ background: '#c9a96e' }}
+                  >
+                    套磁
+                  </Link>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
