@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     const zhResponse = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 3000,
+      max_tokens: 5000,
       messages: [{ role: 'user', content: `请根据以下主题写一篇博客文章。\n\n主题：${topic}\n分类：${catLabel}\n${stylePrompt}\n\n要求：\n- Markdown格式，1200-2000字\n- 80%是主题本身的深度分析，20%自然关联到澳洲PhD申请\n- 包含真实数据和统计（如有）\n- 自然融入SEO关键词：澳洲、PhD、博士、留学、scholarship、申请、supervisor\n- Koala PhD提及最多1-2句放在文章末尾\n- 语气像考拉学长：温暖专业的学长分享\n\n请返回JSON格式：\n{"titleZh": "中文标题", "excerptZh": "100字摘要", "contentZh": "正文markdown", "tags": ["标签1","标签2",...], "imageKeywords": ["封面图关键词"]}` }],
       system: SYSTEM_PROMPT,
     });
@@ -87,10 +87,10 @@ export async function POST(req: NextRequest) {
       try {
         const fixResponse = await anthropic.messages.create({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 4000,
+          max_tokens: 6000,
           messages: [{
             role: 'user',
-            content: `The following text is malformed JSON. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), contentZh (string), tags (array of strings), imageKeywords (array of strings, optional). Ensure all string values properly escape quotes and newlines.\n\n${candidate.slice(0, 6000)}`,
+            content: `The following text is malformed JSON. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), contentZh (string), tags (array of strings), imageKeywords (array of strings, optional). Ensure all string values properly escape quotes and newlines.\n\n${candidate.slice(0, 8000)}`,
           }],
           system: 'Return ONLY valid JSON. No markdown, no explanation, no code fences.',
         });
@@ -99,6 +99,7 @@ export async function POST(req: NextRequest) {
         const fixMatch = fixCleaned.match(/\{[\s\S]*\}/);
         zhData = JSON.parse(fixMatch ? fixMatch[0] : fixCleaned);
       } catch {
+        console.error('[blog/generate] JSON fix failed — zhText length:', zhText.length, 'preview:', zhText.slice(0, 100));
         return Response.json({ error: 'AI generation failed - invalid JSON response', raw: zhText.slice(0, 200) }, { status: 500 });
       }
     }
