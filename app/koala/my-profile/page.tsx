@@ -252,6 +252,42 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// ─── Image compress ──────────────────────────
+function compressImage(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const size = 300;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+      const min = Math.min(img.width, img.height);
+      const sx = (img.width - min) / 2;
+      const sy = (img.height - min) / 2;
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+      canvas.toBlob(
+        blob => blob ? resolve(blob) : reject(new Error('压缩失败')),
+        'image/jpeg',
+        0.8
+      );
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => reject(new Error('图片加载失败'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// ─── Credits interfaces ──────────────────────
+interface CreditTransaction {
+  id: string;
+  amount: number;
+  balance_after: number;
+  type: string;
+  description: string;
+  created_at: string;
+}
+
 // ─────────────────────────────────────────────
 // Main page
 // ─────────────────────────────────────────────
@@ -300,7 +336,29 @@ export default function MyProfilePage() {
 
   // Avatar
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarMsg, setAvatarMsg] = useState('');
   const avatarFileRef = useRef<HTMLInputElement>(null);
+
+  // Credits
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [todayClaimed, setTodayClaimed] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
+  const [creditTxs, setCreditTxs] = useState<CreditTransaction[]>([]);
+  const [creditAchievements, setCreditAchievements] = useState<string[]>([]);
+  const [checkinLoading, setCheckinLoading] = useState(false);
+  const [showCreditsDetail, setShowCreditsDetail] = useState(false);
+  const [showCreditRules, setShowCreditRules] = useState(false);
+  const [referralCopied, setReferralCopied] = useState(false);
+
+  const loadCredits = useCallback(() => {
+    fetch('/api/user/credits').then(r => r.json()).then(d => {
+      setCreditBalance(d.balance ?? 0);
+      setTodayClaimed(d.todayClaimed ?? false);
+      setReferralCode(d.referralCode ?? '');
+      setCreditTxs(d.recentTransactions ?? []);
+      setCreditAchievements(d.achievements ?? []);
+    }).catch(() => {});
+  }, []);
 
   const loadRecommended = useCallback(() => {
     setRecLoading(true);
@@ -338,7 +396,8 @@ export default function MyProfilePage() {
       fetch('/api/user/education').then(r => r.json()),
       fetch('/api/user/work').then(r => r.json()),
       fetch('/api/user/documents').then(r => r.json()),
-    ]).then(([s, e, cs, rec, edu, wk, docs]) => {
+      fetch('/api/user/credits').then(r => r.json()),
+    ]).then(([s, e, cs, rec, edu, wk, docs, cr]) => {
       setSaved(s.saved ?? []);
       setEmails(e.emails ?? []);
       setConversations(cs.conversations ?? []);
@@ -347,6 +406,11 @@ export default function MyProfilePage() {
       setEducation(edu.education ?? []);
       setWork(wk.work ?? []);
       setDocuments(docs.documents ?? []);
+      setCreditBalance(cr.balance ?? 0);
+      setTodayClaimed(cr.todayClaimed ?? false);
+      setReferralCode(cr.referralCode ?? '');
+      setCreditTxs(cr.recentTransactions ?? []);
+      setCreditAchievements(cr.achievements ?? []);
     }).catch(() => {}).finally(() => setDataLoading(false));
   }, [user]);
 
@@ -386,20 +450,17 @@ export default function MyProfilePage() {
   const displayName = profile?.display_name || user?.email?.split('@')[0] || '用户';
   const initials = displayName.slice(0, 1).toUpperCase();
 
-  // ── Avatar upload ─────────────────────────
+  // ── Avatar upload (auto-compress) ──────────
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('图片大小不能超过 5MB');
-      return;
-    }
-
     setAvatarUploading(true);
+    setAvatarMsg('');
     try {
+      const compressed = await compressImage(file);
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', new File([compressed], 'avatar.jpg', { type: 'image/jpeg' }));
 
       const res = await fetch('/api/user/avatar', { method: 'POST', body: formData });
       const data = await res.json();
@@ -411,13 +472,35 @@ export default function MyProfilePage() {
           body: JSON.stringify({ avatar_url: data.url }),
         });
         await refreshProfile();
+        setAvatarMsg('头像已更新');
+        setTimeout(() => setAvatarMsg(''), 3000);
       } else {
-        alert(data.error || '上传失败');
+        setAvatarMsg(data.error || '上传失败');
       }
     } catch {
-      alert('头像上传失败，请重试');
+      setAvatarMsg('头像上传失败，请重试');
     }
     setAvatarUploading(false);
+  }
+
+  // ── Daily checkin ─────────────────────────
+  async function handleCheckin() {
+    setCheckinLoading(true);
+    try {
+      const res = await fetch('/api/user/credits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'daily_checkin' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCreditBalance(data.balance);
+        setTodayClaimed(true);
+        loadCredits();
+        await refreshProfile();
+      }
+    } catch {}
+    setCheckinLoading(false);
   }
 
   // ── Education CRUD ────────────────────────
@@ -802,11 +885,6 @@ export default function MyProfilePage() {
                 >
                   {plan.label}
                 </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0" title="剩余积分"
-                  style={{ background: '#e8f4e8', color: '#3a6040' }}
-                >
-                  💎 {profile?.credits_remaining ?? 1} 积分
-                </span>
               </div>
               <p className="text-xs truncate mt-0.5" style={{ color: '#6a7a7e' }}>{user?.email}</p>
               {isAdmin && (
@@ -814,7 +892,6 @@ export default function MyProfilePage() {
                   ⚙️ 超级管理后台 →
                 </Link>
               )}
-              {/* Quick summary */}
               <div className="flex items-center gap-2 mt-1.5 text-[10px]" style={{ color: '#6a7a7e' }}>
                 <span>{education.length} 段教育</span>
                 <span>·</span>
@@ -842,6 +919,79 @@ export default function MyProfilePage() {
               编辑资料
             </button>
           </div>
+          {/* Avatar toast */}
+          {avatarMsg && (
+            <p className="text-[11px] mt-2 text-center" style={{ color: avatarMsg.includes('已更新') ? '#5a8060' : '#b06040' }}>
+              {avatarMsg.includes('已更新') ? '✅' : '❌'} {avatarMsg}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Credits card ────────────────────── */}
+      <div className="mx-4 lg:mx-0 pb-3">
+        <div className="rounded-xl p-4" style={CARD}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-bold" style={{ color: '#c9a96e' }}>
+                💎 {creditBalance ?? profile?.credits_remaining ?? 0}
+              </span>
+              <span className="text-xs" style={{ color: '#6a7a7e' }}>积分</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCheckin}
+                disabled={todayClaimed || checkinLoading}
+                className="text-[11px] px-3 py-1.5 rounded-lg font-medium"
+                style={todayClaimed
+                  ? { background: 'rgba(90,128,96,0.12)', color: '#5a8060' }
+                  : { background: '#c9a96e', color: '#080c10' }
+                }
+              >
+                {checkinLoading ? '…' : todayClaimed ? '✅ 已签到' : '每日签到 +2'}
+              </button>
+              <button
+                onClick={() => {
+                  if (referralCode) {
+                    navigator.clipboard.writeText(referralCode);
+                    setReferralCopied(true);
+                    setTimeout(() => setReferralCopied(false), 2000);
+                  }
+                }}
+                className="text-[11px] px-3 py-1.5 rounded-lg font-medium"
+                style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+              >
+                {referralCopied ? '✅ 已复制' : `邀请好友 +15`}
+              </button>
+            </div>
+          </div>
+          {referralCopied && referralCode && (
+            <p className="text-[10px] mt-2 text-right" style={{ color: '#6a7a7e' }}>
+              邀请码：<span style={{ color: '#c9a96e', fontFamily: 'monospace' }}>{referralCode}</span>
+            </p>
+          )}
+          <div className="flex items-center gap-3 mt-2">
+            <button
+              onClick={() => setShowCreditRules(!showCreditRules)}
+              className="text-[10px]" style={{ color: '#6a7a7e', background: 'transparent' }}
+            >
+              📋 积分规则 {showCreditRules ? '▲' : '▼'}
+            </button>
+            <button
+              onClick={() => setShowCreditsDetail(!showCreditsDetail)}
+              className="text-[10px]" style={{ color: '#c9a96e', background: 'transparent' }}
+            >
+              查看积分明细 →
+            </button>
+          </div>
+          {showCreditRules && (
+            <div className="mt-2 p-3 rounded-lg text-[10px] leading-relaxed" style={{ background: 'rgba(0,0,0,0.2)', color: '#6a7a7e' }}>
+              <p className="font-semibold mb-1" style={{ color: '#a8b8ac' }}>消耗积分</p>
+              <p>生成套磁信 5 · 教授匹配 2 · AI 对话 1 · 选校规划 3 · 文书润色 5 · 简历解析 免费</p>
+              <p className="font-semibold mt-2 mb-1" style={{ color: '#a8b8ac' }}>获取积分</p>
+              <p>每日签到 +2 · 完善资料80% +20 · 上传简历 +10 · 邀请好友 +15/人 · 收藏教授 +5 · 首封套磁信 +10</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1295,6 +1445,50 @@ export default function MyProfilePage() {
               </div>
             )}
           </div>
+
+          {/* Credits transaction history */}
+          {showCreditsDetail && (
+            <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
+              <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
+                <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
+                  💰 积分明细
+                </span>
+                <button
+                  onClick={() => setShowCreditsDetail(false)}
+                  className="text-[10px]" style={{ color: '#6a7a7e', background: 'transparent' }}
+                >
+                  收起 ▲
+                </button>
+              </div>
+              {creditTxs.length === 0 ? (
+                <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>暂无积分记录</div>
+              ) : (
+                <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
+                  {creditTxs.map(tx => {
+                    const d = new Date(tx.created_at);
+                    const now = new Date();
+                    const isToday = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+                    const timeStr = isToday
+                      ? `今天 ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+                      : d.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) + ' ' + d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+                    const isPositive = tx.amount >= 0;
+                    return (
+                      <div key={tx.id} className="px-4 py-2 flex items-center justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-[10px] flex-shrink-0" style={{ color: '#6a7a7e' }}>{timeStr}</span>
+                          <span className="text-[10px]" style={{ color: '#4a5a5e' }}>·</span>
+                          <span className="text-[11px] truncate" style={{ color: '#a8b8ac' }}>{tx.description}</span>
+                        </div>
+                        <span className="text-xs font-semibold flex-shrink-0 ml-2" style={{ color: isPositive ? '#5a8060' : '#b06040' }}>
+                          {isPositive ? '+' : ''}{tx.amount}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* AI Chat history */}
           <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
