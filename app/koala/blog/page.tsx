@@ -16,6 +16,13 @@ interface BlogPost {
   published_at: string;
   cover_image_url: string | null;
   tags: string[];
+  view_count?: number;
+}
+
+function getSourceLabel(category: string): string {
+  if (category === 'news') return '综合报道';
+  if (category === 'professor_spotlight') return 'Koala PhD · 教授推荐';
+  return 'Koala PhD';
 }
 
 const CATEGORIES: { key: string; label: string }[] = [
@@ -181,13 +188,14 @@ export default function BlogPage() {
                         </p>
                       )}
 
-                      {/* Bottom: author + date */}
+                      {/* Bottom: source + date + views */}
                       <div className="flex items-center gap-1.5">
                         <div className="size-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white" style={{ background: '#c9a96e' }}>
                           {(post.author || 'K')[0]}
                         </div>
                         <span className="text-[11px]" style={{ color: '#6a7a7e' }}>
-                          {post.author} · {timeAgo(post.published_at)}
+                          {getSourceLabel(post.category)} · {timeAgo(post.published_at)}
+                          {post.view_count ? ` · 👁 ${post.view_count}` : ''}
                         </span>
                       </div>
                     </div>

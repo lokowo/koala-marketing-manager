@@ -252,31 +252,31 @@ export default function HomePage() {
         {/* ── Hero ── */}
         <section>
           <div
-            className="rounded-3xl p-5 lg:p-10 relative overflow-hidden lg:flex lg:items-center lg:gap-12"
-            style={{ background: '#e8e4dc' }}
+            className="rounded-2xl px-6 py-8 lg:p-10 relative overflow-hidden lg:flex lg:items-center lg:gap-12"
+            style={{ background: 'linear-gradient(135deg, #1a2a20 0%, #0d1a14 50%, #162028 100%)', border: '1px solid rgba(201,169,110,0.15)' }}
           >
-            {/* Decorative circle */}
-            <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-10" style={{ background: '#c9a96e' }} />
-            <div className="absolute -right-2 bottom-4 w-24 h-24 rounded-full opacity-5" style={{ background: '#c9a96e' }} />
+            {/* Decorative glow */}
+            <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.08) 0%, transparent 70%)' }} />
+            <div className="absolute right-8 bottom-0 w-40 h-40 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.06) 0%, transparent 70%)' }} />
 
             <div className="relative z-10 lg:flex-1">
-              <div className="text-xs font-medium mb-2 opacity-70" style={{ color: '#c9a96e' }}>
+              <div className="text-xs font-medium mb-2" style={{ color: 'rgba(201,169,110,0.5)' }}>
                 AI 导师匹配 · 免费使用
               </div>
-              <h1 className="text-xl lg:text-3xl font-bold leading-tight mb-1.5" style={{ color: '#fff' }}>
+              <h1 className="text-xl lg:text-3xl font-bold leading-tight mb-1.5" style={{ color: '#e8e4dc' }}>
                 2,847 位澳洲导师<br />AI 帮你找最匹配的那个
               </h1>
-              <p className="text-xs lg:text-sm leading-relaxed mb-4 opacity-80" style={{ color: 'rgba(201,169,110,0.1)' }}>
+              <p className="text-xs lg:text-sm leading-relaxed mb-4" style={{ color: '#6a7a7e' }}>
                 告诉 Koala 你的背景和兴趣，30 秒内获得个性化导师推荐
               </p>
               <Link
                 href="/koala/chat"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm no-underline"
-                style={{ background: '#c9a96e', color: '#e8e4dc' }}
+                style={{ background: '#c9a96e', color: '#080c10' }}
               >
                 开始匹配 <ArrowRight className="size-4" />
               </Link>
-              <div className="mt-3 text-[11px] opacity-50" style={{ color: 'rgba(201,169,110,0.1)' }}>
+              <div className="mt-3 text-[11px]" style={{ color: 'rgba(201,169,110,0.4)' }}>
                 已帮助 500+ 位同学找到理想导师
               </div>
             </div>

@@ -188,6 +188,7 @@ export default function MyProfilePage() {
   const [uploadMsg, setUploadMsg] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -434,7 +435,7 @@ export default function MyProfilePage() {
         {/* ── Left column ── */}
         <div className="lg:w-[340px] lg:flex-shrink-0">
 
-          {/* Personal info */}
+          {/* Personal info — collapsible */}
           <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
             {editing && editData ? (
               <>
@@ -520,25 +521,39 @@ export default function MyProfilePage() {
                 </div>
               </>
             ) : (
-              <div>
-                {infoRows.map(({ label, value }, i) => (
-                  <div
-                    key={label}
-                    className="flex items-center px-4"
-                    style={{ height: 36, background: i % 2 === 1 ? 'rgba(201,169,110,0.03)' : 'transparent' }}
-                  >
-                    <span className="text-[11px] w-20 flex-shrink-0" style={{ color: '#6a7a7e' }}>{label}</span>
-                    <span className="flex-1 text-xs truncate" style={{ color: value ? '#e8e4dc' : '#4a5a5e' }}>
-                      {value || '—'}
-                    </span>
+              <>
+                <button
+                  onClick={() => setShowProfile(!showProfile)}
+                  className="w-full flex items-center justify-between px-4 py-2.5"
+                  style={{ background: 'transparent' }}
+                >
+                  <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
+                    📋 个人背景 <span className="font-normal" style={{ color: '#6a7a7e' }}>{infoRows.filter(r => r.value).length}/{infoRows.length} 已填</span>
+                  </span>
+                  <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{showProfile ? '▲' : '▼'}</span>
+                </button>
+                {showProfile && (
+                  <div style={{ borderTop: DIVIDER }}>
+                    {infoRows.map(({ label, value }, i) => (
+                      <div
+                        key={label}
+                        className="flex items-center px-4"
+                        style={{ height: 36, background: i % 2 === 1 ? 'rgba(201,169,110,0.03)' : 'transparent' }}
+                      >
+                        <span className="text-[11px] w-20 flex-shrink-0" style={{ color: '#6a7a7e' }}>{label}</span>
+                        <span className="flex-1 text-xs truncate" style={{ color: value ? '#e8e4dc' : '#4a5a5e' }}>
+                          {value || '—'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
 
           {/* CV Upload */}
-          <div className="mx-4 lg:mx-0 mb-3 rounded-xl px-4 py-3" style={CARD}>
+          <div className="mx-4 lg:mx-0 mb-3 rounded-xl px-3 py-2" style={CARD}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>📄 简历 / 成绩单</span>
               {profile?.file_name && (
@@ -592,7 +607,7 @@ export default function MyProfilePage() {
                 </Link>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.06)' }}>
+              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
                 {saved.map(entry => {
                   const prof = entry.professors;
                   if (!prof) return null;
@@ -640,7 +655,7 @@ export default function MyProfilePage() {
                 </Link>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.06)' }}>
+              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
                 {emails.map(email => {
                   const st = STATUS_LABEL[email.status] ?? { label: email.status, color: '#6a7a7e' };
                   return (
@@ -699,7 +714,7 @@ export default function MyProfilePage() {
                 </Link>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.06)' }}>
+              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
                 {conversations.map(conv => {
                   const ml = MODE_LABELS[conv.mode];
                   return (
@@ -737,7 +752,7 @@ export default function MyProfilePage() {
                 <p className="text-xs" style={{ color: '#6a7a7e' }}>完善个人背景后获得个性化推荐</p>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.06)' }}>
+              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
                 {recommended.slice(0, 4).map(prof => (
                   <div key={prof.id} className="px-4 py-2.5 flex items-center gap-3">
                     <Link href={`/koala/professors/${prof.id}`} className="flex-1 no-underline min-w-0">
@@ -791,7 +806,7 @@ export default function MyProfilePage() {
               <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{showSettings ? '▲' : '▼'}</span>
             </button>
             {showSettings && (
-              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.06)', borderTop: DIVIDER }}>
+              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)', borderTop: DIVIDER }}>
                 <button
                   className="w-full flex items-center px-4 py-2.5 text-xs text-left"
                   style={{ color: '#a8b8ac', background: 'transparent' }}
