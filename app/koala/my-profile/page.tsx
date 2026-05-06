@@ -349,6 +349,9 @@ export default function MyProfilePage() {
   const [showCreditsDetail, setShowCreditsDetail] = useState(false);
   const [showCreditRules, setShowCreditRules] = useState(false);
   const [referralCopied, setReferralCopied] = useState(false);
+  const [inviteText, setInviteText] = useState('');
+  const [referralStats, setReferralStats] = useState({ invited: 0, maxInvites: 3, earned: 0 });
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   const loadCredits = useCallback(() => {
     fetch('/api/user/credits').then(r => r.json()).then(d => {
@@ -397,7 +400,8 @@ export default function MyProfilePage() {
       fetch('/api/user/work').then(r => r.json()),
       fetch('/api/user/documents').then(r => r.json()),
       fetch('/api/user/credits').then(r => r.json()),
-    ]).then(([s, e, cs, rec, edu, wk, docs, cr]) => {
+      fetch('/api/user/referral/stats').then(r => r.json()).catch(() => ({ invited: 0, maxInvites: 3, earned: 0 })),
+    ]).then(([s, e, cs, rec, edu, wk, docs, cr, rs]) => {
       setSaved(s.saved ?? []);
       setEmails(e.emails ?? []);
       setConversations(cs.conversations ?? []);
@@ -411,8 +415,20 @@ export default function MyProfilePage() {
       setReferralCode(cr.referralCode ?? '');
       setCreditTxs(cr.recentTransactions ?? []);
       setCreditAchievements(cr.achievements ?? []);
+      if (rs && !rs.error) setReferralStats(rs);
     }).catch(() => {}).finally(() => setDataLoading(false));
   }, [user]);
+
+  useEffect(() => {
+    if (referralCode) {
+      setInviteText(
+        `🐨 我在用 Koala PhD 申请澳洲博士，AI 帮我匹配了超合适的导师！\n\n` +
+        `注册就送 35 积分，用我的邀请码还能额外得 5 积分哦～\n` +
+        `邀请码：${referralCode}\n\n` +
+        `👉 https://koalaphd.com/koala/auth?ref=${referralCode}`
+      );
+    }
+  }, [referralCode]);
 
   // ── Not logged in ────────────────────────
   if (!authLoading && !user) {
@@ -950,26 +966,8 @@ export default function MyProfilePage() {
               >
                 {checkinLoading ? '…' : todayClaimed ? '✅ 已签到' : '每日签到 +2'}
               </button>
-              <button
-                onClick={() => {
-                  if (referralCode) {
-                    navigator.clipboard.writeText(referralCode);
-                    setReferralCopied(true);
-                    setTimeout(() => setReferralCopied(false), 2000);
-                  }
-                }}
-                className="text-[11px] px-3 py-1.5 rounded-lg font-medium"
-                style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
-              >
-                {referralCopied ? '✅ 已复制' : `邀请好友 +15`}
-              </button>
             </div>
           </div>
-          {referralCopied && referralCode && (
-            <p className="text-[10px] mt-2 text-right" style={{ color: '#6a7a7e' }}>
-              邀请码：<span style={{ color: '#c9a96e', fontFamily: 'monospace' }}>{referralCode}</span>
-            </p>
-          )}
           <div className="flex items-center gap-3 mt-2">
             <button
               onClick={() => setShowCreditRules(!showCreditRules)}
@@ -994,6 +992,79 @@ export default function MyProfilePage() {
           )}
         </div>
       </div>
+
+      {/* ── Invite card ──────────────────────── */}
+      {referralCode && (
+        <div className="mx-4 lg:mx-0 mb-3 rounded-xl p-4" style={CARD}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>📨 邀请好友，各得 15 积分</span>
+            {referralStats.invited >= 3 && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(90,128,96,0.12)', color: '#5a8060' }}>🎉 已满</span>
+            )}
+          </div>
+          <p className="text-[10px] mb-3" style={{ color: '#6a7a7e' }}>每个邀请码最多邀请 3 位好友</p>
+
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[11px]" style={{ color: '#a8b8ac' }}>你的邀请码：</span>
+            <span className="text-sm font-bold tracking-wider" style={{ color: '#c9a96e', fontFamily: 'monospace' }}>{referralCode}</span>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(referralCode);
+                setReferralCopied(true);
+                setTimeout(() => setReferralCopied(false), 2000);
+              }}
+              disabled={referralStats.invited >= 3}
+              className="text-[10px] px-2 py-0.5 rounded"
+              style={{ background: 'rgba(201,169,110,0.1)', color: referralStats.invited >= 3 ? '#4a5a5e' : '#c9a96e' }}
+            >
+              {referralCopied ? '✅ 已复制' : '复制码'}
+            </button>
+          </div>
+
+          <textarea
+            value={inviteText}
+            onChange={e => setInviteText(e.target.value)}
+            rows={5}
+            disabled={referralStats.invited >= 3}
+            className="w-full px-3 py-2 rounded-lg text-xs outline-none resize-none mb-3"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc', lineHeight: 1.6 }}
+          />
+
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(inviteText);
+                setInviteCopied(true);
+                setTimeout(() => setInviteCopied(false), 2500);
+              }}
+              disabled={referralStats.invited >= 3}
+              className="flex-1 text-[11px] py-2 rounded-lg font-medium"
+              style={referralStats.invited >= 3
+                ? { background: 'rgba(201,169,110,0.06)', color: '#4a5a5e' }
+                : { background: '#c9a96e', color: '#080c10' }
+              }
+            >
+              {inviteCopied ? '✅ 已复制，去分享给朋友吧！' : '一键复制邀请文案'}
+            </button>
+            <button
+              onClick={() => {
+                const url = `https://koalaphd.com/koala/auth?ref=${referralCode}`;
+                window.open(`weixin://dl/business/?t=${encodeURIComponent(url)}`, '_blank');
+              }}
+              disabled={referralStats.invited >= 3}
+              className="flex-1 text-[11px] py-2 rounded-lg font-medium"
+              style={{ background: 'rgba(90,128,96,0.12)', color: referralStats.invited >= 3 ? '#4a5a5e' : '#5a8060' }}
+            >
+              分享到微信
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px]" style={{ color: '#6a7a7e' }}>
+            <span>已邀请 {referralStats.invited}/{referralStats.maxInvites} 人 · 获得 {referralStats.earned} 积分</span>
+            {referralStats.invited >= 3 && <span style={{ color: '#5a8060' }}>🎉 邀请名额已用完</span>}
+          </div>
+        </div>
+      )}
 
       {/* ── Two-col layout ──────────────────── */}
       <div className="lg:flex lg:gap-3 lg:items-start lg:px-0">

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabase/client';
 
@@ -9,12 +9,27 @@ type Step = 'form' | 'verify' | 'success';
 type Mode = 'login' | 'register';
 
 export default function AuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#080c10' }}>
+        <div className="animate-pulse text-sm" style={{ color: '#6a7a7e' }}>加载中…</div>
+      </div>
+    }>
+      <AuthPageInner />
+    </Suspense>
+  );
+}
+
+function AuthPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const refCode = searchParams.get('ref') || '';
   const [mode, setMode] = useState<Mode>('register');
   const [step, setStep] = useState<Step>('form');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
+  const [referralInput, setReferralInput] = useState(refCode);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -88,6 +103,14 @@ export default function AuthPage() {
     if (!res.ok) {
       setError(data.error || '验证失败');
       return;
+    }
+
+    if (referralInput) {
+      fetch('/api/user/referral/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: referralInput }),
+      }).catch(() => {});
     }
 
     setStep('success');
@@ -190,6 +213,14 @@ export default function AuthPage() {
           </p>
         </div>
 
+        {/* Referral banner */}
+        {refCode && (
+          <div className="mb-4 px-4 py-2 rounded-lg text-xs text-center"
+            style={{ background: 'rgba(90,128,96,0.1)', color: '#5a8060', border: '1px solid rgba(90,128,96,0.2)' }}>
+            🎁 你的朋友邀请你加入 Koala PhD，注册后双方各得积分！
+          </div>
+        )}
+
         {/* Mode tabs */}
         <div className="flex mb-6 rounded-full p-1" style={{ background: 'rgba(201,169,110,0.06)' }}>
           <button
@@ -240,6 +271,26 @@ export default function AuthPage() {
               placeholder={mode === 'register' ? '至少8位' : '••••••••'}
             />
           </div>
+
+          {mode === 'register' && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1.5" style={{ color: '#a8b8ac' }}>邀请码（选填，双方各得积分）</label>
+              <input
+                type="text"
+                value={referralInput}
+                onChange={e => setReferralInput(e.target.value.toUpperCase())}
+                maxLength={8}
+                className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none tracking-wider"
+                style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.2)', color: '#e8e4dc', fontFamily: 'monospace' }}
+                placeholder="例：VPB89N"
+              />
+              {referralInput && (
+                <p className="text-[11px] mt-1.5 px-1" style={{ color: '#5a8060' }}>
+                  🎁 注册成功后你将额外获得 5 积分
+                </p>
+              )}
+            </div>
+          )}
 
           {mode === 'login' && (
             <div className="text-right mb-4">

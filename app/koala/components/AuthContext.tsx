@@ -90,6 +90,7 @@ function LoginModal({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [referralInput, setReferralInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -101,6 +102,8 @@ function LoginModal({
       setEmail('');
       setPassword('');
       setName('');
+      const urlRef = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ref') : null;
+      setReferralInput(urlRef || '');
     }
   }, [open, tab]);
 
@@ -127,7 +130,14 @@ function LoginModal({
     setLoading(false);
     if (err) { setError(err.message); return; }
 
-    // If auto-confirm is off, session will be null → show "check email" message
+    if (referralInput && data.user) {
+      fetch('/api/user/referral/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: referralInput }),
+      }).catch(() => {});
+    }
+
     if (data.session) {
       onSuccess();
       onClose();
@@ -188,14 +198,30 @@ function LoginModal({
 
             <form onSubmit={tab === 'login' ? handleLogin : handleRegister} className="space-y-3">
               {tab === 'register' && (
-                <input
-                  type="text"
-                  placeholder="你的名字（可选）"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
-                  style={{ background: 'rgba(201,169,110,0.06)', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.1)' }}
-                />
+                <>
+                  <input
+                    type="text"
+                    placeholder="你的名字（可选）"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+                    style={{ background: 'rgba(201,169,110,0.06)', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.1)' }}
+                  />
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="邀请码（选填）"
+                      value={referralInput}
+                      onChange={e => setReferralInput(e.target.value.toUpperCase())}
+                      maxLength={8}
+                      className="w-full px-4 py-3 rounded-2xl text-sm outline-none tracking-wider"
+                      style={{ background: '#111c28', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.2)', fontFamily: 'monospace' }}
+                    />
+                    {referralInput && (
+                      <p className="text-[10px] mt-1 px-1" style={{ color: '#5a8060' }}>🎁 注册后额外获得 5 积分</p>
+                    )}
+                  </div>
+                </>
               )}
               <input
                 type="email"
