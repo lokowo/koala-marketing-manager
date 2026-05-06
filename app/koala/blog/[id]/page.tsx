@@ -113,6 +113,12 @@ export default function BlogDetailPage() {
     showToast('已复制分享内容，请在微信中粘贴发送');
   }
 
+  function shareMoments() {
+    const momentsText = `${shareTitle}\n\n${shareExcerpt}\n\n🔗 ${shareUrl}\n\n#KoalaPhD #澳洲留学 #PhD申请`;
+    navigator.clipboard.writeText(momentsText);
+    showToast('已复制朋友圈文案，请打开微信粘贴发布');
+  }
+
   function shareXiaohongshu() {
     const excerpt = post?.excerpt_zh || (post?.content_zh || '').slice(0, 100);
     const xhsText = `${shareTitle} #KoalaPhD #澳洲留学 #PhD申请\n\n${excerpt}...\n\n🔗 ${shareUrl}`;
@@ -253,8 +259,11 @@ export default function BlogDetailPage() {
             <ShareBtn onClick={shareWechat} title="微信">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 00.167-.054l1.903-1.114a.864.864 0 01.717-.098 10.16 10.16 0 002.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178A1.17 1.17 0 014.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178 1.17 1.17 0 01-1.162-1.178c0-.651.52-1.18 1.162-1.18zm3.2 4.127c-4.34 0-7.963 2.876-7.963 6.545 0 3.67 3.623 6.546 7.963 6.546.856 0 1.693-.115 2.478-.344a.8.8 0 01.584.088l1.576.922a.257.257 0 00.135.044c.13 0 .236-.107.236-.24 0-.06-.023-.118-.04-.176l-.32-1.225a.478.478 0 01.174-.54c1.563-1.157 2.55-2.873 2.55-4.775 0-3.67-3.542-6.845-7.573-6.845zm-2.773 3.368c.533 0 .964.438.964.978a.971.971 0 01-.964.978.971.971 0 01-.964-.978c0-.54.43-.978.964-.978zm5.547 0c.533 0 .964.438.964.978a.971.971 0 01-.964.978.971.971 0 01-.964-.978c0-.54.43-.978.964-.978z"/></svg>
             </ShareBtn>
+            <ShareBtn onClick={shareMoments} title="朋友圈">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/><line x1="12" y1="6" x2="12" y2="18" stroke="currentColor" strokeWidth="2"/><line x1="6" y1="12" x2="18" y2="12" stroke="currentColor" strokeWidth="2"/></svg>
+            </ShareBtn>
             <ShareBtn onClick={shareXiaohongshu} title="小红书">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zm4.56 13.295c-.05.463-.204.862-.462 1.197-.258.335-.59.588-.997.76-.406.17-.86.257-1.36.257-.318 0-.618-.035-.9-.105a3.49 3.49 0 01-.762-.287l-.492.72h-1.17l.678-1.002a3.01 3.01 0 01-.585-.735 2.52 2.52 0 01-.276-1.17V9.84h1.35v3.09c0 .27.042.51.126.72.084.21.204.39.36.54.156.15.336.264.54.342.204.078.426.117.666.117.234 0 .456-.042.666-.126a1.59 1.59 0 00.54-.354c.156-.153.276-.336.36-.549.084-.213.126-.45.126-.711V9.84h1.35v3.09c0 .138-.01.262-.028.372z"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h13c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 18H7V4h11v16zM8 6h8v2H8V6zm0 4h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
             </ShareBtn>
             <ShareBtn onClick={shareEmail} title="邮件">
               <Mail size={18} />

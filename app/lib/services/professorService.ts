@@ -148,7 +148,7 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
     newcastle: 'University of Newcastle',
   };
 
-  const CHINESE_STOP_WORDS = ['的', '中国', '教授', '老师', '博士', '大学', '在', '和', '与', '了', '是'];
+  const CHINESE_STOP_WORDS = ['的', '中国', '教授', '老师', '导师', '大学', '学校', '澳洲', '澳大利亚'];
 
   const searchTerm = filters?.search?.trim();
   if (searchTerm) {

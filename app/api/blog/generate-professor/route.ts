@@ -116,6 +116,7 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
 - 句式要自然多变，避免排比和重复句式
 - 不要编造任何数据，所有数字来自上面提供的数据
 - Markdown 格式，但禁止使用 --- 水平线和 > 引用块
+- 涉及数据对比（如论文引用、H-index、经费金额）时，用 markdown 表格展示，不要把数字堆在文字段落里
 - 文末加一句引导：想了解更多？在 Koala PhD 查看 ${profName} 教授的完整档案
 
 返回JSON：{"titleZh": "中文标题", "excerptZh": "100字摘要", "contentZh": "正文markdown", "tags": ["标签1","标签2",...]}` }],
@@ -149,7 +150,7 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
       zhData = JSON.parse(fixMatch ? fixMatch[0] : fixCleaned);
     }
   } catch (e) {
-    console.error('[generate-professor] Chinese article generation failed:', (e as Error).stack || e);
+    console.error('[generate-professor] Chinese article failed:', (e as Error).message, (e as Error).stack);
     return Response.json({ error: 'Chinese article generation failed', details: (e as Error).message }, { status: 500 });
   }
 

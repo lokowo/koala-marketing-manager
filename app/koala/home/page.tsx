@@ -107,13 +107,16 @@ export default function HomePage() {
       .then(r => r.json())
       .then(d => {
         const posts = d.posts ?? [];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setBlogPosts(posts.map((p: any) => ({
-          id: p.id,
-          tag: CATEGORY_LABELS[p.category] || p.category || '',
-          date: new Date(p.published_at || p.created_at).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' }),
-          title: p.title_zh || p.title_en || '',
-          excerpt: p.excerpt_zh || p.excerpt_en || '',
+        setBlogPosts(posts.map((p: Record<string, unknown>) => ({
+          id: p.id as string,
+          tag: CATEGORY_LABELS[p.category as string] || (p.category as string) || '博客',
+          date: p.published_at
+            ? new Date(p.published_at as string).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })
+            : p.created_at
+              ? new Date(p.created_at as string).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })
+              : '最近',
+          title: (p.title_zh || p.title_en || '无标题') as string,
+          excerpt: (p.excerpt_zh || p.excerpt_en || '') as string,
         })));
       })
       .catch(() => {});

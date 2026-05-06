@@ -142,8 +142,8 @@ export default function BlogPage() {
           <Link href="/koala/blog" target="_blank" className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
             🌐 查看博客
           </Link>
-          <Link href="/dashboard/koala/ai-content/batch" className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
-            ✨ 批量生成
+          <Link href="/dashboard/koala/ai-content/batch" className="px-4 py-2 text-sm border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50">
+            ⚡ 批量生成
           </Link>
           <button onClick={() => setShowProfModal(true)} className="px-4 py-2 text-sm border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50">
             🎓 教授推荐
@@ -519,7 +519,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
         setGeneratedTitle(data.title || '文章已生成');
         setStep('done');
       } else {
-        setError(data.details || data.error || '生成失败');
+        setError(data.details ? `${data.error}: ${data.details}` : (data.error || '生成失败'));
         setStep('search');
       }
     } catch {
