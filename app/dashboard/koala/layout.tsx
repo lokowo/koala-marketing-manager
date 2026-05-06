@@ -68,22 +68,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
           { label: '数据质量', href: '/dashboard/koala/professors/quality' },
         ],
       },
-      {
-        icon: '📝', label: '博客管理',
-        href: '/dashboard/koala/blog',
-        children: [
-          { label: '全部文章', href: '/dashboard/koala/blog' },
-          { label: '新建文章', href: '/dashboard/koala/blog/edit' },
-        ],
-      },
-      {
-        icon: '✨', label: 'AI 内容',
-        href: '/dashboard/koala/ai-content',
-        children: [
-          { label: '单篇生成', href: '/dashboard/koala/ai-content' },
-          { label: '批量生成', href: '/dashboard/koala/ai-content/batch' },
-        ],
-      },
+      { icon: '📝', label: '博客管理', href: '/dashboard/koala/blog' },
       { icon: '👥', label: '用户管理', href: '/dashboard/koala/users', adminOnly: true },
       { icon: '📈', label: '数据分析', href: '/dashboard/koala/analytics' },
       { icon: '⚙️', label: '系统设置', href: '/dashboard/koala/settings' },

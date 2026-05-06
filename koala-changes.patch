@@ -1,0 +1,88 @@
+diff --git a/app/api/blog/generate-cover/route.ts b/app/api/blog/generate-cover/route.ts
+index 8db3caa..6beb2ea 100644
+--- a/app/api/blog/generate-cover/route.ts
++++ b/app/api/blog/generate-cover/route.ts
+@@ -68,13 +68,13 @@ export async function POST(req: NextRequest) {
+     const categoryContext = CATEGORY_IMAGE_CONTEXT[category] || CATEGORY_IMAGE_CONTEXT.news;
+     const coverPrompt = `Background/scene: ${categoryContext}. Subject: ${keywords.join(', ')}. Key details: Professional editorial photography, golden hour natural lighting, shallow depth of field, clean composition, magazine cover quality. Constraints: Absolutely NO text, NO words, NO letters, NO numbers, NO watermarks, NO logos, NO signs anywhere in the image. No clearly visible human faces. Photorealistic style, not illustrated or CGI. IMPORTANT: The image must contain ZERO text of any kind.`;
+ 
+-    console.log('[generate-cover] Step 2: Calling OpenAI gpt-image-1...');
++    console.log('[generate-cover] Step 2: Calling OpenAI gpt-image-2...');
+     console.log('[generate-cover] Prompt length:', coverPrompt.length);
+ 
+     let response;
+     try {
+       response = await openai.images.generate({
+-        model: 'gpt-image-1',
++        model: 'gpt-image-2',
+         prompt: coverPrompt,
+         n: 1,
+         size: '1536x1024',
+diff --git a/app/api/blog/generate-images/route.ts b/app/api/blog/generate-images/route.ts
+index d2ec327..de33963 100644
+--- a/app/api/blog/generate-images/route.ts
++++ b/app/api/blog/generate-images/route.ts
+@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
+         // Step 3: Generate image via OpenAI
+         console.log(`[generate-images] Step 3.${idx + 1}: Generating image for: "${placement.insertAfterHeading}"`);
+         const response = await openai.images.generate({
+-          model: 'gpt-image-1',
++          model: 'gpt-image-2',
+           prompt: `Photorealistic editorial photograph: ${placement.promptEn}. Professional DSLR, natural lighting, sharp focus. Absolutely NO text, NO words, NO letters, NO watermarks anywhere in the image.`,
+           n: 1,
+           size: '1024x1024',
+diff --git a/app/api/blog/topics/route.ts b/app/api/blog/topics/route.ts
+index f31ac7b..1aa8e93 100644
+--- a/app/api/blog/topics/route.ts
++++ b/app/api/blog/topics/route.ts
+@@ -92,14 +92,25 @@ Return as a numbered list. Reject anything older than ${cutoffStr}.`,
+         const newsLines = numberedLines.length > 0 ? numberedLines : lines;
+ 
+         // Filter out news with dates clearly older than cutoff
+-        const filteredLines = newsLines.filter(line => {
++        const datedLines: string[] = [];
++        const undatedLines: string[] = [];
++        
++        for (const line of newsLines) {
+           const dateMatch = line.match(/(\d{4}-\d{2}-\d{2})/);
+           if (dateMatch) {
+-            return dateMatch[1] >= cutoffStr;
++            if (dateMatch[1] >= cutoffStr) {
++              datedLines.push(line);
++            }
++            // else: discard — explicitly old
++          } else {
++            undatedLines.push(line);
+           }
+-          // If no parseable date, keep the line (avoid false negatives)
+-          return true;
+-        });
++        }
++
++        // Only use undated lines as padding if we have very few dated ones
++        const filteredLines = datedLines.length >= 3
++          ? datedLines
++          : [...datedLines, ...undatedLines.slice(0, Math.max(0, 4 - datedLines.length))];
+ 
+         newsCount = filteredLines.length;
+         newsData = filteredLines.join('\n');
+diff --git a/app/dashboard/koala/layout.tsx b/app/dashboard/koala/layout.tsx
+index 9ac43ed..60ac7c6 100644
+--- a/app/dashboard/koala/layout.tsx
++++ b/app/dashboard/koala/layout.tsx
+@@ -76,14 +76,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
+           { label: '新建文章', href: '/dashboard/koala/blog/edit' },
+         ],
+       },
+-      {
+-        icon: '✨', label: 'AI 内容',
+-        href: '/dashboard/koala/ai-content',
+-        children: [
+-          { label: '单篇生成', href: '/dashboard/koala/ai-content' },
+-          { label: '批量生成', href: '/dashboard/koala/ai-content/batch' },
+-        ],
+-      },
++
+       { icon: '👥', label: '用户管理', href: '/dashboard/koala/users', adminOnly: true },
+       { icon: '📈', label: '数据分析', href: '/dashboard/koala/analytics' },
+       { icon: '⚙️', label: '系统设置', href: '/dashboard/koala/settings' },
