@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import TinderCard from 'react-tinder-card';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Undo2, Mail, Heart, SlidersHorizontal, Bell } from 'lucide-react';
+import { X, Undo2, Mail, Heart, SlidersHorizontal } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../components/AuthContext';
 
@@ -37,8 +38,20 @@ interface Professor {
 
 export default function DiscoverPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, showLogin, signOut } = useAuth();
   const [professors, setProfessors] = useState<Professor[]>([]);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    }
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [flippedId, setFlippedId] = useState<string | null>(null);
   const [swipeLabel, setSwipeLabel] = useState<string | null>(null);
@@ -112,9 +125,48 @@ export default function DiscoverPage() {
           <SlidersHorizontal className="size-3.5" /> 筛选
         </button>
         <h1 className="text-sm font-medium" style={{ color: '#e8e4dc', letterSpacing: '1px' }}>发现导师</h1>
-        <button className="relative p-2" onClick={() => router.push('/koala/matches')}>
-          <Bell className="size-5" style={{ color: '#5a6a6e' }} />
-        </button>
+        {user ? (
+          <div className="relative" ref={userMenuRef}>
+            <button
+              onClick={() => setShowUserMenu(v => !v)}
+              className="size-9 rounded-full flex items-center justify-center text-xs font-bold"
+              style={{ background: '#c9a96e', color: '#080c10' }}
+            >
+              {(user.email || '?')[0].toUpperCase()}
+            </button>
+            {showUserMenu && (
+              <div
+                className="absolute right-0 top-11 w-48 rounded-xl py-2 z-50"
+                style={{ background: '#111c28', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', border: '1px solid rgba(201,169,110,0.15)' }}
+              >
+                <p className="px-4 py-1.5 text-[11px] truncate" style={{ color: '#6a7a7e' }}>{user.email}</p>
+                <Link
+                  href="/koala/my-profile"
+                  className="block px-4 py-2 text-xs no-underline hover:bg-white/5"
+                  style={{ color: '#e8e4dc' }}
+                  onClick={() => setShowUserMenu(false)}
+                >
+                  个人中心
+                </Link>
+                <button
+                  onClick={() => { setShowUserMenu(false); signOut(); }}
+                  className="w-full text-left px-4 py-2 text-xs hover:bg-white/5"
+                  style={{ color: '#c9a96e' }}
+                >
+                  退出登录
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => showLogin()}
+            className="size-9 rounded-full flex items-center justify-center"
+            style={{ background: '#e8e4dc' }}
+          >
+            <span className="text-xs font-medium text-white">登录</span>
+          </button>
+        )}
       </div>
 
       <AnimatePresence>

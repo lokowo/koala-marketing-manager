@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -84,10 +84,22 @@ const STEP_LINKS = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, showLogin } = useAuth();
+  const { user, showLogin, signOut } = useAuth();
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [showNotif, setShowNotif] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    }
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   function handleStepClick(href: string) {
     if (!user) {
@@ -169,13 +181,48 @@ export default function HomePage() {
           >
             <Bell className="size-[18px]" style={{ color: '#a8b8ac' }} />
           </button>
-          <Link
-            href="/koala/auth"
-            className="size-9 rounded-full flex items-center justify-center no-underline"
-            style={{ background: '#e8e4dc' }}
-          >
-            <span className="text-xs font-medium text-white">登录</span>
-          </Link>
+          {user ? (
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setShowUserMenu(v => !v)}
+                className="size-9 rounded-full flex items-center justify-center text-xs font-bold"
+                style={{ background: '#c9a96e', color: '#080c10' }}
+              >
+                {(user.email || '?')[0].toUpperCase()}
+              </button>
+              {showUserMenu && (
+                <div
+                  className="absolute right-0 top-11 w-48 rounded-xl py-2 z-50"
+                  style={{ background: '#111c28', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', border: '1px solid rgba(201,169,110,0.15)' }}
+                >
+                  <p className="px-4 py-1.5 text-[11px] truncate" style={{ color: '#6a7a7e' }}>{user.email}</p>
+                  <Link
+                    href="/koala/my-profile"
+                    className="block px-4 py-2 text-xs no-underline hover:bg-white/5"
+                    style={{ color: '#e8e4dc' }}
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    个人中心
+                  </Link>
+                  <button
+                    onClick={() => { setShowUserMenu(false); signOut(); }}
+                    className="w-full text-left px-4 py-2 text-xs hover:bg-white/5"
+                    style={{ color: '#c9a96e' }}
+                  >
+                    退出登录
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => showLogin()}
+              className="size-9 rounded-full flex items-center justify-center"
+              style={{ background: '#e8e4dc' }}
+            >
+              <span className="text-xs font-medium text-white">登录</span>
+            </button>
+          )}
         </div>
       </header>
 
