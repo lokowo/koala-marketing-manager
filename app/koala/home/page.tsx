@@ -63,6 +63,7 @@ interface BlogPost {
   date: string;
   title: string;
   excerpt: string;
+  viewCount?: number;
 }
 
 const RESEARCH_AREAS = [
@@ -129,6 +130,7 @@ export default function HomePage() {
               : '最近',
           title: (p.title_zh || p.title_en || '无标题') as string,
           excerpt: (p.excerpt_zh || p.excerpt_en || '') as string,
+          viewCount: (p.view_count as number) || 0,
         })));
       })
       .catch(() => {});
@@ -433,7 +435,7 @@ export default function HomePage() {
                   <span className="text-[10px] font-semibold px-2 py-1 rounded-full text-white" style={{ background: '#c9a96e' }}>
                     {b.tag}
                   </span>
-                  <span className="text-[10px]" style={{ color: '#b0b0b0' }}>{b.date}</span>
+                  <span className="text-[10px]" style={{ color: '#b0b0b0' }}>{b.date}{b.viewCount ? ` · 👁 ${b.viewCount}` : ''}</span>
                 </div>
                 <h3 className="text-sm font-bold leading-snug" style={{ color: '#e8e4dc' }}>{b.title}</h3>
                 <p className="text-xs leading-relaxed" style={{ color: '#8a8a8a' }}>{b.excerpt}</p>

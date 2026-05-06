@@ -279,7 +279,24 @@ export default function BlogDetailPage() {
           </div>
         </div>
 
-        {/* 9. Related posts */}
+        {/* 9. CTA */}
+        <div
+          className="rounded-xl px-6 py-8 text-center"
+          style={{ marginTop: 32, background: 'linear-gradient(135deg, #1a2a20, #0d1a14)', border: '1px solid rgba(201,169,110,0.2)' }}
+        >
+          <div className="text-3xl mb-3">🐨</div>
+          <h3 className="text-base font-semibold mb-1" style={{ color: '#c9a96e' }}>找到适合你的澳洲博导</h3>
+          <p className="text-xs mb-4" style={{ color: '#6a7a7e' }}>AI 智能匹配 2,847 位教授，免费开始</p>
+          <Link
+            href="/koala/chat"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm no-underline"
+            style={{ background: '#c9a96e', color: '#080c10' }}
+          >
+            开始匹配 →
+          </Link>
+        </div>
+
+        {/* 10. Related posts */}
         {relatedPosts.length > 0 && (
           <div style={{ marginTop: 40 }}>
             <h3 style={{ fontSize: 18, fontWeight: 600, color: '#e8e4dc', marginBottom: 16 }}>相关文章</h3>
@@ -317,12 +334,7 @@ export default function BlogDetailPage() {
           </div>
         )}
 
-        {/* 10. CTA */}
-        <div style={{ marginTop: 40, marginBottom: 120, padding: 20, borderRadius: 12, background: 'rgba(201,169,110,0.06)' }}>
-          <Link href="/koala/chat" className="no-underline" style={{ fontSize: 15, fontWeight: 500, color: '#e8e4dc' }}>
-            有问题？直接问 Koala →
-          </Link>
-        </div>
+        <div style={{ marginBottom: 120 }} />
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `

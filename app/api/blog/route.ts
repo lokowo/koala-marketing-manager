@@ -28,13 +28,13 @@ export async function GET(req: NextRequest) {
     }
 
     if (search) {
-      query = query.or(`title_zh.ilike.%${search}%,title_en.ilike.%${search}%`);
+      query = query.or(`title_zh.ilike.%${search}%,title_en.ilike.%${search}%,excerpt_zh.ilike.%${search}%,excerpt_en.ilike.%${search}%`);
     }
 
-    if (sort === 'views') {
-      query = query.order('view_count', { ascending: false });
+    if (sort === 'hot' || sort === 'views') {
+      query = query.order('view_count', { ascending: false, nullsFirst: false });
     } else {
-      query = query.order('created_at', { ascending: false });
+      query = query.order('published_at', { ascending: false, nullsFirst: false });
     }
 
     const offset = (page - 1) * limit;
