@@ -39,11 +39,14 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  let body: Record<string, unknown> = {};
   try {
-    const body = await request.json();
-    const professor = await createProfessor(body);
+    body = await request.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const professor = await createProfessor(body as any);
     return Response.json({ data: professor }, { status: 201 });
   } catch (e) {
-    return Response.json({ error: (e as Error).message }, { status: 500 });
+    console.error('[professors POST]', (e as Error).message, body);
+    return Response.json({ error: (e as Error).message, details: JSON.stringify(body).slice(0, 200) }, { status: 500 });
   }
 }

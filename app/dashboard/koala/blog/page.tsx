@@ -499,13 +499,17 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
           grantStatus: 'unknown',
         }),
       });
+      if (!createRes.ok) {
+        const errData = await createRes.json();
+        throw new Error(errData.error || '创建教授失败');
+      }
       const createData = await createRes.json();
       const profId = createData.data?.id;
-      if (!profId) throw new Error('Failed to create professor');
+      if (!profId) throw new Error('创建教授失败：未返回 ID');
 
       await generateArticle(profId);
     } catch (e) {
-      setError('添加教授失败：' + (e as Error).message);
+      setError(`添加教授失败：${(e as Error).message}`);
       setStep('search');
     }
   }

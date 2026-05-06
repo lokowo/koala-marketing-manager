@@ -46,28 +46,28 @@ function toInsert(data: Omit<Professor, 'id' | 'createdAt' | 'updatedAt'>) {
     faculty: data.faculty || null,
     title: data.title || null,
     position_title: data.positionTitle || null,
-    research_areas: data.researchAreas || [],
+    research_areas: data.researchAreas ?? [],
     email: data.email || null,
     profile_url: data.profileUrl || null,
     google_scholar_url: data.googleScholarUrl || null,
     linkedin_url: data.linkedinUrl || null,
     lab_url: data.labUrl || null,
     grant_status: data.grantStatus || 'unknown',
-    suitable_student_backgrounds: data.suitableStudentBackgrounds || [],
-    potential_rp_topics: data.potentialRpTopics || [],
+    suitable_student_backgrounds: data.suitableStudentBackgrounds ?? [],
+    potential_rp_topics: data.potentialRpTopics ?? [],
     'references': data.references || null,
     verification_status: data.verificationStatus || 'unverified',
     source_candidate_id: data.sourceCandidateId || null,
-    arc_project_ids: data.arcProjectIds || null,
+    arc_project_ids: data.arcProjectIds ?? null,
     semantic_scholar_id: data.semanticScholarId || null,
-    h_index: data.hIndex || null,
-    paper_count: data.paperCount || null,
-    citation_count: data.citationCount || null,
+    h_index: data.hIndex ?? null,
+    paper_count: data.paperCount ?? null,
+    citation_count: data.citationCount ?? null,
     accepting_students: data.acceptingStudents || null,
-    data_sources: data.dataSources || null,
+    data_sources: data.dataSources ?? null,
     last_synced_at: data.lastSyncedAt || null,
-    opportunity_score: data.opportunityScore || null,
-    opportunity_breakdown: data.opportunityBreakdown || null,
+    opportunity_score: data.opportunityScore ?? null,
+    opportunity_breakdown: data.opportunityBreakdown ?? null,
   };
 }
 
@@ -270,13 +270,24 @@ export async function getProfessor(id: string): Promise<Professor | null> {
 }
 
 export async function createProfessor(data: Omit<Professor, 'id' | 'createdAt' | 'updatedAt'>): Promise<Professor> {
+  if (!data.name?.trim()) throw new Error('name is required');
+  if (!data.university?.trim()) throw new Error('university is required');
+
+  const { data: existing } = await supabaseAdmin
+    .from('professors')
+    .select('*')
+    .eq('name', data.name)
+    .eq('university', data.university)
+    .maybeSingle();
+  if (existing) return fromRow(existing);
+
   const { data: row, error } = await supabaseAdmin
     .from('professors')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .insert(toInsert(data) as unknown as never)
     .select()
     .single();
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(`创建教授失败 (professors): ${error.message} | ${error.details || ''} | ${error.hint || ''}`);
   return fromRow(row);
 }
 
