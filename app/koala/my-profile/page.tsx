@@ -1048,14 +1048,15 @@ export default function MyProfilePage() {
             </button>
             <button
               onClick={() => {
-                const url = `https://koalaphd.com/koala/auth?ref=${referralCode}`;
-                window.open(`weixin://dl/business/?t=${encodeURIComponent(url)}`, '_blank');
+                navigator.clipboard.writeText(inviteText);
+                setInviteCopied(true);
+                setTimeout(() => setInviteCopied(false), 2500);
               }}
               disabled={referralStats.invited >= 3}
               className="flex-1 text-[11px] py-2 rounded-lg font-medium"
               style={{ background: 'rgba(90,128,96,0.12)', color: referralStats.invited >= 3 ? '#4a5a5e' : '#5a8060' }}
             >
-              分享到微信
+              {inviteCopied ? '✅ 已复制，请打开微信粘贴发送给朋友' : '分享到微信'}
             </button>
           </div>
 
