@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth, type UserProfile } from '../components/AuthContext';
-import { supabase } from '../../lib/supabase/client';
 
 // ─── timeAgo helper ────────────────────────
 function timeAgo(dateStr: string): string {
@@ -26,6 +25,49 @@ const MODE_LABELS: Record<string, { emoji: string; label: string }> = {
   write: { emoji: '✍️', label: '文书撰写' },
 };
 
+const DEGREE_OPTIONS = ['高中', '大专', '本科', '硕士', '博士', '博士后', '其他'];
+
+// ─── Interfaces ─────────────────────────────
+interface EducationEntry {
+  id: string;
+  school: string;
+  major: string | null;
+  degree: string | null;
+  gpa: number | null;
+  gpa_scale: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_current: boolean;
+  description: string | null;
+  source: string;
+  source_document_id: string | null;
+  created_at: string;
+}
+
+interface WorkEntry {
+  id: string;
+  company: string;
+  position: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_current: boolean;
+  description: string | null;
+  source: string;
+  source_document_id: string | null;
+  created_at: string;
+}
+
+interface DocumentEntry {
+  id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  parse_status: 'pending' | 'parsing' | 'done' | 'failed';
+  parsed_data: object | null;
+  parse_error: string | null;
+  created_at: string;
+}
+
 interface ConversationEntry {
   id: string;
   mode: string;
@@ -44,28 +86,42 @@ interface RecommendedProf {
   accepting_students: boolean | null;
 }
 
-// ─── Completeness helpers ────────────────────
-const COMPLETENESS_FIELDS: { key: keyof UserProfile; label: string }[] = [
-  { key: 'display_name', label: '姓名' },
-  { key: 'university', label: '就读学校' },
-  { key: 'major', label: '专业' },
-  { key: 'degree_level', label: '学历层次' },
-  { key: 'gpa', label: 'GPA' },
-  { key: 'target_field', label: '目标研究方向' },
-  { key: 'english_level', label: '英语水平' },
-  { key: 'has_research_experience', label: '科研经历' },
-  { key: 'target_universities', label: '目标学校' },
-];
+interface SavedEntry {
+  id: string;
+  professor_id: string;
+  created_at: string;
+  professors: {
+    id: string; name: string; university: string;
+    position_title: string | null; h_index: number | null;
+    research_areas: string[];
+  } | null;
+}
 
-function calcCompleteness(p: Partial<UserProfile>): number {
-  const filled = COMPLETENESS_FIELDS.filter(({ key }) => {
-    const v = p[key];
-    if (v === undefined || v === null || v === '') return false;
-    if (Array.isArray(v) && v.length === 0) return false;
-    return true;
-  }).length;
-  const bonus = p.parsed_data || p.resume_url ? 10 : 0;
-  return Math.min(100, Math.round((filled / COMPLETENESS_FIELDS.length) * 90) + bonus);
+interface OutreachEntry {
+  id: string;
+  subject_line: string;
+  status: string;
+  purpose: string;
+  created_at: string;
+  professors: { id: string; name: string; university: string } | null;
+}
+
+// ─── Completeness calc ─────────────────────
+function calcCompleteness(
+  p: Partial<UserProfile>,
+  eduCount: number,
+  workCount: number,
+  docCount: number,
+): number {
+  let score = 0;
+  if (p.display_name) score += 10;
+  if (eduCount > 0) score += 30;
+  if (p.target_field) score += 15;
+  if (p.target_universities && p.target_universities.length > 0) score += 10;
+  if (p.english_level) score += 10;
+  if (docCount > 0) score += 15;
+  if (workCount > 0) score += 10;
+  return Math.min(100, score);
 }
 
 // ─── Arc progress SVG ───────────────────────
@@ -99,28 +155,6 @@ const PLAN_CONFIG = {
   elite:   { label: 'Elite ✦✦', bg: '#f8d8d0', color: '#8a3020' },
 };
 
-// ─── Saved professor mini card ────────────────
-interface SavedEntry {
-  id: string;
-  professor_id: string;
-  created_at: string;
-  professors: {
-    id: string; name: string; university: string;
-    position_title: string | null; h_index: number | null;
-    research_areas: string[];
-  } | null;
-}
-
-// ─── Outreach email entry ────────────────────
-interface OutreachEntry {
-  id: string;
-  subject_line: string;
-  status: string;
-  purpose: string;
-  created_at: string;
-  professors: { id: string; name: string; university: string } | null;
-}
-
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   draft:    { label: '草稿', color: '#6a7a7e' },
   copied:   { label: '已复制', color: '#c9a96e' },
@@ -129,14 +163,66 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   no_reply: { label: '未回复', color: '#b06040' },
 };
 
-// ─── Edit form ───────────────────────────────
-type EditData = {
-  display_name: string;
-  university: string;
+// ─── Education edit form data ────────────────
+type EduFormData = {
+  school: string;
   major: string;
-  degree_level: string;
+  degree: string;
   gpa: string;
   gpa_scale: string;
+  start_date: string;
+  end_date: string;
+  is_current: boolean;
+  description: string;
+};
+
+const emptyEdu: EduFormData = {
+  school: '', major: '', degree: '', gpa: '', gpa_scale: '',
+  start_date: '', end_date: '', is_current: false, description: '',
+};
+
+function eduToForm(e: EducationEntry): EduFormData {
+  return {
+    school: e.school,
+    major: e.major ?? '',
+    degree: e.degree ?? '',
+    gpa: e.gpa ? String(e.gpa) : '',
+    gpa_scale: e.gpa_scale ?? '',
+    start_date: e.start_date ?? '',
+    end_date: e.end_date ?? '',
+    is_current: e.is_current,
+    description: e.description ?? '',
+  };
+}
+
+// ─── Work edit form data ─────────────────────
+type WorkFormData = {
+  company: string;
+  position: string;
+  start_date: string;
+  end_date: string;
+  is_current: boolean;
+  description: string;
+};
+
+const emptyWork: WorkFormData = {
+  company: '', position: '', start_date: '', end_date: '', is_current: false, description: '',
+};
+
+function workToForm(w: WorkEntry): WorkFormData {
+  return {
+    company: w.company,
+    position: w.position ?? '',
+    start_date: w.start_date ?? '',
+    end_date: w.end_date ?? '',
+    is_current: w.is_current,
+    description: w.description ?? '',
+  };
+}
+
+// ─── "Other info" edit data ──────────────────
+type OtherEditData = {
+  display_name: string;
   target_field: string;
   target_universities: string;
   english_level: string;
@@ -146,14 +232,9 @@ type EditData = {
   publication_details: string;
 };
 
-function profileToEdit(p: UserProfile): EditData {
+function profileToOther(p: UserProfile): OtherEditData {
   return {
     display_name: p.display_name ?? '',
-    university: p.university ?? '',
-    major: p.major ?? '',
-    degree_level: p.degree_level ?? '',
-    gpa: p.gpa ? String(p.gpa) : '',
-    gpa_scale: p.gpa_scale ?? '',
     target_field: p.target_field ?? '',
     target_universities: (p.target_universities ?? []).join(', '),
     english_level: p.english_level ?? '',
@@ -164,6 +245,13 @@ function profileToEdit(p: UserProfile): EditData {
   };
 }
 
+// ─── File size formatter ─────────────────────
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 // ─────────────────────────────────────────────
 // Main page
 // ─────────────────────────────────────────────
@@ -172,26 +260,45 @@ export default function MyProfilePage() {
   const { user, profile, authLoading, showLogin, signOut, refreshProfile } = useAuth();
   const router = useRouter();
 
+  // Education, work, documents
+  const [education, setEducation] = useState<EducationEntry[]>([]);
+  const [work, setWork] = useState<WorkEntry[]>([]);
+  const [documents, setDocuments] = useState<DocumentEntry[]>([]);
+
+  // Education form
+  const [eduEditing, setEduEditing] = useState<string | 'new' | null>(null);
+  const [eduForm, setEduForm] = useState<EduFormData>(emptyEdu);
+  const [eduSaving, setEduSaving] = useState(false);
+
+  // Work form
+  const [workEditing, setWorkEditing] = useState<string | 'new' | null>(null);
+  const [workForm, setWorkForm] = useState<WorkFormData>(emptyWork);
+  const [workSaving, setWorkSaving] = useState(false);
+
+  // "Other info" editing
+  const [otherEditing, setOtherEditing] = useState(false);
+  const [otherData, setOtherData] = useState<OtherEditData | null>(null);
+  const [otherSaving, setOtherSaving] = useState(false);
+
+  // Documents upload
+  const [docUploading, setDocUploading] = useState(false);
+  const docFileRef = useRef<HTMLInputElement>(null);
+
+  // Saved profs, outreach, chat, recommended
   const [saved, setSaved] = useState<SavedEntry[]>([]);
   const [emails, setEmails] = useState<OutreachEntry[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
-
   const [conversations, setConversations] = useState<ConversationEntry[]>([]);
   const [chatStats, setChatStats] = useState<Record<string, number>>({});
   const [recommended, setRecommended] = useState<RecommendedProf[]>([]);
   const [recLoading, setRecLoading] = useState(false);
 
-  const [editing, setEditing] = useState(false);
-  const [editData, setEditData] = useState<EditData | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const [uploading, setUploading] = useState(false);
-  const [uploadMsg, setUploadMsg] = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const [showProfile, setShowProfile] = useState(false);
+  // Collapsible sections
+  const [showOther, setShowOther] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // Avatar
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarFileRef = useRef<HTMLInputElement>(null);
 
@@ -202,6 +309,18 @@ export default function MyProfilePage() {
       .then(d => setRecommended(d.professors ?? []))
       .catch(() => {})
       .finally(() => setRecLoading(false));
+  }, []);
+
+  const loadEducation = useCallback(() => {
+    fetch('/api/user/education').then(r => r.json()).then(d => setEducation(d.education ?? [])).catch(() => {});
+  }, []);
+
+  const loadWork = useCallback(() => {
+    fetch('/api/user/work').then(r => r.json()).then(d => setWork(d.work ?? [])).catch(() => {});
+  }, []);
+
+  const loadDocuments = useCallback(() => {
+    fetch('/api/user/documents').then(r => r.json()).then(d => setDocuments(d.documents ?? [])).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -216,12 +335,18 @@ export default function MyProfilePage() {
       fetch('/api/user/outreach-history').then(r => r.json()),
       fetch('/api/user/chat-summary').then(r => r.json()),
       fetch('/api/user/recommended-professors').then(r => r.json()),
-    ]).then(([s, e, cs, rec]) => {
+      fetch('/api/user/education').then(r => r.json()),
+      fetch('/api/user/work').then(r => r.json()),
+      fetch('/api/user/documents').then(r => r.json()),
+    ]).then(([s, e, cs, rec, edu, wk, docs]) => {
       setSaved(s.saved ?? []);
       setEmails(e.emails ?? []);
       setConversations(cs.conversations ?? []);
       setChatStats(cs.stats ?? {});
       setRecommended(rec.professors ?? []);
+      setEducation(edu.education ?? []);
+      setWork(wk.work ?? []);
+      setDocuments(docs.documents ?? []);
     }).catch(() => {}).finally(() => setDataLoading(false));
   }, [user]);
 
@@ -241,11 +366,7 @@ export default function MyProfilePage() {
         >
           登录 / 注册
         </button>
-        <Link
-          href="/koala/home"
-          className="text-xs"
-          style={{ color: '#6a7a7e' }}
-        >
+        <Link href="/koala/home" className="text-xs" style={{ color: '#6a7a7e' }}>
           先逛逛 →
         </Link>
       </div>
@@ -260,80 +381,172 @@ export default function MyProfilePage() {
     );
   }
 
-  const pct = profile ? calcCompleteness(profile) : 0;
+  const pct = profile ? calcCompleteness(profile, education.length, work.length, documents.length) : 0;
   const plan = PLAN_CONFIG[profile?.plan_type ?? 'free'];
   const displayName = profile?.display_name || user?.email?.split('@')[0] || '用户';
   const initials = displayName.slice(0, 1).toUpperCase();
-  const missingFields = COMPLETENESS_FIELDS.filter(({ key }) => {
-    if (!profile) return true;
-    const v = profile[key as keyof UserProfile];
-    if (v === undefined || v === null || v === '') return true;
-    if (Array.isArray(v) && v.length === 0) return true;
-    return false;
-  });
 
   // ── Avatar upload ─────────────────────────
-  function resizeImage(file: File, maxSize: number): Promise<Blob> {
-    return new Promise((resolve) => {
-      const img = new window.Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = maxSize;
-        canvas.height = maxSize;
-        const ctx = canvas.getContext('2d')!;
-        const min = Math.min(img.width, img.height);
-        const sx = (img.width - min) / 2;
-        const sy = (img.height - min) / 2;
-        ctx.drawImage(img, sx, sy, min, min, 0, 0, maxSize, maxSize);
-        canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.85);
-      };
-      img.src = URL.createObjectURL(file);
-    });
-  }
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
 
-  async function handleAvatarUpload(file: File) {
-    if (!user) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('图片大小不能超过 5MB');
+      return;
+    }
+
     setAvatarUploading(true);
     try {
-      const resized = await resizeImage(file, 200);
-      const path = `avatars/${user.id}.jpg`;
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(path, resized, { upsert: true, contentType: 'image/jpeg' });
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-      await fetch('/api/user/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ avatar_url: publicUrl }),
-      });
-      await refreshProfile();
-    } catch (e) {
-      console.error('Avatar upload failed:', e);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/user/avatar', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (data.url) {
+        await fetch('/api/user/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avatar_url: data.url }),
+        });
+        await refreshProfile();
+      } else {
+        alert(data.error || '上传失败');
+      }
+    } catch {
+      alert('头像上传失败，请重试');
     }
     setAvatarUploading(false);
   }
 
-  // ── Save edit ────────────────────────────
-  async function saveEdit() {
-    if (!editData) return;
-    setSaving(true);
+  // ── Education CRUD ────────────────────────
+  async function saveEducation() {
+    if (!eduForm.school.trim()) return;
+    setEduSaving(true);
+    try {
+      if (eduEditing === 'new') {
+        await fetch('/api/user/education', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(eduForm),
+        });
+      } else {
+        await fetch('/api/user/education', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: eduEditing, ...eduForm }),
+        });
+      }
+      loadEducation();
+      setEduEditing(null);
+    } catch {}
+    setEduSaving(false);
+  }
+
+  async function deleteEducation(id: string) {
+    await fetch('/api/user/education', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    setEducation(prev => prev.filter(e => e.id !== id));
+  }
+
+  // ── Work CRUD ─────────────────────────────
+  async function saveWork() {
+    if (!workForm.company.trim()) return;
+    setWorkSaving(true);
+    try {
+      if (workEditing === 'new') {
+        await fetch('/api/user/work', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(workForm),
+        });
+      } else {
+        await fetch('/api/user/work', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: workEditing, ...workForm }),
+        });
+      }
+      loadWork();
+      setWorkEditing(null);
+    } catch {}
+    setWorkSaving(false);
+  }
+
+  async function deleteWork(id: string) {
+    await fetch('/api/user/work', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    setWork(prev => prev.filter(w => w.id !== id));
+  }
+
+  // ── Document upload + parse ───────────────
+  async function handleDocUpload(file: File) {
+    setDocUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/user/documents', { method: 'POST', body: fd });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? 'Upload failed');
+      loadDocuments();
+    } catch (e) {
+      console.error('Document upload failed:', e);
+    }
+    setDocUploading(false);
+  }
+
+  async function parseDocument(docId: string) {
+    setDocuments(prev => prev.map(d => d.id === docId ? { ...d, parse_status: 'parsing' as const } : d));
+    try {
+      const res = await fetch('/api/user/documents/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ document_id: docId }),
+      });
+      if (res.ok) {
+        loadDocuments();
+        loadEducation();
+        loadWork();
+        await refreshProfile();
+      } else {
+        loadDocuments();
+      }
+    } catch {
+      loadDocuments();
+    }
+  }
+
+  async function deleteDocument(docId: string) {
+    await fetch('/api/user/documents', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: docId }),
+    });
+    setDocuments(prev => prev.filter(d => d.id !== docId));
+  }
+
+  // ── Save "other info" ─────────────────────
+  async function saveOtherInfo() {
+    if (!otherData) return;
+    setOtherSaving(true);
     const payload = {
-      display_name: editData.display_name || null,
-      university: editData.university || null,
-      major: editData.major || null,
-      degree_level: editData.degree_level || null,
-      gpa: editData.gpa ? parseFloat(editData.gpa) : null,
-      gpa_scale: editData.gpa_scale || null,
-      target_field: editData.target_field || null,
-      target_universities: editData.target_universities
-        ? editData.target_universities.split(',').map(s => s.trim()).filter(Boolean)
+      display_name: otherData.display_name || null,
+      target_field: otherData.target_field || null,
+      target_universities: otherData.target_universities
+        ? otherData.target_universities.split(',').map(s => s.trim()).filter(Boolean)
         : [],
-      english_level: editData.english_level || null,
-      has_research_experience: editData.has_research_experience,
-      research_description: editData.research_description || null,
-      has_publications: editData.has_publications,
-      publication_details: editData.publication_details || null,
+      english_level: otherData.english_level || null,
+      has_research_experience: otherData.has_research_experience,
+      research_description: otherData.research_description || null,
+      has_publications: otherData.has_publications,
+      publication_details: otherData.publication_details || null,
     };
     await fetch('/api/user/profile', {
       method: 'POST',
@@ -341,32 +554,8 @@ export default function MyProfilePage() {
       body: JSON.stringify(payload),
     });
     await refreshProfile();
-    setEditing(false);
-    setSaving(false);
-  }
-
-  // ── CV upload ────────────────────────────
-  async function handleUpload(file: File) {
-    setUploading(true);
-    setUploadMsg('');
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch('/api/user/profile/parse', { method: 'POST', body: fd });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? 'Failed');
-      await fetch('/api/user/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parsed_data: json.profile, file_name: file.name }),
-      });
-      await refreshProfile();
-      setUploadMsg('✅ 简历解析成功！');
-    } catch (e) {
-      setUploadMsg(`❌ ${(e as Error).message}`);
-    } finally {
-      setUploading(false);
-    }
+    setOtherEditing(false);
+    setOtherSaving(false);
   }
 
   // ── Unsave professor ──────────────────────
@@ -384,11 +573,7 @@ export default function MyProfilePage() {
   const CARD = { background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.08)' } as const;
   const DIVIDER = '1px solid rgba(201,169,110,0.08)';
 
-  const infoRows = [
-    { label: '学校', value: profile?.university },
-    { label: '专业', value: profile?.major },
-    { label: '学历', value: profile?.degree_level },
-    { label: 'GPA', value: profile?.gpa ? `${profile.gpa} / ${profile.gpa_scale || '?'}` : null },
+  const otherInfoRows = [
     { label: '目标方向', value: profile?.target_field },
     { label: '目标学校', value: (profile?.target_universities ?? []).join(', ') || null },
     { label: '英语水平', value: profile?.english_level },
@@ -396,52 +581,215 @@ export default function MyProfilePage() {
     { label: '论文发表', value: profile?.has_publications ? (profile.publication_details || '有') : null },
   ];
 
+  // ── Education form inline component ───────
+  function renderEduForm() {
+    return (
+      <div className="px-4 py-3 space-y-2" style={{ borderTop: DIVIDER }}>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>学校 *</label>
+            <input type="text" placeholder="例：浙江大学" value={eduForm.school}
+              onChange={e => setEduForm(p => ({ ...p, school: e.target.value }))}
+              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>专业</label>
+            <input type="text" placeholder="例：计算机科学" value={eduForm.major}
+              onChange={e => setEduForm(p => ({ ...p, major: e.target.value }))}
+              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>学历</label>
+            <select value={eduForm.degree}
+              onChange={e => setEduForm(p => ({ ...p, degree: e.target.value }))}
+              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+            >
+              <option value="">请选择</option>
+              {DEGREE_OPTIONS.map(v => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>GPA</label>
+            <input type="text" placeholder="3.8" value={eduForm.gpa}
+              onChange={e => setEduForm(p => ({ ...p, gpa: e.target.value }))}
+              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>满分</label>
+            <select value={eduForm.gpa_scale}
+              onChange={e => setEduForm(p => ({ ...p, gpa_scale: e.target.value }))}
+              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+            >
+              <option value="">—</option>
+              {['4.0', '5.0', '7.0', '100'].map(v => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>开始</label>
+            <input type="text" placeholder="2020-09" value={eduForm.start_date}
+              onChange={e => setEduForm(p => ({ ...p, start_date: e.target.value }))}
+              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>
+              结束
+              <label className="ml-2 inline-flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" checked={eduForm.is_current}
+                  onChange={e => setEduForm(p => ({ ...p, is_current: e.target.checked, end_date: e.target.checked ? '' : p.end_date }))}
+                  className="rounded"
+                />
+                <span className="text-[10px]" style={{ color: '#a8b8ac' }}>至今</span>
+              </label>
+            </label>
+            <input type="text" placeholder="2024-06" value={eduForm.end_date}
+              disabled={eduForm.is_current}
+              onChange={e => setEduForm(p => ({ ...p, end_date: e.target.value }))}
+              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: eduForm.is_current ? '#4a5a5e' : '#e8e4dc' }}
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>备注</label>
+          <input type="text" placeholder="相关课程、荣誉等" value={eduForm.description}
+            onChange={e => setEduForm(p => ({ ...p, description: e.target.value }))}
+            className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+          />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button onClick={saveEducation} disabled={eduSaving || !eduForm.school.trim()}
+            className="text-[11px] px-3 py-1 rounded-lg font-semibold text-white"
+            style={{ background: eduSaving ? '#d8c8a8' : '#c9a96e' }}
+          >
+            {eduSaving ? '保存中…' : '保存'}
+          </button>
+          <button onClick={() => setEduEditing(null)}
+            className="text-[11px] px-3 py-1 rounded-lg"
+            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+          >
+            取消
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Work form inline component ────────────
+  function renderWorkForm() {
+    return (
+      <div className="px-4 py-3 space-y-2" style={{ borderTop: DIVIDER }}>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>公司/机构 *</label>
+            <input type="text" placeholder="例：字节跳动" value={workForm.company}
+              onChange={e => setWorkForm(p => ({ ...p, company: e.target.value }))}
+              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>职位</label>
+            <input type="text" placeholder="例：研究实习生" value={workForm.position}
+              onChange={e => setWorkForm(p => ({ ...p, position: e.target.value }))}
+              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>开始</label>
+            <input type="text" placeholder="2023-06" value={workForm.start_date}
+              onChange={e => setWorkForm(p => ({ ...p, start_date: e.target.value }))}
+              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>
+              结束
+              <label className="ml-2 inline-flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" checked={workForm.is_current}
+                  onChange={e => setWorkForm(p => ({ ...p, is_current: e.target.checked, end_date: e.target.checked ? '' : p.end_date }))}
+                  className="rounded"
+                />
+                <span className="text-[10px]" style={{ color: '#a8b8ac' }}>至今</span>
+              </label>
+            </label>
+            <input type="text" placeholder="2024-01" value={workForm.end_date}
+              disabled={workForm.is_current}
+              onChange={e => setWorkForm(p => ({ ...p, end_date: e.target.value }))}
+              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: workForm.is_current ? '#4a5a5e' : '#e8e4dc' }}
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>工作描述</label>
+          <input type="text" placeholder="简述职责、成就…" value={workForm.description}
+            onChange={e => setWorkForm(p => ({ ...p, description: e.target.value }))}
+            className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+          />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button onClick={saveWork} disabled={workSaving || !workForm.company.trim()}
+            className="text-[11px] px-3 py-1 rounded-lg font-semibold text-white"
+            style={{ background: workSaving ? '#d8c8a8' : '#c9a96e' }}
+          >
+            {workSaving ? '保存中…' : '保存'}
+          </button>
+          <button onClick={() => setWorkEditing(null)}
+            className="text-[11px] px-3 py-1 rounded-lg"
+            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+          >
+            取消
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pb-6 lg:pb-12" style={{ background: '#080c10' }}>
       <div className="max-w-5xl mx-auto">
 
       {/* ── Profile Header ──────────────────── */}
       <div className="mx-4 lg:mx-0 pt-4 pb-3">
-        <div className="rounded-xl p-5 relative" style={CARD}>
-          <div className="flex items-start gap-4">
+        <div className="rounded-xl p-5" style={CARD}>
+          <div className="flex items-center gap-4">
             {/* Avatar */}
-            <div
-              className="relative w-16 h-16 rounded-full flex-shrink-0 cursor-pointer group"
-              onClick={() => !avatarUploading && avatarFileRef.current?.click()}
-            >
+            <div className="relative cursor-pointer group flex-shrink-0" onClick={() => !avatarUploading && avatarFileRef.current?.click()}>
               {profile?.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt={displayName}
-                  className="w-16 h-16 rounded-full object-cover"
-                />
+                <img src={profile.avatar_url} alt="" className="rounded-full object-cover" style={{ width: 72, height: 72 }} />
               ) : (
-                <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold"
-                  style={{ background: '#c9a96e', color: '#080c10' }}
-                >
+                <div className="rounded-full flex items-center justify-center text-2xl font-bold" style={{ width: 72, height: 72, background: '#c9a96e', color: '#080c10' }}>
                   {initials}
                 </div>
               )}
-              <div className="absolute inset-0 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{ background: 'rgba(0,0,0,0.5)' }}
-              >
+              <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 {avatarUploading ? (
-                  <span className="text-[10px] text-white animate-pulse">上传中…</span>
+                  <span className="text-white text-xs animate-pulse">上传中…</span>
                 ) : (
-                  <>
-                    <span className="text-sm">📷</span>
-                    <span className="text-[9px] text-white mt-0.5">更换头像</span>
-                  </>
+                  <span className="text-white text-xs">📷 更换</span>
                 )}
               </div>
-              <input
-                ref={avatarFileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={e => { const f = e.target.files?.[0]; if (f) handleAvatarUpload(f); }}
-              />
+              <input ref={avatarFileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
             </div>
             {/* Info */}
             <div className="flex-1 min-w-0">
@@ -449,86 +797,315 @@ export default function MyProfilePage() {
                 <h1 className="text-base font-semibold truncate" style={{ color: '#e8e4dc' }}>
                   {displayName}
                 </h1>
-                <span
-                  className="text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0"
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0"
                   style={{ background: plan.bg, color: plan.color }}
                 >
                   {plan.label}
                 </span>
-                <span
-                  className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0"
+                <span className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0" title="剩余积分"
                   style={{ background: '#e8f4e8', color: '#3a6040' }}
                 >
-                  ✦ {profile?.credits_remaining ?? 1}
+                  💎 {profile?.credits_remaining ?? 1} 积分
                 </span>
               </div>
-              <p className="text-xs truncate mt-0.5" style={{ color: '#6a7a7e' }}>
-                {user?.email}
-              </p>
+              <p className="text-xs truncate mt-0.5" style={{ color: '#6a7a7e' }}>{user?.email}</p>
               {isAdmin && (
                 <Link href="/dashboard" className="text-[10px] no-underline mt-0.5 inline-block" style={{ color: '#c9a96e' }}>
                   ⚙️ 超级管理后台 →
                 </Link>
               )}
-              {/* Missing fields pills */}
-              {missingFields.length > 0 && (
-                <div className="flex items-center gap-1 mt-2 overflow-hidden" style={{ maxHeight: 22 }}>
-                  {missingFields.slice(0, 5).map(f => (
-                    <span
-                      key={f.key}
-                      className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0"
-                      style={{ background: 'rgba(176,96,64,0.12)', color: '#b06040' }}
-                    >
-                      + {f.label}
-                    </span>
-                  ))}
-                  {missingFields.length > 5 && (
-                    <span className="text-[10px] flex-shrink-0" style={{ color: '#6a7a7e' }}>+{missingFields.length - 5}项</span>
-                  )}
-                </div>
-              )}
-            </div>
-            {/* Completeness arc */}
-            <div className="relative flex-shrink-0 hidden sm:block" style={{ width: 56, height: 56 }}>
-              <ArcProgress pct={pct} size={56} />
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xs font-bold" style={{ color: '#e8e4dc' }}>{pct}%</span>
+              {/* Quick summary */}
+              <div className="flex items-center gap-2 mt-1.5 text-[10px]" style={{ color: '#6a7a7e' }}>
+                <span>{education.length} 段教育</span>
+                <span>·</span>
+                <span>{work.length} 段工作</span>
+                <span>·</span>
+                <span>{documents.length} 份文件</span>
               </div>
             </div>
+            {/* Completeness arc */}
+            <div className="relative flex-shrink-0" style={{ width: 40, height: 40 }}>
+              <ArcProgress pct={pct} size={40} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[10px] font-bold" style={{ color: '#e8e4dc' }}>{pct}%</span>
+              </div>
+            </div>
+            {/* Edit button */}
+            <button
+              onClick={() => {
+                setOtherEditing(true);
+                setOtherData(profile ? profileToOther(profile) : profileToOther({} as UserProfile));
+              }}
+              className="text-[11px] px-3 py-1.5 rounded-lg flex-shrink-0"
+              style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+            >
+              编辑资料
+            </button>
           </div>
-          {/* Edit button — top right */}
-          <button
-            onClick={() => { setEditing(true); setEditData(profile ? profileToEdit(profile) : profileToEdit({} as UserProfile)); }}
-            className="absolute top-4 right-4 text-[11px] px-3 py-1 rounded-lg"
-            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
-          >
-            ✏️ 编辑资料
-          </button>
         </div>
       </div>
 
       {/* ── Two-col layout ──────────────────── */}
       <div className="lg:flex lg:gap-3 lg:items-start lg:px-0">
         {/* ── Left column ── */}
-        <div className="lg:w-[340px] lg:flex-shrink-0">
+        <div className="lg:w-[380px] lg:flex-shrink-0">
 
-          {/* Personal info — collapsible */}
+          {/* ── Education history ─────────────── */}
           <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
-            {editing && editData ? (
+            <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
+              <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
+                🎓 教育经历 <span className="font-normal" style={{ color: '#6a7a7e' }}>({education.length})</span>
+              </span>
+              <button
+                onClick={() => { setEduEditing('new'); setEduForm(emptyEdu); }}
+                className="text-[10px] px-2 py-0.5 rounded"
+                style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+              >
+                + 添加
+              </button>
+            </div>
+
+            {dataLoading ? (
+              <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
+            ) : education.length === 0 && eduEditing !== 'new' ? (
+              <div className="px-4 py-4 text-center">
+                <p className="text-xs" style={{ color: '#6a7a7e' }}>还没有教育经历</p>
+                <button onClick={() => { setEduEditing('new'); setEduForm(emptyEdu); }}
+                  className="text-xs mt-1 font-medium" style={{ color: '#c9a96e', background: 'transparent' }}
+                >
+                  添加第一段教育经历 →
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
+                {education.map(edu => (
+                  eduEditing === edu.id ? (
+                    <div key={edu.id}>{renderEduForm()}</div>
+                  ) : (
+                    <div key={edu.id} className="px-4 py-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>{edu.school}</span>
+                            {edu.degree && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(201,169,110,0.08)', color: '#a89878' }}>
+                                {edu.degree}
+                              </span>
+                            )}
+                            {edu.source === 'ai_parsed' && (
+                              <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(90,128,96,0.15)', color: '#5a8060' }}>
+                                AI
+                              </span>
+                            )}
+                          </div>
+                          {edu.major && <p className="text-[11px] mt-0.5" style={{ color: '#6a7a7e' }}>{edu.major}</p>}
+                          <div className="flex items-center gap-2 mt-0.5 text-[10px]" style={{ color: '#5a6a6e' }}>
+                            {(edu.start_date || edu.end_date) && (
+                              <span>{edu.start_date ?? '?'} – {edu.is_current ? '至今' : (edu.end_date ?? '?')}</span>
+                            )}
+                            {edu.gpa && <span>GPA {edu.gpa}{edu.gpa_scale ? `/${edu.gpa_scale}` : ''}</span>}
+                          </div>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => { setEduEditing(edu.id); setEduForm(eduToForm(edu)); }}
+                            className="text-[10px] px-2 py-0.5 rounded"
+                            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                          >
+                            编辑
+                          </button>
+                          <button
+                            onClick={() => deleteEducation(edu.id)}
+                            className="text-[10px] px-2 py-0.5 rounded"
+                            style={{ background: 'rgba(176,96,64,0.12)', color: '#b06040' }}
+                          >
+                            删除
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                ))}
+              </div>
+            )}
+
+            {eduEditing === 'new' && renderEduForm()}
+          </div>
+
+          {/* ── Work history ─────────────────── */}
+          <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
+            <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
+              <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
+                💼 工作/实习经历 <span className="font-normal" style={{ color: '#6a7a7e' }}>({work.length})</span>
+              </span>
+              <button
+                onClick={() => { setWorkEditing('new'); setWorkForm(emptyWork); }}
+                className="text-[10px] px-2 py-0.5 rounded"
+                style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+              >
+                + 添加
+              </button>
+            </div>
+
+            {dataLoading ? (
+              <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
+            ) : work.length === 0 && workEditing !== 'new' ? (
+              <div className="px-4 py-4 text-center">
+                <p className="text-xs" style={{ color: '#6a7a7e' }}>还没有工作/实习经历</p>
+                <button onClick={() => { setWorkEditing('new'); setWorkForm(emptyWork); }}
+                  className="text-xs mt-1 font-medium" style={{ color: '#c9a96e', background: 'transparent' }}
+                >
+                  添加第一段经历 →
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
+                {work.map(w => (
+                  workEditing === w.id ? (
+                    <div key={w.id}>{renderWorkForm()}</div>
+                  ) : (
+                    <div key={w.id} className="px-4 py-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>{w.company}</span>
+                            {w.source === 'ai_parsed' && (
+                              <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(90,128,96,0.15)', color: '#5a8060' }}>
+                                AI
+                              </span>
+                            )}
+                          </div>
+                          {w.position && <p className="text-[11px] mt-0.5" style={{ color: '#6a7a7e' }}>{w.position}</p>}
+                          {(w.start_date || w.end_date) && (
+                            <p className="text-[10px] mt-0.5" style={{ color: '#5a6a6e' }}>
+                              {w.start_date ?? '?'} – {w.is_current ? '至今' : (w.end_date ?? '?')}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => { setWorkEditing(w.id); setWorkForm(workToForm(w)); }}
+                            className="text-[10px] px-2 py-0.5 rounded"
+                            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                          >
+                            编辑
+                          </button>
+                          <button
+                            onClick={() => deleteWork(w.id)}
+                            className="text-[10px] px-2 py-0.5 rounded"
+                            style={{ background: 'rgba(176,96,64,0.12)', color: '#b06040' }}
+                          >
+                            删除
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                ))}
+              </div>
+            )}
+
+            {workEditing === 'new' && renderWorkForm()}
+          </div>
+
+          {/* ── Documents / File management ──── */}
+          <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
+            <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
+              <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
+                📄 文件管理 <span className="font-normal" style={{ color: '#6a7a7e' }}>({documents.length})</span>
+              </span>
+              <button
+                onClick={() => !docUploading && docFileRef.current?.click()}
+                disabled={docUploading}
+                className="text-[10px] px-2 py-0.5 rounded"
+                style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+              >
+                {docUploading ? '上传中…' : '+ 上传'}
+              </button>
+              <input ref={docFileRef} type="file" accept=".pdf,image/*" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleDocUpload(f); }}
+              />
+            </div>
+
+            {dataLoading ? (
+              <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
+            ) : documents.length === 0 ? (
+              <div className="px-4 py-4 text-center">
+                <p className="text-xs" style={{ color: '#6a7a7e' }}>上传简历、成绩单或学历证明</p>
+                <p className="text-[10px] mt-1" style={{ color: '#5a6a6e' }}>AI 自动解析，填充教育和工作经历</p>
+                <button
+                  onClick={() => !docUploading && docFileRef.current?.click()}
+                  className="mt-2 text-xs font-medium"
+                  style={{ color: '#c9a96e', background: 'transparent' }}
+                >
+                  📎 上传第一份文件 →
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
+                {documents.map(doc => {
+                  const parseColor = doc.parse_status === 'done' ? '#5a8060'
+                    : doc.parse_status === 'parsing' ? '#c9a96e'
+                    : doc.parse_status === 'failed' ? '#b06040'
+                    : '#6a7a7e';
+                  const parseLabel = doc.parse_status === 'done' ? '已解析'
+                    : doc.parse_status === 'parsing' ? '解析中…'
+                    : doc.parse_status === 'failed' ? '解析失败'
+                    : '待解析';
+                  return (
+                    <div key={doc.id} className="px-4 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate" style={{ color: '#e8e4dc' }}>{doc.file_name}</p>
+                          <div className="flex items-center gap-2 mt-0.5 text-[10px]" style={{ color: '#5a6a6e' }}>
+                            <span>{formatFileSize(doc.file_size)}</span>
+                            <span>·</span>
+                            <span style={{ color: parseColor }}>{parseLabel}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          {(doc.parse_status === 'pending' || doc.parse_status === 'failed') && (
+                            <button
+                              onClick={() => parseDocument(doc.id)}
+                              className="text-[10px] px-2 py-0.5 rounded font-medium text-white"
+                              style={{ background: '#c9a96e' }}
+                            >
+                              🤖 AI解析
+                            </button>
+                          )}
+                          <button
+                            onClick={() => deleteDocument(doc.id)}
+                            className="text-[10px] px-2 py-0.5 rounded"
+                            style={{ background: 'rgba(176,96,64,0.12)', color: '#b06040' }}
+                          >
+                            删除
+                          </button>
+                        </div>
+                      </div>
+                      {doc.parse_status === 'failed' && doc.parse_error && (
+                        <p className="text-[10px] mt-1" style={{ color: '#b06040' }}>{doc.parse_error}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ── Other info — collapsible ──────── */}
+          <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
+            {otherEditing && otherData ? (
               <>
                 <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
-                  <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>📋 编辑资料</span>
+                  <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>📋 编辑其他信息</span>
                   <div className="flex gap-2">
-                    <button
-                      onClick={saveEdit}
-                      disabled={saving}
+                    <button onClick={saveOtherInfo} disabled={otherSaving}
                       className="text-[11px] px-3 py-1 rounded-lg font-semibold text-white"
-                      style={{ background: saving ? '#d8c8a8' : '#c9a96e' }}
+                      style={{ background: otherSaving ? '#d8c8a8' : '#c9a96e' }}
                     >
-                      {saving ? '保存中…' : '保存'}
+                      {otherSaving ? '保存中…' : '保存'}
                     </button>
-                    <button
-                      onClick={() => setEditing(false)}
+                    <button onClick={() => setOtherEditing(false)}
                       className="text-[11px] px-3 py-1 rounded-lg"
                       style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
                     >
@@ -539,10 +1116,6 @@ export default function MyProfilePage() {
                 <div className="px-4 py-3 space-y-3">
                   {[
                     { key: 'display_name' as const, label: '姓名', placeholder: '你的名字' },
-                    { key: 'university' as const, label: '就读学校', placeholder: '例：浙江大学' },
-                    { key: 'major' as const, label: '专业', placeholder: '例：计算机科学' },
-                    { key: 'gpa' as const, label: 'GPA', placeholder: '例：3.8' },
-                    { key: 'gpa_scale' as const, label: 'GPA 满分', placeholder: '例：4.0' },
                     { key: 'target_field' as const, label: '目标研究方向', placeholder: '例：机器学习' },
                     { key: 'target_universities' as const, label: '目标学校（逗号分隔）', placeholder: '例：ANU, UNSW' },
                     { key: 'english_level' as const, label: '英语水平', placeholder: '例：雅思 7.0' },
@@ -551,45 +1124,25 @@ export default function MyProfilePage() {
                   ].map(({ key, label, placeholder }) => (
                     <div key={key}>
                       <label className="block text-[11px] mb-1" style={{ color: '#6a7a7e' }}>{label}</label>
-                      <input
-                        type="text"
-                        placeholder={placeholder}
-                        value={editData[key] as string}
-                        onChange={e => setEditData(prev => prev ? { ...prev, [key]: e.target.value } : prev)}
+                      <input type="text" placeholder={placeholder}
+                        value={otherData[key] as string}
+                        onChange={e => setOtherData(prev => prev ? { ...prev, [key]: e.target.value } : prev)}
                         className="w-full px-3 py-2 rounded-lg text-xs outline-none"
                         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
                       />
                     </div>
                   ))}
-                  <div>
-                    <label className="block text-[11px] mb-1" style={{ color: '#6a7a7e' }}>学历层次</label>
-                    <select
-                      value={editData.degree_level}
-                      onChange={e => setEditData(prev => prev ? { ...prev, degree_level: e.target.value } : prev)}
-                      className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
-                    >
-                      <option value="">请选择</option>
-                      {['本科在读', '本科毕业', '硕士在读', '硕士毕业', '博士在读'].map(v => (
-                        <option key={v} value={v}>{v}</option>
-                      ))}
-                    </select>
-                  </div>
                   <div className="flex gap-4">
                     <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: '#a8b8ac' }}>
-                      <input
-                        type="checkbox"
-                        checked={editData.has_research_experience}
-                        onChange={e => setEditData(prev => prev ? { ...prev, has_research_experience: e.target.checked } : prev)}
+                      <input type="checkbox" checked={otherData.has_research_experience}
+                        onChange={e => setOtherData(prev => prev ? { ...prev, has_research_experience: e.target.checked } : prev)}
                         className="rounded"
                       />
                       有科研经历
                     </label>
                     <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: '#a8b8ac' }}>
-                      <input
-                        type="checkbox"
-                        checked={editData.has_publications}
-                        onChange={e => setEditData(prev => prev ? { ...prev, has_publications: e.target.checked } : prev)}
+                      <input type="checkbox" checked={otherData.has_publications}
+                        onChange={e => setOtherData(prev => prev ? { ...prev, has_publications: e.target.checked } : prev)}
                         className="rounded"
                       />
                       有论文发表
@@ -600,20 +1153,32 @@ export default function MyProfilePage() {
             ) : (
               <>
                 <button
-                  onClick={() => setShowProfile(!showProfile)}
+                  onClick={() => setShowOther(!showOther)}
                   className="w-full flex items-center justify-between px-4 py-2.5"
                   style={{ background: 'transparent' }}
                 >
                   <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
-                    📋 个人背景 <span className="font-normal" style={{ color: '#6a7a7e' }}>{infoRows.filter(r => r.value).length}/{infoRows.length} 已填</span>
+                    📋 其他信息 <span className="font-normal" style={{ color: '#6a7a7e' }}>{otherInfoRows.filter(r => r.value).length}/{otherInfoRows.length} 已填</span>
                   </span>
-                  <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{showProfile ? '▲' : '▼'}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        setOtherEditing(true);
+                        setOtherData(profile ? profileToOther(profile) : profileToOther({} as UserProfile));
+                      }}
+                      className="text-[10px] px-2 py-0.5 rounded"
+                      style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                    >
+                      编辑
+                    </button>
+                    <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{showOther ? '▲' : '▼'}</span>
+                  </div>
                 </button>
-                {showProfile && (
+                {showOther && (
                   <div style={{ borderTop: DIVIDER }}>
-                    {infoRows.map(({ label, value }, i) => (
-                      <div
-                        key={label}
+                    {otherInfoRows.map(({ label, value }, i) => (
+                      <div key={label}
                         className="flex items-center px-4"
                         style={{ height: 36, background: i % 2 === 1 ? 'rgba(201,169,110,0.03)' : 'transparent' }}
                       >
@@ -627,36 +1192,6 @@ export default function MyProfilePage() {
                 )}
               </>
             )}
-          </div>
-
-          {/* CV Upload */}
-          <div className="mx-4 lg:mx-0 mb-3 rounded-xl px-3 py-2" style={CARD}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>📄 简历 / 成绩单</span>
-              {profile?.file_name && (
-                <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{profile.file_name}</span>
-              )}
-            </div>
-            <button
-              onClick={() => !uploading && fileRef.current?.click()}
-              disabled={uploading}
-              className="w-full py-2 rounded-lg text-xs font-medium border-2 border-dashed"
-              style={{ borderColor: 'rgba(201,169,110,0.3)', color: uploading ? '#d8c8a8' : '#c9a96e', background: 'transparent' }}
-            >
-              {uploading ? '⏳ AI 解析中…' : profile?.parsed_data ? '重新上传（AI 重新解析）' : '📎 上传简历 / 成绩单'}
-            </button>
-            {uploadMsg && (
-              <p className="text-[11px] mt-2 text-center" style={{ color: uploadMsg.startsWith('✅') ? '#5a8060' : '#b06040' }}>
-                {uploadMsg}
-              </p>
-            )}
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".pdf,image/*"
-              className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); }}
-            />
           </div>
 
         </div>{/* end left column */}
@@ -701,8 +1236,7 @@ export default function MyProfilePage() {
                           </p>
                         )}
                       </Link>
-                      <button
-                        onClick={() => unsaveProfessor(entry.professor_id)}
+                      <button onClick={() => unsaveProfessor(entry.professor_id)}
                         className="text-[10px] px-2 py-1 rounded-lg flex-shrink-0"
                         style={{ background: 'rgba(176,96,64,0.12)', color: '#b06040' }}
                       >
@@ -749,8 +1283,7 @@ export default function MyProfilePage() {
                             {new Date(email.created_at).toLocaleDateString('zh-CN')} · {email.purpose}
                           </p>
                         </div>
-                        <span
-                          className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0"
+                        <span className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0"
                           style={{ background: `${st.color}18`, color: st.color }}
                         >
                           {st.label}
@@ -813,9 +1346,7 @@ export default function MyProfilePage() {
           <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
             <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
               <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>⭐ 为你推荐</span>
-              <button
-                onClick={loadRecommended}
-                disabled={recLoading}
+              <button onClick={loadRecommended} disabled={recLoading}
                 className="text-[10px] px-2 py-0.5 rounded"
                 style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
               >
@@ -863,8 +1394,7 @@ export default function MyProfilePage() {
 
           {/* CTA */}
           <div className="mx-4 lg:mx-0 mb-3">
-            <Link
-              href="/koala/chat"
+            <Link href="/koala/chat"
               className="block w-full py-3 rounded-xl text-center text-sm font-semibold text-white no-underline"
               style={{ background: '#c9a96e' }}
             >
@@ -874,8 +1404,7 @@ export default function MyProfilePage() {
 
           {/* Settings */}
           <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
-            <button
-              onClick={() => setShowSettings(!showSettings)}
+            <button onClick={() => setShowSettings(!showSettings)}
               className="w-full flex items-center justify-between px-4 py-2.5"
               style={{ background: 'transparent' }}
             >
