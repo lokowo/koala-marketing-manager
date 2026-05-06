@@ -6,6 +6,7 @@ import { ArrowRight, Search } from 'lucide-react';
 
 interface BlogPost {
   id: string;
+  slug?: string;
   title_zh: string | null;
   title_en: string | null;
   excerpt_zh: string | null;
@@ -195,7 +196,7 @@ export default function BlogPage() {
             {posts.map(post => (
               <Link
                 key={post.id}
-                href={`/koala/blog/${post.id}`}
+                href={`/koala/blog/${post.slug || post.id}`}
                 className="blog-card block rounded-xl no-underline transition-all active:scale-[0.98] overflow-hidden"
                 style={{ background: 'linear-gradient(180deg, #111c28, #0d1520)', border: '1px solid rgba(201,169,110,0.08)' }}
               >

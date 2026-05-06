@@ -144,11 +144,14 @@ export async function POST(req: NextRequest) {
     const readingTimeEn = Math.max(2, Math.ceil(wordCount / 200));
 
     const status = publishMode === 'publish' ? 'published' : 'draft';
-    const slug = zhData.titleZh
+    const slugSource = enData.titleEn || zhData.titleZh;
+    const slug = slugSource
       .toLowerCase()
-      .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 100) + '-' + Date.now();
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 80)
+      .replace(/^-|-$/g, '') + '-' + Date.now();
 
     const row = {
       slug,

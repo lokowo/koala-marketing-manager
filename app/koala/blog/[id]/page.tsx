@@ -155,8 +155,20 @@ export default function BlogDetailPage() {
 
   const hasBilingual = !!(post.content_zh && post.content_en);
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title_zh || post.title_en,
+    description: post.excerpt_zh || post.excerpt_en,
+    image: post.cover_image_url,
+    datePublished: post.published_at,
+    author: { '@type': 'Organization', name: 'Koala PhD', url: 'https://koalaphd.com' },
+    publisher: { '@type': 'Organization', name: 'Koala PhD', logo: { '@type': 'ImageObject', url: 'https://koalaphd.com/og-image.svg' } },
+  };
+
   return (
     <div style={{ background: '#080c10', minHeight: '100vh' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Toast */}
       {toast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50" style={{ background: '#c9a96e', color: '#080c10', padding: '8px 16px', borderRadius: 20, fontSize: 12, fontWeight: 500 }}>
@@ -304,7 +316,7 @@ export default function BlogDetailPage() {
               {relatedPosts.map(rp => (
                 <Link
                   key={rp.id}
-                  href={`/koala/blog/${rp.id}`}
+                  href={`/koala/blog/${(rp as BlogPost & { slug?: string }).slug || rp.id}`}
                   className="related-card no-underline"
                 >
                   <div

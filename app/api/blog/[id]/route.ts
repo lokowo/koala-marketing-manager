@@ -8,11 +8,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
 
-    const { data, error } = await db
-      .from('blog_posts')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    let data, error;
+    if (isUuid) {
+      ({ data, error } = await db.from('blog_posts').select('*').eq('id', id).single());
+    } else {
+      ({ data, error } = await db.from('blog_posts').select('*').eq('slug', id).single());
+    }
 
     if (error) {
       return Response.json({ error: error.message }, { status: error.code === 'PGRST116' ? 404 : 500 });
