@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { getServerUser, getUserRole } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { logWork } from '../../../lib/worklog';
+import { notifySalesConversion } from '../../../lib/server/slack';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -51,6 +52,13 @@ export async function POST(req: NextRequest) {
     const { customerId, stage, note } = await req.json();
     if (!customerId) return Response.json({ error: 'customerId required' }, { status: 400 });
 
+    const { data: prev } = await db
+      .from('sales_customers')
+      .select('stage')
+      .eq('id', customerId)
+      .eq('sales_user_id', user.id)
+      .single();
+
     const { data, error } = await db
       .from('sales_customers')
       .update({ stage, note, updated_at: new Date().toISOString() })
@@ -61,6 +69,16 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
     if (!data) return Response.json({ error: 'Not found' }, { status: 404 });
+
+    if (prev && prev.stage !== stage) {
+      const { data: salesProfile } = await db.from('user_profiles').select('display_name').eq('id', user.id).single();
+      notifySalesConversion({
+        salesName: salesProfile?.display_name || user.email || 'Sales',
+        customerName: data.user_profiles?.display_name || data.user_profiles?.email || customerId,
+        fromStage: prev.stage,
+        toStage: stage,
+      });
+    }
 
     await logWork({
       userId: user.id,

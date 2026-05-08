@@ -1,5 +1,6 @@
 import { getServerUser } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { notifyRoleApplication } from '../../../lib/server/slack';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -105,6 +106,13 @@ export async function POST(req: Request) {
         }))
       );
     }
+
+    const roleName = role === 'admin' ? '管理员' : '销售';
+    notifyRoleApplication({
+      userName: fullName || email,
+      email,
+      role: roleName,
+    });
 
     return Response.json({ success: true, application }, { status: 201 });
   } catch (e) {

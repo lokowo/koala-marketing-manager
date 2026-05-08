@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getServerUser } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { notifyNewSupportTicket } from '../../../lib/server/slack';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -89,6 +90,13 @@ export async function POST(req: NextRequest) {
         content: '我们已收到您的消息，客服团队将尽快回复。',
         type: 'info',
         link: '/dashboard/koala/notifications',
+      });
+
+      notifyNewSupportTicket({
+        userName: user.email ?? 'Unknown',
+        category: categoryLabel(cat),
+        preview: content,
+        threadId: thread.id,
       });
 
       return Response.json({ success: true, threadId: thread.id });

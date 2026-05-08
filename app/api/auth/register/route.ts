@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { sendVerificationEmail } from '../../../lib/services/emailService';
+import { notifyNewUserSignup } from '../../../lib/server/slack';
 
 function generateCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -86,6 +87,8 @@ export async function POST(req: Request) {
       console.error('[register] email:', emailError);
       return Response.json({ error: '验证邮件发送失败，请稍后重试' }, { status: 500 });
     }
+
+    notifyNewUserSignup({ email, source: salesCode ? `sales:${salesCode}` : referralCode ? `referral:${referralCode}` : undefined });
 
     return Response.json({ success: true, message: '注册成功，验证码已发送' });
   } catch (error) {

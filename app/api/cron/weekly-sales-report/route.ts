@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { notifyWeeklyReport } from '../../../lib/server/slack';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -101,6 +102,15 @@ export async function GET(req: Request) {
         content: `上周 Sales 报告：${metCount} 人达标 / ${notMetCount} 人未达标。总注册 ${totalLeads}，总转化 ${totalConversions}。`,
       });
     }
+
+    notifyWeeklyReport({
+      weekStart: weekLabel,
+      totalLeads,
+      totalConversions,
+      metCount,
+      notMetCount,
+      salesCount: salesUsers.length,
+    });
 
     return Response.json({
       success: true,
