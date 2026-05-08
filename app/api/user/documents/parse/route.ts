@@ -4,6 +4,12 @@ import { supabaseAdmin } from '../../../../lib/supabase/server';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
+function extractYear(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null;
+  const y = parseInt(dateStr.slice(0, 4), 10);
+  return isNaN(y) ? null : y;
+}
+
 export async function POST(req: Request) {
   try {
     const user = await getServerUser();
@@ -27,17 +33,29 @@ export async function POST(req: Request) {
 
     await db
       .from('user_documents')
-      .update({ parse_status: 'parsing', updated_at: new Date().toISOString() })
+      .update({ ai_parsed: false, updated_at: new Date().toISOString() })
       .eq('id', document_id);
+
+    const storagePath = doc.file_url?.includes('user-documents/')
+      ? doc.file_url.split('user-documents/').pop()
+      : null;
+
+    if (!storagePath) {
+      await db
+        .from('user_documents')
+        .update({ ai_summary: JSON.stringify({ error: 'Invalid file path' }), updated_at: new Date().toISOString() })
+        .eq('id', document_id);
+      return Response.json({ error: 'Invalid file path' }, { status: 500 });
+    }
 
     const { data: fileData, error: dlError } = await db.storage
       .from('user-documents')
-      .download(doc.storage_path);
+      .download(storagePath);
 
     if (dlError || !fileData) {
       await db
         .from('user_documents')
-        .update({ parse_status: 'failed', parse_error: 'Failed to download file', updated_at: new Date().toISOString() })
+        .update({ ai_summary: JSON.stringify({ error: 'Failed to download file' }), updated_at: new Date().toISOString() })
         .eq('id', document_id);
       return Response.json({ error: 'Failed to download file' }, { status: 500 });
     }
@@ -118,7 +136,7 @@ export async function POST(req: Request) {
     if (!jsonMatch) {
       await db
         .from('user_documents')
-        .update({ parse_status: 'failed', parse_error: 'Failed to parse AI response', updated_at: new Date().toISOString() })
+        .update({ ai_summary: JSON.stringify({ error: 'Failed to parse AI response' }), updated_at: new Date().toISOString() })
         .eq('id', document_id);
       return Response.json({ error: 'Failed to parse AI response' }, { status: 500 });
     }
@@ -128,9 +146,8 @@ export async function POST(req: Request) {
     await db
       .from('user_documents')
       .update({
-        parse_status: 'done',
-        parsed_data: parsed,
-        parse_error: null,
+        ai_parsed: true,
+        ai_summary: JSON.stringify(parsed),
         updated_at: new Date().toISOString(),
       })
       .eq('id', document_id);
@@ -140,17 +157,15 @@ export async function POST(req: Request) {
         if (!edu.school) continue;
         await db.from('education_history').insert({
           user_id: user.id,
-          school: edu.school,
+          institution: edu.school,
           major: edu.major || null,
-          degree: edu.degree || null,
+          degree_type: edu.degree || 'Other',
           gpa: edu.gpa ? parseFloat(edu.gpa) : null,
           gpa_scale: edu.gpa_scale || null,
-          start_date: edu.start_date || null,
-          end_date: edu.end_date || null,
-          is_current: edu.is_current ?? false,
+          start_year: extractYear(edu.start_date),
+          end_year: extractYear(edu.end_date),
+          status: edu.is_current ? 'current' : 'completed',
           description: edu.description || null,
-          source: 'ai_parsed',
-          source_document_id: document_id,
         });
       }
     }
@@ -161,13 +176,12 @@ export async function POST(req: Request) {
         await db.from('work_history').insert({
           user_id: user.id,
           company: w.company,
-          position: w.position || null,
-          start_date: w.start_date || null,
-          end_date: w.end_date || null,
+          position: w.position || '未填写',
+          start_year: extractYear(w.start_date),
+          end_year: extractYear(w.end_date),
           is_current: w.is_current ?? false,
+          status: w.is_current ? 'current' : 'completed',
           description: w.description || null,
-          source: 'ai_parsed',
-          source_document_id: document_id,
         });
       }
     }

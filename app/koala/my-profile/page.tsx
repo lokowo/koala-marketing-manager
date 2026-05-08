@@ -1281,12 +1281,13 @@ export default function MyProfilePage() {
               <button
                 onClick={() => !docUploading && docFileRef.current?.click()}
                 disabled={docUploading}
-                className="text-[10px] px-2 py-0.5 rounded"
-                style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                className="text-[10px] px-2 py-0.5 rounded flex items-center gap-1"
+                style={{ background: docUploading ? 'rgba(201,169,110,0.2)' : 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
               >
-                {docUploading ? '上传中…' : '+ 上传'}
+                {docUploading && <span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />}
+                {docUploading ? '上传中…' : '+ 上传文件'}
               </button>
-              <input ref={docFileRef} type="file" accept=".pdf,image/*" className="hidden"
+              <input ref={docFileRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,image/*" className="hidden"
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleDocUpload(f); }}
               />
             </div>
@@ -1322,15 +1323,29 @@ export default function MyProfilePage() {
                     : doc.parse_status === 'parsing' ? '解析中…'
                     : doc.parse_status === 'failed' ? '解析失败'
                     : '待解析';
+                  const fileIcon = doc.file_type.startsWith('image/') ? '🖼️'
+                    : doc.file_type.includes('pdf') ? '📑'
+                    : '📄';
                   return (
                     <div key={doc.id} className="px-4 py-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate" style={{ color: '#e8e4dc' }}>{doc.file_name}</p>
-                          <div className="flex items-center gap-2 mt-0.5 text-[10px]" style={{ color: '#5a6a6e' }}>
-                            <span>{formatFileSize(doc.file_size)}</span>
-                            <span>·</span>
-                            <span style={{ color: parseColor }}>{parseLabel}</span>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-base flex-shrink-0">{fileIcon}</span>
+                          <div className="flex-1 min-w-0">
+                            {doc.file_url ? (
+                              <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
+                                className="text-xs font-medium truncate block hover:underline"
+                                style={{ color: '#c9a96e' }}>{doc.file_name}</a>
+                            ) : (
+                              <p className="text-xs font-medium truncate" style={{ color: '#e8e4dc' }}>{doc.file_name}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-0.5 text-[10px]" style={{ color: '#5a6a6e' }}>
+                              <span>{formatFileSize(doc.file_size)}</span>
+                              <span>·</span>
+                              <span style={{ color: parseColor }}>{parseLabel}</span>
+                              <span>·</span>
+                              <span>{timeAgo(doc.created_at)}</span>
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-1 flex-shrink-0">
@@ -1340,11 +1355,19 @@ export default function MyProfilePage() {
                               className="text-[10px] px-2 py-0.5 rounded font-medium text-white"
                               style={{ background: '#c9a96e' }}
                             >
-                              🤖 AI解析
+                              AI解析
                             </button>
                           )}
+                          {doc.file_url && (
+                            <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
+                              className="text-[10px] px-2 py-0.5 rounded"
+                              style={{ background: 'rgba(201,169,110,0.08)', color: '#c9a96e' }}
+                            >
+                              查看
+                            </a>
+                          )}
                           <button
-                            onClick={() => deleteDocument(doc.id)}
+                            onClick={() => { if (confirm('确定删除此文件？')) deleteDocument(doc.id); }}
                             className="text-[10px] px-2 py-0.5 rounded"
                             style={{ background: 'rgba(176,96,64,0.12)', color: '#b06040' }}
                           >
