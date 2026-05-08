@@ -44,7 +44,7 @@ function AuthPageInner() {
     const { error: signUpErr } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: undefined },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
 
     if (signUpErr) {
