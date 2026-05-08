@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { listProfessors, countProfessors, createProfessor } from '../../lib/services/professorService';
+import { getServerUser } from '../../lib/auth';
+import { logAdminAction } from '../../lib/worklog';
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,9 +44,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   let body: Record<string, unknown> = {};
   try {
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
     body = await request.json();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const professor = await createProfessor(body as any);
+
+    await logAdminAction(user.id, 'professor_create', 'professor', professor?.id, { name: body.name || body.name_en });
+
     return Response.json({ data: professor }, { status: 201 });
   } catch (e) {
     console.error('[professors POST]', (e as Error).message, body);

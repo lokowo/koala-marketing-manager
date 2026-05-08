@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { getServerUser } from '../../../lib/auth';
+import { logAdminAction } from '../../../lib/worklog';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -57,6 +59,9 @@ CRITICAL: Return ONLY valid JSON. Use proper JSON escaping: \\n for newlines, \\
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { topic, category, style, publishMode, imageCount } = await req.json();
 
     if (!topic) {
@@ -199,6 +204,8 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({ postId: post.id, imageCount: imgCount }),
       }).catch(err => console.error('[generate] Auto images failed:', err));
     }
+
+    await logAdminAction(user.id, 'blog_generate', 'blog_post', post?.id, { topic, category, style });
 
     return Response.json({
       success: true,

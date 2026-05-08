@@ -74,6 +74,14 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
       { icon: '⚙️', label: '系统设置', href: '/dashboard/koala/settings' },
     ];
 
+    if (userRole === 'super_admin') {
+      nav.push(
+        { icon: '🔐', label: '角色管理', href: '/dashboard/koala/roles', adminOnly: true },
+        { icon: '💰', label: 'Sales总览', href: '/dashboard/koala/sales-overview', adminOnly: true },
+        { icon: '📋', label: '工作日志', href: '/dashboard/koala/work-logs', adminOnly: true },
+      );
+    }
+
     if (userRole !== 'super_admin') {
       return nav.filter(n => !n.adminOnly);
     }
@@ -193,7 +201,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
         <div className={`${collapsed ? 'px-2' : 'px-4'} py-3 border-t border-slate-800`}>
           {!collapsed && (
             <div className="text-[11px] text-slate-600 mb-2">
-              {role === 'super_admin' ? '超级管理员' : role === 'admin' ? '管理员' : '只读'}
+              {role === 'super_admin' ? '超级管理员' : role === 'admin' ? '管理员' : role === 'sales' ? '销售' : '只读'}
             </div>
           )}
           <button

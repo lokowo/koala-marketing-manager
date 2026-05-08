@@ -332,6 +332,12 @@ export default function MyProfilePage() {
   // Collapsible sections
   const [showOther, setShowOther] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showRoleApply, setShowRoleApply] = useState(false);
+  const [roleApplyRole, setRoleApplyRole] = useState<'admin' | 'sales'>('admin');
+  const [roleApplyReason, setRoleApplyReason] = useState('');
+  const [roleApplyPhone, setRoleApplyPhone] = useState('');
+  const [roleApplyLoading, setRoleApplyLoading] = useState(false);
+  const [roleApplyStatus, setRoleApplyStatus] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   // Avatar
@@ -1700,6 +1706,13 @@ export default function MyProfilePage() {
                 </Link>
                 <button
                   className="w-full flex items-center px-4 py-2.5 text-xs text-left"
+                  style={{ color: '#a8b8ac', background: 'transparent' }}
+                  onClick={() => setShowRoleApply(true)}
+                >
+                  👔 申请角色（管理员/销售）
+                </button>
+                <button
+                  className="w-full flex items-center px-4 py-2.5 text-xs text-left"
                   style={{ color: '#b06040', background: 'transparent' }}
                   onClick={handleSignOut}
                 >
@@ -1711,6 +1724,78 @@ export default function MyProfilePage() {
 
         </div>{/* end right column */}
       </div>{/* end two-col layout */}
+
+      {/* Role Application Modal */}
+      {showRoleApply && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setShowRoleApply(false)}>
+          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.15)' }} onClick={e => e.stopPropagation()}>
+            <h3 className="text-sm font-bold mb-4" style={{ color: '#e8e4dc' }}>申请角色</h3>
+            {roleApplyStatus ? (
+              <div className="text-center py-4">
+                <p className="text-xs" style={{ color: roleApplyStatus === 'success' ? '#5a8060' : '#b06040' }}>
+                  {roleApplyStatus === 'success' ? '申请已提交，请等待审核' : roleApplyStatus}
+                </p>
+                <button onClick={() => { setShowRoleApply(false); setRoleApplyStatus(null); }} className="mt-3 text-xs px-4 py-2 rounded-full" style={{ background: '#c9a96e', color: '#080c10' }}>关闭</button>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2 mb-3">
+                  {(['admin', 'sales'] as const).map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setRoleApplyRole(r)}
+                      className="flex-1 py-2 rounded-lg text-xs font-medium transition"
+                      style={{ background: roleApplyRole === r ? 'rgba(201,169,110,0.15)' : 'transparent', color: roleApplyRole === r ? '#c9a96e' : '#6a7a7e', border: `1px solid ${roleApplyRole === r ? 'rgba(201,169,110,0.3)' : 'rgba(201,169,110,0.08)'}` }}
+                    >
+                      {r === 'admin' ? '管理员' : '销售'}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="tel"
+                  placeholder="联系电话（选填）"
+                  value={roleApplyPhone}
+                  onChange={e => setRoleApplyPhone(e.target.value)}
+                  className="w-full rounded-lg px-3 py-2 text-xs mb-3 focus:outline-none"
+                  style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+                />
+                <textarea
+                  placeholder="申请理由（至少10字）"
+                  value={roleApplyReason}
+                  onChange={e => setRoleApplyReason(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-lg px-3 py-2 text-xs mb-3 focus:outline-none resize-none"
+                  style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+                />
+                <div className="flex gap-2">
+                  <button onClick={() => setShowRoleApply(false)} className="flex-1 py-2 rounded-lg text-xs" style={{ color: '#6a7a7e', border: '1px solid rgba(201,169,110,0.1)' }}>取消</button>
+                  <button
+                    disabled={roleApplyLoading || roleApplyReason.length < 10}
+                    onClick={async () => {
+                      setRoleApplyLoading(true);
+                      try {
+                        const res = await fetch('/api/user/role-application', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ role: roleApplyRole, reason: roleApplyReason, phone: roleApplyPhone }),
+                        });
+                        const d = await res.json();
+                        if (!res.ok) { setRoleApplyStatus(d.error || '提交失败'); }
+                        else { setRoleApplyStatus('success'); }
+                      } catch { setRoleApplyStatus('网络错误'); }
+                      setRoleApplyLoading(false);
+                    }}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium disabled:opacity-50"
+                    style={{ background: '#c9a96e', color: '#080c10' }}
+                  >
+                    {roleApplyLoading ? '提交中…' : '提交申请'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Disclaimer */}
       <p className="text-center mt-4 mb-2 px-4" style={{ fontSize: 9, color: '#6a7a7e' }}>

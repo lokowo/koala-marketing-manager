@@ -91,6 +91,8 @@ export default function HomePage() {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [showNotif, setShowNotif] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<{ id: string; title: string; body: string; read: boolean; created_at: string }[]>([]);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -120,6 +122,16 @@ export default function HomePage() {
       })
       .catch(() => {});
 
+    if (user) {
+      fetch('/api/user/notifications?limit=5')
+        .then(r => r.json())
+        .then(d => {
+          setUnreadCount(d.unreadCount ?? 0);
+          setNotifications(d.data ?? []);
+        })
+        .catch(() => {});
+    }
+
     fetch('/api/blog?limit=2&public=true')
       .then(r => r.json())
       .then(d => {
@@ -138,7 +150,7 @@ export default function HomePage() {
         })));
       })
       .catch(() => {});
-  }, []);
+  }, [user]);
 
   const fallbackPosts: BlogPost[] = [
     { id: '1', tag: '申请技巧', date: '4月28日', title: '如何写出打动教授的申请信', excerpt: '从研究兴趣切入，三步法精准匹配教授方向，提升回复率。' },
@@ -186,6 +198,11 @@ export default function HomePage() {
             style={{ background: showNotif ? 'rgba(201,169,110,0.06)' : 'transparent' }}
           >
             <Bell className="size-[18px]" style={{ color: '#a8b8ac' }} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full text-[9px] font-bold" style={{ background: '#b06040', color: '#fff' }}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </button>
           {user ? (
             <div className="relative" ref={userMenuRef}>
@@ -239,21 +256,57 @@ export default function HomePage() {
       {/* Notification dropdown */}
       {showNotif && (
         <div
-          className="mx-4 mt-1 mb-2 rounded-2xl p-4 flex items-center justify-between"
+          className="mx-4 mt-1 mb-2 rounded-2xl p-4"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)', boxShadow: '0 8px 24px rgba(125,99,64,0.10)' }}
         >
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(201,169,110,0.06)' }}>
-              <Bell className="size-4" style={{ color: '#c9a96e' }} />
-            </div>
-            <div>
-              <p className="text-xs font-medium" style={{ color: '#a8b8ac' }}>暂无新消息</p>
-              <p className="text-[10px] mt-0.5" style={{ color: '#6a7a7e' }}>有新动态时会通知你</p>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium" style={{ color: '#a8b8ac' }}>通知</span>
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <button
+                  onClick={async () => {
+                    await fetch('/api/user/notifications', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ action: 'markAllRead' }),
+                    });
+                    setUnreadCount(0);
+                    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                  }}
+                  className="text-[10px]"
+                  style={{ color: '#c9a96e' }}
+                >
+                  全部已读
+                </button>
+              )}
+              <button onClick={() => setShowNotif(false)} className="size-6 flex items-center justify-center rounded-full" style={{ background: 'rgba(201,169,110,0.06)' }}>
+                <X className="size-3" style={{ color: '#6a7a7e' }} />
+              </button>
             </div>
           </div>
-          <button onClick={() => setShowNotif(false)} className="size-6 flex items-center justify-center rounded-full" style={{ background: 'rgba(201,169,110,0.06)' }}>
-            <X className="size-3" style={{ color: '#6a7a7e' }} />
-          </button>
+          {notifications.length === 0 ? (
+            <div className="flex items-center gap-3 py-2">
+              <div className="size-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(201,169,110,0.06)' }}>
+                <Bell className="size-4" style={{ color: '#c9a96e' }} />
+              </div>
+              <div>
+                <p className="text-xs font-medium" style={{ color: '#a8b8ac' }}>暂无新消息</p>
+                <p className="text-[10px] mt-0.5" style={{ color: '#6a7a7e' }}>有新动态时会通知你</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {notifications.map(n => (
+                <div key={n.id} className="flex items-start gap-2 px-2 py-1.5 rounded-lg" style={{ background: n.read ? 'transparent' : 'rgba(201,169,110,0.04)' }}>
+                  {!n.read && <span className="mt-1.5 size-1.5 rounded-full flex-shrink-0" style={{ background: '#c9a96e' }} />}
+                  <div className={n.read ? 'ml-3.5' : ''}>
+                    <p className="text-xs font-medium" style={{ color: '#e8e4dc' }}>{n.title}</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: '#6a7a7e' }}>{n.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

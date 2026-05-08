@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getProfessor, updateProfessor, deleteProfessor } from '../../../lib/services/professorService';
+import { getServerUser } from '../../../lib/auth';
+import { logAdminAction } from '../../../lib/worklog';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -19,8 +21,14 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
 }
 
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
+  const user = await getServerUser();
+  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { id } = await ctx.params;
   const deleted = await deleteProfessor(id);
   if (!deleted) return Response.json({ error: 'Not found' }, { status: 404 });
+
+  await logAdminAction(user.id, 'professor_delete', 'professor', id);
+
   return Response.json({ success: true });
 }

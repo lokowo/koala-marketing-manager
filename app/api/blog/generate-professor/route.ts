@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { getServerUser } from '../../../lib/auth';
+import { logAdminAction } from '../../../lib/worklog';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -15,6 +17,9 @@ const isTopJournal = (journal: string) =>
   TOP_JOURNALS.some(t => journal?.toLowerCase().includes(t.toLowerCase()));
 
 export async function POST(req: NextRequest) {
+  const user = await getServerUser();
+  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { professorId } = await req.json().catch(() => ({ professorId: null }));
 
   if (!professorId) {
@@ -246,6 +251,8 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
       body: JSON.stringify({ postId: post.id, imageCount: 1 }),
     }).catch(err => console.error('[generate-professor] Inline image trigger failed:', err));
   }
+
+  await logAdminAction(user.id, 'blog_generate_professor', 'blog_post', post?.id, { professorId, profName });
 
   return Response.json({ success: true, post, title: zhData.titleZh });
 }

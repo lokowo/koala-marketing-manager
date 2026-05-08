@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { supabaseAdmin } from './supabase/server';
 import type { User } from '@supabase/supabase-js';
 
-export type UserRole = 'super_admin' | 'admin' | 'viewer';
+export type UserRole = 'super_admin' | 'admin' | 'sales' | 'viewer';
 
 async function createServerSupabase() {
   const cookieStore = await cookies();

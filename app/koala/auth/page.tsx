@@ -24,6 +24,7 @@ function AuthPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const refCode = searchParams.get('ref') || '';
+  const salesCode = searchParams.get('sales') || '';
   const [mode, setMode] = useState<Mode>('register');
   const [step, setStep] = useState<Step>('form');
   const [email, setEmail] = useState('');
@@ -110,6 +111,14 @@ function AuthPageInner() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: referralInput }),
+      }).catch(() => {});
+    }
+
+    if (salesCode) {
+      fetch('/api/sales/track-registration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ salesCode, email }),
       }).catch(() => {});
     }
 
