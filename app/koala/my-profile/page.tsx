@@ -41,8 +41,6 @@ interface EducationEntry {
   end_date: string | null;
   is_current: boolean;
   description: string | null;
-  source: string;
-  source_document_id: string | null;
   created_at: string;
 }
 
@@ -54,8 +52,6 @@ interface WorkEntry {
   end_date: string | null;
   is_current: boolean;
   description: string | null;
-  source: string;
-  source_document_id: string | null;
   created_at: string;
 }
 
@@ -64,6 +60,7 @@ interface DocumentEntry {
   file_name: string;
   file_type: string;
   file_size: number;
+  file_url: string | null;
   parse_status: 'pending' | 'parsing' | 'done' | 'failed';
   parsed_data: object | null;
   parse_error: string | null;
@@ -320,6 +317,7 @@ export default function MyProfilePage() {
 
   // Documents upload
   const [docUploading, setDocUploading] = useState(false);
+  const [docMsg, setDocMsg] = useState('');
   const docFileRef = useRef<HTMLInputElement>(null);
 
   // Saved profs, outreach, chat, recommended
@@ -546,22 +544,29 @@ export default function MyProfilePage() {
     if (!eduForm.school.trim()) return;
     setEduSaving(true);
     try {
-      if (eduEditing === 'new') {
-        await fetch('/api/user/education', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(eduForm),
-        });
+      const res = eduEditing === 'new'
+        ? await fetch('/api/user/education', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(eduForm),
+          })
+        : await fetch('/api/user/education', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: eduEditing, ...eduForm }),
+          });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setDocMsg(`教育经历保存失败：${d.error || '请重试'}`);
+        setTimeout(() => setDocMsg(''), 4000);
       } else {
-        await fetch('/api/user/education', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: eduEditing, ...eduForm }),
-        });
+        loadEducation();
+        setEduEditing(null);
       }
-      loadEducation();
-      setEduEditing(null);
-    } catch {}
+    } catch {
+      setDocMsg('教育经历保存失败，请重试');
+      setTimeout(() => setDocMsg(''), 4000);
+    }
     setEduSaving(false);
   }
 
@@ -579,22 +584,29 @@ export default function MyProfilePage() {
     if (!workForm.company.trim()) return;
     setWorkSaving(true);
     try {
-      if (workEditing === 'new') {
-        await fetch('/api/user/work', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(workForm),
-        });
+      const res = workEditing === 'new'
+        ? await fetch('/api/user/work', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(workForm),
+          })
+        : await fetch('/api/user/work', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: workEditing, ...workForm }),
+          });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setDocMsg(`工作经历保存失败：${d.error || '请重试'}`);
+        setTimeout(() => setDocMsg(''), 4000);
       } else {
-        await fetch('/api/user/work', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: workEditing, ...workForm }),
-        });
+        loadWork();
+        setWorkEditing(null);
       }
-      loadWork();
-      setWorkEditing(null);
-    } catch {}
+    } catch {
+      setDocMsg('工作经历保存失败，请重试');
+      setTimeout(() => setDocMsg(''), 4000);
+    }
     setWorkSaving(false);
   }
 
@@ -610,17 +622,22 @@ export default function MyProfilePage() {
   // ── Document upload + parse ───────────────
   async function handleDocUpload(file: File) {
     setDocUploading(true);
+    setDocMsg('');
     try {
       const fd = new FormData();
       fd.append('file', file);
       const res = await fetch('/api/user/documents', { method: 'POST', body: fd });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? 'Upload failed');
-      loadDocuments();
+      await loadDocuments();
+      setDocMsg(`上传成功：${file.name}`);
+      setTimeout(() => setDocMsg(''), 4000);
     } catch (e) {
-      console.error('Document upload failed:', e);
+      setDocMsg(`上传失败：${(e as Error).message}`);
+      setTimeout(() => setDocMsg(''), 5000);
     }
     setDocUploading(false);
+    if (docFileRef.current) docFileRef.current.value = '';
   }
 
   async function parseDocument(docId: string) {
@@ -1149,11 +1166,6 @@ export default function MyProfilePage() {
                                 {edu.degree}
                               </span>
                             )}
-                            {edu.source === 'ai_parsed' && (
-                              <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(90,128,96,0.15)', color: '#5a8060' }}>
-                                AI
-                              </span>
-                            )}
                           </div>
                           {edu.major && <p className="text-[11px] mt-0.5" style={{ color: '#6a7a7e' }}>{edu.major}</p>}
                           <div className="flex items-center gap-2 mt-0.5 text-[10px]" style={{ color: '#5a6a6e' }}>
@@ -1226,11 +1238,6 @@ export default function MyProfilePage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>{w.company}</span>
-                            {w.source === 'ai_parsed' && (
-                              <span className="text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(90,128,96,0.15)', color: '#5a8060' }}>
-                                AI
-                              </span>
-                            )}
                           </div>
                           {w.position && <p className="text-[11px] mt-0.5" style={{ color: '#6a7a7e' }}>{w.position}</p>}
                           {(w.start_date || w.end_date) && (
@@ -1283,6 +1290,12 @@ export default function MyProfilePage() {
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleDocUpload(f); }}
               />
             </div>
+
+            {docMsg && (
+              <div className="px-4 py-2 text-xs text-center" style={{ color: docMsg.includes('成功') ? '#5a8060' : '#b06040', background: docMsg.includes('成功') ? 'rgba(90,128,96,0.08)' : 'rgba(176,96,64,0.08)' }}>
+                {docMsg.includes('成功') ? '✅' : '❌'} {docMsg}
+              </div>
+            )}
 
             {dataLoading ? (
               <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>

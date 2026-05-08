@@ -4,6 +4,20 @@ import { supabaseAdmin } from '../../../lib/supabase/server';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
+function toFrontend(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    file_name: row.file_name ?? '',
+    file_type: row.file_type ?? '',
+    file_size: row.file_size ?? 0,
+    file_url: row.file_url ?? null,
+    parse_status: row.ai_parsed ? 'done' : 'pending',
+    parsed_data: row.ai_summary ? { summary: row.ai_summary } : null,
+    parse_error: null,
+    created_at: row.created_at,
+  };
+}
+
 export async function GET() {
   try {
     const user = await getServerUser();
@@ -16,7 +30,7 @@ export async function GET() {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return Response.json({ documents: data ?? [] });
+    return Response.json({ documents: (data ?? []).map(toFrontend) });
   } catch (error) {
     console.error('[user/documents GET]', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
@@ -51,6 +65,8 @@ export async function POST(req: Request) {
       .from('user-documents')
       .getPublicUrl(storagePath);
 
+    const fileUrl = urlData?.publicUrl || storagePath;
+
     const { data, error } = await db
       .from('user_documents')
       .insert({
@@ -58,15 +74,14 @@ export async function POST(req: Request) {
         file_name: file.name,
         file_type: file.type,
         file_size: file.size,
-        storage_path: storagePath,
-        public_url: urlData?.publicUrl || null,
-        parse_status: 'pending',
+        file_url: fileUrl,
+        ai_parsed: false,
       })
       .select()
       .single();
 
     if (error) throw error;
-    return Response.json({ document: data });
+    return Response.json({ document: toFrontend(data) });
   } catch (error) {
     console.error('[user/documents POST]', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
@@ -85,26 +100,17 @@ export async function DELETE(req: Request) {
 
     const { data: doc } = await db
       .from('user_documents')
-      .select('storage_path')
+      .select('file_url')
       .eq('id', id)
       .eq('user_id', user.id)
       .single();
 
-    if (doc?.storage_path) {
-      await db.storage.from('user-documents').remove([doc.storage_path]);
+    if (doc?.file_url && doc.file_url.includes('documents/')) {
+      const path = doc.file_url.split('user-documents/').pop();
+      if (path) {
+        await db.storage.from('user-documents').remove([path]).catch(() => {});
+      }
     }
-
-    await db
-      .from('education_history')
-      .update({ source_document_id: null })
-      .eq('source_document_id', id)
-      .eq('user_id', user.id);
-
-    await db
-      .from('work_history')
-      .update({ source_document_id: null })
-      .eq('source_document_id', id)
-      .eq('user_id', user.id);
 
     const { error } = await db
       .from('user_documents')
