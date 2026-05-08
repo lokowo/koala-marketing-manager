@@ -86,16 +86,16 @@ export default function AIContentPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">✨ AI 内容生成</h2>
-        <p className="text-sm text-gray-500 mt-1">AI 自动撰写中英双语文章，包含SEO优化</p>
+        <h2 className="text-2xl font-bold text-slate-900">✨ AI 内容生成</h2>
+        <p className="text-sm text-slate-500 mt-1">AI 自动撰写中英双语文章，包含SEO优化</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-slate-200">
         <button
           onClick={() => setTab('single')}
           className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-            tab === 'single' ? 'border-amber-600 text-amber-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+            tab === 'single' ? 'border-amber-600 text-amber-700' : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
           单篇生成
@@ -103,7 +103,7 @@ export default function AIContentPage() {
         <Link
           href="/dashboard/koala/ai-content/batch"
           className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-            tab === 'batch' ? 'border-amber-600 text-amber-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+            tab === 'batch' ? 'border-amber-600 text-amber-700' : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
           ⚡ 批量生成（推荐主题）
@@ -114,21 +114,21 @@ export default function AIContentPage() {
       <div className="bg-white rounded-lg shadow p-6 space-y-5">
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">发布方式</label>
-            <select value={publishMode} onChange={e => setPublishMode(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <label className="block text-sm font-medium text-slate-700 mb-1">发布方式</label>
+            <select value={publishMode} onChange={e => setPublishMode(e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
               <option value="draft">保存草稿</option>
               <option value="publish">直接发布</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">分类</label>
-            <select value={category} onChange={e => setCategory(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <label className="block text-sm font-medium text-slate-700 mb-1">分类</label>
+            <select value={category} onChange={e => setCategory(e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
               {Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">风格</label>
-            <select value={style} onChange={e => setStyle(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <label className="block text-sm font-medium text-slate-700 mb-1">风格</label>
+            <select value={style} onChange={e => setStyle(e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
               <option value="professional">专业权威</option>
               <option value="casual">学长分享</option>
               <option value="news">新闻报道</option>
@@ -137,31 +137,31 @@ export default function AIContentPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">文章主题 Topic</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">文章主题 Topic</label>
           <textarea
             value={topic}
             onChange={e => setTopic(e.target.value)}
             placeholder="例如：2026年澳洲PhD奖学金最新政策变化和申请攻略"
             rows={3}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm"
+            className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm"
           />
-          <p className="text-xs text-gray-400 mt-1">主题越具体，生成的文章质量越高。建议包含关键词、地区、时间等信息。</p>
+          <p className="text-xs text-slate-400 mt-1">主题越具体，生成的文章质量越高。建议包含关键词、地区、时间等信息。</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">文章插图</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">文章插图</label>
           <div className="flex gap-3">
             {[0, 1, 2, 3].map(n => (
               <button
                 key={n}
                 onClick={() => setImageCount(n)}
-                className={`px-3 py-1.5 text-sm rounded-lg border ${imageCount === n ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                className={`px-3 py-1.5 text-sm rounded-lg border ${imageCount === n ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50'}`}
               >
                 {n === 0 ? '无插图' : `${n}张`}
               </button>
             ))}
           </div>
-          <p className="text-xs text-gray-400 mt-1">插图AI自动生成，插入文章内容中</p>
+          <p className="text-xs text-slate-400 mt-1">插图AI自动生成，插入文章内容中</p>
         </div>
 
         <button
@@ -180,13 +180,13 @@ export default function AIContentPage() {
               <span className="text-sm font-medium text-amber-800">{stepLabels[genStep]}</span>
             </div>
             <div className="space-y-1.5 text-xs">
-              <p className={genStep === 'writing_zh' || genStep === 'slow' ? 'text-amber-700 font-medium' : genStep === 'translating' || genStep === 'seo' || genStep === 'done' ? 'text-green-600' : 'text-gray-400'}>
+              <p className={genStep === 'writing_zh' || genStep === 'slow' ? 'text-amber-700 font-medium' : genStep === 'translating' || genStep === 'seo' || genStep === 'done' ? 'text-green-600' : 'text-slate-400'}>
                 {(genStep === 'translating' || genStep === 'seo' || genStep === 'done') ? '✅' : '⏳'} 1. 中文撰写
               </p>
-              <p className={genStep === 'translating' ? 'text-amber-700 font-medium' : genStep === 'seo' || genStep === 'done' ? 'text-green-600' : 'text-gray-400'}>
+              <p className={genStep === 'translating' ? 'text-amber-700 font-medium' : genStep === 'seo' || genStep === 'done' ? 'text-green-600' : 'text-slate-400'}>
                 {(genStep === 'seo' || genStep === 'done') ? '✅' : genStep === 'translating' ? '⏳' : '⏸'} 2. 英文翻译
               </p>
-              <p className={genStep === 'seo' ? 'text-amber-700 font-medium' : genStep === 'done' ? 'text-green-600' : 'text-gray-400'}>
+              <p className={genStep === 'seo' ? 'text-amber-700 font-medium' : genStep === 'done' ? 'text-green-600' : 'text-slate-400'}>
                 {genStep === 'done' ? '✅' : genStep === 'seo' ? '⏳' : '⏸'} 3. SEO优化
               </p>
             </div>
@@ -214,7 +214,7 @@ export default function AIContentPage() {
                   )}
                   <button
                     onClick={() => { setResult(null); setGenStep('idle'); }}
-                    className="text-sm text-gray-600 underline"
+                    className="text-sm text-slate-600 underline"
                   >
                     继续生成
                   </button>

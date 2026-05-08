@@ -56,23 +56,23 @@ export default function AIContentKnowledgePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">📚 知识库内容管理</h2>
-        <p className="text-sm text-gray-500 mt-1">知识库统计、搜索测试与管理</p>
+        <h2 className="text-2xl font-bold text-slate-900">📚 知识库内容管理</h2>
+        <p className="text-sm text-slate-500 mt-1">知识库统计、搜索测试与管理</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500">总 Chunk 数量</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalChunks?.toLocaleString() ?? '-'}</p>
+          <p className="text-sm text-slate-500">总 Chunk 数量</p>
+          <p className="text-3xl font-bold text-slate-900 mt-1">{stats?.totalChunks?.toLocaleString() ?? '-'}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500">覆盖教授数量</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.professorCount?.toLocaleString() ?? '-'}</p>
+          <p className="text-sm text-slate-500">覆盖教授数量</p>
+          <p className="text-3xl font-bold text-slate-900 mt-1">{stats?.professorCount?.toLocaleString() ?? '-'}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500">最近更新时间</p>
-          <p className="text-lg font-medium text-gray-900 mt-1">
+          <p className="text-sm text-slate-500">最近更新时间</p>
+          <p className="text-lg font-medium text-slate-900 mt-1">
             {stats?.lastUpdated ? new Date(stats.lastUpdated).toLocaleDateString('zh-CN') : '-'}
           </p>
         </div>
@@ -80,8 +80,8 @@ export default function AIContentKnowledgePage() {
 
       {/* Search Test */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-gray-900 mb-3">RAG 搜索测试</h3>
-        <p className="text-sm text-gray-500 mb-4">输入关键词测试知识库搜索结果</p>
+        <h3 className="font-semibold text-slate-900 mb-3">RAG 搜索测试</h3>
+        <p className="text-sm text-slate-500 mb-4">输入关键词测试知识库搜索结果</p>
         <div className="flex gap-2">
           <input
             type="text"
@@ -89,7 +89,7 @@ export default function AIContentKnowledgePage() {
             onChange={e => setSearchQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
             placeholder="例如：machine learning, quantum computing..."
-            className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm"
+            className="flex-1 border border-slate-300 rounded-lg px-4 py-2 text-sm"
           />
           <button
             onClick={handleSearch}
@@ -103,13 +103,13 @@ export default function AIContentKnowledgePage() {
         {searchResults !== null && (
           <div className="mt-4 space-y-2">
             {searchResults.length === 0 ? (
-              <p className="text-sm text-gray-500 py-4 text-center">未找到相关结果</p>
+              <p className="text-sm text-slate-500 py-4 text-center">未找到相关结果</p>
             ) : (
               searchResults.map((r, i) => (
-                <div key={i} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <p className="text-sm text-gray-800">{r.content}</p>
+                <div key={i} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                  <p className="text-sm text-slate-800">{r.content}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-gray-500">{r.source_title}</span>
+                    <span className="text-xs text-slate-500">{r.source_title}</span>
                     <span className="text-xs text-amber-600">相似度: {(r.similarity * 100).toFixed(0)}%</span>
                   </div>
                 </div>

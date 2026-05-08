@@ -186,24 +186,24 @@ export default function BatchGeneratePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">⚡ 批量生成（推荐主题）</h2>
-          <p className="text-sm text-gray-500 mt-1">基于 AI 实时搜索推荐主题，一键生成中英双语文章</p>
+          <h2 className="text-2xl font-bold text-slate-900">⚡ 批量生成（推荐主题）</h2>
+          <p className="text-sm text-slate-500 mt-1">基于 AI 实时搜索推荐主题，一键生成中英双语文章</p>
         </div>
-        <Link href="/dashboard/koala/ai-content" className="text-sm text-gray-500 hover:text-gray-700">← 单篇生成</Link>
+        <Link href="/dashboard/koala/ai-content" className="text-sm text-slate-500 hover:text-slate-700">← 单篇生成</Link>
       </div>
 
       {/* Settings */}
       <div className="bg-white rounded-lg shadow p-4 flex items-center gap-4">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">发布方式</label>
-          <select value={publishMode} onChange={e => setPublishMode(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+          <label className="block text-xs text-slate-500 mb-1">发布方式</label>
+          <select value={publishMode} onChange={e => setPublishMode(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
             <option value="draft">保存草稿</option>
             <option value="publish">直接发布</option>
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">文章插图</label>
-          <select value={String(imageCount)} onChange={e => setImageCount(Number(e.target.value))} className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+          <label className="block text-xs text-slate-500 mb-1">文章插图</label>
+          <select value={String(imageCount)} onChange={e => setImageCount(Number(e.target.value))} className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
             <option value="0">无插图</option>
             <option value="1">1张</option>
             <option value="2">2张</option>
@@ -216,7 +216,7 @@ export default function BatchGeneratePage() {
       {items.length > 0 && (
         <div className="bg-white rounded-lg shadow p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="font-medium text-gray-900">
+            <h4 className="font-medium text-slate-900">
               {generating ? '生成进度' : stopped ? `已停止：完成 ${successItems}/${totalItems} 篇` : `生成完成：${successItems}/${totalItems} 篇`}
             </h4>
             {generating && (
@@ -229,13 +229,13 @@ export default function BatchGeneratePage() {
             )}
           </div>
 
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-slate-200 rounded-full h-2">
             <div
               className="bg-amber-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <p className="text-xs text-gray-500">已完成 {successItems}/{totalItems} 篇</p>
+          <p className="text-xs text-slate-500">已完成 {successItems}/{totalItems} 篇</p>
 
           <div className="space-y-1.5 max-h-80 overflow-y-auto">
             {items.map((item, i) => (
@@ -243,7 +243,7 @@ export default function BatchGeneratePage() {
                 item.status === 'success' ? 'bg-green-50' :
                 item.status === 'failed' ? 'bg-red-50' :
                 item.status === 'generating' ? 'bg-amber-50' :
-                item.status === 'cancelled' ? 'bg-gray-50' : 'bg-white'
+                item.status === 'cancelled' ? 'bg-slate-50' : 'bg-white'
               }`}>
                 <span className="w-5 text-center">
                   {item.status === 'success' && '✅'}
@@ -252,14 +252,14 @@ export default function BatchGeneratePage() {
                   {item.status === 'failed' && '❌'}
                   {item.status === 'cancelled' && '⏹'}
                 </span>
-                <span className="text-gray-500 text-xs w-10">[{i + 1}/{totalItems}]</span>
-                <span className="flex-1 truncate text-gray-800">{item.title}</span>
+                <span className="text-slate-500 text-xs w-10">[{i + 1}/{totalItems}]</span>
+                <span className="flex-1 truncate text-slate-800">{item.title}</span>
                 <span className="text-xs whitespace-nowrap">
                   {item.status === 'success' && <span className="text-green-600">{item.publishStatus}</span>}
                   {item.status === 'generating' && <span className="text-amber-600 animate-pulse">中文撰写→英文翻译→SEO优化</span>}
-                  {item.status === 'pending' && <span className="text-gray-400">等待中</span>}
+                  {item.status === 'pending' && <span className="text-slate-400">等待中</span>}
                   {item.status === 'failed' && <span className="text-red-600">{item.error}</span>}
-                  {item.status === 'cancelled' && <span className="text-gray-400">已取消</span>}
+                  {item.status === 'cancelled' && <span className="text-slate-400">已取消</span>}
                 </span>
               </div>
             ))}
@@ -277,13 +277,13 @@ export default function BatchGeneratePage() {
       {!generating && (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-slate-600">
               基于 AI 实时搜索推荐主题（<span className="font-medium text-amber-700">{newsCount} 条新闻源</span>）
             </p>
             <button
               onClick={fetchTopics}
               disabled={loadingTopics}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50"
             >
               🔄 刷新主题
             </button>
@@ -294,14 +294,14 @@ export default function BatchGeneratePage() {
             <div className="space-y-3">
               {[1, 2, 3, 4].map(i => (
                 <div key={i} className="bg-white rounded-lg shadow p-4 animate-pulse">
-                  <div className="h-5 bg-gray-200 rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  <div className="h-5 bg-slate-200 rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-slate-100 rounded w-1/2" />
                 </div>
               ))}
             </div>
           ) : topics.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-8 text-center">
-              <p className="text-gray-500">暂无推荐主题，请点击刷新</p>
+              <p className="text-slate-500">暂无推荐主题，请点击刷新</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -309,7 +309,7 @@ export default function BatchGeneratePage() {
                 <div
                   key={topic.id}
                   className={`bg-white rounded-lg shadow p-4 transition border-2 ${
-                    selectedIds.has(topic.id) ? 'border-amber-300 bg-amber-50/30' : 'border-transparent hover:border-gray-200'
+                    selectedIds.has(topic.id) ? 'border-amber-300 bg-amber-50/30' : 'border-transparent hover:border-slate-200'
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -320,15 +320,15 @@ export default function BatchGeneratePage() {
                       className="mt-1 accent-amber-600 cursor-pointer"
                     />
                     <div className="flex-1 cursor-pointer" onClick={() => toggleTopic(topic.id)}>
-                      <h4 className="font-medium text-gray-900">{topic.title}</h4>
+                      <h4 className="font-medium text-slate-900">{topic.title}</h4>
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">
                           {CATEGORY_LABELS[topic.category] || topic.category}
                         </span>
-                        <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
+                        <span className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">
                           {STYLE_LABELS[topic.style] || topic.style}
                         </span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-slate-400">
                           来源：{topic.source} · {topic.sourceDate}
                         </span>
                       </div>
@@ -344,8 +344,8 @@ export default function BatchGeneratePage() {
             <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between sticky bottom-4">
               <div className="flex items-center gap-3">
                 <button onClick={selectAll} className="text-sm text-amber-600 hover:text-amber-700">全选</button>
-                <button onClick={deselectAll} className="text-sm text-gray-500 hover:text-gray-700">取消全选</button>
-                <span className="text-sm text-gray-600">已选 <span className="font-medium text-amber-700">{selectedCount}</span> 篇（预计 {selectedCount * 20}-{selectedCount * 40} 秒）</span>
+                <button onClick={deselectAll} className="text-sm text-slate-500 hover:text-slate-700">取消全选</button>
+                <span className="text-sm text-slate-600">已选 <span className="font-medium text-amber-700">{selectedCount}</span> 篇（预计 {selectedCount * 20}-{selectedCount * 40} 秒）</span>
               </div>
               <button
                 onClick={handleBatchGenerate}

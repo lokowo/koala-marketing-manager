@@ -56,7 +56,7 @@ export default function GrantsPage() {
     return `/dashboard/koala/content-generator?sourceType=Grant & Funding&input=${encodeURIComponent(input)}`;
   };
 
-  if (loading) return <div className="p-6 text-gray-500">Loading grants...</div>;
+  if (loading) return <div className="p-6 text-slate-500">Loading grants...</div>;
 
   return (
     <div className="space-y-6">
@@ -103,7 +103,7 @@ export default function GrantsPage() {
               <button type="submit" disabled={saving} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50">
                 {saving ? '…' : tg.saveButton}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+              <button type="button" onClick={() => setShowForm(false)} className="bg-slate-600 text-white px-4 py-2 rounded hover:bg-slate-700">
                 {tg.cancelButton}
               </button>
             </div>
@@ -114,23 +114,23 @@ export default function GrantsPage() {
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-slate-50">
               <tr>
                 {Object.values(tg.tableHeaders).map(h => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                  <th key={h} className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {grants.map((grant) => (
                 <tr key={grant.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{grant.grantName}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{grant.fundingBody}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{grant.year}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{grant.amount}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{grant.leadProfessor}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{grant.university}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{grant.phdRelevance}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{grant.grantName}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{grant.fundingBody}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{grant.year}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{grant.amount}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{grant.leadProfessor}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{grant.university}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{grant.phdRelevance}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       grant.verificationStatus === 'Verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'

@@ -49,7 +49,7 @@ const CATEGORIES: Record<string, { zh: string; en: string }> = {
 };
 
 const STATUS_LABELS: Record<string, { label: string; class: string }> = {
-  draft: { label: '草稿', class: 'bg-gray-100 text-gray-700' },
+  draft: { label: '草稿', class: 'bg-slate-100 text-slate-700' },
   published: { label: '已发布', class: 'bg-green-100 text-green-700' },
   scheduled: { label: '定时', class: 'bg-blue-100 text-blue-700' },
 };
@@ -140,7 +140,7 @@ export default function BlogPage() {
     <div className="space-y-6">
       {/* Toast */}
       {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-gray-800 text-white text-sm rounded-lg shadow-lg animate-pulse">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-slate-800 text-white text-sm rounded-lg shadow-lg animate-pulse">
           {toast}
         </div>
       )}
@@ -148,11 +148,11 @@ export default function BlogPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">博客管理 Blog CMS</h2>
-          <p className="text-sm text-gray-500 mt-1">AI生成文章自动保存到草稿箱，编辑确认后点击发布</p>
+          <h2 className="text-2xl font-bold text-slate-900">博客管理 Blog CMS</h2>
+          <p className="text-sm text-slate-500 mt-1">AI生成文章自动保存到草稿箱，编辑确认后点击发布</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/koala/blog" target="_blank" className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+          <Link href="/koala/blog" target="_blank" className="px-4 py-2 text-sm text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50">
             🌐 查看博客
           </Link>
           <Link href="/dashboard/koala/ai-content/batch" className="px-4 py-2 text-sm border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50">
@@ -161,7 +161,7 @@ export default function BlogPage() {
           <button onClick={() => setShowProfModal(true)} className="px-4 py-2 text-sm border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50">
             🎓 教授推荐
           </button>
-          <Link href="/dashboard/koala/ai-content" className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+          <Link href="/dashboard/koala/ai-content" className="px-4 py-2 text-sm text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50">
             ✏️ AI生成
           </Link>
           <Link href="/dashboard/koala/blog/edit" className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700">
@@ -171,7 +171,7 @@ export default function BlogPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-slate-200">
         {tabs.map(t => (
           <button
             key={t.key}
@@ -179,7 +179,7 @@ export default function BlogPage() {
             className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               tab === t.key
                 ? 'border-amber-600 text-amber-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
             {t.icon} {t.label} ({t.count})
@@ -194,12 +194,12 @@ export default function BlogPage() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="搜索文章标题..."
-          className="flex-1 max-w-xs border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          className="flex-1 max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm"
         />
         <select
           value={category}
           onChange={e => setCategory(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
         >
           <option value="all">全部分类</option>
           {Object.entries(CATEGORIES).map(([k, v]) => (
@@ -209,7 +209,7 @@ export default function BlogPage() {
         <select
           value={sort}
           onChange={e => setSort(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
         >
           <option value="date">按日期排序</option>
           <option value="views">按浏览量排序</option>
@@ -233,11 +233,11 @@ export default function BlogPage() {
           {[1, 2, 3].map(i => (
             <div key={i} className="bg-white rounded-lg shadow p-4 animate-pulse">
               <div className="flex gap-3">
-                <div className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0" />
+                <div className="w-20 h-20 bg-slate-200 rounded-lg flex-shrink-0" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-2/3" />
-                  <div className="h-3 bg-gray-100 rounded w-1/2" />
-                  <div className="h-3 bg-gray-100 rounded w-1/3" />
+                  <div className="h-4 bg-slate-200 rounded w-2/3" />
+                  <div className="h-3 bg-slate-100 rounded w-1/2" />
+                  <div className="h-3 bg-slate-100 rounded w-1/3" />
                 </div>
               </div>
             </div>
@@ -246,7 +246,7 @@ export default function BlogPage() {
       ) : posts.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
           <p className="text-4xl mb-4">📝</p>
-          <p className="text-gray-500">还没有文章，点击 AI生成 快速创建SEO优化文章</p>
+          <p className="text-slate-500">还没有文章，点击 AI生成 快速创建SEO优化文章</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -265,7 +265,7 @@ export default function BlogPage() {
               >
                 {/* Thumbnail */}
                 <div
-                  className="w-20 h-20 rounded-lg flex-shrink-0 bg-gray-100"
+                  className="w-20 h-20 rounded-lg flex-shrink-0 bg-slate-100"
                   style={{
                     background: post.cover_image_url
                       ? `url(${post.cover_image_url}) center/cover`
@@ -281,7 +281,7 @@ export default function BlogPage() {
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">📌 置顶</span>
                     )}
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusInfo.class}`}>{statusInfo.label}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
                       {cat.zh} / {cat.en}
                     </span>
                     {hasSeo && (
@@ -293,29 +293,29 @@ export default function BlogPage() {
                   </div>
 
                   {/* Chinese title */}
-                  <h4 className="font-semibold text-gray-900 text-sm truncate">
+                  <h4 className="font-semibold text-slate-900 text-sm truncate">
                     {post.title_zh || post.title_en || '无标题'}
                   </h4>
 
                   {/* English title */}
                   {post.title_en && post.title_zh && (
-                    <p className="text-xs text-gray-400 truncate mt-0.5">{post.title_en}</p>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">{post.title_en}</p>
                   )}
 
                   {/* Excerpt */}
                   {(post.excerpt_zh || post.excerpt_en) && (
-                    <p className="text-xs text-gray-500 truncate mt-1">{post.excerpt_zh || post.excerpt_en}</p>
+                    <p className="text-xs text-slate-500 truncate mt-1">{post.excerpt_zh || post.excerpt_en}</p>
                   )}
 
                   {/* Tags + meta */}
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     {displayTags.map(tag => (
-                      <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{tag}</span>
+                      <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">{tag}</span>
                     ))}
                     {extraTagCount > 0 && (
-                      <span className="text-[10px] text-gray-400">+{extraTagCount}</span>
+                      <span className="text-[10px] text-slate-400">+{extraTagCount}</span>
                     )}
-                    <span className="text-[10px] text-gray-400 ml-auto">
+                    <span className="text-[10px] text-slate-400 ml-auto">
                       {new Date(post.created_at).toLocaleDateString('zh-CN')} · 👁 {post.view_count}
                     </span>
                   </div>
@@ -326,20 +326,20 @@ export default function BlogPage() {
                   <button
                     onClick={() => handlePin(post.id, !!post.is_pinned)}
                     title={post.is_pinned ? '取消置顶' : '置顶'}
-                    className={`text-sm px-1.5 py-1 rounded hover:bg-gray-100 ${post.is_pinned ? 'text-amber-600' : 'text-gray-400'}`}
+                    className={`text-sm px-1.5 py-1 rounded hover:bg-slate-100 ${post.is_pinned ? 'text-amber-600' : 'text-slate-400'}`}
                   >
                     📌
                   </button>
                   {post.status === 'draft' && (
-                    <button onClick={() => handlePublish(post.id)} title="发布" className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 text-green-600">
+                    <button onClick={() => handlePublish(post.id)} title="发布" className="text-sm px-1.5 py-1 rounded hover:bg-slate-100 text-green-600">
                       ✈️
                     </button>
                   )}
-                  <Link href={`/dashboard/koala/blog/edit?id=${post.id}`} title="编辑" className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 text-gray-600">
+                  <Link href={`/dashboard/koala/blog/edit?id=${post.id}`} title="编辑" className="text-sm px-1.5 py-1 rounded hover:bg-slate-100 text-slate-600">
                     ✏️
                   </Link>
                   <CoverButton post={post} onDone={fetchPosts} showToast={showToast} />
-                  <button onClick={() => handleDelete(post.id)} title="删除" className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 text-red-400">
+                  <button onClick={() => handleDelete(post.id)} title="删除" className="text-sm px-1.5 py-1 rounded hover:bg-slate-100 text-red-400">
                     🗑️
                   </button>
                 </div>
@@ -350,7 +350,7 @@ export default function BlogPage() {
       )}
 
       {total > 20 && (
-        <p className="text-sm text-center text-gray-500">显示 {posts.length} / {total} 篇文章</p>
+        <p className="text-sm text-center text-slate-500">显示 {posts.length} / {total} 篇文章</p>
       )}
 
       {/* Professor Spotlight Modal */}
@@ -565,8 +565,8 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div className="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 min-h-[400px] max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">🎓 生成教授推荐文章</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+          <h3 className="text-lg font-bold text-slate-900">🎓 生成教授推荐文章</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
         </div>
 
         {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
@@ -581,7 +581,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                   onChange={e => handleInputChange(e.target.value)}
                   onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
                   placeholder="输入教授姓名、大学或研究方向..."
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm"
                 />
                 <button
                   onClick={handleWebSearch}
@@ -600,15 +600,15 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
               </button>
 
               {showDropdown && (
-                <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[50vh] overflow-y-auto">
+                <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-[50vh] overflow-y-auto">
                   {suggestions.map(prof => (
                     <button
                       key={prof.id}
                       onClick={() => handleSelectProf(prof)}
-                      className="w-full text-left px-4 py-4 hover:bg-purple-50 border-b border-gray-100 last:border-0"
+                      className="w-full text-left px-4 py-4 hover:bg-purple-50 border-b border-slate-100 last:border-0"
                     >
-                      <p className="text-base font-semibold text-gray-900">{prof.name || prof.name_en}</p>
-                      <p className="text-sm text-gray-500 mt-0.5">{prof.university || prof.institution}</p>
+                      <p className="text-base font-semibold text-slate-900">{prof.name || prof.name_en}</p>
+                      <p className="text-sm text-slate-500 mt-0.5">{prof.university || prof.institution}</p>
                       {(prof.researchAreas || prof.research_tags || prof.research_areas || []).length > 0 && (
                         <p className="text-sm text-purple-600 mt-0.5">{(prof.researchAreas || prof.research_tags || prof.research_areas || []).slice(0, 3).join(', ')}</p>
                       )}
@@ -622,9 +622,9 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
               <div className="border border-purple-200 bg-purple-50 rounded-lg p-4 mb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">{selectedProf.name || selectedProf.name_en}</p>
-                    <p className="text-sm text-gray-600">{selectedProf.university || selectedProf.institution}</p>
-                    <div className="flex gap-3 mt-1.5 text-xs text-gray-600">
+                    <p className="font-medium text-slate-900">{selectedProf.name || selectedProf.name_en}</p>
+                    <p className="text-sm text-slate-600">{selectedProf.university || selectedProf.institution}</p>
+                    <div className="flex gap-3 mt-1.5 text-xs text-slate-600">
                       {selectedProf.hIndex && <span>H-index: {selectedProf.hIndex}</span>}
                       {selectedProf.paperCount && <span>论文: {selectedProf.paperCount}</span>}
                     </div>
@@ -654,7 +654,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
             )}
 
             {!selectedProf && searchQuery.trim().length >= 2 && (
-              <p className="text-xs text-gray-500 mb-2">
+              <p className="text-xs text-slate-500 mb-2">
                 数据库中没有？点击右侧"🔍 网络搜索"从网上查找教授信息
               </p>
             )}
@@ -664,10 +664,10 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
         {step === 'web-result' && webResult && (
           <div className="border border-green-200 bg-green-50 rounded-lg p-4 mb-4">
             <p className="text-xs text-green-700 font-medium mb-2">🌐 网络搜索结果</p>
-            <p className="font-medium text-gray-900">{webResult.name}</p>
-            <p className="text-sm text-gray-600">{webResult.positionTitle} — {webResult.university}</p>
-            {webResult.faculty && <p className="text-sm text-gray-500">{webResult.faculty}</p>}
-            <div className="flex gap-3 mt-2 text-xs text-gray-600">
+            <p className="font-medium text-slate-900">{webResult.name}</p>
+            <p className="text-sm text-slate-600">{webResult.positionTitle} — {webResult.university}</p>
+            {webResult.faculty && <p className="text-sm text-slate-500">{webResult.faculty}</p>}
+            <div className="flex gap-3 mt-2 text-xs text-slate-600">
               {webResult.hIndex && <span>H-index: {webResult.hIndex}</span>}
               {webResult.paperCount && <span>论文: {webResult.paperCount}</span>}
               {webResult.citationCount && <span>引用: {webResult.citationCount}</span>}
@@ -688,7 +688,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
               </button>
               <button
                 onClick={() => { setStep('search'); setWebResult(null); }}
-                className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50"
               >
                 返回
               </button>
@@ -699,8 +699,8 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
         {step === 'generating' && (
           <div className="text-center py-8">
             <div className="inline-block w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-sm text-gray-700 font-medium">{genStep}</p>
-            <div className="mt-4 space-y-2 text-xs text-gray-500">
+            <p className="text-sm text-slate-700 font-medium">{genStep}</p>
+            <div className="mt-4 space-y-2 text-xs text-slate-500">
               <p className={genStep.includes('读取') ? 'text-purple-600 font-medium' : ''}>1. 读取教授数据 + 论文 + 经费</p>
               <p className={genStep.includes('撰写') ? 'text-purple-600 font-medium' : ''}>2. 撰写中文文章 + 翻译 + SEO</p>
               <p className={genStep.includes('完成') ? 'text-purple-600 font-medium' : ''}>3. 保存到草稿箱</p>
@@ -711,8 +711,8 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
         {step === 'done' && (
           <div className="text-center py-8">
             <p className="text-3xl mb-3">✅</p>
-            <p className="text-sm font-medium text-gray-900">{generatedTitle}</p>
-            <p className="text-xs text-gray-500 mt-1">文章已保存到草稿箱</p>
+            <p className="text-sm font-medium text-slate-900">{generatedTitle}</p>
+            <p className="text-xs text-slate-500 mt-1">文章已保存到草稿箱</p>
             <button
               onClick={onGenerated}
               className="mt-4 px-6 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700"
@@ -751,7 +751,7 @@ function CoverButton({ post, onDone, showToast }: { post: BlogPost; onDone: () =
       onClick={handleGenerate}
       disabled={generating}
       title={hasImage ? '重新生成封面' : '生成封面'}
-      className={`text-sm px-1.5 py-1 rounded hover:bg-gray-100 disabled:opacity-50 ${hasImage ? 'text-gray-400' : 'text-purple-500'}`}
+      className={`text-sm px-1.5 py-1 rounded hover:bg-slate-100 disabled:opacity-50 ${hasImage ? 'text-slate-400' : 'text-purple-500'}`}
     >
       {generating ? '⏳' : hasImage ? '🔄' : '🎨'}
     </button>

@@ -23,39 +23,39 @@ export default function RevenuePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">收入统计</h1>
-        <p className="text-sm text-gray-500 mt-1">申请信销售、订阅收入与转化率分析</p>
+        <h1 className="text-xl font-bold text-slate-900">收入统计</h1>
+        <p className="text-sm text-slate-500 mt-1">申请信销售、订阅收入与转化率分析</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {metrics.map(m => (
-          <div key={m.label} className={`${m.color} rounded-lg p-4 border border-gray-200`}>
+          <div key={m.label} className={`${m.color} rounded-xl p-5 border border-slate-200`}>
             <div className="text-2xl mb-1">{m.icon}</div>
-            <div className="text-2xl font-bold text-gray-900">{m.value}</div>
+            <div className="text-xl font-bold text-slate-900">{m.value}</div>
             {m.change && <div className="text-sm text-green-600">{m.change}</div>}
-            <div className="text-sm text-gray-500 mt-1">{m.label}</div>
+            <div className="text-sm text-slate-500 mt-1">{m.label}</div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">订阅分布</h2>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <h2 className="text-sm font-semibold text-slate-700 mb-4">订阅分布</h2>
           <div className="space-y-3">
             {tiers.map(tier => (
-              <div key={tier.name} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                <span className="text-sm text-gray-700">{tier.name}</span>
+              <div key={tier.name} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                <span className="text-sm text-slate-700">{tier.name}</span>
                 <div className="text-right">
-                  <div className="text-sm font-medium text-gray-900">{tier.users} 用户</div>
-                  <div className="text-xs text-gray-500">AUD {tier.revenue}/mo</div>
+                  <div className="text-sm font-medium text-slate-900">{tier.users} 用户</div>
+                  <div className="text-xs text-slate-500">AUD {tier.revenue}/mo</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">转化率漏斗</h2>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <h2 className="text-sm font-semibold text-slate-700 mb-4">转化率漏斗</h2>
           <div className="space-y-2">
             {[
               { stage: '访问首页', value: 100, pct: '100%' },
@@ -66,10 +66,10 @@ export default function RevenuePage() {
             ].map(stage => (
               <div key={stage.stage}>
                 <div className="flex justify-between text-sm mb-0.5">
-                  <span className="text-gray-700">{stage.stage}</span>
-                  <span className="text-gray-500">{stage.pct}</span>
+                  <span className="text-slate-700">{stage.stage}</span>
+                  <span className="text-slate-500">{stage.pct}</span>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-slate-700 rounded-full"
                     style={{ width: `${stage.value}%` }}
@@ -78,13 +78,13 @@ export default function RevenuePage() {
               </div>
             ))}
           </div>
-          <p className="text-xs text-gray-400 mt-3">转化数据将在有用户数据后显示</p>
+          <p className="text-xs text-slate-400 mt-3">转化数据将在有用户数据后显示</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">最近订单</h2>
-        <div className="text-center py-8 text-gray-400">
+      <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <h2 className="text-sm font-semibold text-slate-700 mb-3">最近订单</h2>
+        <div className="text-center py-8 text-slate-400">
           <div className="text-4xl mb-2">📊</div>
           <p>暂无订单数据</p>
           <p className="text-sm mt-1">用户购买申请信或订阅后将显示在此</p>

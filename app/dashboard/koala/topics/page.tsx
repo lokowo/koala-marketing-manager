@@ -15,7 +15,7 @@ export default function TopicsPage() {
       .then(({ data }) => { setTopics(data); setLoading(false); });
   }, []);
 
-  if (loading) return <div className="p-6 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-6 text-slate-500">Loading...</div>;
 
   return (
     <div className="space-y-6">
@@ -24,7 +24,7 @@ export default function TopicsPage() {
         {topics.map((topic) => (
           <div key={topic.id} className="bg-white rounded-lg shadow p-6">
             <h4 className="text-xl font-semibold mb-2">{topic.name}</h4>
-            <p className="text-gray-600">{topic.description}</p>
+            <p className="text-slate-600">{topic.description}</p>
             {topic.researchField && (
               <span className="mt-3 inline-block text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
                 {topic.researchField}
