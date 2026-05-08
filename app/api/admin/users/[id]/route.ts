@@ -33,11 +33,11 @@ export async function GET(
         .eq('user_id', id)
         .order('created_at', { ascending: false })
         .limit(50),
-      db.from('chat_messages')
-        .select('id, mode, role, content, created_at')
+      db.from('ai_conversations')
+        .select('id, mode, messages, created_at')
         .eq('user_id', id)
         .order('created_at', { ascending: false })
-        .limit(200),
+        .limit(50),
       db.from('admin_user_notes')
         .select('id, note, admin_id, created_at')
         .eq('user_id', id)
@@ -47,11 +47,25 @@ export async function GET(
         .catch(() => ({ data: [] })),
     ]);
 
-    // Group chat messages by mode
-    const chatMessages = (chatRes.data ?? []) as {
-      id: string; mode: string; role: string; content: string; created_at: string;
-    }[];
-    type ChatGroup = { count: number; lastAt: string; messages: typeof chatMessages };
+    // Group ai_conversations by mode
+    interface ConvMsg { role: string; content: string }
+    interface ConvRow { id: string; mode: string; messages: ConvMsg[]; created_at: string }
+    interface FlatMsg { id: string; mode: string; role: string; content: string; created_at: string }
+    const conversations = (chatRes.data ?? []) as ConvRow[];
+    const chatMessages: FlatMsg[] = [];
+    for (const conv of conversations) {
+      const msgs = Array.isArray(conv.messages) ? conv.messages : [];
+      for (const m of msgs) {
+        chatMessages.push({
+          id: conv.id,
+          mode: conv.mode,
+          role: m.role,
+          content: m.content,
+          created_at: conv.created_at,
+        });
+      }
+    }
+    type ChatGroup = { count: number; lastAt: string; messages: FlatMsg[] };
     const chatSummary = chatMessages.reduce<Record<string, ChatGroup>>((acc, msg) => {
       if (!acc[msg.mode]) acc[msg.mode] = { count: 0, lastAt: msg.created_at, messages: [] };
       acc[msg.mode].count++;

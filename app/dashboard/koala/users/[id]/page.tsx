@@ -412,9 +412,6 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             ) : (
               <p className="text-sm text-slate-300">未上传成绩单</p>
             )}
-            {(profile as unknown as Record<string, string>)?.file_name && (
-              <p className="text-xs text-slate-400 mt-2">文件名：{(profile as unknown as Record<string, string>).file_name}</p>
-            )}
           </div>
 
           {/* Activity summary */}
