@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 interface SalesUser {
   userId: string;
@@ -20,97 +21,50 @@ interface Summary {
   totalQrcodes: number;
 }
 
-interface KPI {
-  weekly_new_leads: number;
-  weekly_conversions: number;
-  monthly_revenue_target: number;
-}
-
 export default function SalesOverviewPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [perSales, setPerSales] = useState<SalesUser[]>([]);
-  const [kpi, setKpi] = useState<KPI>({ weekly_new_leads: 10, weekly_conversions: 2, monthly_revenue_target: 5000 });
-  const [editingKpi, setEditingKpi] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/admin/sales-overview').then(r => r.json()),
-      fetch('/api/admin/kpi').then(r => r.json()),
-    ]).then(([overview, kpiData]) => {
-      setSummary(overview.summary ?? null);
-      setPerSales(overview.perSales ?? []);
-      if (kpiData.kpi) setKpi(kpiData.kpi);
+    fetch('/api/admin/sales-overview').then(r => r.json()).then(d => {
+      setSummary(d.summary ?? null);
+      setPerSales(d.perSales ?? []);
       setLoading(false);
     });
   }, []);
 
-  async function saveKpi() {
-    await fetch('/api/admin/kpi', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(kpi),
-    });
-    setEditingKpi(false);
-  }
-
   if (loading) return <p className="text-sm text-slate-400 py-8 text-center">加载中…</p>;
 
   return (
-    <div>
-      <h1 className="text-xl font-bold text-slate-800 mb-4">Sales 总览</h1>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-slate-800">Sales 总览</h1>
+        <Link href="/dashboard/koala/kpi" className="text-xs px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 no-underline hover:bg-amber-200 font-medium">
+          KPI 设置 →
+        </Link>
+      </div>
 
       {/* Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           {[
-            { label: '销售人数', value: summary.totalSalesUsers },
-            { label: '总客户', value: summary.totalCustomers },
-            { label: '已转化', value: summary.totalConverted },
-            { label: '转化率', value: `${summary.overallConversionRate}%` },
-            { label: '推广码', value: summary.totalQrcodes },
+            { label: '销售人数', value: summary.totalSalesUsers, icon: '👤' },
+            { label: '总客户', value: summary.totalCustomers, icon: '👥' },
+            { label: '已转化', value: summary.totalConverted, icon: '🎯' },
+            { label: '转化率', value: `${summary.overallConversionRate}%`, icon: '📈' },
+            { label: '推广码', value: summary.totalQrcodes, icon: '🔗' },
           ].map(item => (
-            <div key={item.label} className="bg-white rounded-xl p-4 border border-slate-200 text-center">
-              <div className="text-lg font-bold text-slate-800">{item.value}</div>
-              <div className="text-[10px] text-slate-500 mt-0.5">{item.label}</div>
+            <div key={item.label} className="bg-white rounded-xl p-4 border border-slate-200">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-slate-500">{item.label}</span>
+                <span>{item.icon}</span>
+              </div>
+              <div className="text-xl font-bold text-slate-800">{item.value}</div>
             </div>
           ))}
         </div>
       )}
-
-      {/* KPI Settings */}
-      <div className="bg-white rounded-xl p-4 border border-slate-200 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-slate-700">KPI 目标</h2>
-          <button
-            onClick={() => editingKpi ? saveKpi() : setEditingKpi(true)}
-            className="text-xs px-3 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200"
-          >
-            {editingKpi ? '保存' : '编辑'}
-          </button>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { key: 'weekly_new_leads' as const, label: '周新增线索' },
-            { key: 'weekly_conversions' as const, label: '周转化数' },
-            { key: 'monthly_revenue_target' as const, label: '月收入目标 ($)' },
-          ].map(item => (
-            <div key={item.key}>
-              <label className="text-[10px] text-slate-500 mb-1 block">{item.label}</label>
-              {editingKpi ? (
-                <input
-                  type="number"
-                  value={kpi[item.key]}
-                  onChange={e => setKpi(prev => ({ ...prev, [item.key]: parseInt(e.target.value) || 0 }))}
-                  className="w-full rounded-lg px-2 py-1.5 text-xs border border-slate-200 focus:outline-none"
-                />
-              ) : (
-                <div className="text-sm font-semibold text-slate-800">{kpi[item.key]}</div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* Per-sales breakdown */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -132,7 +86,7 @@ export default function SalesOverviewPage() {
             <tbody className="divide-y divide-slate-100">
               {perSales.map(s => (
                 <tr key={s.userId} className="hover:bg-slate-50">
-                  <td className="px-4 py-2.5 text-slate-700">{s.profile.display_name || s.profile.email}</td>
+                  <td className="px-4 py-2.5 text-slate-700 font-medium">{s.profile.display_name || s.profile.email}</td>
                   <td className="px-4 py-2.5 text-center text-slate-600">{s.totalCustomers}</td>
                   <td className="px-4 py-2.5 text-center text-green-600 font-medium">{s.converted}</td>
                   <td className="px-4 py-2.5 text-center text-slate-600">{s.conversionRate}%</td>

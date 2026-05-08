@@ -14,6 +14,9 @@ export async function GET(req: NextRequest) {
     const page = Math.max(parseInt(sp.get('page') ?? '1', 10), 1);
     const userId = sp.get('userId');
     const action = sp.get('action');
+    const search = sp.get('search');
+    const dateFrom = sp.get('dateFrom');
+    const dateTo = sp.get('dateTo');
 
     let query = db
       .from('admin_work_logs')
@@ -23,11 +26,26 @@ export async function GET(req: NextRequest) {
 
     if (userId) query = query.eq('user_id', userId);
     if (action) query = query.eq('action', action);
+    if (dateFrom) query = query.gte('created_at', dateFrom);
+    if (dateTo) query = query.lte('created_at', new Date(dateTo + 'T23:59:59').toISOString());
+
+    if (search) {
+      query = query.or(
+        `action.ilike.%${search}%,target_type.ilike.%${search}%,target_id.ilike.%${search}%,details->>name.ilike.%${search}%,details->>topic.ilike.%${search}%,details->>profName.ilike.%${search}%`
+      );
+    }
 
     const { data, count, error } = await query;
     if (error) throw error;
 
-    return Response.json({ data: data ?? [], total: count ?? 0, page, limit });
+    const admins: Record<string, string> = {};
+    for (const log of data ?? []) {
+      if (log.user_profiles?.display_name || log.user_profiles?.email) {
+        admins[log.user_id] = log.user_profiles.display_name || log.user_profiles.email;
+      }
+    }
+
+    return Response.json({ data: data ?? [], total: count ?? 0, page, limit, admins });
   } catch (e) {
     const msg = (e as Error).message;
     if (msg === 'Unauthorized') return Response.json({ error: msg }, { status: 401 });

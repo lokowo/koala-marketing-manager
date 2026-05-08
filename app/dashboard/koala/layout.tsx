@@ -79,6 +79,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
         { icon: '🔐', label: '角色管理', href: '/dashboard/koala/roles', adminOnly: true },
         { icon: '💰', label: 'Sales总览', href: '/dashboard/koala/sales-overview', adminOnly: true },
         { icon: '📋', label: '工作日志', href: '/dashboard/koala/work-logs', adminOnly: true },
+        { icon: '🎯', label: 'KPI 设置', href: '/dashboard/koala/kpi', adminOnly: true },
       );
     }
 
