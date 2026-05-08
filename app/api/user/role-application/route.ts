@@ -29,13 +29,25 @@ export async function POST(req: Request) {
     const user = await getServerUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { role, reason, phone } = await req.json();
+    const { role, reason, phone, full_name: frontName, email: frontEmail } = await req.json();
 
     if (!role || !['admin', 'sales'].includes(role)) {
       return Response.json({ error: '无效的角色类型' }, { status: 400 });
     }
     if (!reason || reason.length < 10) {
       return Response.json({ error: '请填写申请理由（至少10字）' }, { status: 400 });
+    }
+
+    const email = frontEmail || user.email || '';
+
+    let fullName = frontName || '';
+    if (!fullName) {
+      const { data: profile } = await db
+        .from('user_profiles')
+        .select('full_name, display_name')
+        .eq('id', user.id)
+        .single();
+      fullName = profile?.full_name || profile?.display_name || email.split('@')[0] || '';
     }
 
     const { data: existing } = await db
@@ -63,6 +75,8 @@ export async function POST(req: Request) {
         user_id: user.id,
         applied_role: role,
         reason,
+        full_name: fullName,
+        email,
         status: 'pending',
       })
       .select()
