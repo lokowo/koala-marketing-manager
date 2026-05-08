@@ -6,11 +6,16 @@ interface Application {
   id: string;
   user_id: string;
   applied_role: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
   reason: string;
+  experience: string | null;
   status: string;
   created_at: string;
   reviewed_at: string | null;
-  user_profiles?: { display_name: string; email: string; avatar_url: string | null; phone: string | null };
+  user_profiles?: { display_name: string | null; email: string | null; avatar_url: string | null; phone: string | null } | null;
 }
 
 export default function RolesPage() {
@@ -80,9 +85,10 @@ export default function RolesPage() {
             <div key={app.id} className="bg-white rounded-xl p-4 border border-slate-200">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">{app.user_profiles?.display_name || app.user_profiles?.email}</p>
-                  <p className="text-xs text-slate-500">{app.user_profiles?.email}</p>
-                  {app.user_profiles?.phone && <p className="text-xs text-slate-500">Tel: {app.user_profiles.phone}</p>}
+                  <p className="text-sm font-semibold text-slate-800">{app.full_name || app.user_profiles?.display_name || app.email || app.user_profiles?.email || app.user_id.slice(0, 8)}</p>
+                  <p className="text-xs text-slate-500">{app.email || app.user_profiles?.email}</p>
+                  {(app.phone || app.user_profiles?.phone) && <p className="text-xs text-slate-500">Tel: {app.phone || app.user_profiles?.phone}</p>}
+                  {app.company && <p className="text-xs text-slate-500">公司: {app.company}</p>}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${

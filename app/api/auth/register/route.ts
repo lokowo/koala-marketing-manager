@@ -34,6 +34,15 @@ export async function POST(req: Request) {
       return Response.json({ error: createErr.message }, { status: 400 });
     }
 
+    // Create user_profiles record
+    await db.from('user_profiles').upsert({
+      id: userData.user.id,
+      display_name: name || email.split('@')[0],
+      email,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+
     // Store referral and sales codes in user metadata for later processing
     if (referralCode || salesCode) {
       const meta: Record<string, string> = {};
