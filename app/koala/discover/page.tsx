@@ -59,27 +59,63 @@ export default function DiscoverPage() {
   const [showFilters, setShowFilters] = useState(false);
   const cardRefs = useRef<Record<string, any>>({});
   const [lastSwiped, setLastSwiped] = useState<Professor | null>(null);
+  const discoverPage = useRef(1);
+  const discoverHasMore = useRef(true);
+  const loadingMore = useRef(false);
+  const seenIds = useRef(new Set<string>());
 
   useEffect(() => { fetchProfessors(); }, []);
 
   async function fetchProfessors() {
     setLoading(true);
     try {
-      const res = await fetch('/api/professors?limit=20&sortBy=opportunity_score');
+      const res = await fetch('/api/professors?limit=10&sortBy=opportunity_score&page=1');
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       const profs = (data.data ?? data.professors ?? data ?? []).map((p: Professor) => ({
         ...p, matchScore: p.matchScore ?? Math.floor(60 + Math.random() * 35),
       }));
+      profs.forEach((p: Professor) => seenIds.current.add(p.id));
+      discoverPage.current = 2;
+      discoverHasMore.current = data.hasMore !== false;
       setProfessors(profs);
       setCurrentIndex(profs.length - 1);
     } catch { setProfessors([]); }
     setLoading(false);
   }
 
+  async function loadMoreProfessors() {
+    if (loadingMore.current || !discoverHasMore.current) return;
+    loadingMore.current = true;
+    try {
+      const res = await fetch(`/api/professors?limit=10&sortBy=opportunity_score&page=${discoverPage.current}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const newProfs = (data.data ?? [])
+        .filter((p: Professor) => !seenIds.current.has(p.id))
+        .map((p: Professor) => ({
+          ...p, matchScore: p.matchScore ?? Math.floor(60 + Math.random() * 35),
+        }));
+      newProfs.forEach((p: Professor) => seenIds.current.add(p.id));
+      discoverPage.current += 1;
+      discoverHasMore.current = data.hasMore !== false;
+      if (newProfs.length > 0) {
+        setProfessors(prev => {
+          const merged = [...newProfs, ...prev];
+          setCurrentIndex(merged.length - 1);
+          return merged;
+        });
+      }
+    } catch { /* ignore */ }
+    loadingMore.current = false;
+  }
+
   const handleSwipe = useCallback(async (direction: string, prof: Professor) => {
     setSwipeLabel(null);
-    setCurrentIndex(prev => prev - 1);
+    setCurrentIndex(prev => {
+      if (prev <= 3) loadMoreProfessors();
+      return prev - 1;
+    });
     setLastSwiped(prof);
     if (direction === 'right' || direction === 'up') {
       try {

@@ -50,6 +50,25 @@ const UNI_COLORS: Record<string, { bg: string; fg: string; short: string }> = {
   'Western Sydney University':             { bg: '#e52020', fg: '#fff',    short: 'WSY' },
 };
 
+const ALL_UNIVERSITIES = [
+  'Australian National University', 'University of Melbourne', 'University of Sydney',
+  'UNSW Sydney', 'University of Queensland', 'Monash University',
+  'University of Western Australia', 'University of Adelaide',
+  'University of Technology Sydney', 'RMIT University', 'Macquarie University',
+  'Queensland University of Technology', 'Deakin University', 'Griffith University',
+  'La Trobe University', 'University of Newcastle', 'University of Wollongong',
+  'Flinders University', 'Curtin University', 'James Cook University',
+  'Swinburne University of Technology', 'Western Sydney University',
+  'University of Tasmania', 'Charles Sturt University', 'University of Canberra',
+  'Murdoch University', 'Victoria University', 'University of the Sunshine Coast',
+  'Edith Cowan University', 'Australian Catholic University', 'Bond University',
+  'Central Queensland University', 'Southern Cross University',
+  'University of New England', 'Federation University Australia',
+  'Charles Darwin University', 'University of Southern Queensland',
+  'Torrens University', 'University of New South Wales', 'University of Divinity',
+  'Western Australian Academy of Performing Arts',
+];
+
 const LIMIT = 20;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -83,6 +102,7 @@ type Filters = {
   accepting: string;   // '' | 'yes'
   hIndexMin: number;   // 0 = no filter
   sortBy: string;
+  university: string;
 };
 
 async function apiFetch(f: Filters) {
@@ -92,6 +112,7 @@ async function apiFetch(f: Filters) {
   if (f.accepting)          q.set('acceptingStudents', f.accepting);
   if (f.hIndexMin)          q.set('hIndexMin', String(f.hIndexMin));
   if (f.sortBy !== 'opportunity_score') q.set('sortBy', f.sortBy);
+  if (f.university)         q.set('university', f.university);
   const res = await fetch(`/api/professors?${q}`);
   if (!res.ok) throw new Error('fetch failed');
   return res.json() as Promise<{ data: Professor[]; total: number; hasMore: boolean }>;
@@ -129,12 +150,13 @@ function ProfessorsPageInner() {
   const [accepting, setAccepting]   = useState('');        // '' | 'yes'
   const [hIndexMin, setHIndexMin]   = useState(0);
   const [sortBy, setSortBy]         = useState('opportunity_score');
+  const [university, setUniversity] = useState('');
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Active filter count for badge
-  const activeFilters = [accepting !== '', hIndexMin > 0, sortBy !== 'opportunity_score'].filter(Boolean).length;
+  const activeFilters = [accepting !== '', hIndexMin > 0, sortBy !== 'opportunity_score', university !== ''].filter(Boolean).length;
 
   // Debounce
   useEffect(() => {
@@ -142,7 +164,7 @@ function ProfessorsPageInner() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const filters: Filters = { page: 1, search: debouncedSearch, category, accepting, hIndexMin, sortBy };
+  const filters: Filters = { page: 1, search: debouncedSearch, category, accepting, hIndexMin, sortBy, university };
 
   // Reset + load on filter change
   useEffect(() => {
@@ -155,7 +177,7 @@ function ProfessorsPageInner() {
       .catch(() => {})
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, category, accepting, hIndexMin, sortBy]);
+  }, [debouncedSearch, category, accepting, hIndexMin, sortBy, university]);
 
   // Category counts once on mount
   useEffect(() => {
@@ -176,7 +198,7 @@ function ProfessorsPageInner() {
       .catch(() => {})
       .finally(() => setLoadingMore(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, debouncedSearch, category, accepting, hIndexMin, sortBy, loadingMore, hasMore]);
+  }, [page, debouncedSearch, category, accepting, hIndexMin, sortBy, university, loadingMore, hasMore]);
 
   // Intersection observer
   useEffect(() => {
@@ -279,6 +301,24 @@ function ProfessorsPageInner() {
                 </button>
               );
             })}
+          </div>
+
+          {/* University filter */}
+          <div className="rounded-2xl overflow-hidden mb-3" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.12)' }}>
+            <div className="px-3 py-2.5 text-xs font-semibold" style={{ color: '#a8b8ac', borderBottom: '1px solid rgba(201,169,110,0.12)' }}>大学</div>
+            <div className="px-2 py-2">
+              <select
+                value={university}
+                onChange={e => setUniversity(e.target.value)}
+                className="w-full text-xs px-2 py-1.5 rounded-lg outline-none"
+                style={{ background: '#0d1520', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.15)' }}
+              >
+                <option value="">全部大学</option>
+                {ALL_UNIVERSITIES.map(u => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Filters */}
@@ -395,7 +435,7 @@ function ProfessorsPageInner() {
             </p>
             <div className="flex gap-2 mt-1">
               {search && <button onClick={() => setSearch('')} className="text-xs px-4 py-2 rounded-full" style={{ background: '#c9a96e', color: '#080c10' }}>清除搜索</button>}
-              {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); }} className="text-xs px-4 py-2 rounded-full" style={{ background: '#111c28', color: '#e8e4dc' }}>清除筛选</button>}
+              {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); setUniversity(''); }} className="text-xs px-4 py-2 rounded-full" style={{ background: '#111c28', color: '#e8e4dc' }}>清除筛选</button>}
             </div>
             <Link href="/koala/chat" className="mt-2 text-xs px-5 py-2 rounded-full no-underline" style={{ background: '#c9a96e', color: '#080c10' }}>
               让 Koala AI 帮我匹配 →
@@ -457,6 +497,21 @@ function ProfessorsPageInner() {
             </button>
           </div>
 
+          {/* University */}
+          <FilterSection label="大学">
+            <select
+              value={university}
+              onChange={e => setUniversity(e.target.value)}
+              className="w-full text-xs px-3 py-2 rounded-lg outline-none"
+              style={{ background: '#111c28', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.15)' }}
+            >
+              <option value="">全部大学</option>
+              {ALL_UNIVERSITIES.map(u => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
+          </FilterSection>
+
           {/* Recruiting status */}
           <FilterSection label="招生状态">
             {[['', '全部'], ['yes', '🟢 招生中']].map(([v, label]) => (
@@ -489,7 +544,7 @@ function ProfessorsPageInner() {
           {/* Actions */}
           <div className="flex gap-3 mt-6">
             <button
-              onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); }}
+              onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); setUniversity(''); }}
               className="flex-1 py-3 rounded-2xl text-sm font-medium"
               style={{ background: '#111c28', color: '#a8b8ac', border: '1px solid rgba(201,169,110,0.12)' }}>
               重置

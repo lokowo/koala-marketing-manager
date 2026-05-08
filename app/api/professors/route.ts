@@ -4,7 +4,7 @@ import { listProfessors, countProfessors, createProfessor } from '../../lib/serv
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
-    const limit = Math.min(parseInt(searchParams.get('limit') ?? '50', 10), 200);
+    const limit = Math.min(parseInt(searchParams.get('limit') ?? '20', 10), 200);
     const page = Math.max(parseInt(searchParams.get('page') ?? '1', 10), 1);
 
     const filters = {
