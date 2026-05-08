@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth, type UserProfile } from '../components/AuthContext';
 import { supabase } from '../../lib/supabase/client';
+import { shareToWechat } from '../../lib/share';
 
 // ─── timeAgo helper ────────────────────────
 function timeAgo(dateStr: string): string {
@@ -1069,15 +1070,16 @@ export default function MyProfilePage() {
             </button>
             <button
               onClick={() => {
-                navigator.clipboard.writeText(inviteText);
+                const msg = shareToWechat(inviteText);
                 setInviteCopied(true);
+                setRoleToast({ msg, ok: true });
                 setTimeout(() => setInviteCopied(false), 2500);
               }}
               disabled={referralStats.invited >= 3}
               className="flex-1 text-[11px] py-2 rounded-lg font-medium"
               style={{ background: 'rgba(90,128,96,0.12)', color: referralStats.invited >= 3 ? '#4a5a5e' : '#5a8060' }}
             >
-              {inviteCopied ? '✅ 已复制，请打开微信粘贴发送给朋友' : '分享到微信'}
+              {inviteCopied ? '✅ 已复制' : '分享到微信'}
             </button>
           </div>
 
@@ -1700,22 +1702,73 @@ export default function MyProfilePage() {
             </button>
             {showSettings && (
               <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)', borderTop: DIVIDER }}>
-                <button
-                  className="w-full flex items-center px-4 py-2.5 text-xs text-left"
-                  style={{ color: '#a8b8ac', background: 'transparent' }}
-                  onClick={() => {
-                    if (user?.email) {
-                      fetch('/api/auth/reset-password', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: user.email }),
-                      });
-                      alert('密码重置链接已发送到你的邮箱');
-                    }
-                  }}
-                >
-                  🔑 修改密码
-                </button>
+                <div>
+                  <button
+                    className="w-full flex items-center px-4 py-2.5 text-xs text-left"
+                    style={{ color: '#a8b8ac', background: 'transparent' }}
+                    onClick={() => { setShowPasswordForm(!showPasswordForm); setPwError(''); setPwToast(''); }}
+                  >
+                    🔒 修改密码 <span className="ml-auto text-[10px]" style={{ color: '#6a7a7e' }}>{showPasswordForm ? '▲' : '▼'}</span>
+                  </button>
+                  {showPasswordForm && (
+                    <div className="px-4 pb-3 space-y-2">
+                      <input
+                        type="password"
+                        placeholder="当前密码"
+                        value={pwCurrent}
+                        onChange={e => setPwCurrent(e.target.value)}
+                        className="w-full rounded-lg px-3 py-2 text-xs focus:outline-none"
+                        style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+                      />
+                      <input
+                        type="password"
+                        placeholder="新密码（至少8位，包含字母和数字）"
+                        value={pwNew}
+                        onChange={e => setPwNew(e.target.value)}
+                        className="w-full rounded-lg px-3 py-2 text-xs focus:outline-none"
+                        style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+                      />
+                      <input
+                        type="password"
+                        placeholder="确认新密码"
+                        value={pwConfirm}
+                        onChange={e => setPwConfirm(e.target.value)}
+                        className="w-full rounded-lg px-3 py-2 text-xs focus:outline-none"
+                        style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+                      />
+                      {pwError && <p className="text-[11px] px-1" style={{ color: '#b06040' }}>{pwError}</p>}
+                      {pwToast && <p className="text-[11px] px-1" style={{ color: '#5a8060' }}>{pwToast}</p>}
+                      <button
+                        disabled={pwLoading}
+                        className="w-full py-2 rounded-lg text-xs font-medium disabled:opacity-50"
+                        style={{ background: '#c9a96e', color: '#080c10' }}
+                        onClick={async () => {
+                          setPwError('');
+                          setPwToast('');
+                          if (!pwCurrent) { setPwError('请输入当前密码'); return; }
+                          if (pwNew.length < 8 || !/[a-zA-Z]/.test(pwNew) || !/\d/.test(pwNew)) {
+                            setPwError('新密码至少8位，且需包含字母和数字'); return;
+                          }
+                          if (pwNew !== pwConfirm) { setPwError('两次输入的密码不一致'); return; }
+                          setPwLoading(true);
+                          const { error: signInErr } = await supabase.auth.signInWithPassword({
+                            email: user?.email || '',
+                            password: pwCurrent,
+                          });
+                          if (signInErr) { setPwLoading(false); setPwError('当前密码错误'); return; }
+                          const { error: updateErr } = await supabase.auth.updateUser({ password: pwNew });
+                          setPwLoading(false);
+                          if (updateErr) { setPwError(updateErr.message); return; }
+                          setPwToast('✅ 密码已修改');
+                          setPwCurrent(''); setPwNew(''); setPwConfirm('');
+                          setTimeout(() => { setShowPasswordForm(false); setPwToast(''); }, 1500);
+                        }}
+                      >
+                        {pwLoading ? '修改中…' : '确认修改'}
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <Link href="/koala/tools" className="flex items-center px-4 py-2.5 text-xs no-underline" style={{ color: '#a8b8ac' }}>
                   🔧 更多工具
                 </Link>

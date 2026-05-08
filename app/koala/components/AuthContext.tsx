@@ -256,16 +256,27 @@ function LoginModal({
             </form>
 
             {tab === 'login' && (
-              <p className="text-center text-xs mt-4" style={{ color: '#6a7a7e' }}>
-                还没有账号？{' '}
-                <button
-                  onClick={() => setTab('register')}
-                  className="font-semibold underline"
-                  style={{ color: '#c9a96e' }}
-                >
-                  免费注册
-                </button>
-              </p>
+              <>
+                <p className="text-center text-xs mt-3" style={{ color: '#6a7a7e' }}>
+                  <a
+                    href="/koala/auth/forgot-password"
+                    className="no-underline"
+                    style={{ color: '#c9a96e' }}
+                  >
+                    忘记密码？
+                  </a>
+                </p>
+                <p className="text-center text-xs mt-2" style={{ color: '#6a7a7e' }}>
+                  还没有账号？{' '}
+                  <button
+                    onClick={() => setTab('register')}
+                    className="font-semibold underline"
+                    style={{ color: '#c9a96e' }}
+                  >
+                    免费注册
+                  </button>
+                </p>
+              </>
             )}
           </>
         )}

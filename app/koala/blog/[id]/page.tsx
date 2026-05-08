@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { marked } from 'marked';
 import { Clock, Eye, Mail, Copy, Share2 } from 'lucide-react';
+import { shareToWechat, shareToMoments } from '../../../lib/share';
 
 interface BlogPost {
   id: string;
@@ -109,14 +110,14 @@ export default function BlogDetailPage() {
 
   function shareWechat() {
     const wechatText = `【Koala PhD】${shareTitle}\n\n${shareExcerpt}\n\n阅读全文👉 ${shareUrl}`;
-    navigator.clipboard.writeText(wechatText);
-    showToast('已复制分享内容，请在微信中粘贴发送');
+    const msg = shareToWechat(wechatText);
+    showToast(msg);
   }
 
   function shareMoments() {
     const momentsText = `${shareTitle}\n\n${shareExcerpt}\n\n🔗 ${shareUrl}\n\n#KoalaPhD #澳洲留学 #PhD申请`;
-    navigator.clipboard.writeText(momentsText);
-    showToast('已复制朋友圈文案，请打开微信粘贴发布');
+    const msg = shareToMoments(momentsText);
+    showToast(msg);
   }
 
   function shareXiaohongshu() {
