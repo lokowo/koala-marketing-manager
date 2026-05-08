@@ -5,9 +5,24 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ChevronLeft, Search, SlidersHorizontal, Bookmark, Loader2,
-  X, GraduationCap, BookOpen, TrendingUp, MessageSquarePlus,
+  X, GraduationCap, BookOpen, TrendingUp, MessageSquarePlus, Plus, Check,
 } from 'lucide-react';
 import type { Professor } from '../../lib/types';
+
+interface WebProfessor {
+  name: string;
+  university: string;
+  faculty?: string | null;
+  positionTitle?: string | null;
+  email?: string | null;
+  researchAreas?: string[];
+  hIndex?: number | null;
+  paperCount?: number | null;
+  citationCount?: number | null;
+  profileUrl?: string | null;
+  googleScholarUrl?: string | null;
+  opportunityScore?: number | null;
+}
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -152,11 +167,22 @@ function ProfessorsPageInner() {
   const [sortBy, setSortBy]         = useState('opportunity_score');
   const [university, setUniversity] = useState('');
 
+  // Web search fallback
+  const [webResults, setWebResults] = useState<WebProfessor[]>([]);
+  const [webSearching, setWebSearching] = useState(false);
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  const [addingName, setAddingName] = useState<string | null>(null);
+
   const sentinelRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Active filter count for badge
   const activeFilters = [accepting !== '', hIndexMin > 0, sortBy !== 'opportunity_score', university !== ''].filter(Boolean).length;
+
+  // Trigger search explicitly (button click or Enter)
+  const triggerSearch = useCallback(() => {
+    setDB(search);
+  }, [search]);
 
   // Debounce
   useEffect(() => {
@@ -170,14 +196,64 @@ function ProfessorsPageInner() {
   useEffect(() => {
     setLoading(true);
     setProfessors([]);
+    setWebResults([]);
+    setWebSearching(false);
     setPage(1);
     setHasMore(true);
     apiFetch(filters)
-      .then(d => { setProfessors(d.data); setTotal(d.total); setHasMore(d.hasMore); setPage(2); })
+      .then(d => {
+        setProfessors(d.data);
+        setTotal(d.total);
+        setHasMore(d.hasMore);
+        setPage(2);
+        if (debouncedSearch && d.data.length < 3) {
+          setWebSearching(true);
+          fetch(`/api/professors/web-search?name=${encodeURIComponent(debouncedSearch)}`)
+            .then(r => r.json())
+            .then(wd => setWebResults(wd.results ?? []))
+            .catch(() => {})
+            .finally(() => setWebSearching(false));
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, category, accepting, hIndexMin, sortBy, university]);
+
+  // Add web professor to database
+  const handleAddProfessor = useCallback(async (wp: WebProfessor) => {
+    setAddingName(wp.name);
+    try {
+      const res = await fetch('/api/professors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: wp.name,
+          university: wp.university,
+          faculty: wp.faculty,
+          position_title: wp.positionTitle,
+          email: wp.email,
+          research_areas: wp.researchAreas ?? [],
+          h_index: wp.hIndex,
+          paper_count: wp.paperCount,
+          citation_count: wp.citationCount,
+          profile_url: wp.profileUrl,
+          google_scholar_url: wp.googleScholarUrl,
+          opportunity_score: wp.opportunityScore ?? 50,
+          verification_status: 'Pending',
+          data_sources: ['web_search'],
+        }),
+      });
+      if (res.ok) {
+        setAddedIds(prev => new Set(prev).add(wp.name));
+        const refreshed = await apiFetch(filters);
+        setProfessors(refreshed.data);
+        setTotal(refreshed.total);
+        setHasMore(refreshed.hasMore);
+      }
+    } catch { /* ignore */ }
+    setAddingName(null);
+  }, [filters]);
 
   // Category counts once on mount
   useEffect(() => {
@@ -227,7 +303,9 @@ function ProfessorsPageInner() {
         <div className="flex flex-col items-center">
           <h1 className="font-bold text-lg leading-7" style={{ color: '#e8e4dc' }}>教授库</h1>
           {total !== null && (
-            <span className="text-xs" style={{ color: '#6a7a7e' }}>共 {total.toLocaleString()} 位已认证导师</span>
+            <span className="text-xs" style={{ color: '#6a7a7e' }}>
+              {debouncedSearch ? `找到 ${total.toLocaleString()} 位匹配导师` : `共 ${total.toLocaleString()} 位已认证导师`}
+            </span>
           )}
         </div>
         <button
@@ -248,7 +326,7 @@ function ProfessorsPageInner() {
       {/* Desktop title */}
       <div className="hidden lg:flex items-baseline gap-3 pt-6 pb-2">
         <h1 className="font-bold text-2xl" style={{ color: '#e8e4dc' }}>教授库</h1>
-        {total !== null && <span className="text-sm" style={{ color: '#6a7a7e' }}>共 {total.toLocaleString()} 位已认证导师</span>}
+        {total !== null && <span className="text-sm" style={{ color: '#6a7a7e' }}>{debouncedSearch ? `找到 ${total.toLocaleString()} 位匹配导师` : `共 ${total.toLocaleString()} 位已认证导师`}</span>}
       </div>
 
       {/* Desktop layout: sidebar + list */}
@@ -261,10 +339,14 @@ function ProfessorsPageInner() {
             <Search className="size-4 shrink-0" style={{ color: '#6a7a7e' }} />
             <input
               type="text" value={search} onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') triggerSearch(); }}
               placeholder="搜索教授、学校、研究方向…"
               className="flex-1 bg-transparent text-sm outline-none" style={{ color: '#e8e4dc' }}
             />
             {search && <button onClick={() => setSearch('')} className="text-xs" style={{ color: '#c9a96e' }}>清除</button>}
+            <button onClick={triggerSearch} className="size-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#c9a96e' }}>
+              <Search className="size-3.5" style={{ color: '#080c10' }} />
+            </button>
           </div>
 
           {/* Hot tags */}
@@ -365,10 +447,14 @@ function ProfessorsPageInner() {
           <Search className="size-4 shrink-0" style={{ color: '#6a7a7e' }} />
           <input
             type="text" value={search} onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') triggerSearch(); }}
             placeholder="搜索教授、学校、研究方向…"
             className="flex-1 bg-transparent text-sm outline-none" style={{ color: '#e8e4dc' }}
           />
           {search && <button onClick={() => setSearch('')} className="text-xs" style={{ color: '#c9a96e' }}>清除</button>}
+          <button onClick={triggerSearch} className="size-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#c9a96e' }}>
+            <Search className="size-4" style={{ color: '#080c10' }} />
+          </button>
         </div>
         {!search && <p className="text-xs mt-2 px-1" style={{ color: '#6a7a7e' }}>输入你的研究方向，找到最匹配的导师</p>}
       </div>
@@ -445,6 +531,74 @@ function ProfessorsPageInner() {
           professors.map(p => <ProfCard key={p.id} p={p} />)
         )}
       </div>
+
+      {/* Web search fallback */}
+      {debouncedSearch && !loading && (webSearching || webResults.length > 0) && (
+        <div className="px-4 pt-2 pb-4 lg:px-0">
+          <div className="rounded-2xl overflow-hidden" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.12)' }}>
+            <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(201,169,110,0.08)' }}>
+              <span className="text-sm font-semibold" style={{ color: '#c9a96e' }}>🌐 网络搜索结果</span>
+              {webSearching && <Loader2 className="size-4 animate-spin" style={{ color: '#c9a96e' }} />}
+            </div>
+            {webSearching && webResults.length === 0 && (
+              <div className="px-4 py-6 text-center">
+                <p className="text-xs" style={{ color: '#6a7a7e' }}>
+                  数据库中未找到足够的 &ldquo;{debouncedSearch}&rdquo; 相关结果，正在从学术网络搜索…
+                </p>
+              </div>
+            )}
+            {webResults.length > 0 && (
+              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.06)' }}>
+                {webResults.map((wp, idx) => {
+                  const added = addedIds.has(wp.name);
+                  const adding = addingName === wp.name;
+                  return (
+                    <div key={idx} className="px-4 py-3 flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: '#e8e4dc' }}>{wp.name}</p>
+                        <p className="text-xs mt-0.5" style={{ color: '#6a7a7e' }}>
+                          {wp.positionTitle && <span>{wp.positionTitle} · </span>}
+                          {wp.university}
+                        </p>
+                        {(wp.researchAreas ?? []).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {wp.researchAreas!.slice(0, 4).map(area => (
+                              <span key={area} className="rounded-full text-[10px] px-2 py-0.5"
+                                style={{ border: '1px solid rgba(201,169,110,0.25)', color: '#c9a96e' }}>
+                                {area}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex gap-3 mt-1.5 text-xs" style={{ color: '#6a7a7e' }}>
+                          {wp.hIndex != null && <span style={{ color: '#c9a96e', fontWeight: 600 }}>H:{wp.hIndex}</span>}
+                          {wp.paperCount != null && <span>{wp.paperCount}篇</span>}
+                          {wp.citationCount != null && <span>{fmtCitations(wp.citationCount)}引</span>}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => !added && !adding && handleAddProfessor(wp)}
+                        disabled={added || adding}
+                        className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70"
+                        style={added
+                          ? { background: 'rgba(34,197,94,0.15)', color: '#22c55e' }
+                          : { background: '#c9a96e', color: '#080c10' }}
+                      >
+                        {added ? <><Check className="size-3" /> 已添加</> : adding ? <><Loader2 className="size-3 animate-spin" /> 添加中</> : <><Plus className="size-3" /> 添加到数据库</>}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {!webSearching && webResults.length === 0 && (
+              <div className="px-4 py-4 text-center">
+                <p className="text-xs" style={{ color: '#6a7a7e' }}>网络搜索未找到相关教授</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Sentinel for infinite scroll - must be outside grid */}
       <div ref={sentinelRef} className="h-4 px-4" />
