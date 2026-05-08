@@ -47,6 +47,8 @@ export interface UserProfile {
   language_preference: string | null;
   work_experience: string | null;
   files: Array<{ name: string; url: string; path: string; type: string; size: number; uploaded_at: string }> | null;
+  role: string | null;
+  role_status: string | null;
   created_at: string;
   updated_at: string;
 }

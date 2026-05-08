@@ -348,7 +348,7 @@ export default function MyProfilePage() {
   const [roleApplyLoading, setRoleApplyLoading] = useState(false);
   const [roleApplyStatus, setRoleApplyStatus] = useState<string | null>(null);
   const [roleToast, setRoleToast] = useState<{ msg: string; ok: boolean } | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   // Avatar
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -411,7 +411,7 @@ export default function MyProfilePage() {
     setDataLoading(true);
     fetch('/api/admin/me')
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.role) setIsAdmin(true); })
+      .then(d => { if (d?.role) setUserRole(d.role); })
       .catch(() => {});
     Promise.all([
       fetch('/api/user/saved-professors').then(r => r.json()),
@@ -925,9 +925,19 @@ export default function MyProfilePage() {
                 </span>
               </div>
               <p className="text-xs truncate mt-0.5" style={{ color: '#6a7a7e' }}>{user?.email}</p>
-              {isAdmin && (
-                <Link href="/dashboard" className="text-[10px] no-underline mt-0.5 inline-block" style={{ color: '#c9a96e' }}>
+              {userRole === 'super_admin' && (
+                <Link href="/dashboard/koala/admin-overview" className="text-[10px] no-underline mt-0.5 inline-block" style={{ color: '#c9a96e' }}>
                   ⚙️ 超级管理后台 →
+                </Link>
+              )}
+              {userRole === 'admin' && (
+                <Link href="/dashboard/koala" className="text-[10px] no-underline mt-0.5 inline-block" style={{ color: '#c9a96e' }}>
+                  🔧 管理后台 →
+                </Link>
+              )}
+              {userRole === 'sales' && (
+                <Link href="/dashboard/sales" className="text-[10px] no-underline mt-0.5 inline-block" style={{ color: '#c9a96e' }}>
+                  📊 销售后台 →
                 </Link>
               )}
               <div className="flex items-center gap-2 mt-1.5 text-[10px]" style={{ color: '#6a7a7e' }}>
