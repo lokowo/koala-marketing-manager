@@ -18,14 +18,13 @@ const TITLES: Record<string, string> = {
 };
 
 interface SearchResult {
-  type: 'professor' | 'blog' | 'user';
   id: string;
   title: string;
   subtitle: string;
   href: string;
 }
 
-export default function Header() {
+export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -50,10 +49,15 @@ export default function Header() {
     timerRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(`/api/admin/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`/api/admin/work-logs?search=${encodeURIComponent(query)}&limit=10`);
         if (res.ok) {
           const data = await res.json();
-          setResults(data.results || []);
+          setResults((data.logs || []).map((l: { id: string; action: string; target_type: string; target_name: string; created_at: string }) => ({
+            id: l.id,
+            title: `${l.action} ${l.target_name || ''}`.trim(),
+            subtitle: `${l.target_type || ''} · ${new Date(l.created_at).toLocaleString('zh-CN')}`,
+            href: '/dashboard/koala/work-logs',
+          })));
         }
       } catch { /* ignore */ }
       setSearching(false);
@@ -61,15 +65,21 @@ export default function Header() {
   }, [query]);
 
   function handleSelect(r: SearchResult) {
-    router.push(r.href);
+    router.push(`${r.href}?search=${encodeURIComponent(query)}`);
     setSearchOpen(false);
     setQuery('');
     setResults([]);
   }
 
   return (
-    <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-4">
-      <h2 className="text-lg font-semibold text-slate-900 flex-1">{title}</h2>
+    <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-3 flex items-center gap-3 md:gap-4">
+      {/* Mobile hamburger */}
+      {onMenuClick && (
+        <button onClick={onMenuClick} className="md:hidden p-1.5 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
+        </button>
+      )}
+      <h2 className="text-base md:text-lg font-semibold text-slate-900 flex-1 truncate">{title}</h2>
 
       {/* Search trigger */}
       <button
@@ -77,8 +87,8 @@ export default function Header() {
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-400 hover:border-slate-300 hover:text-slate-500 transition-colors"
       >
         <Search className="size-3.5" />
-        <span>搜索教授、文章、用户...</span>
-        <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-mono ml-4">⌘K</kbd>
+        <span className="hidden sm:inline">搜索操作日志...</span>
+        <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-mono ml-2 hidden sm:inline">⌘K</kbd>
       </button>
 
       {/* Search overlay */}
@@ -93,7 +103,7 @@ export default function Header() {
                 type="text"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="搜索教授名、文章标题、用户邮箱..."
+                placeholder="搜索操作日志...（如「删除 Jones」「生成文章」）"
                 className="flex-1 text-sm outline-none text-slate-800 placeholder:text-slate-400"
               />
               {query && (
@@ -112,20 +122,16 @@ export default function Header() {
               )}
               {results.map(r => (
                 <button
-                  key={`${r.type}-${r.id}`}
+                  key={r.id}
                   onClick={() => handleSelect(r)}
                   className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors"
                 >
-                  <span className="text-sm flex-shrink-0">
-                    {r.type === 'professor' ? '👨\u200D🏫' : r.type === 'blog' ? '📝' : '👤'}
-                  </span>
+                  <span className="text-sm flex-shrink-0">📋</span>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-slate-800 truncate">{r.title}</div>
                     <div className="text-xs text-slate-400 truncate">{r.subtitle}</div>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 flex-shrink-0">
-                    {r.type === 'professor' ? '教授' : r.type === 'blog' ? '文章' : '用户'}
-                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 flex-shrink-0">日志</span>
                 </button>
               ))}
             </div>

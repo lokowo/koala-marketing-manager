@@ -1,5 +1,18 @@
+function copyText(text: string) {
+  navigator.clipboard.writeText(text).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+
 export function shareToWechat(text: string): string {
-  navigator.clipboard.writeText(text).catch(() => {});
+  copyText(text);
   const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
   if (isMobile) {
     setTimeout(() => { window.location.href = 'weixin://'; }, 300);
@@ -9,7 +22,7 @@ export function shareToWechat(text: string): string {
 }
 
 export function shareToMoments(text: string): string {
-  navigator.clipboard.writeText(text).catch(() => {});
+  copyText(text);
   const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
   if (isMobile) {
     setTimeout(() => { window.location.href = 'weixin://dl/moments'; }, 300);

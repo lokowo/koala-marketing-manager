@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     let query = db
       .from('role_applications')
-      .select('*, user_profiles!inner(display_name, email, avatar_url, phone)', { count: 'exact' })
+      .select('*, user_profiles(display_name, email, avatar_url, phone)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range((page - 1) * limit, page * limit - 1);
 

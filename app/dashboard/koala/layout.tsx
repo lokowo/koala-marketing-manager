@@ -22,6 +22,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
   const [authChecked, setAuthChecked] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -106,121 +107,131 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
     return pathname === href || pathname.startsWith(href + '/');
   }
 
-  return (
-    <div className="flex h-screen bg-[#f8fafc]">
-      {/* Sidebar */}
-      <div className={`${collapsed ? 'w-16' : 'w-60'} bg-[#0f172a] text-white flex flex-col shrink-0 transition-all duration-200`}>
-        <div className={`${collapsed ? 'px-3 py-4' : 'px-5 py-5'} border-b border-slate-800 flex items-center gap-3`}>
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <h1 className="text-base font-bold tracking-tight">Koala PhD</h1>
-              <p className="text-[10px] text-slate-500 mt-0.5">Admin Console</p>
-            </div>
-          )}
-          <button
-            onClick={() => setCollapsed(v => !v)}
-            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors flex-shrink-0"
-          >
+  const sidebarContent = (mobile?: boolean) => (
+    <>
+      <div className={`${collapsed && !mobile ? 'px-3 py-4' : 'px-5 py-5'} border-b border-slate-800 flex items-center gap-3`}>
+        {(!collapsed || mobile) && (
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base font-bold tracking-tight">Koala PhD</h1>
+            <p className="text-[10px] text-slate-500 mt-0.5">Admin Console</p>
+          </div>
+        )}
+        {mobile ? (
+          <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors flex-shrink-0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        ) : (
+          <button onClick={() => setCollapsed(v => !v)} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors flex-shrink-0">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              {collapsed
-                ? <path d="M9 18l6-6-6-6" />
-                : <path d="M15 18l-6-6 6-6" />
-              }
+              {collapsed ? <path d="M9 18l6-6-6-6" /> : <path d="M15 18l-6-6 6-6" />}
             </svg>
           </button>
-        </div>
+        )}
+      </div>
 
-        <nav className="flex-1 px-2 py-3 overflow-y-auto">
-          <ul className="space-y-0.5">
-            {navSections.map((section) => {
-              const active = isActive(section.href);
-              const isExpanded = expanded === section.href;
+      <nav className="flex-1 px-2 py-3 overflow-y-auto">
+        <ul className="space-y-0.5">
+          {navSections.map((section) => {
+            const active = isActive(section.href);
+            const isExp = expanded === section.href;
+            const showLabel = mobile || !collapsed;
 
-              return (
-                <li key={section.href}>
-                  {section.children ? (
-                    <>
-                      <button
-                        onClick={() => setExpanded(isExpanded ? null : section.href)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors ${
-                          active
-                            ? 'bg-slate-800 text-white'
-                            : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-                        }`}
-                        title={collapsed ? section.label : undefined}
-                      >
-                        <span className="text-sm flex-shrink-0">{section.icon}</span>
-                        {!collapsed && (
-                          <>
-                            <span className="flex-1 text-left">{section.label}</span>
-                            <svg
-                              className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                              fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </>
-                        )}
-                      </button>
-                      {isExpanded && !collapsed && (
-                        <ul className="mt-0.5 ml-7 space-y-0.5">
-                          {section.children.map((child) => (
-                            <li key={child.href}>
-                              <Link
-                                href={child.href}
-                                className={`block px-3 py-1.5 rounded text-[13px] transition-colors no-underline ${
-                                  pathname === child.href
-                                    ? 'text-amber-400 bg-slate-800/40'
-                                    : 'text-slate-500 hover:text-slate-300'
-                                }`}
-                              >
-                                {child.label}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </>
-                  ) : (
-                    <Link
-                      href={section.href}
-                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors no-underline ${
-                        active
-                          ? 'bg-slate-800 text-white'
-                          : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+            return (
+              <li key={section.href}>
+                {section.children ? (
+                  <>
+                    <button
+                      onClick={() => setExpanded(isExp ? null : section.href)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors ${
+                        active ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
                       }`}
-                      title={collapsed ? section.label : undefined}
+                      title={!showLabel ? section.label : undefined}
                     >
                       <span className="text-sm flex-shrink-0">{section.icon}</span>
-                      {!collapsed && <span>{section.label}</span>}
-                    </Link>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+                      {showLabel && (
+                        <>
+                          <span className="flex-1 text-left">{section.label}</span>
+                          <svg className={`w-3.5 h-3.5 transition-transform ${isExp ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </>
+                      )}
+                    </button>
+                    {isExp && showLabel && (
+                      <ul className="mt-0.5 ml-7 space-y-0.5">
+                        {section.children.map((child) => (
+                          <li key={child.href}>
+                            <Link
+                              href={child.href}
+                              onClick={() => mobile && setSidebarOpen(false)}
+                              className={`block px-3 py-1.5 rounded text-[13px] transition-colors no-underline ${
+                                pathname === child.href ? 'text-amber-400 bg-slate-800/40' : 'text-slate-500 hover:text-slate-300'
+                              }`}
+                            >
+                              {child.label}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    href={section.href}
+                    onClick={() => mobile && setSidebarOpen(false)}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors no-underline ${
+                      active ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                    }`}
+                    title={!showLabel ? section.label : undefined}
+                  >
+                    <span className="text-sm flex-shrink-0">{section.icon}</span>
+                    {showLabel && <span>{section.label}</span>}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
 
-        <div className={`${collapsed ? 'px-2' : 'px-4'} py-3 border-t border-slate-800`}>
-          {!collapsed && (
-            <div className="text-[11px] text-slate-600 mb-2">
-              {role === 'super_admin' ? '超级管理员' : role === 'admin' ? '管理员' : role === 'sales' ? '销售' : '只读'}
-            </div>
-          )}
-          <button
-            onClick={handleSignOut}
-            className="w-full text-left text-[13px] text-slate-500 hover:text-white transition px-2 py-1.5 rounded hover:bg-slate-800/60"
-            title="退出登录"
-          >
-            {collapsed ? '🚪' : '退出登录'}
-          </button>
+      <div className={`${collapsed && !mobile ? 'px-2' : 'px-4'} py-3 border-t border-slate-800`}>
+        {(!collapsed || mobile) && (
+          <div className="text-[11px] text-slate-600 mb-2">
+            {role === 'super_admin' ? '超级管理员' : role === 'admin' ? '管理员' : role === 'sales' ? '销售' : '只读'}
+          </div>
+        )}
+        <button
+          onClick={handleSignOut}
+          className="w-full text-left text-[13px] text-slate-500 hover:text-white transition px-2 py-1.5 rounded hover:bg-slate-800/60"
+          title="退出登录"
+        >
+          {collapsed && !mobile ? '🚪' : '退出登录'}
+        </button>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="flex h-screen bg-[#f8fafc]">
+      {/* Mobile hamburger overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <div className="absolute top-0 left-0 w-[280px] h-full bg-[#0a1018] text-white flex flex-col z-10">
+            {sidebarContent(true)}
+          </div>
         </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <div className={`${collapsed ? 'w-16' : 'w-60'} bg-[#0f172a] text-white hidden md:flex flex-col shrink-0 transition-all duration-200`}>
+        {sidebarContent()}
       </div>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        <Header />
-        <main className="flex-1 p-6 overflow-auto">
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <main className="flex-1 p-4 md:p-6 overflow-auto">
           {children}
         </main>
       </div>
