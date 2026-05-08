@@ -87,6 +87,7 @@ export default function HomePage() {
   const router = useRouter();
   const { user, profile, showLogin, signOut } = useAuth();
   const [professors, setProfessors] = useState<Professor[]>([]);
+  const [profCount, setProfCount] = useState('4,200+');
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [showNotif, setShowNotif] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -113,7 +114,10 @@ export default function HomePage() {
   useEffect(() => {
     fetch('/api/professors?limit=6&sortBy=opportunity_score')
       .then(r => r.json())
-      .then(d => setProfessors(d.data ?? []))
+      .then(d => {
+        setProfessors(d.data ?? []);
+        if (d.total) setProfCount(d.total.toLocaleString());
+      })
       .catch(() => {});
 
     fetch('/api/blog?limit=2&public=true')
@@ -270,7 +274,7 @@ export default function HomePage() {
                 AI 导师匹配 · 免费使用
               </div>
               <h1 className="text-xl lg:text-3xl font-bold leading-tight mb-1.5" style={{ color: '#e8e4dc' }}>
-                2,847 位澳洲导师<br />AI 帮你找最匹配的那个
+                {profCount} 位澳洲导师<br />AI 帮你找最匹配的那个
               </h1>
               <p className="text-xs lg:text-sm leading-relaxed mb-4" style={{ color: '#6a7a7e' }}>
                 告诉 Koala 你的背景和兴趣，30 秒内获得个性化导师推荐
@@ -295,7 +299,7 @@ export default function HomePage() {
           <div className="grid grid-cols-3 gap-2 lg:gap-4">
             {[
               { icon: '💬', step: '01', title: '聊背景', desc: '告诉 Koala 你的专业和兴趣' },
-              { icon: '🎯', step: '02', title: 'AI 匹配', desc: '从 2,847 位教授中精准推荐' },
+              { icon: '🎯', step: '02', title: 'AI 匹配', desc: `从 ${profCount} 位教授中精准推荐` },
               { icon: '✉️', step: '03', title: '写申请信', desc: '针对每位教授定制专业邮件' },
             ].map((s, i) => (
               <button

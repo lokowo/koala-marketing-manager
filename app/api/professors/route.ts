@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
       grantStatus: searchParams.get('grantStatus') ?? undefined,
       hIndexMin: searchParams.get('hIndexMin') ? parseInt(searchParams.get('hIndexMin')!, 10) : undefined,
       sortBy: searchParams.get('sortBy') ?? undefined,
+      showAll: searchParams.get('showAll') === 'true',
     };
 
     const [professors, total] = await Promise.all([

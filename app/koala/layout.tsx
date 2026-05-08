@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     default: 'Koala PhD — 找到你的澳洲博导',
     template: '%s | Koala PhD',
   },
-  description: 'AI 智能匹配澳洲 2,847 位教授，一键生成套磁信。PhD 申请、奖学金、导师推荐，考拉学长帮你搞定。',
+  description: 'AI 智能匹配澳洲 4,200+ 位教授，一键生成套磁信。PhD 申请、奖学金、导师推荐，考拉学长帮你搞定。',
   keywords: ['澳洲PhD', 'PhD申请', '博士申请', '澳洲留学', '导师推荐', '套磁信', 'Australian PhD', 'PhD supervisor', 'scholarship Australia'],
   authors: [{ name: 'Koala PhD' }],
   creator: 'Koala PhD',
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     url: 'https://koalaphd.com',
     siteName: 'Koala PhD',
     title: 'Koala PhD — 找到你的澳洲博导',
-    description: 'AI 智能匹配澳洲 2,847 位教授，一键生成套磁信',
+    description: 'AI 智能匹配澳洲 4,200+ 位教授，一键生成套磁信',
     images: [{ url: '/og-image.svg', width: 1200, height: 630, alt: 'Koala PhD' }],
   },
   twitter: {
