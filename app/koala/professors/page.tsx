@@ -227,7 +227,7 @@ function ProfessorsPageInner() {
         <div className="flex flex-col items-center">
           <h1 className="font-bold text-lg leading-7" style={{ color: '#e8e4dc' }}>教授库</h1>
           {total !== null && (
-            <span className="text-xs" style={{ color: '#6a7a7e' }}>共 {total.toLocaleString()} 位导师</span>
+            <span className="text-xs" style={{ color: '#6a7a7e' }}>共 {total.toLocaleString()} 位已认证导师</span>
           )}
         </div>
         <button
@@ -248,7 +248,7 @@ function ProfessorsPageInner() {
       {/* Desktop title */}
       <div className="hidden lg:flex items-baseline gap-3 pt-6 pb-2">
         <h1 className="font-bold text-2xl" style={{ color: '#e8e4dc' }}>教授库</h1>
-        {total !== null && <span className="text-sm" style={{ color: '#6a7a7e' }}>共 {total.toLocaleString()} 位导师</span>}
+        {total !== null && <span className="text-sm" style={{ color: '#6a7a7e' }}>共 {total.toLocaleString()} 位已认证导师</span>}
       </div>
 
       {/* Desktop layout: sidebar + list */}
@@ -564,16 +564,33 @@ function ProfessorsPageInner() {
 
 // ─── Professor Card ──────────────────────────────────────────────────────────
 
+function getPositionStyle(title?: string): { bg: string; color: string } {
+  if (!title) return { bg: 'rgba(106,122,126,0.15)', color: '#6a7a7e' };
+  const t = title.toLowerCase();
+  if (t.includes('professor') && !t.includes('associate')) return { bg: 'rgba(201,169,110,0.2)', color: '#c9a96e' };
+  if (t.includes('associate professor')) return { bg: 'rgba(192,192,210,0.2)', color: '#c0c0d2' };
+  if (t.includes('senior lecturer') || t.includes('senior research')) return { bg: 'rgba(96,165,250,0.2)', color: '#60a5fa' };
+  return { bg: 'rgba(106,122,126,0.15)', color: '#6a7a7e' };
+}
+
 function ProfCard({ p }: { p: Professor }) {
   const uni = getUniBadge(p.university);
   const statusBadge = getStatusBadge(p.acceptingStudents);
   const hasGrant = p.grantStatus === 'Active';
   const hasStats = p.hIndex || p.paperCount || p.citationCount;
+  const posStyle = getPositionStyle(p.positionTitle);
+  const isVerified = p.verificationStatus === 'Verified';
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.12)', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>
       {/* Top badges row */}
-      <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+      <div className="flex items-center gap-2 px-4 pt-3 pb-2 flex-wrap">
+        {isVerified && (
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>
+            ✅ 已认证
+          </span>
+        )}
         {statusBadge && (
           <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
             style={{ background: statusBadge.bg, color: statusBadge.color }}>
@@ -584,6 +601,12 @@ function ProfCard({ p }: { p: Professor }) {
           <span className="text-[11px] font-medium px-2 py-0.5 rounded-full"
             style={{ background: 'rgba(234,179,8,0.15)', color: '#eab308' }}>
             💰 有经费
+          </span>
+        )}
+        {p.email && (
+          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+            style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80' }}>
+            📧 可联系
           </span>
         )}
         {p.opportunityScore != null && p.opportunityScore >= 70 && (
@@ -607,8 +630,13 @@ function ProfCard({ p }: { p: Professor }) {
           <h3 className="font-bold text-[15px] leading-5 truncate" style={{ color: '#e8e4dc' }}>
             {p.name}
           </h3>
-          <p className="text-xs mt-0.5" style={{ color: '#6a7a7e' }}>
-            {p.positionTitle ? `${p.positionTitle} · ` : ''}{p.university}
+          <p className="text-xs mt-0.5 flex items-center gap-1.5 flex-wrap" style={{ color: '#6a7a7e' }}>
+            {p.positionTitle && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: posStyle.bg, color: posStyle.color }}>
+                {p.positionTitle}
+              </span>
+            )}
+            <span>{p.university}</span>
           </p>
         </div>
       </div>
@@ -617,7 +645,7 @@ function ProfCard({ p }: { p: Professor }) {
       {hasStats && (
         <div className="flex gap-3 px-4 pb-3 text-xs" style={{ color: '#6a7a7e' }}>
           {p.hIndex != null && (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 font-semibold" style={{ color: '#c9a96e' }}>
               <TrendingUp className="size-3" />
               H:{p.hIndex}
             </span>

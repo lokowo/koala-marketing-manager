@@ -119,7 +119,10 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
     q = q.limit(500);
   }
 
-  if (!filters?.showAll) q = q.not('position_title', 'is', null);
+  if (!filters?.showAll) {
+    q = q.not('position_title', 'is', null);
+    q = q.eq('verification_status', 'Verified');
+  }
   if (filters?.university) q = q.eq('university', filters.university);
   if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
   if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
@@ -185,7 +188,10 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
     const nameUniMatched = new Set(results.map((p: Professor) => p.id));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let allQ: any = supabaseAdmin.from('professors').select('*').order(sortField, { ascending: false, nullsFirst: false }).limit(500);
-    if (!filters?.showAll) allQ = allQ.not('position_title', 'is', null);
+    if (!filters?.showAll) {
+      allQ = allQ.not('position_title', 'is', null);
+      allQ = allQ.eq('verification_status', 'Verified');
+    }
     if (filters?.university) allQ = allQ.eq('university', filters.university);
     if (filters?.acceptingStudents) allQ = allQ.eq('accepting_students', filters.acceptingStudents);
     if (filters?.hIndexMin) allQ = allQ.gte('h_index', filters.hIndexMin);
@@ -219,7 +225,10 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
     // Can't count with ilike on text[] in PostgREST — fetch and count in JS
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let q: any = supabaseAdmin.from('professors').select('research_areas').limit(3000);
-    if (!filters?.showAll) q = q.not('position_title', 'is', null);
+    if (!filters?.showAll) {
+      q = q.not('position_title', 'is', null);
+      q = q.eq('verification_status', 'Verified');
+    }
     if (filters?.university) q = q.eq('university', filters.university);
     if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
     if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
@@ -240,7 +249,10 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
   if (searchTerm) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let q: any = supabaseAdmin.from('professors').select('name,university,research_areas').limit(3000);
-    if (!filters?.showAll) q = q.not('position_title', 'is', null);
+    if (!filters?.showAll) {
+      q = q.not('position_title', 'is', null);
+      q = q.eq('verification_status', 'Verified');
+    }
     if (filters?.university) q = q.eq('university', filters.university);
     if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
     if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
@@ -258,7 +270,10 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = supabaseAdmin.from('professors').select('*', { count: 'exact', head: true });
-  if (!filters?.showAll) q = q.not('position_title', 'is', null);
+  if (!filters?.showAll) {
+    q = q.not('position_title', 'is', null);
+    q = q.eq('verification_status', 'Verified');
+  }
   if (filters?.university) q = q.eq('university', filters.university);
   if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
   if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);

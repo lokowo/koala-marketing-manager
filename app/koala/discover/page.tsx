@@ -69,7 +69,7 @@ export default function DiscoverPage() {
   async function fetchProfessors() {
     setLoading(true);
     try {
-      const res = await fetch('/api/professors?limit=10&sortBy=opportunity_score&page=1');
+      const res = await fetch('/api/professors?limit=10&sortBy=opportunity_score&page=1&verificationStatus=Verified');
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       const profs = (data.data ?? data.professors ?? data ?? []).map((p: Professor) => ({
@@ -88,7 +88,7 @@ export default function DiscoverPage() {
     if (loadingMore.current || !discoverHasMore.current) return;
     loadingMore.current = true;
     try {
-      const res = await fetch(`/api/professors?limit=10&sortBy=opportunity_score&page=${discoverPage.current}`);
+      const res = await fetch(`/api/professors?limit=10&sortBy=opportunity_score&page=${discoverPage.current}&verificationStatus=Verified`);
       if (!res.ok) return;
       const data = await res.json();
       const newProfs = (data.data ?? [])

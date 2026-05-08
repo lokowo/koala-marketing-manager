@@ -16,7 +16,8 @@
     "check:api": "npx tsx scripts/check-api.ts",
     "check:data": "npx tsx scripts/check-data.ts",
     "verify": "npx tsx scripts/verify.ts",
-    "import:professors": "npx tsx scripts/import-openalex-professors.ts"
+    "import:professors": "npx tsx scripts/import-openalex-professors.ts",
+    "match:professors": "npx tsx scripts/cross-match-university-staff.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
