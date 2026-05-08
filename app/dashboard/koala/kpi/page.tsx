@@ -23,6 +23,11 @@ interface SalesKpi {
   weeklyLeads: number;
   weeklyFollowups: number;
   weeklyConversions: number;
+  weeklyContacts: number;
+  contactMethodBreakdown: Record<string, number>;
+  totalCustomers: number;
+  totalConverted: number;
+  conversionRate: string;
   leadsTarget: number;
   followupsTarget: number;
   conversionsTarget: number;
@@ -128,8 +133,10 @@ export default function KpiPage() {
                   <th className="text-left px-4 py-2.5 font-medium">销售</th>
                   <th className="text-center px-4 py-2.5 font-medium">状态</th>
                   <th className="text-center px-4 py-2.5 font-medium">注册</th>
+                  <th className="text-center px-4 py-2.5 font-medium">联系</th>
                   <th className="text-center px-4 py-2.5 font-medium">跟进</th>
                   <th className="text-center px-4 py-2.5 font-medium">转化</th>
+                  <th className="text-center px-4 py-2.5 font-medium">总转化率</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -137,6 +144,7 @@ export default function KpiPage() {
                   const allMet = s.leadsMet && s.followupsMet && s.conversionsMet;
                   const noneMet = !s.leadsMet && !s.followupsMet && !s.conversionsMet;
                   const statusIcon = allMet ? '🌟' : noneMet ? '🔴' : '⚠️';
+                  const methodIcons: Record<string, string> = { wechat: '💬', phone: '📞', email: '✉️', meeting: '🤝', other: '📝' };
                   return (
                     <tr key={s.userId} className="hover:bg-slate-50">
                       <td className="px-4 py-2.5 text-slate-700 font-medium">{s.name}</td>
@@ -147,6 +155,18 @@ export default function KpiPage() {
                         </span>
                       </td>
                       <td className="px-4 py-2.5 text-center">
+                        <span className="font-medium text-blue-600">{s.weeklyContacts}</span>
+                        {s.weeklyContacts > 0 && (
+                          <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                            {Object.entries(s.contactMethodBreakdown).map(([method, count]) => (
+                              <span key={method} className="text-[9px]" title={`${method}: ${count}`}>
+                                {methodIcons[method] || '📝'}{count}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
                         <span className={`font-medium ${s.followupsMet ? 'text-green-600' : 'text-red-500'}`}>
                           {s.weeklyFollowups}/{s.followupsTarget}
                         </span>
@@ -155,6 +175,10 @@ export default function KpiPage() {
                         <span className={`font-medium ${s.conversionsMet ? 'text-green-600' : 'text-red-500'}`}>
                           {s.weeklyConversions}/{s.conversionsTarget}
                         </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        <span className="text-slate-600">{s.conversionRate}%</span>
+                        <div className="text-[9px] text-slate-400">{s.totalConverted}/{s.totalCustomers}</div>
                       </td>
                     </tr>
                   );

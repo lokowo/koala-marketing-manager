@@ -20,12 +20,13 @@ export async function GET() {
 
     const weekStartISO = getWeekStartISO();
 
-    const [kpiRes, historyRes, salesRes, customersRes, followupsRes] = await Promise.all([
+    const [kpiRes, historyRes, salesRes, customersRes, followupsRes, contactsRes] = await Promise.all([
       db.from('kpi_settings').select('*').order('created_at', { ascending: false }).limit(1).single(),
       db.from('kpi_weekly_snapshots').select('*').order('week_start', { ascending: false }).limit(12),
-      db.from('user_roles').select('user_id, user_profiles!inner(display_name, email)').in('role', ['sales', 'admin']),
+      db.from('user_roles').select('user_id, user_profiles!inner(display_name, email)').in('role', ['sales', 'admin', 'super_admin']),
       db.from('sales_customers').select('sales_user_id, stage, created_at'),
       db.from('admin_work_logs').select('user_id').eq('action', 'customer_update').gte('created_at', weekStartISO),
+      db.from('admin_work_logs').select('user_id, details').eq('action', 'customer_contact').gte('created_at', weekStartISO),
     ]);
 
     const kpi = kpiRes.data ?? {
@@ -39,6 +40,7 @@ export async function GET() {
     const salesUsers = salesRes.data ?? [];
     const allCustomers = customersRes.data ?? [];
     const followupLogs = followupsRes.data ?? [];
+    const contactLogs = contactsRes.data ?? [];
 
     const perSalesKpi = salesUsers.map((s: { user_id: string; user_profiles: { display_name: string; email: string } }) => {
       const thisWeekCustomers = allCustomers.filter((c: { sales_user_id: string; created_at: string }) =>
@@ -47,12 +49,27 @@ export async function GET() {
       const thisWeekConverted = thisWeekCustomers.filter((c: { stage: string }) => c.stage === 'converted');
       const thisWeekFollowups = followupLogs.filter((f: { user_id: string }) => f.user_id === s.user_id).length;
 
+      const userContacts = contactLogs.filter((c: { user_id: string }) => c.user_id === s.user_id);
+      const contactMethodBreakdown: Record<string, number> = {};
+      for (const c of userContacts) {
+        const method = (c.details as Record<string, string>)?.method ?? 'other';
+        contactMethodBreakdown[method] = (contactMethodBreakdown[method] ?? 0) + 1;
+      }
+
+      const totalCustomers = allCustomers.filter((c: { sales_user_id: string }) => c.sales_user_id === s.user_id);
+      const totalConverted = totalCustomers.filter((c: { stage: string }) => c.stage === 'converted').length;
+
       return {
         userId: s.user_id,
         name: s.user_profiles.display_name || s.user_profiles.email,
         weeklyLeads: thisWeekCustomers.length,
         weeklyFollowups: thisWeekFollowups,
         weeklyConversions: thisWeekConverted.length,
+        weeklyContacts: userContacts.length,
+        contactMethodBreakdown,
+        totalCustomers: totalCustomers.length,
+        totalConverted,
+        conversionRate: totalCustomers.length > 0 ? ((totalConverted / totalCustomers.length) * 100).toFixed(1) : '0.0',
         leadsTarget: kpi.weekly_new_leads,
         followupsTarget: kpi.weekly_followups,
         conversionsTarget: kpi.weekly_conversions,

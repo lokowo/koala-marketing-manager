@@ -15,6 +15,14 @@ const STAGE_LABELS: Record<string, { label: string; color: string }> = {
   churned: { label: '流失', color: '#b06040' },
 };
 
+const CONTACT_METHODS = [
+  { key: 'wechat', label: '微信', emoji: '💬' },
+  { key: 'phone', label: '电话', emoji: '📞' },
+  { key: 'email', label: '邮件', emoji: '✉️' },
+  { key: 'meeting', label: '面谈', emoji: '🤝' },
+  { key: 'other', label: '其他', emoji: '📝' },
+];
+
 interface TimelineItem {
   id: string;
   action: string;
@@ -34,6 +42,11 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
+  const [showContact, setShowContact] = useState(false);
+  const [contactMethod, setContactMethod] = useState('wechat');
+  const [contactSummary, setContactSummary] = useState('');
+  const [contactOutcome, setContactOutcome] = useState('');
+  const [logging, setLogging] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -68,6 +81,29 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
     setSaving(false);
     if (customer) await loadTimeline(customer.id);
     setCustomer(prev => prev ? { ...prev, stage, note } : null);
+  }
+
+  async function handleLogContact() {
+    if (!contactSummary.trim()) return;
+    setLogging(true);
+    await fetch('/api/sales/contact-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerId: id,
+        method: contactMethod,
+        summary: contactSummary,
+        outcome: contactOutcome,
+      }),
+    });
+    setLogging(false);
+    setShowContact(false);
+    setContactSummary('');
+    setContactOutcome('');
+    if (customer) {
+      await loadTimeline(customer.id);
+      if (customer.stage === 'lead') setCustomer(prev => prev ? { ...prev, stage: 'contacted' } : null);
+    }
   }
 
   if (!customer) {
@@ -117,6 +153,89 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Quick contact log */}
+        <div className="rounded-xl p-5" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold" style={{ color: '#a8b8ac' }}>记录联系</h2>
+            {!showContact && (
+              <button
+                onClick={() => setShowContact(true)}
+                className="text-[10px] px-2.5 py-1 rounded-lg"
+                style={{ background: 'rgba(201,169,110,0.15)', color: '#c9a96e' }}
+              >
+                + 新联系记录
+              </button>
+            )}
+          </div>
+
+          {showContact ? (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {CONTACT_METHODS.map(m => (
+                  <button
+                    key={m.key}
+                    onClick={() => setContactMethod(m.key)}
+                    className="px-3 py-1.5 rounded-lg text-xs transition"
+                    style={{
+                      background: contactMethod === m.key ? 'rgba(201,169,110,0.15)' : 'transparent',
+                      color: contactMethod === m.key ? '#c9a96e' : '#6a7a7e',
+                      border: `1px solid ${contactMethod === m.key ? 'rgba(201,169,110,0.3)' : 'rgba(201,169,110,0.08)'}`,
+                    }}
+                  >
+                    {m.emoji} {m.label}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                placeholder="联系内容摘要…"
+                value={contactSummary}
+                onChange={e => setContactSummary(e.target.value)}
+                rows={2}
+                className="w-full rounded-lg px-3 py-2 text-xs focus:outline-none resize-none"
+                style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+              />
+              <input
+                placeholder="结果（如：已添加微信、已约定下次沟通）"
+                value={contactOutcome}
+                onChange={e => setContactOutcome(e.target.value)}
+                className="w-full rounded-lg px-3 py-2 text-xs focus:outline-none"
+                style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleLogContact}
+                  disabled={logging || !contactSummary.trim()}
+                  className="flex-1 py-2 rounded-lg text-xs font-medium disabled:opacity-50"
+                  style={{ background: '#c9a96e', color: '#080c10' }}
+                >
+                  {logging ? '记录中…' : '保存联系记录'}
+                </button>
+                <button
+                  onClick={() => setShowContact(false)}
+                  className="px-4 py-2 rounded-lg text-xs"
+                  style={{ color: '#6a7a7e', border: '1px solid rgba(201,169,110,0.1)' }}
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              {CONTACT_METHODS.slice(0, 4).map(m => (
+                <button
+                  key={m.key}
+                  onClick={() => { setContactMethod(m.key); setShowContact(true); }}
+                  className="flex-1 py-2.5 rounded-lg text-center"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(201,169,110,0.08)' }}
+                >
+                  <span className="text-base block">{m.emoji}</span>
+                  <span className="text-[9px]" style={{ color: '#6a7a7e' }}>{m.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Edit stage + note */}
@@ -169,12 +288,21 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
                   <div className="flex items-start justify-between">
                     <div>
                       <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(201,169,110,0.1)', color: '#a8b8ac' }}>
-                        {item.action === 'customer_update' ? '跟进' : item.action}
+                        {item.action === 'customer_update' ? '跟进' : item.action === 'customer_contact' ? `联系 (${CONTACT_METHODS.find(m => m.key === (item.details?.method as string))?.label || item.details?.method || '其他'})` : item.action}
                       </span>
                       {item.details && (
                         <p className="text-[10px] mt-1" style={{ color: '#6a7a7e' }}>
-                          {typeof item.details.stage === 'string' && <span>阶段 → {STAGE_LABELS[item.details.stage]?.label || item.details.stage}</span>}
-                          {typeof item.details.note === 'string' && <span className="ml-2">{item.details.note}</span>}
+                          {item.action === 'customer_contact' ? (
+                            <>
+                              {typeof item.details.summary === 'string' && <span>{item.details.summary}</span>}
+                              {typeof item.details.outcome === 'string' && <span className="ml-2" style={{ color: '#5a8060' }}>→ {item.details.outcome}</span>}
+                            </>
+                          ) : (
+                            <>
+                              {typeof item.details.stage === 'string' && <span>阶段 → {STAGE_LABELS[item.details.stage]?.label || item.details.stage}</span>}
+                              {typeof item.details.note === 'string' && <span className="ml-2">{item.details.note}</span>}
+                            </>
+                          )}
                         </p>
                       )}
                     </div>
