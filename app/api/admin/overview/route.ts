@@ -44,13 +44,13 @@ export async function GET() {
       db.from('outreach_emails').select('*', { count: 'exact', head: true }).gte('created_at', yesterdayISO).lt('created_at', todayISO),
       db.from('role_applications').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       db.from('user_roles').select('user_id, role, user_profiles!inner(display_name, email)').in('role', ['super_admin', 'admin', 'sales']),
-      db.from('admin_work_logs').select('user_id, action, action_category, details, user_profiles!inner(display_name, email)').gte('created_at', weekStartISO),
-      db.from('admin_work_logs').select('*, user_profiles!inner(display_name, email)').order('created_at', { ascending: false }).limit(20),
+      db.from('admin_work_logs').select('admin_id, action, action_category, details, user_profiles!admin_work_logs_admin_profiles_fkey(display_name, email)').gte('created_at', weekStartISO),
+      db.from('admin_work_logs').select('*, user_profiles!admin_work_logs_admin_profiles_fkey(display_name, email)').order('created_at', { ascending: false }).limit(20),
       db.from('user_roles').select('user_id, user_profiles!inner(display_name, email)').eq('role', 'sales'),
       db.from('sales_customers').select('sales_user_id, stage, created_at'),
       db.from('kpi_settings').select('*').order('created_at', { ascending: false }).limit(1).single(),
       db.from('sales_qrcodes').select('sales_user_id, scan_count'),
-      db.from('admin_work_logs').select('user_id').eq('action', 'customer_update').gte('created_at', weekStartISO),
+      db.from('admin_work_logs').select('admin_id').eq('action', 'customer_update').gte('created_at', weekStartISO),
     ]);
 
     const allUsers = usersRes.data?.users || [];
@@ -74,7 +74,7 @@ export async function GET() {
     for (const log of allLogs) {
       const logRole = (log.details as Record<string, unknown>)?.role;
       if (logRole === 'sales') continue;
-      const uid = log.user_id;
+      const uid = log.admin_id;
       if (!adminTeamWeek[uid]) {
         adminTeamWeek[uid] = {
           name: log.user_profiles?.display_name || log.user_profiles?.email || '—',
@@ -96,7 +96,7 @@ export async function GET() {
         c.sales_user_id === s.user_id && c.created_at >= weekStartISO
       );
       const converted = thisWeekCustomers.filter((c: { stage: string }) => c.stage === 'converted').length;
-      const followups = followupLogs.filter((f: { user_id: string }) => f.user_id === s.user_id).length;
+      const followups = followupLogs.filter((f: { admin_id: string }) => f.admin_id === s.user_id).length;
       const scans = (qrcodesRes.data ?? [])
         .filter((q: { sales_user_id: string }) => q.sales_user_id === s.user_id)
         .reduce((sum: number, q: { scan_count: number }) => sum + (q.scan_count || 0), 0);

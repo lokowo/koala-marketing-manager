@@ -80,12 +80,12 @@ export async function POST(req: NextRequest) {
         user_id: app.user_id,
         type: 'role_approved',
         title: '角色申请已通过',
-        body: `你的${app.applied_role === 'admin' ? '管理员' : '销售'}角色申请已通过。`,
+        content: `你的${app.applied_role === 'admin' ? '管理员' : '销售'}角色申请已通过。`,
       });
     } else {
       await db
         .from('role_applications')
-        .update({ status: 'rejected', reviewed_by: user.id, reviewed_at: now, reject_reason: rejectReason || null })
+        .update({ status: 'rejected', reviewed_by: user.id, reviewed_at: now, review_note: rejectReason || null })
         .eq('id', applicationId);
 
       await db.from('user_profiles').update({ role_status: 'rejected' }).eq('id', app.user_id);

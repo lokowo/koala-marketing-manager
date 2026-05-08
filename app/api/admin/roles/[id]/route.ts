@@ -19,7 +19,7 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
       user_id: userId,
       type: 'role_revoked',
       title: '角色已被撤销',
-      body: '你的管理角色已被撤销。如有疑问请联系管理员。',
+      content: '你的管理角色已被撤销。如有疑问请联系管理员。',
     });
 
     return Response.json({ success: true });

@@ -101,7 +101,7 @@ export async function POST(req: Request) {
           user_id: sa.user_id,
           type: 'role_application',
           title: '新角色申请',
-          body: `有用户申请${roleName}角色，请前往角色管理审核。`,
+          content: `有用户申请${roleName}角色，请前往角色管理审核。`,
         }))
       );
     }

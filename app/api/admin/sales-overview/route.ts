@@ -9,7 +9,7 @@ export async function GET() {
     await requireSuperAdmin();
 
     const [salesUsersRes, customersRes, qrcodesRes, reportsRes] = await Promise.all([
-      db.from('user_roles').select('user_id, user_profiles!inner(display_name, email, avatar_url)').in('role', ['sales', 'admin']),
+      db.from('user_roles').select('user_id, role, user_profiles(display_name, email, avatar_url)').in('role', ['sales', 'admin', 'super_admin']),
       db.from('sales_customers').select('sales_user_id, stage, created_at'),
       db.from('sales_qrcodes').select('sales_user_id, code, scan_count, created_at'),
       db.from('sales_weekly_reports').select('sales_user_id, week_start, summary').order('week_start', { ascending: false }).limit(50),

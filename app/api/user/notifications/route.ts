@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(limit);
 
-    if (unreadOnly) query = query.eq('read', false);
+    if (unreadOnly) query = query.eq('is_read', false);
 
     const { data, count, error } = await query;
     if (error) throw error;
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       .from('notifications')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
-      .eq('read', false);
+      .eq('is_read', false);
 
     return Response.json({
       data: data ?? [],
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     if (action === 'markRead' && notificationId) {
       await db
         .from('notifications')
-        .update({ read: true })
+        .update({ is_read: true })
         .eq('id', notificationId)
         .eq('user_id', user.id);
 
@@ -62,9 +62,9 @@ export async function POST(req: NextRequest) {
     if (action === 'markAllRead') {
       await db
         .from('notifications')
-        .update({ read: true })
+        .update({ is_read: true })
         .eq('user_id', user.id)
-        .eq('read', false);
+        .eq('is_read', false);
 
       return Response.json({ success: true });
     }

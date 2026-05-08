@@ -41,8 +41,8 @@ export async function GET() {
       db.from('outreach_emails').select('*', { count: 'exact', head: true }).gte('created_at', monthStart),
       db.from('role_applications').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       db.from('user_roles').select('user_id, role, user_profiles!inner(display_name, email, avatar_url)').in('role', ['super_admin', 'admin']),
-      db.from('admin_work_logs').select('user_id, action, user_profiles!inner(display_name, email)').gte('created_at', weekStartISO),
-      db.from('admin_work_logs').select('*, user_profiles!inner(display_name, email)').order('created_at', { ascending: false }).limit(20),
+      db.from('admin_work_logs').select('admin_id, action, user_profiles!admin_work_logs_admin_profiles_fkey(display_name, email)').gte('created_at', weekStartISO),
+      db.from('admin_work_logs').select('*, user_profiles!admin_work_logs_admin_profiles_fkey(display_name, email)').order('created_at', { ascending: false }).limit(20),
     ]);
 
     const allUsers = usersRes.data?.users || [];
@@ -50,7 +50,7 @@ export async function GET() {
 
     const adminTeamWeek: Record<string, { name: string; email: string; actions: Record<string, number> }> = {};
     for (const log of weekLogsRes.data ?? []) {
-      const uid = log.user_id;
+      const uid = log.admin_id;
       if (!adminTeamWeek[uid]) {
         adminTeamWeek[uid] = {
           name: log.user_profiles?.display_name || log.user_profiles?.email || '—',

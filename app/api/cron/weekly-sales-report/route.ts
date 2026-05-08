@@ -98,7 +98,7 @@ export async function GET(req: Request) {
         user_id: sa.user_id,
         type: 'weekly_report_summary',
         title: '上周 Sales 报告汇总',
-        body: `上周 Sales 报告：${metCount} 人达标 / ${notMetCount} 人未达标。总注册 ${totalLeads}，总转化 ${totalConversions}。`,
+        content: `上周 Sales 报告：${metCount} 人达标 / ${notMetCount} 人未达标。总注册 ${totalLeads}，总转化 ${totalConversions}。`,
       });
     }
 
