@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getServerUser, getUserRole } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { logWork } from '../../../lib/worklog';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -53,6 +54,18 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    await logWork({
+      userId: user.id,
+      role: 'sales',
+      action: 'create_qrcode',
+      actionCategory: 'sales_marketing',
+      targetType: 'sales_qrcode',
+      targetId: data.id,
+      targetName: label || code,
+      details: { channel: channel || 'wechat', label },
+    });
+
     return Response.json({ data }, { status: 201 });
   } catch (e) {
     console.error('[sales/qrcode POST]', e);

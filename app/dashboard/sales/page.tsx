@@ -24,9 +24,12 @@ const FUNNEL_STAGES = ['lead', 'contacted', 'interested', 'trial', 'converted'] 
 
 const ACTION_LABELS: Record<string, string> = {
   customer_update: '客户跟进',
-  blog_generate: '生成博客',
-  blog_generate_professor: '教授文章',
-  professor_create: '新建教授',
+  create_qrcode: '生成推广码',
+  customer_registered: '客户注册',
+  view_customer: '查看客户',
+  generate_email_for_customer: '生成套磁信',
+  add_customer_note: '客户备注',
+  share_qrcode: '分享二维码',
 };
 
 export default function SalesDashboard() {
@@ -309,7 +312,8 @@ export default function SalesDashboard() {
                     </div>
                     {log.details && (
                       <p className="text-[10px] mt-0.5 truncate" style={{ color: '#6a7a7e' }}>
-                        {(log.details as Record<string, unknown>).stage as string || (log.details as Record<string, unknown>).note as string || ''}
+                        {typeof (log.details as Record<string, unknown>).stage === 'string' ? (log.details as Record<string, unknown>).stage as string : ''}
+                        {typeof (log.details as Record<string, unknown>).note === 'string' ? ` ${(log.details as Record<string, unknown>).note as string}` : ''}
                       </p>
                     )}
                   </div>

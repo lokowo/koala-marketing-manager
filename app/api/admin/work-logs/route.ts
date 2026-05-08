@@ -17,6 +17,8 @@ export async function GET(req: NextRequest) {
     const search = sp.get('search');
     const dateFrom = sp.get('dateFrom');
     const dateTo = sp.get('dateTo');
+    const role = sp.get('role');
+    const category = sp.get('category');
 
     let query = db
       .from('admin_work_logs')
@@ -26,12 +28,19 @@ export async function GET(req: NextRequest) {
 
     if (userId) query = query.eq('user_id', userId);
     if (action) query = query.eq('action', action);
+    if (category) query = query.eq('action_category', category);
     if (dateFrom) query = query.gte('created_at', dateFrom);
     if (dateTo) query = query.lte('created_at', new Date(dateTo + 'T23:59:59').toISOString());
 
+    if (role === 'admin') {
+      query = query.not('details->role', 'eq', '"sales"');
+    } else if (role === 'sales') {
+      query = query.eq('details->role', '"sales"');
+    }
+
     if (search) {
       query = query.or(
-        `action.ilike.%${search}%,target_type.ilike.%${search}%,target_id.ilike.%${search}%,details->>name.ilike.%${search}%,details->>topic.ilike.%${search}%,details->>profName.ilike.%${search}%,details->>stage.ilike.%${search}%,details->>note.ilike.%${search}%`
+        `action.ilike.%${search}%,target_type.ilike.%${search}%,target_name.ilike.%${search}%,target_id.ilike.%${search}%,details->>name.ilike.%${search}%,details->>topic.ilike.%${search}%,details->>profName.ilike.%${search}%,details->>stage.ilike.%${search}%,details->>note.ilike.%${search}%`
       );
     }
 

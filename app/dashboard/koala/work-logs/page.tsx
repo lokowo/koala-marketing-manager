@@ -1,14 +1,17 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 interface WorkLog {
   id: string;
   user_id: string;
   action: string;
+  action_category: string | null;
   target_type: string;
   target_id: string | null;
+  target_name: string | null;
   details: Record<string, unknown> | null;
   created_at: string;
   user_profiles?: { display_name: string; email: string; avatar_url: string | null };
@@ -20,11 +23,29 @@ const ACTION_LABELS: Record<string, string> = {
   professor_create: '创建教授',
   professor_delete: '删除教授',
   customer_update: '客户跟进',
+  create_qrcode: '生成推广码',
+  customer_registered: '客户注册',
+  view_customer: '查看客户',
+  generate_email_for_customer: '帮客户生成套磁信',
+  add_customer_note: '客户备注',
+  share_qrcode: '分享二维码',
 };
 
-const ALL_ACTIONS = Object.keys(ACTION_LABELS);
+const ADMIN_CATEGORIES = [
+  { value: 'blog_generate', label: '文章管理' },
+  { value: 'professor_create', label: '教授管理' },
+  { value: 'email_send', label: '邮件管理' },
+];
+
+const SALES_CATEGORIES = [
+  { value: 'sales_customer', label: '客户管理' },
+  { value: 'sales_outreach', label: '套磁信' },
+  { value: 'sales_communication', label: '客户沟通' },
+  { value: 'sales_marketing', label: '营销推广' },
+];
 
 export default function WorkLogsPage() {
+  const searchParams = useSearchParams();
   const [logs, setLogs] = useState<WorkLog[]>([]);
   const [total, setTotal] = useState(0);
   const [admins, setAdmins] = useState<Record<string, string>>({});
@@ -34,7 +55,9 @@ export default function WorkLogsPage() {
 
   const [search, setSearch] = useState('');
   const [filterAction, setFilterAction] = useState('');
-  const [filterAdmin, setFilterAdmin] = useState('');
+  const [filterAdmin, setFilterAdmin] = useState(searchParams.get('userId') || '');
+  const [filterRole, setFilterRole] = useState(searchParams.get('role') || '');
+  const [filterCategory, setFilterCategory] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
@@ -44,6 +67,8 @@ export default function WorkLogsPage() {
     if (search) params.set('search', search);
     if (filterAction) params.set('action', filterAction);
     if (filterAdmin) params.set('userId', filterAdmin);
+    if (filterRole) params.set('role', filterRole);
+    if (filterCategory) params.set('category', filterCategory);
     if (dateFrom) params.set('dateFrom', dateFrom);
     if (dateTo) params.set('dateTo', dateTo);
 
@@ -53,14 +78,24 @@ export default function WorkLogsPage() {
     setTotal(d.total ?? 0);
     if (d.admins) setAdmins(prev => ({ ...prev, ...d.admins }));
     setLoading(false);
-  }, [page, search, filterAction, filterAdmin, dateFrom, dateTo]);
+  }, [page, search, filterAction, filterAdmin, filterRole, filterCategory, dateFrom, dateTo]);
 
   useEffect(() => { loadLogs(); }, [loadLogs]);
 
-  useEffect(() => { setPage(1); }, [search, filterAction, filterAdmin, dateFrom, dateTo]);
+  useEffect(() => { setPage(1); }, [search, filterAction, filterAdmin, filterRole, filterCategory, dateFrom, dateTo]);
+
+  function clearFilters() {
+    setSearch(''); setFilterAction(''); setFilterAdmin('');
+    setFilterRole(''); setFilterCategory(''); setDateFrom(''); setDateTo('');
+  }
 
   const totalPages = Math.ceil(total / 30);
   const adminList = Object.entries(admins);
+  const hasFilters = search || filterAction || filterAdmin || filterRole || filterCategory || dateFrom || dateTo;
+
+  const categoryOptions = filterRole === 'admin' ? ADMIN_CATEGORIES
+    : filterRole === 'sales' ? SALES_CATEGORIES
+    : [...ADMIN_CATEGORIES, ...SALES_CATEGORIES];
 
   return (
     <div>
@@ -72,30 +107,39 @@ export default function WorkLogsPage() {
           <div className="flex-1 min-w-[200px]">
             <input
               type="text"
-              placeholder="搜索：如「删除 Jones」"
+              placeholder="🔍 搜索：如「删除 Jones」「王五 客户」「注册」"
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-full rounded-lg px-3 py-2 text-xs border border-slate-200 focus:outline-none focus:border-amber-300"
             />
           </div>
           <select
-            value={filterAction}
-            onChange={e => setFilterAction(e.target.value)}
+            value={filterRole}
+            onChange={e => { setFilterRole(e.target.value); setFilterCategory(''); }}
             className="rounded-lg px-3 py-2 text-xs border border-slate-200 focus:outline-none"
           >
-            <option value="">全部操作</option>
-            {ALL_ACTIONS.map(a => (
-              <option key={a} value={a}>{ACTION_LABELS[a]}</option>
-            ))}
+            <option value="">全部角色</option>
+            <option value="admin">Admin</option>
+            <option value="sales">Sales</option>
           </select>
           <select
             value={filterAdmin}
             onChange={e => setFilterAdmin(e.target.value)}
             className="rounded-lg px-3 py-2 text-xs border border-slate-200 focus:outline-none"
           >
-            <option value="">全部 Admin</option>
+            <option value="">全部人员</option>
             {adminList.map(([uid, name]) => (
               <option key={uid} value={uid}>{name}</option>
+            ))}
+          </select>
+          <select
+            value={filterCategory}
+            onChange={e => setFilterCategory(e.target.value)}
+            className="rounded-lg px-3 py-2 text-xs border border-slate-200 focus:outline-none"
+          >
+            <option value="">全部分类</option>
+            {categoryOptions.map(c => (
+              <option key={c.value} value={c.value}>{c.label}</option>
             ))}
           </select>
           <input
@@ -112,12 +156,12 @@ export default function WorkLogsPage() {
             className="rounded-lg px-3 py-2 text-xs border border-slate-200 focus:outline-none"
             title="结束日期"
           />
-          {(search || filterAction || filterAdmin || dateFrom || dateTo) && (
+          {hasFilters && (
             <button
-              onClick={() => { setSearch(''); setFilterAction(''); setFilterAdmin(''); setDateFrom(''); setDateTo(''); }}
+              onClick={clearFilters}
               className="px-3 py-2 text-xs rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200"
             >
-              清除
+              重置
             </button>
           )}
         </div>
@@ -135,62 +179,76 @@ export default function WorkLogsPage() {
               <thead>
                 <tr className="bg-slate-50 text-slate-500">
                   <th className="text-left px-4 py-2.5 font-medium w-[130px]">时间</th>
-                  <th className="text-left px-4 py-2.5 font-medium">操作人</th>
+                  <th className="text-left px-4 py-2.5 font-medium w-[60px]">角色</th>
+                  <th className="text-left px-4 py-2.5 font-medium">人员</th>
                   <th className="text-left px-4 py-2.5 font-medium">操作</th>
                   <th className="text-left px-4 py-2.5 font-medium">目标</th>
                   <th className="text-center px-4 py-2.5 font-medium w-[60px]">详情</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {logs.map(log => (
-                  <>
-                    <tr key={log.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}>
-                      <td className="px-4 py-2.5 text-slate-500 whitespace-nowrap">
-                        {new Date(log.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <Link
-                          href={`/dashboard/koala/work-logs?userId=${log.user_id}`}
-                          className="text-slate-700 hover:text-amber-600 no-underline"
-                          onClick={e => { e.stopPropagation(); setFilterAdmin(log.user_id); }}
-                        >
-                          {log.user_profiles?.display_name || log.user_profiles?.email || '—'}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px]">
-                          {ACTION_LABELS[log.action] || log.action}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-500">
-                        {log.target_type}{log.target_id ? ` #${log.target_id.slice(0, 8)}` : ''}
-                      </td>
-                      <td className="px-4 py-2.5 text-center">
-                        <span className={`inline-block transition-transform ${expandedId === log.id ? 'rotate-90' : ''}`}>▶</span>
-                      </td>
-                    </tr>
-                    {expandedId === log.id && (
-                      <tr key={`${log.id}-detail`}>
-                        <td colSpan={5} className="px-4 py-3 bg-slate-50">
-                          <div className="text-xs space-y-1.5">
-                            <div><span className="text-slate-400 w-16 inline-block">操作人 ID:</span> <span className="text-slate-600 font-mono text-[10px]">{log.user_id}</span></div>
-                            <div><span className="text-slate-400 w-16 inline-block">目标类型:</span> <span className="text-slate-600">{log.target_type}</span></div>
-                            {log.target_id && <div><span className="text-slate-400 w-16 inline-block">目标 ID:</span> <span className="text-slate-600 font-mono text-[10px]">{log.target_id}</span></div>}
-                            <div><span className="text-slate-400 w-16 inline-block">完整时间:</span> <span className="text-slate-600">{new Date(log.created_at).toLocaleString('zh-CN')}</span></div>
-                            {log.details && (
-                              <div>
-                                <span className="text-slate-400">详情:</span>
-                                <pre className="mt-1 p-2 rounded bg-white border border-slate-200 text-[10px] text-slate-600 overflow-auto max-h-[200px] whitespace-pre-wrap">
-                                  {JSON.stringify(log.details, null, 2)}
-                                </pre>
-                              </div>
-                            )}
-                          </div>
+                {logs.map(log => {
+                  const logRole = (log.details as Record<string, unknown>)?.role as string || 'admin';
+                  return (
+                    <React.Fragment key={log.id}>
+                      <tr className="hover:bg-slate-50 cursor-pointer" onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}>
+                        <td className="px-4 py-2.5 text-slate-500 whitespace-nowrap">
+                          {new Date(log.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                            logRole === 'sales' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {logRole === 'sales' ? 'Sales' : 'Admin'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <Link
+                            href={`/dashboard/koala/work-logs/${log.user_id}?role=${logRole}`}
+                            className="text-slate-700 hover:text-amber-600 no-underline font-medium"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            {log.user_profiles?.display_name || log.user_profiles?.email || '—'}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px]">
+                            {ACTION_LABELS[log.action] || log.action}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-500">
+                          {log.target_name || log.target_type}
+                          {log.target_id && !log.target_name ? ` #${log.target_id.slice(0, 8)}` : ''}
+                        </td>
+                        <td className="px-4 py-2.5 text-center">
+                          <span className={`inline-block transition-transform ${expandedId === log.id ? 'rotate-90' : ''}`}>▶</span>
                         </td>
                       </tr>
-                    )}
-                  </>
-                ))}
+                      {expandedId === log.id && (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-3 bg-slate-50">
+                            <div className="text-xs space-y-1.5">
+                              <div><span className="text-slate-400 w-16 inline-block">操作人 ID:</span> <span className="text-slate-600 font-mono text-[10px]">{log.user_id}</span></div>
+                              <div><span className="text-slate-400 w-16 inline-block">角色:</span> <span className="text-slate-600">{logRole}</span></div>
+                              <div><span className="text-slate-400 w-16 inline-block">目标类型:</span> <span className="text-slate-600">{log.target_type}</span></div>
+                              {log.target_id && <div><span className="text-slate-400 w-16 inline-block">目标 ID:</span> <span className="text-slate-600 font-mono text-[10px]">{log.target_id}</span></div>}
+                              {log.target_name && <div><span className="text-slate-400 w-16 inline-block">目标名称:</span> <span className="text-slate-600">{log.target_name}</span></div>}
+                              <div><span className="text-slate-400 w-16 inline-block">完整时间:</span> <span className="text-slate-600">{new Date(log.created_at).toLocaleString('zh-CN')}</span></div>
+                              {log.details && (
+                                <div>
+                                  <span className="text-slate-400">详情:</span>
+                                  <pre className="mt-1 p-2 rounded bg-white border border-slate-200 text-[10px] text-slate-600 overflow-auto max-h-[200px] whitespace-pre-wrap">
+                                    {JSON.stringify(log.details, null, 2)}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>

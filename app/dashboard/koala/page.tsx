@@ -54,6 +54,11 @@ const ACTION_LABELS: Record<string, string> = {
   professor_create: '新建教授',
   professor_delete: '删除教授',
   customer_update: '客户跟进',
+  create_qrcode: '生成推广码',
+  customer_registered: '客户注册',
+  generate_email_for_customer: '生成套磁信',
+  add_customer_note: '客户备注',
+  share_qrcode: '分享二维码',
 };
 
 function timeAgo(dateStr: string) {

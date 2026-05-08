@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getServerUser, getUserRole } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
-import { logAdminAction } from '../../../lib/worklog';
+import { logWork } from '../../../lib/worklog';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -56,13 +56,22 @@ export async function POST(req: NextRequest) {
       .update({ stage, note, updated_at: new Date().toISOString() })
       .eq('id', customerId)
       .eq('sales_user_id', user.id)
-      .select()
+      .select('*, user_profiles(display_name, email)')
       .single();
 
     if (error) throw error;
     if (!data) return Response.json({ error: 'Not found' }, { status: 404 });
 
-    await logAdminAction(user.id, 'customer_update', 'sales_customer', customerId, { stage, note: note?.slice(0, 50) });
+    await logWork({
+      userId: user.id,
+      role: 'sales',
+      action: 'customer_update',
+      actionCategory: 'sales_customer',
+      targetType: 'sales_customer',
+      targetId: customerId,
+      targetName: data.user_profiles?.display_name || data.user_profiles?.email || undefined,
+      details: { stage, note: note?.slice(0, 50) },
+    });
 
     return Response.json({ data });
   } catch (e) {

@@ -75,11 +75,13 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
     ];
 
     if (userRole === 'super_admin') {
-      nav.push(
-        { icon: '🔐', label: '角色管理', href: '/dashboard/koala/roles', adminOnly: true },
-        { icon: '💰', label: 'Sales总览', href: '/dashboard/koala/sales-overview', adminOnly: true },
-        { icon: '📋', label: '工作日志', href: '/dashboard/koala/work-logs', adminOnly: true },
-        { icon: '🎯', label: 'KPI 设置', href: '/dashboard/koala/kpi', adminOnly: true },
+      nav.splice(1, 0,
+        { icon: '📊', label: '管理总览', href: '/dashboard/koala/admin-overview', adminOnly: true },
+        { icon: '📋', label: '角色管理', href: '/dashboard/koala/roles', adminOnly: true },
+        { icon: '📝', label: '工作日志', href: '/dashboard/koala/work-logs', adminOnly: true },
+        { icon: '📈', label: 'Sales 管理', href: '/dashboard/koala/sales-overview', adminOnly: true },
+        { icon: '🎯', label: 'Sales KPI', href: '/dashboard/koala/kpi-settings', adminOnly: true },
+        { icon: '🔔', label: '站内信', href: '/dashboard/koala/notifications', adminOnly: true },
       );
     }
 
