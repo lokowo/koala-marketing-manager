@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://koalaphd.com';
-    const verifyUrl = `${baseUrl}/verify?email=${encodeURIComponent(email)}&code=${code}`;
+    const verifyUrl = `${baseUrl}/koala/auth?mode=verify&email=${encodeURIComponent(email)}&code=${code}`;
 
     const { error: emailError } = await sendVerificationEmail({
       to: email,

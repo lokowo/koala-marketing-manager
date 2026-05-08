@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabase/client';
@@ -33,6 +33,52 @@ function AuthPageInner() {
   const [referralInput, setReferralInput] = useState(refCode);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const autoVerifyDone = useRef(false);
+
+  // Auto-verify when arriving from email link (?mode=verify&email=...&code=...)
+  useEffect(() => {
+    if (autoVerifyDone.current) return;
+    const urlMode = searchParams.get('mode');
+    const urlEmail = searchParams.get('email');
+    const urlCode = searchParams.get('code');
+    if (urlMode === 'verify' && urlEmail) {
+      setEmail(urlEmail);
+      setStep('verify');
+      if (urlCode && urlCode.length === 6) {
+        autoVerifyDone.current = true;
+        setCode(urlCode);
+        setLoading(true);
+        fetch('/api/auth/verify-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: urlEmail, code: urlCode }),
+        })
+          .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+          .then(({ ok, data }) => {
+            setLoading(false);
+            if (!ok) { setError(data.error || '验证失败'); return; }
+            if (referralInput) {
+              fetch('/api/user/referral/claim', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: referralInput }),
+              }).catch(() => {});
+            }
+            if (salesCode) {
+              fetch('/api/sales/track-registration', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ salesCode, email: urlEmail }),
+              }).catch(() => {});
+            }
+            setStep('success');
+            setTimeout(() => router.replace('/koala/home'), 2000);
+          })
+          .catch(() => { setLoading(false); setError('验证请求失败'); });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
