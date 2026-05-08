@@ -78,9 +78,9 @@ const RESEARCH_AREAS = [
 ];
 
 const STEP_LINKS = [
-  { href: '/koala/chat',      label: '申请规划' },
-  { href: '/koala/professors', label: '教授库' },
-  { href: '/koala/chat?mode=write', label: '写申请信' },
+  { href: '/koala/chat?mode=path',     label: '聊背景' },
+  { href: '/koala/chat?mode=research', label: 'AI匹配' },
+  { href: '/koala/chat?mode=write',    label: '写申请信' },
 ];
 
 export default function HomePage() {

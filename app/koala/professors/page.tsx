@@ -208,9 +208,20 @@ function ProfessorsPageInner() {
         setPage(2);
         if (debouncedSearch && d.data.length < 3) {
           setWebSearching(true);
-          fetch(`/api/professors/web-search?name=${encodeURIComponent(debouncedSearch)}`)
+          fetch(`/api/professors/auto-search?name=${encodeURIComponent(debouncedSearch)}`)
             .then(r => r.json())
-            .then(wd => setWebResults(wd.results ?? []))
+            .then(wd => {
+              if (wd.created > 0) {
+                apiFetch(filters)
+                  .then(refreshed => {
+                    setProfessors(refreshed.data);
+                    setTotal(refreshed.total);
+                    setHasMore(refreshed.hasMore);
+                  })
+                  .catch(() => {});
+              }
+              setWebResults(wd.results?.filter((p: WebProfessor) => !d.data.some((dp: Professor) => dp.name === p.name)) ?? []);
+            })
             .catch(() => {})
             .finally(() => setWebSearching(false));
         }
@@ -537,13 +548,13 @@ function ProfessorsPageInner() {
         <div className="px-4 pt-2 pb-4 lg:px-0">
           <div className="rounded-2xl overflow-hidden" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.12)' }}>
             <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(201,169,110,0.08)' }}>
-              <span className="text-sm font-semibold" style={{ color: '#c9a96e' }}>🌐 网络搜索结果</span>
+              <span className="text-sm font-semibold" style={{ color: '#c9a96e' }}>🌐 OpenAlex 学术搜索结果</span>
               {webSearching && <Loader2 className="size-4 animate-spin" style={{ color: '#c9a96e' }} />}
             </div>
             {webSearching && webResults.length === 0 && (
               <div className="px-4 py-6 text-center">
                 <p className="text-xs" style={{ color: '#6a7a7e' }}>
-                  数据库中未找到足够的 &ldquo;{debouncedSearch}&rdquo; 相关结果，正在从学术网络搜索…
+                  数据库中未找到足够的 &ldquo;{debouncedSearch}&rdquo; 相关结果，正在从 OpenAlex 学术数据库搜索…
                 </p>
               </div>
             )}

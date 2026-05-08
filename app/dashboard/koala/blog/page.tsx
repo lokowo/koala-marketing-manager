@@ -454,21 +454,37 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
     setStep('web-searching');
     setError('');
     try {
-      const res = await fetch('/api/professors/web-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: searchQuery }),
-      });
+      const res = await fetch(`/api/professors/auto-search?name=${encodeURIComponent(searchQuery)}`);
       const data = await res.json();
-      if (data.professor) {
-        setWebResult(data.professor);
-        setStep('web-result');
+      if (data.results && data.results.length > 0) {
+        const prof = data.results[0];
+        setWebResult({
+          name: prof.name,
+          university: prof.university,
+          faculty: prof.faculty,
+          positionTitle: prof.positionTitle,
+          email: prof.email,
+          researchAreas: prof.researchAreas,
+          hIndex: prof.hIndex,
+          paperCount: prof.paperCount,
+          citationCount: prof.citationCount,
+          profileUrl: prof.profileUrl,
+          googleScholarUrl: prof.googleScholarUrl,
+          opportunityScore: prof.opportunityScore,
+        });
+        if (data.source === 'db' && prof.id) {
+          setSelectedProf(prof);
+          setSearchQuery(prof.name);
+          setStep('search');
+        } else {
+          setStep('web-result');
+        }
       } else {
-        setError(data.error || '未找到教授信息');
+        setError('未找到教授信息');
         setStep('search');
       }
     } catch {
-      setError('网络搜索失败，请重试');
+      setError('搜索失败，请重试');
       setStep('search');
     }
   }

@@ -7,6 +7,7 @@ import { searchAcademicSources, papersToRAGContext, type AcademicPaper } from '.
 import { searchKnowledgeBase, searchPaperAbstracts, searchProfessorProfiles, searchProfessorPapers, searchProfessorsByTags, assembleRAGContext } from '../../../lib/server/rag-engine';
 import { filterSensitiveContent } from '../../../lib/server/sensitive-filter';
 import { searchProfessorsForAI, getProfessor } from '../../../lib/services/professorService';
+import { findOrCreateProfessor } from '../../../lib/services/professorAutoAdd';
 import type { Professor } from '../../../lib/types';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -351,12 +352,20 @@ H指数：${prof.hIndex ?? '未知'}`;
 
           let toolResult: string;
           try {
-            const professors = await searchProfessorsForAI({
+            let professors = await searchProfessorsForAI({
               researchArea: toolInput.researchArea,
               university: toolInput.university,
               limit: toolInput.limit,
               studentProfile: studentMatchProfile,
             });
+
+            if (professors.length === 0) {
+              const autoResult = await findOrCreateProfessor(toolInput.researchArea, toolInput.university);
+              if (autoResult.professors.length > 0) {
+                professors = autoResult.professors;
+              }
+            }
+
             toolSearchedProfessors = professors;
 
             if (professors.length === 0) {

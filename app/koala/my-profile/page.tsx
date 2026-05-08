@@ -893,36 +893,56 @@ export default function MyProfilePage() {
       {/* ── Profile Header ──────────────────── */}
       <div className="mx-4 lg:mx-0 pt-4 pb-3">
         <div className="rounded-xl p-5" style={CARD}>
-          <div className="flex items-center gap-4">
+          <div className="flex items-start gap-3">
             {/* Avatar */}
             <div className="relative cursor-pointer group flex-shrink-0" onClick={() => !avatarUploading && avatarFileRef.current?.click()}>
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="rounded-full object-cover" style={{ width: 72, height: 72 }} />
+                <img src={profile.avatar_url} alt="" className="rounded-full object-cover" style={{ width: 56, height: 56 }} />
               ) : (
-                <div className="rounded-full flex items-center justify-center text-2xl font-bold" style={{ width: 72, height: 72, background: '#c9a96e', color: '#080c10' }}>
+                <div className="rounded-full flex items-center justify-center text-xl font-bold" style={{ width: 56, height: 56, background: '#c9a96e', color: '#080c10' }}>
                   {initials}
                 </div>
               )}
               <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 {avatarUploading ? (
-                  <span className="text-white text-xs animate-pulse">上传中…</span>
+                  <span className="text-white text-[10px] animate-pulse">上传中</span>
                 ) : (
-                  <span className="text-white text-xs">📷 更换</span>
+                  <span className="text-white text-[10px]">更换</span>
                 )}
               </div>
               <input ref={avatarFileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
             </div>
-            {/* Info */}
+            {/* Info + actions */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-base font-semibold truncate" style={{ color: '#e8e4dc' }}>
-                  {displayName}
-                </h1>
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0"
-                  style={{ background: plan.bg, color: plan.color }}
-                >
-                  {plan.label}
-                </span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <h1 className="text-sm font-semibold truncate" style={{ color: '#e8e4dc' }}>
+                    {displayName}
+                  </h1>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0"
+                    style={{ background: plan.bg, color: plan.color }}
+                  >
+                    {plan.label}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="relative" style={{ width: 36, height: 36 }}>
+                    <ArcProgress pct={pct} size={36} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[9px] font-bold" style={{ color: '#e8e4dc' }}>{pct}%</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setOtherEditing(true);
+                      setOtherData(profile ? profileToOther(profile) : profileToOther({} as UserProfile));
+                    }}
+                    className="text-[11px] px-2.5 py-1 rounded-lg"
+                    style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                  >
+                    编辑
+                  </button>
+                </div>
               </div>
               <p className="text-xs truncate mt-0.5" style={{ color: '#6a7a7e' }}>{user?.email}</p>
               {userRole === 'super_admin' && (
@@ -940,7 +960,7 @@ export default function MyProfilePage() {
                   📊 销售后台 →
                 </Link>
               )}
-              <div className="flex items-center gap-2 mt-1.5 text-[10px]" style={{ color: '#6a7a7e' }}>
+              <div className="flex items-center gap-2 mt-1 text-[10px]" style={{ color: '#6a7a7e' }}>
                 <span>{education.length} 段教育</span>
                 <span>·</span>
                 <span>{work.length} 段工作</span>
@@ -948,24 +968,6 @@ export default function MyProfilePage() {
                 <span>{documents.length} 份文件</span>
               </div>
             </div>
-            {/* Completeness arc */}
-            <div className="relative flex-shrink-0" style={{ width: 40, height: 40 }}>
-              <ArcProgress pct={pct} size={40} />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[10px] font-bold" style={{ color: '#e8e4dc' }}>{pct}%</span>
-              </div>
-            </div>
-            {/* Edit button */}
-            <button
-              onClick={() => {
-                setOtherEditing(true);
-                setOtherData(profile ? profileToOther(profile) : profileToOther({} as UserProfile));
-              }}
-              className="text-[11px] px-3 py-1.5 rounded-lg flex-shrink-0"
-              style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
-            >
-              编辑资料
-            </button>
           </div>
           {/* Avatar toast */}
           {avatarMsg && (
