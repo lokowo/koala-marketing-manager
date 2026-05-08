@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     if (search) {
       query = query.or(
-        `action.ilike.%${search}%,target_type.ilike.%${search}%,target_id.ilike.%${search}%,details->>name.ilike.%${search}%,details->>topic.ilike.%${search}%,details->>profName.ilike.%${search}%`
+        `action.ilike.%${search}%,target_type.ilike.%${search}%,target_id.ilike.%${search}%,details->>name.ilike.%${search}%,details->>topic.ilike.%${search}%,details->>profName.ilike.%${search}%,details->>stage.ilike.%${search}%,details->>note.ilike.%${search}%`
       );
     }
 

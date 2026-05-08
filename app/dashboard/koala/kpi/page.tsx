@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 
 interface KPI {
   weekly_new_leads: number;
+  weekly_followups: number;
   weekly_conversions: number;
   monthly_revenue_target: number;
 }
@@ -20,15 +21,18 @@ interface SalesKpi {
   userId: string;
   name: string;
   weeklyLeads: number;
+  weeklyFollowups: number;
   weeklyConversions: number;
   leadsTarget: number;
+  followupsTarget: number;
   conversionsTarget: number;
   leadsMet: boolean;
+  followupsMet: boolean;
   conversionsMet: boolean;
 }
 
 export default function KpiPage() {
-  const [kpi, setKpi] = useState<KPI>({ weekly_new_leads: 10, weekly_conversions: 2, monthly_revenue_target: 5000 });
+  const [kpi, setKpi] = useState<KPI>({ weekly_new_leads: 10, weekly_followups: 20, weekly_conversions: 2, monthly_revenue_target: 5000 });
   const [history, setHistory] = useState<WeekSnapshot[]>([]);
   const [perSales, setPerSales] = useState<SalesKpi[]>([]);
   const [editing, setEditing] = useState(false);
@@ -84,11 +88,12 @@ export default function KpiPage() {
             {editing ? '保存' : '编辑'}
           </button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { key: 'weekly_new_leads' as const, label: '每周新增线索目标', icon: '📥', unit: '个' },
-            { key: 'weekly_conversions' as const, label: '每周转化目标', icon: '🎯', unit: '个' },
-            { key: 'monthly_revenue_target' as const, label: '月收入目标', icon: '💰', unit: 'AUD' },
+            { key: 'weekly_new_leads' as const, label: '周注册目标', icon: '📥', unit: '个' },
+            { key: 'weekly_followups' as const, label: '周跟进目标', icon: '📞', unit: '次' },
+            { key: 'weekly_conversions' as const, label: '周转化目标', icon: '🎯', unit: '个' },
+            { key: 'monthly_revenue_target' as const, label: '周收入目标', icon: '💰', unit: '$' },
           ].map(item => (
             <div key={item.key} className="rounded-xl p-4 border border-slate-100">
               <div className="flex items-center gap-2 mb-2">
@@ -121,34 +126,39 @@ export default function KpiPage() {
               <thead>
                 <tr className="bg-slate-50 text-slate-500">
                   <th className="text-left px-4 py-2.5 font-medium">销售</th>
-                  <th className="text-center px-4 py-2.5 font-medium">新增线索</th>
-                  <th className="text-center px-4 py-2.5 font-medium">目标</th>
-                  <th className="text-center px-4 py-2.5 font-medium">线索达标</th>
-                  <th className="text-center px-4 py-2.5 font-medium">转化数</th>
-                  <th className="text-center px-4 py-2.5 font-medium">目标</th>
-                  <th className="text-center px-4 py-2.5 font-medium">转化达标</th>
+                  <th className="text-center px-4 py-2.5 font-medium">状态</th>
+                  <th className="text-center px-4 py-2.5 font-medium">注册</th>
+                  <th className="text-center px-4 py-2.5 font-medium">跟进</th>
+                  <th className="text-center px-4 py-2.5 font-medium">转化</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {sortedSales.map(s => (
-                  <tr key={s.userId} className="hover:bg-slate-50">
-                    <td className="px-4 py-2.5 text-slate-700 font-medium">{s.name}</td>
-                    <td className="px-4 py-2.5 text-center text-slate-600">{s.weeklyLeads}</td>
-                    <td className="px-4 py-2.5 text-center text-slate-400">{s.leadsTarget}</td>
-                    <td className="px-4 py-2.5 text-center">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${s.leadsMet ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-500'}`}>
-                        {s.leadsMet ? '达标' : '未达标'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 text-center font-medium text-slate-700">{s.weeklyConversions}</td>
-                    <td className="px-4 py-2.5 text-center text-slate-400">{s.conversionsTarget}</td>
-                    <td className="px-4 py-2.5 text-center">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${s.conversionsMet ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-500'}`}>
-                        {s.conversionsMet ? '达标' : '未达标'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {sortedSales.map(s => {
+                  const allMet = s.leadsMet && s.followupsMet && s.conversionsMet;
+                  const noneMet = !s.leadsMet && !s.followupsMet && !s.conversionsMet;
+                  const statusIcon = allMet ? '🌟' : noneMet ? '🔴' : '⚠️';
+                  return (
+                    <tr key={s.userId} className="hover:bg-slate-50">
+                      <td className="px-4 py-2.5 text-slate-700 font-medium">{s.name}</td>
+                      <td className="px-4 py-2.5 text-center text-base">{statusIcon}</td>
+                      <td className="px-4 py-2.5 text-center">
+                        <span className={`font-medium ${s.leadsMet ? 'text-green-600' : 'text-red-500'}`}>
+                          {s.weeklyLeads}/{s.leadsTarget}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        <span className={`font-medium ${s.followupsMet ? 'text-green-600' : 'text-red-500'}`}>
+                          {s.weeklyFollowups}/{s.followupsTarget}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        <span className={`font-medium ${s.conversionsMet ? 'text-green-600' : 'text-red-500'}`}>
+                          {s.weeklyConversions}/{s.conversionsTarget}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

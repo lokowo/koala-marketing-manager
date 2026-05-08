@@ -58,6 +58,13 @@ export async function GET(req: Request) {
         conversions: converted,
         scans: myScans,
       }, { onConflict: 'sales_user_id,week_start' });
+
+      await db.from('notifications').insert({
+        user_id: su.user_id,
+        type: 'weekly_report',
+        title: '上周周报已生成',
+        body: `本周新增 ${newLeads} 个线索，转化 ${converted} 个。查看详情请前往 Sales Dashboard。`,
+      });
     }
 
     await db.from('kpi_weekly_snapshots').upsert({

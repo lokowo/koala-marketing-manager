@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getServerUser, getUserRole } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { logAdminAction } from '../../../lib/worklog';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -60,6 +61,8 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
     if (!data) return Response.json({ error: 'Not found' }, { status: 404 });
+
+    await logAdminAction(user.id, 'customer_update', 'sales_customer', customerId, { stage, note: note?.slice(0, 50) });
 
     return Response.json({ data });
   } catch (e) {

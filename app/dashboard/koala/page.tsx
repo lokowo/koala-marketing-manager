@@ -53,6 +53,7 @@ const ACTION_LABELS: Record<string, string> = {
   blog_generate_professor: '教授文章',
   professor_create: '新建教授',
   professor_delete: '删除教授',
+  customer_update: '客户跟进',
 };
 
 function timeAgo(dateStr: string) {

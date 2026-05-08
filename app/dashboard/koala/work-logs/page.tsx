@@ -19,6 +19,7 @@ const ACTION_LABELS: Record<string, string> = {
   blog_generate_professor: '生成教授文章',
   professor_create: '创建教授',
   professor_delete: '删除教授',
+  customer_update: '客户跟进',
 };
 
 const ALL_ACTIONS = Object.keys(ACTION_LABELS);
