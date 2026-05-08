@@ -75,7 +75,24 @@ export async function POST(req: Request) {
       role_applied_at: new Date().toISOString(),
     }).eq('id', user.id);
 
-    return Response.json({ application }, { status: 201 });
+    const { data: superAdmins } = await db
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'super_admin');
+
+    if (superAdmins?.length) {
+      const roleName = role === 'admin' ? '管理员' : '销售';
+      await db.from('notifications').insert(
+        superAdmins.map((sa: { user_id: string }) => ({
+          user_id: sa.user_id,
+          type: 'role_application',
+          title: '新角色申请',
+          body: `有用户申请${roleName}角色，请前往角色管理审核。`,
+        }))
+      );
+    }
+
+    return Response.json({ success: true, application }, { status: 201 });
   } catch (e) {
     console.error('[role-application POST]', e);
     return Response.json({ error: (e as Error).message }, { status: 500 });

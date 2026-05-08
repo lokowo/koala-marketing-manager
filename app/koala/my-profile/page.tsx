@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth, type UserProfile } from '../components/AuthContext';
+import { supabase } from '../../lib/supabase/client';
 
 // ─── timeAgo helper ────────────────────────
 function timeAgo(dateStr: string): string {
@@ -332,12 +333,20 @@ export default function MyProfilePage() {
   // Collapsible sections
   const [showOther, setShowOther] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwError, setPwError] = useState('');
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwToast, setPwToast] = useState('');
   const [showRoleApply, setShowRoleApply] = useState(false);
   const [roleApplyRole, setRoleApplyRole] = useState<'admin' | 'sales'>('admin');
   const [roleApplyReason, setRoleApplyReason] = useState('');
   const [roleApplyPhone, setRoleApplyPhone] = useState('');
   const [roleApplyLoading, setRoleApplyLoading] = useState(false);
   const [roleApplyStatus, setRoleApplyStatus] = useState<string | null>(null);
+  const [roleToast, setRoleToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   // Avatar
@@ -389,6 +398,12 @@ export default function MyProfilePage() {
   const loadDocuments = useCallback(() => {
     fetch('/api/user/documents').then(r => r.json()).then(d => setDocuments(d.documents ?? [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!roleToast) return;
+    const t = setTimeout(() => setRoleToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [roleToast]);
 
   useEffect(() => {
     if (!user) return;
@@ -1730,15 +1745,6 @@ export default function MyProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setShowRoleApply(false)}>
           <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.15)' }} onClick={e => e.stopPropagation()}>
             <h3 className="text-sm font-bold mb-4" style={{ color: '#e8e4dc' }}>申请角色</h3>
-            {roleApplyStatus ? (
-              <div className="text-center py-4">
-                <p className="text-xs" style={{ color: roleApplyStatus === 'success' ? '#5a8060' : '#b06040' }}>
-                  {roleApplyStatus === 'success' ? '申请已提交，请等待审核' : roleApplyStatus}
-                </p>
-                <button onClick={() => { setShowRoleApply(false); setRoleApplyStatus(null); }} className="mt-3 text-xs px-4 py-2 rounded-full" style={{ background: '#c9a96e', color: '#080c10' }}>关闭</button>
-              </div>
-            ) : (
-              <>
                 <div className="flex gap-2 mb-3">
                   {(['admin', 'sales'] as const).map(r => (
                     <button
@@ -1780,9 +1786,20 @@ export default function MyProfilePage() {
                           body: JSON.stringify({ role: roleApplyRole, reason: roleApplyReason, phone: roleApplyPhone }),
                         });
                         const d = await res.json();
-                        if (!res.ok) { setRoleApplyStatus(d.error || '提交失败'); }
-                        else { setRoleApplyStatus('success'); }
-                      } catch { setRoleApplyStatus('网络错误'); }
+                        if (!res.ok) {
+                          const errMsg = d.error || '提交失败';
+                          setRoleToast({ msg: `❌ ${errMsg}`, ok: false });
+                        } else {
+                          setShowRoleApply(false);
+                          setRoleApplyReason('');
+                          setRoleApplyPhone('');
+                          setRoleApplyStatus(null);
+                          setRoleToast({ msg: '✅ 申请已提交，请等待管理员审核', ok: true });
+                        }
+                      } catch (err) {
+                        console.error('[role-application submit]', err);
+                        setRoleToast({ msg: '❌ 网络错误，请稍后重试', ok: false });
+                      }
                       setRoleApplyLoading(false);
                     }}
                     className="flex-1 py-2 rounded-lg text-xs font-medium disabled:opacity-50"
@@ -1791,8 +1808,6 @@ export default function MyProfilePage() {
                     {roleApplyLoading ? '提交中…' : '提交申请'}
                   </button>
                 </div>
-              </>
-            )}
           </div>
         </div>
       )}
@@ -1801,6 +1816,17 @@ export default function MyProfilePage() {
       <p className="text-center mt-4 mb-2 px-4" style={{ fontSize: 9, color: '#6a7a7e' }}>
         你的个人信息仅用于 AI 推荐优化，不会与第三方共享。
       </p>
+
+      {/* Role application toast */}
+      {roleToast && (
+        <div
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-xl text-xs font-medium shadow-lg animate-fade-in"
+          style={{ background: roleToast.ok ? '#1a2e1a' : '#2e1a1a', color: roleToast.ok ? '#7ddf7d' : '#df7d7d', border: `1px solid ${roleToast.ok ? 'rgba(90,128,96,0.3)' : 'rgba(176,96,64,0.3)'}` }}
+          onClick={() => setRoleToast(null)}
+        >
+          {roleToast.msg}
+        </div>
+      )}
 
       </div>{/* end max-w-5xl */}
     </div>
