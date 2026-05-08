@@ -11,6 +11,18 @@ import {
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase/client';
 
+function mapAuthError(msg: string): string {
+  if (msg.includes('rate limit') || msg.includes('Rate limit'))
+    return '操作过于频繁，请稍后再试';
+  if (msg.includes('User already registered'))
+    return '该邮箱已注册，请直接登录';
+  if (msg.includes('Invalid login credentials'))
+    return '邮箱或密码错误';
+  if (msg.includes('Email not confirmed'))
+    return '邮箱未验证，请先完成验证';
+  return msg;
+}
+
 export interface UserProfile {
   id: string;
   display_name: string | null;
@@ -115,7 +127,7 @@ function LoginModal({
     setLoading(true);
     const { error: err } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    if (err) { setError(mapAuthError(err.message)); return; }
     onSuccess();
     onClose();
   }
@@ -124,28 +136,23 @@ function LoginModal({
     e.preventDefault();
     setError('');
     setLoading(true);
-    const { data, error: err } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: name || email.split('@')[0] } },
+
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password,
+        name: name || undefined,
+        referralCode: referralInput || undefined,
+      }),
     });
+
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    const d = await res.json();
+    if (!res.ok) { setError(mapAuthError(d.error || '注册失败')); return; }
 
-    if (referralInput && data.user) {
-      fetch('/api/user/referral/claim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: referralInput }),
-      }).catch(() => {});
-    }
-
-    if (data.session) {
-      onSuccess();
-      onClose();
-    } else {
-      setRegistered(true);
-    }
+    setRegistered(true);
   }
 
   if (!open) return null;

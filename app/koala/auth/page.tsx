@@ -8,6 +8,18 @@ import { supabase } from '../../lib/supabase/client';
 type Step = 'form' | 'verify' | 'success';
 type Mode = 'login' | 'register';
 
+function mapAuthError(msg: string): string {
+  if (msg.includes('rate limit') || msg.includes('Rate limit'))
+    return '操作过于频繁，请稍后再试';
+  if (msg.includes('User already registered'))
+    return '该邮箱已注册，请直接登录';
+  if (msg.includes('Invalid login credentials'))
+    return '邮箱或密码错误';
+  if (msg.includes('Email not confirmed'))
+    return '邮箱未验证，请先完成验证';
+  return msg;
+}
+
 export default function AuthPage() {
   return (
     <Suspense fallback={
@@ -72,7 +84,12 @@ function AuthPageInner() {
               }).catch(() => {});
             }
             setStep('success');
-            setTimeout(() => router.replace('/koala/home'), 2000);
+            // No password available from email link — redirect to login
+            setTimeout(() => {
+              setStep('form');
+              setMode('login');
+              setError('');
+            }, 2000);
           })
           .catch(() => { setLoading(false); setError('验证请求失败'); });
       }
@@ -86,30 +103,23 @@ function AuthPageInner() {
     if (password.length < 8) { setError('密码至少8位'); return; }
     setLoading(true);
 
-    // Create Supabase auth user
-    const { error: signUpErr } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    });
-
-    if (signUpErr) {
-      setLoading(false);
-      setError(signUpErr.message === 'User already registered' ? '该邮箱已注册，请直接登录' : signUpErr.message);
-      return;
-    }
-
-    // Send our custom verification email with code
-    const res = await fetch('/api/auth/send-verification', {
+    // Register via server API — avoids Supabase sending its own confirmation email
+    const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({
+        email,
+        password,
+        name: undefined,
+        referralCode: referralInput || undefined,
+        salesCode: salesCode || undefined,
+      }),
     });
 
     setLoading(false);
+    const d = await res.json();
     if (!res.ok) {
-      const d = await res.json();
-      setError(d.error || '发送验证码失败');
+      setError(mapAuthError(d.error || '注册失败'));
       return;
     }
 
@@ -125,7 +135,7 @@ function AuthPageInner() {
     setLoading(false);
 
     if (loginErr) {
-      setError(loginErr.message === 'Invalid login credentials' ? '邮箱或密码错误' : loginErr.message);
+      setError(mapAuthError(loginErr.message));
       return;
     }
 
@@ -149,6 +159,15 @@ function AuthPageInner() {
 
     if (!res.ok) {
       setError(data.error || '验证失败');
+      return;
+    }
+
+    // Sign in the user now that email is confirmed
+    const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInErr) {
+      setError('验证成功，但自动登录失败，请手动登录');
+      setMode('login');
+      setStep('form');
       return;
     }
 
