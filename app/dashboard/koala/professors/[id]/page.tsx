@@ -3,14 +3,15 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import {
-  ArrowLeft, FileText, Award, Users, BookOpen, Wrench,
-  ExternalLink, AlertTriangle, ChevronDown, ChevronUp,
+  ArrowLeft, FileText, Award, Users, BookOpen, Wrench, BarChart3,
+  ExternalLink, AlertTriangle, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus,
 } from 'lucide-react';
 
 const TABS = [
   { key: 'info', label: '基本信息', icon: FileText },
   { key: 'papers', label: '论文', icon: BookOpen },
   { key: 'grants', label: '经费', icon: Award },
+  { key: 'research', label: '研究分析', icon: BarChart3 },
   { key: 'interactions', label: '学生互动', icon: Users },
   { key: 'repair', label: 'AI 修复', icon: Wrench },
 ] as const;
@@ -34,6 +35,9 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
   const [repairing, setRepairing] = useState(false);
   const [repairResult, setRepairResult] = useState<AnyObj | null>(null);
   const [repairLog, setRepairLog] = useState<AnyObj[]>([]);
+  const [researchProfile, setResearchProfile] = useState<AnyObj | null>(null);
+  const [researchLoading, setResearchLoading] = useState(false);
+  const [enriching, setEnriching] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -98,6 +102,31 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
       setRepairResult({ updated: {}, confidence: {}, notes: 'AI 修复请求失败' });
     }
     setRepairing(false);
+  }
+
+  async function loadResearchProfile() {
+    setResearchLoading(true);
+    try {
+      const res = await fetch(`/api/professors/${id}/research-profile`);
+      const data = await res.json();
+      setResearchProfile(data);
+    } catch { /* ignore */ }
+    setResearchLoading(false);
+  }
+
+  async function handleEnrich() {
+    setEnriching(true);
+    try {
+      const res = await fetch(`/api/professors/${id}/research-profile`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        await loadResearchProfile();
+        const refreshed = await fetch(`/api/professors/${id}`).then(r => r.json());
+        setProfessor(refreshed.data);
+        setForm(refreshed.data);
+      }
+    } catch { /* ignore */ }
+    setEnriching(false);
   }
 
   if (loading) return <div className="flex items-center justify-center h-64"><p className="text-slate-400 text-sm">加载中...</p></div>;
@@ -259,6 +288,18 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
         </div>
       )}
 
+      {/* Tab: 研究分析 */}
+      {tab === 'research' && (
+        <ResearchTab
+          profile={researchProfile}
+          loading={researchLoading}
+          enriching={enriching}
+          onLoad={loadResearchProfile}
+          onEnrich={handleEnrich}
+          hasSS={!!professor.semantic_scholar_id}
+        />
+      )}
+
       {/* Tab: 学生互动 */}
       {tab === 'interactions' && (
         <div className="space-y-4">
@@ -382,6 +423,141 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ResearchTab({ profile, loading, enriching, onLoad, onEnrich, hasSS }: {
+  profile: AnyObj | null; loading: boolean; enriching: boolean;
+  onLoad: () => void; onEnrich: () => void; hasSS: boolean;
+}) {
+  const loaded = !!profile;
+
+  if (!loaded && !loading) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 p-8 text-center space-y-3">
+        <BarChart3 className="size-8 text-slate-300 mx-auto" />
+        <p className="text-sm text-slate-500">点击加载该教授的研究分析数据</p>
+        <button onClick={onLoad} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+          加载研究分析
+        </button>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-48"><p className="text-slate-400 text-sm">加载研究分析中...</p></div>;
+  }
+
+  const metrics = profile?.citationMetrics ?? {};
+  const yearDist = profile?.yearDistribution ?? {};
+  const topPapers = profile?.papers ?? [];
+  const prof = profile?.professor ?? {};
+
+  const TrendIcon = metrics.citationTrend === 'rising' ? TrendingUp : metrics.citationTrend === 'declining' ? TrendingDown : Minus;
+  const trendColor = metrics.citationTrend === 'rising' ? 'text-emerald-600' : metrics.citationTrend === 'declining' ? 'text-red-500' : 'text-slate-400';
+  const trendLabels: Record<string, string> = { rising: '上升', declining: '下降', stable: '平稳', unknown: '未知' };
+  const trendLabel = trendLabels[metrics.citationTrend ?? 'unknown'] ?? '未知';
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-slate-700">研究影响力分析</h3>
+        <button
+          onClick={onEnrich}
+          disabled={enriching || !hasSS}
+          className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1.5"
+        >
+          {enriching ? '分析中...' : '🔬 AI 深度分析'}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <MetricCard label="总引用" value={metrics.totalCitations?.toLocaleString() ?? '—'} />
+        <MetricCard label="篇均引用" value={metrics.avgCitationsPerPaper?.toLocaleString() ?? '—'} />
+        <MetricCard label="近2年论文" value={metrics.recentPaperCount ?? '—'} />
+        <div className="bg-white rounded-xl border border-slate-200 p-3">
+          <div className="text-[10px] text-slate-400 mb-1">引用趋势</div>
+          <div className={`flex items-center gap-1.5 text-lg font-bold ${trendColor}`}>
+            <TrendIcon className="size-4" />
+            {trendLabel}
+          </div>
+        </div>
+      </div>
+
+      {prof.researchSummary && (
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <h4 className="text-xs font-semibold text-slate-500 mb-2">研究概述</h4>
+          <p className="text-sm text-slate-700 leading-relaxed">{prof.researchSummary}</p>
+        </div>
+      )}
+
+      {(prof.researchAreas?.length ?? 0) > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <h4 className="text-xs font-semibold text-slate-500 mb-2">研究关键词</h4>
+          <div className="flex flex-wrap gap-1.5">
+            {prof.researchAreas.map((kw: string, i: number) => (
+              <span key={i} className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700">{kw}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {Object.keys(yearDist).length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <h4 className="text-xs font-semibold text-slate-500 mb-3">发表年份分布</h4>
+          <div className="flex items-end gap-1 h-24">
+            {Object.entries(yearDist)
+              .sort(([a], [b]) => Number(a) - Number(b))
+              .map(([year, count]) => {
+                const max = Math.max(...Object.values(yearDist) as number[]);
+                const h = max > 0 ? ((count as number) / max) * 100 : 0;
+                return (
+                  <div key={year} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="w-full bg-blue-200 rounded-t" style={{ height: `${h}%`, minHeight: count ? 4 : 0 }} />
+                    <span className="text-[8px] text-slate-400 -rotate-45">{year}</span>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {topPapers.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-100">
+            <h4 className="text-xs font-semibold text-slate-500">高引论文 Top {topPapers.length}</h4>
+          </div>
+          <div className="divide-y divide-slate-50">
+            {topPapers.map((p: AnyObj, i: number) => (
+              <div key={i} className="px-4 py-2.5 flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-slate-700 truncate">{p.title}</p>
+                  <p className="text-[10px] text-slate-400">{p.journal ?? ''}{p.year ? ` · ${p.year}` : ''}</p>
+                </div>
+                <span className="text-xs font-medium text-slate-500 flex-shrink-0">{p.citations} 引用</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {metrics.topPaperTitle && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <p className="text-[10px] text-amber-600 font-medium mb-0.5">最高引用论文</p>
+          <p className="text-xs text-amber-800">{metrics.topPaperTitle}</p>
+          <p className="text-[10px] text-amber-600 mt-0.5">{metrics.topPaperCitations?.toLocaleString()} 引用</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-3">
+      <div className="text-[10px] text-slate-400 mb-1">{label}</div>
+      <div className="text-lg font-bold text-slate-800">{value}</div>
     </div>
   );
 }
