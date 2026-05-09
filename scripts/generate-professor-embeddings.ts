@@ -14,6 +14,7 @@ async function main() {
     .from('professors')
     .select('id, name, university, position_title, faculty, research_areas, h_index, paper_count, citation_count')
     .is('research_embedding', null)
+    .eq('verification_status', 'Verified')
     .order('h_index', { ascending: false, nullsFirst: false })
     .limit(1000);
 
