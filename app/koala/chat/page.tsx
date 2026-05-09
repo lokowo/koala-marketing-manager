@@ -1054,9 +1054,17 @@ function ChatPageInner() {
       {/* Profile guidance hint */}
       {profile && (profile.profile_completeness ?? 0) < 60 && (
         <div className="flex-shrink-0 px-4 py-2" style={{ background: 'rgba(255,255,255,0.03)' }}>
-          <p className="text-[11px] leading-relaxed text-center" style={{ color: '#6a6058' }}>
-            💡 多跟我聊聊你的背景和想法，你说得越多，我帮你匹配的导师就越精准哦～
-          </p>
+          {(profile.profile_completeness ?? 0) < 30 ? (
+            <Link href="/koala/my-profile" className="flex items-center justify-center gap-2 no-underline">
+              <span className="text-[11px] leading-relaxed" style={{ color: '#c9a96e' }}>
+                📝 完善个人资料（{profile.profile_completeness ?? 0}%），获得更精准的教授匹配和申请信
+              </span>
+            </Link>
+          ) : (
+            <p className="text-[11px] leading-relaxed text-center" style={{ color: '#6a6058' }}>
+              💡 多跟我聊聊你的背景和想法，你说得越多，我帮你匹配的导师就越精准哦～
+            </p>
+          )}
         </div>
       )}
 

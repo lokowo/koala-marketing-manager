@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { buildEmailPrompt } from '../../../lib/prompts/email';
+import { getStudentContext, buildStudentBackgroundForEmail } from '../../../lib/server/student-context';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -73,17 +74,34 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const studentBg = studentProfile
-    ? [
+  // Load full student profile from DB when available
+  let studentBg: string;
+  if (userId) {
+    const ctx = await getStudentContext(userId);
+    if (ctx && ctx.profileCompleteness > 20) {
+      studentBg = buildStudentBackgroundForEmail(ctx);
+    } else if (studentProfile) {
+      studentBg = [
         studentProfile.major ? `专业：${studentProfile.major}` : '',
         studentProfile.degreeLevel ? `学历：${studentProfile.degreeLevel}` : '',
         studentProfile.gpa ? `GPA：${studentProfile.gpa}` : '',
         studentProfile.university ? `学校：${studentProfile.university}` : '',
-        studentProfile.researchInterests?.length
-          ? `研究兴趣：${studentProfile.researchInterests.join('、')}`
-          : '',
-      ].filter(Boolean).join('，')
-    : '学生背景未提供，生成通用版本申请信框架。';
+        studentProfile.researchInterests?.length ? `研究兴趣：${studentProfile.researchInterests.join('、')}` : '',
+      ].filter(Boolean).join('，');
+    } else {
+      studentBg = '学生背景未提供，生成通用版本申请信框架。';
+    }
+  } else if (studentProfile) {
+    studentBg = [
+      studentProfile.major ? `专业：${studentProfile.major}` : '',
+      studentProfile.degreeLevel ? `学历：${studentProfile.degreeLevel}` : '',
+      studentProfile.gpa ? `GPA：${studentProfile.gpa}` : '',
+      studentProfile.university ? `学校：${studentProfile.university}` : '',
+      studentProfile.researchInterests?.length ? `研究兴趣：${studentProfile.researchInterests.join('、')}` : '',
+    ].filter(Boolean).join('，');
+  } else {
+    studentBg = '学生背景未提供，生成通用版本申请信框架。';
+  }
 
   const stream = new ReadableStream({
     async start(controller) {

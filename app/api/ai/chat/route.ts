@@ -9,6 +9,7 @@ import { filterSensitiveContent } from '../../../lib/server/sensitive-filter';
 import { searchProfessorsForAI, getProfessor } from '../../../lib/services/professorService';
 import { findOrCreateProfessor } from '../../../lib/services/professorAutoAdd';
 import type { Professor } from '../../../lib/types';
+import { getStudentContext, buildStudentContextPrompt } from '../../../lib/server/student-context';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -157,7 +158,20 @@ export async function POST(request: NextRequest) {
       if (styleDesc) extraContext += `\n\n## 用户说话风格\n${styleDesc}。请匹配用户风格回复。`;
     }
 
-    if (studentMatchProfile) {
+    // Load full student profile from DB (replaces thin frontend-passed data)
+    let studentCtx: Awaited<ReturnType<typeof getStudentContext>> = null;
+    try {
+      const { getServerUser } = await import('../../../lib/auth');
+      const user = await getServerUser();
+      if (user) {
+        studentCtx = await getStudentContext(user.id);
+      }
+    } catch { /* anonymous user */ }
+
+    if (studentCtx) {
+      extraContext += '\n\n' + buildStudentContextPrompt(studentCtx);
+    } else if (studentMatchProfile) {
+      // Fallback to frontend-passed thin profile for anonymous users
       const parts: string[] = [];
       if (studentMatchProfile.languagePreference) parts.push(`语言偏好：${studentMatchProfile.languagePreference}`);
       if (studentMatchProfile.careerGoal) parts.push(`职业目标：${studentMatchProfile.careerGoal}`);
@@ -483,8 +497,14 @@ H指数：${prof.hIndex ?? '未知'}`;
 
     result.suggestConsultation = shouldSuggestConsultation(messages, mode);
 
-    // 6. Save async
-    saveConversationAsync(mode, messages, cleanedReply).catch(() => {});
+    // 6. Save async — include user_id for profile linking
+    try {
+      const { getServerUser: getUser } = await import('../../../lib/auth');
+      const u = await getUser();
+      saveConversationAsync(mode, messages, cleanedReply, u?.id).catch(() => {});
+    } catch {
+      saveConversationAsync(mode, messages, cleanedReply).catch(() => {});
+    }
 
     return Response.json(result);
   } catch (e) {
@@ -496,7 +516,7 @@ H指数：${prof.hIndex ?? '未知'}`;
   }
 }
 
-async function saveConversationAsync(mode: AIMode, messages: ChatMessage[], reply: string) {
+async function saveConversationAsync(mode: AIMode, messages: ChatMessage[], reply: string, userId?: string) {
   try {
     const { createClient } = await import('@supabase/supabase-js');
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -506,6 +526,7 @@ async function saveConversationAsync(mode: AIMode, messages: ChatMessage[], repl
     await supabase.from('ai_conversations').insert({
       session_id: `session_${Date.now()}`,
       mode,
+      user_id: userId ?? null,
       messages: [...messages, { role: 'assistant', content: reply }],
     });
   } catch {}

@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { buildEmailPrompt } from '../../../lib/prompts/email';
+import { getStudentContext, buildStudentBackgroundForEmail } from '../../../lib/server/student-context';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -70,10 +71,22 @@ export async function POST(request: NextRequest) {
       .eq('lead_professor_id', professorId)
       .limit(3);
 
-    // 4. Build prompt
-    const studentBg = studentProfile
-      ? `专业：${studentProfile.major ?? '未知'}，学历：${studentProfile.degreeLevel ?? '未知'}，GPA: ${studentProfile.gpa ?? '未填写'}，研究兴趣：${studentProfile.researchInterests?.join('、') ?? '未知'}`
-      : '学生背景未提供，请生成通用版本的申请信框架。';
+    // 4. Build prompt — prefer full DB profile over frontend-passed thin data
+    let studentBg: string;
+    if (userId) {
+      const ctx = await getStudentContext(userId);
+      if (ctx && ctx.profileCompleteness > 20) {
+        studentBg = buildStudentBackgroundForEmail(ctx);
+      } else if (studentProfile) {
+        studentBg = `专业：${studentProfile.major ?? '未知'}，学历：${studentProfile.degreeLevel ?? '未知'}，GPA: ${studentProfile.gpa ?? '未填写'}，研究兴趣：${studentProfile.researchInterests?.join('、') ?? '未知'}`;
+      } else {
+        studentBg = '学生背景未提供，请生成通用版本的申请信框架。';
+      }
+    } else if (studentProfile) {
+      studentBg = `专业：${studentProfile.major ?? '未知'}，学历：${studentProfile.degreeLevel ?? '未知'}，GPA: ${studentProfile.gpa ?? '未填写'}，研究兴趣：${studentProfile.researchInterests?.join('、') ?? '未知'}`;
+    } else {
+      studentBg = '学生背景未提供，请生成通用版本的申请信框架。';
+    }
 
     const prompt = buildEmailPrompt({
       professorName: prof.name,

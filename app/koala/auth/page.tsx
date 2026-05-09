@@ -43,6 +43,7 @@ function AuthPageInner() {
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [referralInput, setReferralInput] = useState(refCode);
+  const [dataConsent, setDataConsent] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const autoVerifyDone = useRef(false);
@@ -101,6 +102,7 @@ function AuthPageInner() {
     e.preventDefault();
     setError('');
     if (password.length < 8) { setError('密码至少8位'); return; }
+    if (!dataConsent) { setError('请同意数据授权后继续注册'); return; }
     setLoading(true);
 
     // Register via server API — avoids Supabase sending its own confirmation email
@@ -113,6 +115,7 @@ function AuthPageInner() {
         name: undefined,
         referralCode: referralInput || undefined,
         salesCode: salesCode || undefined,
+        dataConsent: true,
       }),
     });
 
@@ -386,9 +389,23 @@ function AuthPageInner() {
           </button>
 
           {mode === 'register' && (
-            <p className="text-[11px] mt-4 text-center leading-relaxed" style={{ color: '#6a7a7e' }}>
-              注册即表示同意我们的服务条款和隐私政策
-            </p>
+            <div className="mt-4 space-y-3">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={dataConsent}
+                  onChange={e => setDataConsent(e.target.checked)}
+                  className="mt-0.5 rounded"
+                  style={{ accentColor: '#c9a96e' }}
+                />
+                <span className="text-[11px] leading-relaxed" style={{ color: '#8a8078' }}>
+                  我授权 Koala Study 使用我的个人资料、上传文件及对话内容，用于 AI 教授匹配和个性化申请信生成。我的数据将被安全存储，仅用于平台服务。
+                </span>
+              </label>
+              <p className="text-[10px] text-center" style={{ color: '#6a7a7e' }}>
+                注册即表示同意我们的服务条款和隐私政策
+              </p>
+            </div>
           )}
         </form>
 

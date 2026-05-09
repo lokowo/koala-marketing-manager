@@ -11,7 +11,7 @@ const db = supabaseAdmin as any;
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name, referralCode, salesCode } = await req.json();
+    const { email, password, name, referralCode, salesCode, dataConsent } = await req.json();
     if (!email || !password) {
       return Response.json({ error: 'email and password required' }, { status: 400 });
     }
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       email,
       password,
       email_confirm: false,
-      user_metadata: { display_name: name || email.split('@')[0] },
+      user_metadata: { display_name: name || email.split('@')[0], data_consent: !!dataConsent, data_consent_at: dataConsent ? new Date().toISOString() : undefined },
     });
 
     if (createErr) {
@@ -40,6 +40,8 @@ export async function POST(req: Request) {
       id: userData.user.id,
       display_name: name || email.split('@')[0],
       email,
+      data_consent: !!dataConsent,
+      data_consent_at: dataConsent ? new Date().toISOString() : null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' });
