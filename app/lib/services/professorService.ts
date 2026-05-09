@@ -361,6 +361,9 @@ interface StudentMatchProfile {
   careerGoal?: string;
   preferredCity?: string[];
   budget?: string;
+  major?: string;
+  researchDescription?: string;
+  targetUniversities?: string[];
 }
 
 export async function searchProfessorsForAI(params: {
@@ -369,85 +372,128 @@ export async function searchProfessorsForAI(params: {
   limit?: number;
   studentProfile?: StudentMatchProfile;
   studentContext?: StudentContext | null;
-}): Promise<Professor[]> {
+  userId?: string;
+}): Promise<{ professor: Professor; score: number; reasons: string[] }[]> {
   const limit = Math.min(params.limit ?? 8, 15);
-  const keywords = params.researchArea
-    .split(/[,;，；\s]+/)
-    .map(k => k.trim().toLowerCase())
-    .filter(k => k.length >= 2);
 
-  if (keywords.length === 0) return [];
+  // 1. Build query text for embedding (combine research area + student background)
+  const queryParts = [`Research interests: ${params.researchArea}`];
+  if (params.studentProfile?.major) queryParts.push(`Student major: ${params.studentProfile.major}`);
+  if (params.studentProfile?.researchDescription) queryParts.push(`Research experience: ${params.studentProfile.researchDescription}`);
+  const queryText = queryParts.join('. ');
 
   const ctx = params.studentContext;
-
-  // PostgREST can't do ilike on text[] casts, so we fetch a broad set
-  // ordered by score and filter by keyword match in JS.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let q: any = supabaseAdmin
-    .from('professors')
-    .select('*')
-    .order('opportunity_score', { ascending: false, nullsFirst: false })
-    .order('h_index', { ascending: false, nullsFirst: false })
-    .limit(500);
+  let results: (Professor & { _similarity?: number })[] = [];
 
-  if (params.university) {
-    q = q.ilike('university', `%${params.university}%`);
+  // 2. Try semantic vector search first
+  try {
+    const { createEmbedding } = await import('../server/embedding');
+    const embedding = await createEmbedding(queryText);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabaseAdmin as any).rpc('match_professors_semantic', {
+      query_embedding: embedding,
+      match_threshold: 0.4,
+      match_count: limit * 3,
+      uni_filter: params.university || null,
+    });
+
+    if (!error && data?.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      results = data.map((row: any) => ({
+        ...fromRow(row),
+        _similarity: row.similarity,
+      }));
+    }
+  } catch (e) {
+    console.error('[searchProfessorsForAI] Semantic search failed, falling back to keyword:', e);
   }
 
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
+  // 3. Fallback to keyword matching if semantic search returned nothing
+  if (results.length === 0) {
+    const keywords = params.researchArea
+      .split(/[,;，；\s]+/)
+      .map(k => k.trim().toLowerCase())
+      .filter(k => k.length >= 2);
 
-  const allProfessors = (data ?? []).map(fromRow);
+    if (keywords.length === 0) return [];
 
-  // Filter: professor's research_areas must contain at least one keyword
-  const matched = allProfessors.filter((p: Professor) => {
-    const areasText = p.researchAreas.join(' ').toLowerCase();
-    return keywords.some(k => areasText.includes(k));
-  });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q: any = supabaseAdmin
+      .from('professors')
+      .select('*')
+      .order('h_index', { ascending: false, nullsFirst: false })
+      .limit(500);
 
-  // Enhanced scoring with student profile matching
+    if (params.university) {
+      q = q.ilike('university', `%${params.university}%`);
+    }
+
+    const { data } = await q;
+    results = (data ?? []).map(fromRow).filter((p: Professor) => {
+      const areasText = p.researchAreas.join(' ').toLowerCase();
+      return keywords.some(k => areasText.includes(k));
+    });
+  }
+
+  // 4. Filter out professors the user has already contacted or rejected
+  let interactedIds: Set<string> = new Set();
+  if (params.userId) {
+    try {
+      const { data: interactions } = await supabaseAdmin
+        .from('professor_interactions')
+        .select('professor_id, interaction_type')
+        .eq('user_id', params.userId);
+      interactedIds = new Set((interactions ?? [])
+        .filter((i: { interaction_type: string }) => ['email_sent', 'rejected'].includes(i.interaction_type))
+        .map((i: { professor_id: string }) => i.professor_id));
+    } catch { /* table may not exist yet */ }
+  }
+
+  // 5. Multi-dimensional scoring with match reasons
   const sp = params.studentProfile;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const scored = matched.map((p: Professor) => {
-    const row = data?.find((r: any) => r.id === p.id);
-    let score = 0;
+  const scored = results
+    .filter(p => !interactedIds.has(p.id))
+    .map(p => {
+      let score = 0;
+      const reasons: string[] = [];
 
-    // Base: keyword hit count (weight 50%)
-    const hits = keywords.filter(k => p.researchAreas.join(' ').toLowerCase().includes(k)).length;
-    score += (hits / keywords.length) * 50;
+      // Research match 40% (semantic similarity)
+      const similarity = (p as { _similarity?: number })._similarity ?? 0.5;
+      score += similarity * 40;
+      if (similarity > 0.7) reasons.push(`研究方向高度吻合（${Math.round(similarity * 100)}%）`);
+      else if (similarity > 0.5) reasons.push('研究方向相关');
 
-    // Accepting students bonus
-    if (p.acceptingStudents === 'yes' || p.acceptingStudents === 'likely') score += 10;
+      // Academic impact 20%
+      const hIndex = p.hIndex ?? 0;
+      if (hIndex >= 50) { score += 20; reasons.push(`学术影响力很强（H-index ${hIndex}）`); }
+      else if (hIndex >= 30) { score += 15; reasons.push(`学术实力扎实（H-index ${hIndex}）`); }
+      else if (hIndex >= 20) score += 10;
 
-    // Opportunity score contribution
-    score += Math.min((p.opportunityScore ?? 0) / 10, 5);
+      // Recruitment likelihood 15%
+      if (p.grantStatus === 'Active') { score += 15; reasons.push('近期有科研经费，招生可能性高'); }
+      else if (p.acceptingStudents === 'yes') { score += 12; reasons.push('目前在招收博士生'); }
+      else score += 5;
 
-    // Use rich student context when available, fall back to thin profile
-    const langPref = ctx?.languagePreference ?? sp?.languagePreference;
-    const personality = ctx?.personalityTags ?? sp?.personalityTags;
-    const career = ctx?.careerGoal ?? sp?.careerGoal;
-    const cities = ctx?.preferredCity ?? sp?.preferredCity;
-    const budgetVal = ctx?.budget ?? sp?.budget;
-
-    if ((ctx || sp) && row) {
-      // Language affinity (15%)
-      if (langPref === '中文沟通优先' && row.chinese_friendly) {
-        score += 15;
+      // Target university match 10%
+      const targetUnis = ctx?.targetUniversities ?? sp?.targetUniversities;
+      if (targetUnis?.length) {
+        const tUnis = targetUnis.map(u => u.toLowerCase());
+        if (tUnis.some(u => p.university.toLowerCase().includes(u))) {
+          score += 10;
+          reasons.push(`${p.university} 在你的目标学校名单里`);
+        }
       }
 
-      // Supervision style match (10%)
-      if (personality?.includes('需要指导') && row.supervision_style === 'hands-on') {
-        score += 10;
-      } else if (personality?.includes('自主型') && row.supervision_style === 'independent') {
-        score += 10;
-      }
+      // Has email 5%
+      if (p.email) { score += 5; reasons.push('有公开联系邮箱'); }
 
-      // Career goal match (10%)
-      if (career === '工业界' && row.industry_connections) {
-        score += 10;
-      }
+      // Publication activity 5%
+      if ((p.paperCount ?? 0) > 100) { score += 5; reasons.push(`发表 ${p.paperCount} 篇论文，非常活跃`); }
 
-      // Geographic preference (5%)
+      // Geographic preference bonus
+      const cities = ctx?.preferredCity ?? sp?.preferredCity;
       if (cities?.length) {
         const uniLower = p.university.toLowerCase();
         const cityMatch = cities.some(c => {
@@ -457,40 +503,35 @@ export async function searchProfessorsForAI(params: {
           if (cl.includes('brisbane') || cl.includes('布里斯班')) return uniLower.includes('queensland') || uniLower.includes('qut') || uniLower.includes('griffith');
           return uniLower.includes(cl);
         });
-        if (cityMatch) score += 5;
+        if (cityMatch) { score += 3; reasons.push('位于你偏好的城市'); }
       }
 
-      // Budget match (10%)
+      // Budget match
+      const budgetVal = ctx?.budget ?? sp?.budget;
       if (budgetVal === '必须全奖' && p.grantStatus === 'Active') {
         score += 10;
+        reasons.push('有活跃科研经费，全奖可能性高');
       }
 
-      // Target university match from rich context (8%)
-      if (ctx?.targetUniversities?.length) {
-        const uniLower = p.university.toLowerCase();
-        if (ctx.targetUniversities.some(u => uniLower.includes(u.toLowerCase()))) {
-          score += 8;
-        }
-      }
-
-      // Research background overlap from rich context (12%)
-      if (ctx?.researchDescription || ctx?.parsedDocuments.length) {
+      // Research background overlap from rich context
+      if (ctx?.researchDescription || ctx?.parsedDocuments?.length) {
         const areasText = p.researchAreas.join(' ').toLowerCase();
         const bgKeywords: string[] = [];
-        if (ctx.researchDescription) bgKeywords.push(...ctx.researchDescription.toLowerCase().split(/[\s,;，；]+/).filter(w => w.length >= 3));
-        for (const doc of ctx.parsedDocuments) {
+        if (ctx!.researchDescription) bgKeywords.push(...ctx!.researchDescription.toLowerCase().split(/[\s,;，；]+/).filter(w => w.length >= 3));
+        for (const doc of ctx!.parsedDocuments) {
           if (doc.parsedData?.researchSummary) bgKeywords.push(...String(doc.parsedData.researchSummary).toLowerCase().split(/[\s,;，；]+/).filter(w => w.length >= 3));
         }
         const bgHits = bgKeywords.filter(k => areasText.includes(k)).length;
-        score += Math.min(bgHits * 2, 12);
+        if (bgHits > 0) {
+          score += Math.min(bgHits * 2, 12);
+          reasons.push('与你的研究背景有关联');
+        }
       }
-    }
 
-    return { professor: p, score };
-  });
+      return { professor: p, score: Math.round(score), reasons };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
 
-  // Sort by composite score descending
-  scored.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
-
-  return scored.slice(0, limit).map((s: { professor: Professor; score: number }) => s.professor);
+  return scored;
 }

@@ -170,6 +170,8 @@ export async function POST(request: NextRequest) {
       research: '科研深潜',
       chat: '聊天陪伴',
       write: '文案撰写',
+      rp: 'RP 助手',
+      interview: '模拟面试',
     };
 
     const exportTitle = title ?? `考拉学长对话记录 — ${modeLabel[mode] ?? mode}`;

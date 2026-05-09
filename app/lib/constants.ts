@@ -40,6 +40,8 @@ export const AI_MODES = {
   research: 'research',
   chat: 'chat',
   write: 'write',
+  rp: 'rp',
+  interview: 'interview',
 } as const;
 
 export type AIMode = typeof AI_MODES[keyof typeof AI_MODES];

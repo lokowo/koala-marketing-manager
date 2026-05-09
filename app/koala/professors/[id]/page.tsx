@@ -36,7 +36,14 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
       setProfessor(pd.data ?? null);
       setPapers(pp.papers ?? []);
     }).catch(() => {}).finally(() => setLoading(false));
-  }, [id]);
+
+    // Record 'viewed' interaction
+    fetch(`/api/professors/${id}/interactions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'viewed', userId: user?.id }),
+    }).catch(() => {});
+  }, [id, user?.id]);
 
   // Check if already bookmarked
   useEffect(() => {

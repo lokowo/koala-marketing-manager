@@ -63,6 +63,42 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   return Response.json({ savedCount, outreachCount, students, outreachList });
 }
 
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id: professorId } = await params;
+
+  try {
+    const body = await req.json();
+    const { type, userId, notes } = body as {
+      type: 'viewed' | 'saved' | 'email_generated' | 'email_sent' | 'rejected' | 'contacted';
+      userId?: string;
+      notes?: string;
+    };
+
+    if (!type) {
+      return Response.json({ error: 'Missing interaction type' }, { status: 400 });
+    }
+
+    const { error } = await db
+      .from('professor_interactions')
+      .insert({
+        professor_id: professorId,
+        user_id: userId || null,
+        interaction_type: type,
+        notes: notes || null,
+      });
+
+    if (error) {
+      console.error('[interactions POST]', error);
+      return Response.json({ error: 'Failed to record interaction' }, { status: 500 });
+    }
+
+    return Response.json({ success: true });
+  } catch (e) {
+    console.error('[interactions POST]', e);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 function maskId(id: string) {
   if (!id) return '***';
   return id.slice(0, 4) + '***' + id.slice(-3);

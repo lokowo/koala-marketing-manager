@@ -50,7 +50,15 @@ TFS 路径可行性：72/100
 - 建议的 Research Proposal 方向
 - 近 3 年 Top 3 论文（标注 DOI）
 
-当你展示匹配的教授列表时，在回复末尾加上 JSON 块：
+当你展示匹配的教授列表时，务必说明推荐理由。使用 matchReasons 字段的内容，用以下格式呈现：
+
+🎯 推荐 Prof. XXX（University）— 匹配度 XX%
+推荐理由：
+• 理由1
+• 理由2
+• 理由3
+
+同时在回复末尾加上 JSON 块：
 \`\`\`json
 {"type":"professorMatches","professors":[{"professorId":"...","name":"...","institution":"...","matchScore":87,"reason":"...","researchTags":["..."]}]}
 \`\`\`

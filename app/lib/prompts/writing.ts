@@ -41,6 +41,14 @@ export const WRITING_PROMPT = `
 {"type":"email","subjectLine":"...","emailBody":"...","followupBody":"...","riskNote":"..."}
 \`\`\`
 
+当你推荐教授时，务必说明推荐理由。使用 matchReasons 字段的内容，用以下格式呈现：
+
+🎯 推荐 Prof. XXX（University）— 匹配度 XX%
+推荐理由：
+• 理由1
+• 理由2
+• 理由3
+
 ### 3. Personal Statement
 询问用户的完整背景后，按以下结构撰写：
 - 研究动机（一个具体的故事/经历引入）

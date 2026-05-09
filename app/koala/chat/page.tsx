@@ -98,6 +98,24 @@ const MODES: {
     welcome: '给我一位教授的名字或链接，我帮你写一封专业的申请信 ✉️',
     initialReplies: ['我有目标教授', '帮我先找教授再写信', '修改我的草稿'],
   },
+  {
+    key: 'rp',
+    label: '📝 RP 助手',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+    desc: '帮你写 Research Proposal',
+    placeholder: '描述你的研究兴趣，或粘贴你的 RP 草稿……',
+    welcome: '我是你的 Research Proposal 写作顾问 📝\n\n我可以帮你：\n• 确定研究选题和研究问题\n• 指导 RP 结构和写作\n• 审阅和修改你的 RP 草稿\n\n先告诉我你的研究兴趣和目标教授吧！',
+    initialReplies: ['帮我确定研究选题', '审阅我的 RP 草稿', '怎么写文献综述', '方法论怎么选'],
+  },
+  {
+    key: 'interview',
+    label: '🎤 模拟面试',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2" strokeLinecap="round"/><path d="M12 19v4M8 23h8" strokeLinecap="round"/></svg>,
+    desc: '模拟导师面试练习',
+    placeholder: '告诉我你要面试哪位教授……',
+    welcome: '欢迎来到模拟面试练习！🎤\n\n我会扮演澳洲大学的 PhD 导师，模拟真实面试场景。\n\n告诉我你要面试哪位教授，我会根据他/她的研究方向设计面试问题。每个问题回答后我都会给出反馈和改进建议。',
+    initialReplies: ['我有目标教授', '通用面试练习', '面试常见问题有哪些'],
+  },
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -873,18 +891,18 @@ function ChatPageInner() {
         </button>
       </div>
 
-      {/* Mode tabs */}
-      <div className="flex px-2 items-stretch flex-shrink-0" style={{ background: '#0d1520' }}>
+      {/* Mode tabs — horizontally scrollable for 6 modes on mobile */}
+      <div className="flex px-2 items-stretch flex-shrink-0 overflow-x-auto scrollbar-hide" style={{ background: '#0d1520', WebkitOverflowScrolling: 'touch' }}>
         {MODES.map(m => {
           const active = mode === m.key;
           return (
             <button
               key={m.key}
               onClick={() => switchMode(m.key)}
-              className="flex pt-3 pb-2 flex-col items-center flex-1 gap-2"
+              className="flex pt-3 pb-2 flex-col items-center min-w-[80px] flex-shrink-0 flex-1 gap-2"
             >
               <span
-                className="text-sm leading-5"
+                className="text-xs sm:text-sm leading-5 whitespace-nowrap"
                 style={{
                   color: active ? '#e8e4dc' : '#5a5550',
                   fontWeight: active ? 700 : 400,

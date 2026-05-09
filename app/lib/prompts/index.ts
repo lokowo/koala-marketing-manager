@@ -3,6 +3,8 @@ export { PATH_ASSESSMENT_PROMPT } from './path-assessment';
 export { RESEARCH_DIVE_PROMPT } from './research-dive';
 export { COMPANION_PROMPT } from './companion';
 export { WRITING_PROMPT } from './writing';
+export { RP_PROMPT } from './rp';
+export { INTERVIEW_PROMPT } from './interview';
 export { EMAIL_GENERATION_PROMPT, buildEmailPrompt } from './email';
 
 import { GLOBAL_SYSTEM_PROMPT } from './system';
@@ -10,6 +12,8 @@ import { PATH_ASSESSMENT_PROMPT } from './path-assessment';
 import { RESEARCH_DIVE_PROMPT } from './research-dive';
 import { COMPANION_PROMPT } from './companion';
 import { WRITING_PROMPT } from './writing';
+import { RP_PROMPT } from './rp';
+import { INTERVIEW_PROMPT } from './interview';
 
 import type { AIMode } from '../constants';
 
@@ -19,6 +23,8 @@ export function getModePrompt(mode: AIMode): string {
     research: RESEARCH_DIVE_PROMPT,
     chat: COMPANION_PROMPT,
     write: WRITING_PROMPT,
+    rp: RP_PROMPT,
+    interview: INTERVIEW_PROMPT,
   };
   return map[mode] ?? COMPANION_PROMPT;
 }

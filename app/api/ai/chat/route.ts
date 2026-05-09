@@ -38,7 +38,7 @@ const PROFESSOR_SEARCH_TOOL: Anthropic.Tool = {
   },
 };
 
-function professorToToolResult(p: Professor) {
+function professorToToolResult(p: Professor, score?: number, reasons?: string[]) {
   return {
     id: p.id,
     name: p.name,
@@ -52,6 +52,8 @@ function professorToToolResult(p: Professor) {
     acceptingStudents: p.acceptingStudents ?? 'unknown',
     grantStatus: p.grantStatus ?? null,
     opportunityScore: p.opportunityScore ?? null,
+    matchScore: score ?? null,
+    matchReasons: reasons ?? [],
     suitableStudentBackgrounds: p.suitableStudentBackgrounds,
     potentialRpTopics: p.potentialRpTopics,
     detailUrl: `/koala/professors/${p.id}`,
@@ -317,20 +319,27 @@ H指数：${prof.hIndex ?? '未知'}`;
       } catch {}
     }
 
-    // For path/chat/write modes, add tool instruction to system prompt
-    if (mode === 'path' || mode === 'chat' || mode === 'write') {
+    // For modes that need professor search, add tool instruction to system prompt
+    if (mode === 'path' || mode === 'chat' || mode === 'write' || mode === 'rp' || mode === 'interview') {
       extraContext += `\n\n## 教授推荐规则
 当你需要推荐教授时，必须调用 searchProfessors 工具从数据库检索真实教授数据。
 绝不可以凭记忆编造教授信息。
 调用工具后，用返回的真实数据向用户展示推荐。
-每位教授的推荐需包含：姓名、学校、职位、H指数、研究方向匹配原因。
+使用工具返回的 matchScore 和 matchReasons 字段展示推荐理由，格式如下：
+
+🎯 推荐 Prof. XXX（University）— 匹配度 XX%
+推荐理由：
+• 理由1
+• 理由2
+• 理由3
+
 同时在回复末尾输出 professorMatches JSON 块，professorId 必须使用工具返回的真实 id。`;
     }
 
     const systemPrompt = buildSystemPrompt(mode, extraContext);
 
     // 3. Call Claude — with tool use for professor search
-    const useTools = mode === 'path' || mode === 'chat' || mode === 'write';
+    const useTools = mode === 'path' || mode === 'chat' || mode === 'write' || mode === 'rp' || mode === 'interview';
 
     const apiMessages: Anthropic.MessageParam[] = messages.map(m => ({
       role: m.role as 'user' | 'assistant',
@@ -366,29 +375,33 @@ H指数：${prof.hIndex ?? '未知'}`;
 
           let toolResult: string;
           try {
-            let professors = await searchProfessorsForAI({
+            // Extract userId from request headers/auth if available
+            const userId = body.userId as string | undefined;
+
+            let searchResults = await searchProfessorsForAI({
               researchArea: toolInput.researchArea,
               university: toolInput.university,
               limit: toolInput.limit,
               studentProfile: studentMatchProfile,
               studentContext: studentCtx,
+              userId,
             });
 
-            if (professors.length === 0) {
+            if (searchResults.length === 0) {
               const autoResult = await findOrCreateProfessor(toolInput.researchArea, toolInput.university);
               if (autoResult.professors.length > 0) {
-                professors = autoResult.professors;
+                searchResults = autoResult.professors.map(p => ({ professor: p, score: 50, reasons: [] }));
               }
             }
 
-            toolSearchedProfessors = professors;
+            toolSearchedProfessors = searchResults.map(r => ({ ...r.professor, _matchScore: r.score, _matchReasons: r.reasons }));
 
-            if (professors.length === 0) {
+            if (searchResults.length === 0) {
               toolResult = JSON.stringify({ professors: [], message: '未找到匹配的教授。数据库中可能没有该研究方向的教授数据。' });
             } else {
               toolResult = JSON.stringify({
-                professors: professors.map(professorToToolResult),
-                total: professors.length,
+                professors: searchResults.map(r => professorToToolResult(r.professor, r.score, r.reasons)),
+                total: searchResults.length,
               });
             }
           } catch (err) {
@@ -457,20 +470,25 @@ H指数：${prof.hIndex ?? '未知'}`;
 
     // Professor matches: prefer tool-searched real data over AI-generated JSON blocks
     if (toolSearchedProfessors.length > 0) {
-      // Build matchedProfessors from real DB data, enrich with AI-generated match reasons
       const aiMatches = blocks.professors
         ? (blocks.professors as { professors: Array<{ professorId?: string; name?: string; matchScore?: number; reason?: string; researchTags?: string[] }> }).professors
         : [];
 
       result.matchedProfessors = toolSearchedProfessors.map(p => {
         const aiMatch = aiMatches.find(a => a.professorId === p.id || a.name === p.name);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pAny = p as any;
+        const matchScore = pAny._matchScore ?? aiMatch?.matchScore ?? (p.opportunityScore ?? 50);
+        const matchReasons: string[] = pAny._matchReasons ?? [];
         return {
           professorId: p.id,
           name: p.name,
           institution: p.university,
           positionTitle: p.positionTitle || undefined,
-          matchScore: aiMatch?.matchScore ?? (p.opportunityScore ?? 50),
-          reason: aiMatch?.reason ?? `研究方向：${p.researchAreas.slice(0, 3).join('、')}`,
+          matchScore,
+          reason: matchReasons.length > 0
+            ? matchReasons.join('；')
+            : (aiMatch?.reason ?? `研究方向：${p.researchAreas.slice(0, 3).join('、')}`),
           researchTags: p.researchAreas.slice(0, 5),
           opportunityLabel: p.acceptingStudents === 'yes' ? '招生中' : undefined,
           hIndex: p.hIndex,
@@ -498,13 +516,23 @@ H指数：${prof.hIndex ?? '未知'}`;
 
     result.suggestConsultation = shouldSuggestConsultation(messages, mode);
 
-    // 6. Save async — include user_id for profile linking
+    // 6. Save async + extract user profile
     try {
       const { getServerUser: getUser } = await import('../../../lib/auth');
       const u = await getUser();
       saveConversationAsync(mode, messages, cleanedReply, u?.id).catch(() => {});
     } catch {
       saveConversationAsync(mode, messages, cleanedReply).catch(() => {});
+    }
+
+    const userId = body.userId as string | undefined;
+    if (userId && messages.length > 0) {
+      const lastUserMsg = messages[messages.length - 1];
+      if (lastUserMsg.role === 'user') {
+        extractAndUpdateProfile(userId, lastUserMsg.content).catch(err =>
+          console.error('[profile extraction] Failed:', err)
+        );
+      }
     }
 
     return Response.json(result);
@@ -531,4 +559,49 @@ async function saveConversationAsync(mode: AIMode, messages: ChatMessage[], repl
       messages: [...messages, { role: 'assistant', content: reply }],
     });
   } catch {}
+}
+
+async function extractAndUpdateProfile(userId: string, message: string) {
+  const hasProfileInfo = /(?:我是|我在|我的|本科|硕士|PhD|GPA|雅思|IELTS|TOEFL|专业|学校|毕业|研究|工作|实习)/i.test(message)
+    || /(?:unsw|usyd|unimelb|anu|uq|monash|uwa|adelaide|qut|uts|rmit|macquarie)/i.test(message);
+
+  if (!hasProfileInfo) return;
+
+  const extraction = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 300,
+    system: '你是一个信息提取助手。从用户消息中提取个人学术信息，返回纯 JSON。只包含能确认的字段，不确定的不要猜。如果没有有用信息返回 {}。',
+    messages: [{
+      role: 'user',
+      content: `提取以下消息中的个人信息：\n"${message}"\n\n可能的字段（全部可选）：\n{"university":"学校名","major":"专业","degree_level":"本科/硕士/博士","gpa":"GPA数值","gpa_scale":"满分","target_field":"目标研究方向","english_level":"英语水平如雅思7.0","has_research_experience":true/false,"research_description":"科研描述","career_goal":"职业目标"}\n\n返回纯 JSON，不要 markdown。`,
+    }],
+  });
+
+  try {
+    const text = (extraction.content[0] as { type: 'text'; text: string }).text.trim();
+    const info = JSON.parse(text.replace(/```json|```/g, ''));
+
+    if (Object.keys(info).length === 0) return;
+
+    const updates: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(info)) {
+      if (value !== null && value !== undefined && value !== '') {
+        updates[key] = value;
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      await supabaseAdmin.from('user_profiles')
+        .update(updates)
+        .eq('id', userId);
+      console.log(`[profile extraction] Updated for ${userId}:`, Object.keys(updates));
+    }
+  } catch {
+    // Parse failure — silently ignore
+  }
 }
