@@ -15,7 +15,7 @@ async function main() {
     .select('id, name, university, position_title, faculty, research_areas, h_index, paper_count, citation_count')
     .is('research_embedding', null)
     .order('h_index', { ascending: false, nullsFirst: false })
-    .limit(5000);
+    .limit(1000);
 
   if (error || !professors) {
     console.error('Failed to fetch professors:', error);
@@ -51,7 +51,7 @@ async function main() {
       for (let j = 0; j < batch.length; j++) {
         const { error: updateError } = await supabase
           .from('professors')
-          .update({ research_embedding: JSON.stringify(res.data[j].embedding) })
+          .update({ research_embedding: `[${res.data[j].embedding.join(',')}]` })
           .eq('id', batch[j].id);
 
         if (updateError) {
