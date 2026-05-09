@@ -17,7 +17,7 @@ async function main() {
     .is('research_embedding', null)
     .eq('verification_status', 'Verified')
     .order('h_index', { ascending: false, nullsFirst: false })
-    .limit(1000);
+    .limit(5000);
 
   if (error || !professors) {
     console.error('Failed to fetch professors:', error);
