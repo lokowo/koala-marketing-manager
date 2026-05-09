@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../supabase/server';
 import type { Professor } from '../types';
 import type { Database } from '../database.types';
+import type { StudentContext } from '../server/student-context';
 
 type ProfessorRow = Database['public']['Tables']['professors']['Row'];
 
@@ -367,6 +368,7 @@ export async function searchProfessorsForAI(params: {
   university?: string;
   limit?: number;
   studentProfile?: StudentMatchProfile;
+  studentContext?: StudentContext | null;
 }): Promise<Professor[]> {
   const limit = Math.min(params.limit ?? 8, 15);
   const keywords = params.researchArea
@@ -375,6 +377,8 @@ export async function searchProfessorsForAI(params: {
     .filter(k => k.length >= 2);
 
   if (keywords.length === 0) return [];
+
+  const ctx = params.studentContext;
 
   // PostgREST can't do ilike on text[] casts, so we fetch a broad set
   // ordered by score and filter by keyword match in JS.
@@ -418,28 +422,35 @@ export async function searchProfessorsForAI(params: {
     // Opportunity score contribution
     score += Math.min((p.opportunityScore ?? 0) / 10, 5);
 
-    if (sp && row) {
+    // Use rich student context when available, fall back to thin profile
+    const langPref = ctx?.languagePreference ?? sp?.languagePreference;
+    const personality = ctx?.personalityTags ?? sp?.personalityTags;
+    const career = ctx?.careerGoal ?? sp?.careerGoal;
+    const cities = ctx?.preferredCity ?? sp?.preferredCity;
+    const budgetVal = ctx?.budget ?? sp?.budget;
+
+    if ((ctx || sp) && row) {
       // Language affinity (15%)
-      if (sp.languagePreference === '中文沟通优先' && row.chinese_friendly) {
+      if (langPref === '中文沟通优先' && row.chinese_friendly) {
         score += 15;
       }
 
       // Supervision style match (10%)
-      if (sp.personalityTags?.includes('需要指导') && row.supervision_style === 'hands-on') {
+      if (personality?.includes('需要指导') && row.supervision_style === 'hands-on') {
         score += 10;
-      } else if (sp.personalityTags?.includes('自主型') && row.supervision_style === 'independent') {
+      } else if (personality?.includes('自主型') && row.supervision_style === 'independent') {
         score += 10;
       }
 
       // Career goal match (10%)
-      if (sp.careerGoal === '工业界' && row.industry_connections) {
+      if (career === '工业界' && row.industry_connections) {
         score += 10;
       }
 
       // Geographic preference (5%)
-      if (sp.preferredCity?.length) {
+      if (cities?.length) {
         const uniLower = p.university.toLowerCase();
-        const cityMatch = sp.preferredCity.some(c => {
+        const cityMatch = cities.some(c => {
           const cl = c.toLowerCase();
           if (cl.includes('sydney') || cl.includes('悉尼')) return uniLower.includes('sydney') || uniLower.includes('unsw') || uniLower.includes('uts') || uniLower.includes('macquarie');
           if (cl.includes('melbourne') || cl.includes('墨尔本')) return uniLower.includes('melbourne') || uniLower.includes('monash') || uniLower.includes('rmit');
@@ -450,8 +461,28 @@ export async function searchProfessorsForAI(params: {
       }
 
       // Budget match (10%)
-      if (sp.budget === '必须全奖' && p.grantStatus === 'Active') {
+      if (budgetVal === '必须全奖' && p.grantStatus === 'Active') {
         score += 10;
+      }
+
+      // Target university match from rich context (8%)
+      if (ctx?.targetUniversities?.length) {
+        const uniLower = p.university.toLowerCase();
+        if (ctx.targetUniversities.some(u => uniLower.includes(u.toLowerCase()))) {
+          score += 8;
+        }
+      }
+
+      // Research background overlap from rich context (12%)
+      if (ctx?.researchDescription || ctx?.parsedDocuments.length) {
+        const areasText = p.researchAreas.join(' ').toLowerCase();
+        const bgKeywords: string[] = [];
+        if (ctx.researchDescription) bgKeywords.push(...ctx.researchDescription.toLowerCase().split(/[\s,;，；]+/).filter(w => w.length >= 3));
+        for (const doc of ctx.parsedDocuments) {
+          if (doc.parsedData?.researchSummary) bgKeywords.push(...String(doc.parsedData.researchSummary).toLowerCase().split(/[\s,;，；]+/).filter(w => w.length >= 3));
+        }
+        const bgHits = bgKeywords.filter(k => areasText.includes(k)).length;
+        score += Math.min(bgHits * 2, 12);
       }
     }
 

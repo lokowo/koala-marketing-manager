@@ -211,6 +211,34 @@ export function buildStudentContextPrompt(ctx: StudentContext): string {
   return sections.join('\n\n');
 }
 
+export function extractSearchKeywords(ctx: StudentContext): string[] {
+  const raw: string[] = [];
+  if (ctx.targetField) raw.push(ctx.targetField);
+  if (ctx.major) raw.push(ctx.major);
+  if (ctx.researchDescription) raw.push(ctx.researchDescription);
+  if (ctx.strengths?.length) raw.push(...ctx.strengths);
+
+  for (const edu of ctx.education) {
+    if (edu.major) raw.push(edu.major);
+    if (edu.description) raw.push(edu.description);
+  }
+  for (const doc of ctx.parsedDocuments) {
+    const pd = doc.parsedData;
+    if (pd?.researchSummary) raw.push(String(pd.researchSummary));
+    if (pd?.technicalSkills) raw.push(String(pd.technicalSkills));
+    if (pd?.researchInterests) raw.push(String(pd.researchInterests));
+  }
+
+  const words = raw
+    .join(' ')
+    .toLowerCase()
+    .split(/[,;，；、\s/()（）]+/)
+    .map(w => w.trim())
+    .filter(w => w.length >= 2);
+
+  return [...new Set(words)];
+}
+
 export function buildStudentBackgroundForEmail(ctx: StudentContext): string {
   const parts: string[] = [];
   if (ctx.major) parts.push(`专业：${ctx.major}`);

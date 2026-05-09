@@ -371,6 +371,7 @@ H指数：${prof.hIndex ?? '未知'}`;
               university: toolInput.university,
               limit: toolInput.limit,
               studentProfile: studentMatchProfile,
+              studentContext: studentCtx,
             });
 
             if (professors.length === 0) {
