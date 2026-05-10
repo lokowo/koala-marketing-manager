@@ -1,22 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Search, Filter, ChevronDown, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, AlertTriangle } from 'lucide-react';
 
 interface Professor {
   id: string;
   name: string;
   university: string;
-  faculty: string | null;
-  position_title: string | null;
-  email: string | null;
-  research_areas: string[];
-  h_index: number | null;
-  citation_count: number | null;
-  accepting_students: string | null;
-  verification_status: string;
-  updated_at: string | null;
+  faculty: string;
+  positionTitle: string | null;
+  email: string;
+  researchAreas: string[];
+  hIndex: number | null;
+  citationCount: number | null;
+  acceptingStudents: string | null;
+  verificationStatus: string;
+  updatedAt: string | null;
+}
+
+interface ApiResponse {
+  data: Professor[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
 }
 
 const UNIVERSITIES = [
@@ -31,42 +39,104 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   Rejected: { bg: '#fee2e2', text: '#dc2626' },
 };
 
+const PAGE_SIZES = [50, 100] as const;
+
 export default function ProfessorsPage() {
   const [professors, setProfessors] = useState<Professor[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Filters
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [university, setUniversity] = useState('All');
-  const [status, setStatus] = useState('All');
-  const [missingFilter, setMissingFilter] = useState('All');
+  const [status, setStatus] = useState('Verified');
   const [showFilters, setShowFilters] = useState(false);
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(50);
+
+  // Stats from quality API — fetched once
+  const [missingEmailCount, setMissingEmailCount] = useState(0);
+  const [missingFacultyCount, setMissingFacultyCount] = useState(0);
+  const statsLoaded = useRef(false);
+
+  // Debounce search input by 300ms
   useEffect(() => {
-    fetch('/api/professors')
-      .then(r => r.json())
-      .then(({ data }) => { setProfessors(data || []); setLoading(false); })
-      .catch(() => setLoading(false));
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, university, status, pageSize]);
+
+  // Build URL and fetch professors
+  const fetchProfessors = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('limit', String(pageSize));
+      params.set('showAll', 'true');
+
+      if (debouncedSearch) params.set('search', debouncedSearch);
+      if (university !== 'All') params.set('university', university);
+      if (status !== 'All') params.set('verificationStatus', status);
+
+      const res = await fetch(`/api/professors?${params.toString()}`);
+      const json: ApiResponse = await res.json();
+
+      setProfessors(json.data || []);
+      setTotal(json.total ?? 0);
+    } catch {
+      setProfessors([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, debouncedSearch, university, status]);
+
+  useEffect(() => {
+    fetchProfessors();
+  }, [fetchProfessors]);
+
+  // Fetch stats from quality API (server-side counts) once on mount
+  useEffect(() => {
+    if (statsLoaded.current) return;
+    statsLoaded.current = true;
+
+    fetch('/api/admin/quality?limit=1')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.stats) {
+          setMissingEmailCount(d.stats.missingEmail ?? 0);
+          setMissingFacultyCount(d.stats.missingFaculty ?? 0);
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  const filtered = professors.filter(p => {
-    if (search) {
-      const q = search.toLowerCase();
-      if (!p.name.toLowerCase().includes(q) &&
-          !p.university.toLowerCase().includes(q) &&
-          !(p.research_areas || []).some(a => a.toLowerCase().includes(q)) &&
-          !(p.email || '').toLowerCase().includes(q)) {
-        return false;
-      }
-    }
-    if (university !== 'All' && p.university !== university) return false;
-    if (status !== 'All' && p.verification_status !== status) return false;
-    if (missingFilter === 'no_email' && p.email) return false;
-    if (missingFilter === 'no_faculty' && p.faculty) return false;
-    if (missingFilter === 'has_all' && (!p.email || !p.faculty)) return false;
-    return true;
-  });
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  const missingEmailCount = professors.filter(p => !p.email).length;
-  const missingFacultyCount = professors.filter(p => !p.faculty).length;
+  // Generate visible page numbers (show up to 7 pages around current)
+  const getPageNumbers = (): (number | '...')[] => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages: (number | '...')[] = [1];
+    const start = Math.max(2, page - 2);
+    const end = Math.min(totalPages - 1, page + 2);
+    if (start > 2) pages.push('...');
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (end < totalPages - 1) pages.push('...');
+    pages.push(totalPages);
+    return pages;
+  };
 
   return (
     <div className="space-y-4">
@@ -74,7 +144,7 @@ export default function ProfessorsPage() {
         <div>
           <h2 className="text-xl font-bold text-slate-900">教授库管理</h2>
           <p className="text-sm text-slate-500 mt-0.5">
-            共 {professors.length} 位教授
+            共 {total} 位教授
             {missingEmailCount > 0 && <span className="text-amber-600 ml-2">· {missingEmailCount} 缺邮箱</span>}
             {missingFacultyCount > 0 && <span className="text-amber-600 ml-2">· {missingFacultyCount} 缺学院</span>}
           </p>
@@ -97,7 +167,7 @@ export default function ProfessorsPage() {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="搜索教授名、大学、研究方向、邮箱..."
+            placeholder="搜索教授名、大学、研究方向..."
             className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400"
           />
         </div>
@@ -131,12 +201,13 @@ export default function ProfessorsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-[11px] text-slate-500 mb-1">数据完整性</label>
-            <select value={missingFilter} onChange={e => setMissingFilter(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 bg-white">
-              <option value="All">全部</option>
-              <option value="no_email">缺少邮箱</option>
-              <option value="no_faculty">缺少学院</option>
-              <option value="has_all">数据完整</option>
+            <label className="block text-[11px] text-slate-500 mb-1">每页显示</label>
+            <select
+              value={pageSize}
+              onChange={e => setPageSize(Number(e.target.value) as (typeof PAGE_SIZES)[number])}
+              className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 bg-white"
+            >
+              {PAGE_SIZES.map(s => <option key={s} value={s}>{s} 条</option>)}
             </select>
           </div>
         </div>
@@ -144,7 +215,11 @@ export default function ProfessorsPage() {
 
       {/* Results count */}
       <div className="text-xs text-slate-400">
-        显示 {filtered.length} / {professors.length} 位教授
+        {loading ? '加载中...' : (
+          <>
+            第 {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} 条，共 {total} 位教授
+          </>
+        )}
       </div>
 
       {/* Table */}
@@ -165,33 +240,33 @@ export default function ProfessorsPage() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={7} className="text-center py-12 text-slate-400">加载中...</td></tr>
-              ) : filtered.length === 0 ? (
+              ) : professors.length === 0 ? (
                 <tr><td colSpan={7} className="text-center py-12 text-slate-400">无匹配结果</td></tr>
               ) : (
-                filtered.map(prof => {
-                  const sc = STATUS_COLORS[prof.verification_status] || STATUS_COLORS.Pending;
+                professors.map(prof => {
+                  const sc = STATUS_COLORS[prof.verificationStatus] || STATUS_COLORS.Pending;
                   return (
                     <tr key={prof.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
                       <td className="px-4 py-3">
                         <Link href={`/dashboard/koala/professors/${prof.id}`} className="text-sm font-medium text-slate-800 hover:text-blue-600 no-underline">
                           {prof.name}
                         </Link>
-                        {prof.position_title && (
-                          <p className="text-[11px] text-slate-400 mt-0.5">{prof.position_title}</p>
+                        {prof.positionTitle && (
+                          <p className="text-[11px] text-slate-400 mt-0.5">{prof.positionTitle}</p>
                         )}
                       </td>
                       <td className="px-4 py-3 text-slate-600 text-xs">{prof.university}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1 flex-wrap">
-                          {(prof.research_areas || []).slice(0, 2).map(a => (
+                          {(prof.researchAreas || []).slice(0, 2).map(a => (
                             <span key={a} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{a}</span>
                           ))}
-                          {(prof.research_areas || []).length > 2 && (
-                            <span className="text-[10px] text-slate-400">+{prof.research_areas.length - 2}</span>
+                          {(prof.researchAreas || []).length > 2 && (
+                            <span className="text-[10px] text-slate-400">+{prof.researchAreas.length - 2}</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-600">{prof.h_index ?? '—'}</td>
+                      <td className="px-4 py-3 text-xs text-slate-600">{prof.hIndex ?? '—'}</td>
                       <td className="px-4 py-3 text-xs">
                         {prof.email ? (
                           <span className="text-slate-600">{prof.email}</span>
@@ -203,7 +278,7 @@ export default function ProfessorsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: sc.bg, color: sc.text }}>
-                          {prof.verification_status}
+                          {prof.verificationStatus}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -222,6 +297,52 @@ export default function ProfessorsPage() {
           </table>
         </div>
       </div>
+
+      {/* Pagination controls */}
+      {!loading && total > 0 && (
+        <div className="flex items-center justify-between pt-2">
+          <div className="text-xs text-slate-400">
+            共 {totalPages} 页
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="上一页"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+
+            {getPageNumbers().map((n, i) =>
+              n === '...' ? (
+                <span key={`dots-${i}`} className="px-2 text-xs text-slate-400">...</span>
+              ) : (
+                <button
+                  key={n}
+                  onClick={() => setPage(n)}
+                  className={`min-w-[32px] h-8 rounded-lg text-xs font-medium transition-colors ${
+                    n === page
+                      ? 'bg-slate-800 text-white'
+                      : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {n}
+                </button>
+              )
+            )}
+
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="下一页"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

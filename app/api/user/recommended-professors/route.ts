@@ -24,6 +24,7 @@ export async function GET() {
     let { data: professors } = await db
       .from('professors')
       .select('id, name, university, position_title, research_areas, h_index, opportunity_score, accepting_students')
+      .eq('verification_status', 'Verified')
       .order('opportunity_score', { ascending: false })
       .order('h_index', { ascending: false, nullsFirst: false })
       .limit(50);

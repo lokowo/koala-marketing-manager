@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, CheckCircle, ExternalLink } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ExternalLink, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 
 interface QualityIssue {
   id: string;
@@ -22,35 +22,85 @@ interface QualityStats {
   complete: number;
 }
 
+interface EnrichResult {
+  mode: string;
+  processed: number;
+  updated: number;
+  skipped: number;
+}
+
 export default function QualityPage() {
   const [stats, setStats] = useState<QualityStats | null>(null);
   const [issues, setIssues] = useState<QualityIssue[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalIssues, setTotalIssues] = useState(0);
 
-  useEffect(() => {
-    fetch('/api/admin/quality')
-      .then(r => r.ok ? r.json() : { stats: null, issues: [] })
-      .then(d => {
-        setStats(d.stats);
-        setIssues(d.issues || []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+  // Enrichment state
+  const [enriching, setEnriching] = useState(false);
+  const [enrichResult, setEnrichResult] = useState<EnrichResult | null>(null);
 
-  const filtered = filter === 'all'
-    ? issues
-    : issues.filter(i => i.issues.includes(filter));
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        filter: filter === 'all' ? 'all' : filter,
+        page: String(page),
+        limit: '50',
+      });
+      const res = await fetch(`/api/admin/quality?${params}`);
+      if (!res.ok) throw new Error();
+      const d = await res.json();
+      setStats(d.stats);
+      setIssues(d.issues || []);
+      setTotalPages(d.pagination?.totalPages ?? 1);
+      setTotalIssues(d.pagination?.total ?? 0);
+    } catch {
+      // keep previous state
+    }
+    setLoading(false);
+  }, [filter, page]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { setPage(1); }, [filter]);
+
+  const runEnrichment = async (mode: 'pattern' | 'ai', limit: number) => {
+    setEnriching(true);
+    setEnrichResult(null);
+    try {
+      const res = await fetch('/api/admin/enrich-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, limit }),
+      });
+      const data = await res.json();
+      setEnrichResult(data);
+      // Refresh stats after enrichment
+      fetchData();
+    } catch {
+      setEnrichResult({ mode, processed: 0, updated: 0, skipped: 0 });
+    }
+    setEnriching(false);
+  };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">数据质量检查</h2>
-        <p className="text-sm text-slate-500 mt-0.5">检测教授数据的完整性问题</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">数据质量检查</h2>
+          <p className="text-sm text-slate-500 mt-0.5">检测已验证教授数据的完整性问题</p>
+        </div>
+        <Link
+          href="/dashboard/koala/professors"
+          className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 no-underline"
+        >
+          返回教授库
+        </Link>
       </div>
 
-      {loading ? (
+      {loading && !stats ? (
         <div className="text-sm text-slate-400">加载中...</div>
       ) : (
         <>
@@ -64,13 +114,45 @@ export default function QualityPage() {
             </div>
           )}
 
+          {/* Batch enrichment panel */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Zap className="size-4 text-amber-500" />
+              <h3 className="text-sm font-semibold text-slate-800">批量数据补全</h3>
+            </div>
+            <p className="text-xs text-slate-500 mb-3">
+              自动为缺失邮箱的教授生成 firstname.lastname@university.edu.au 格式邮箱，或使用 AI 搜索验证。
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => runEnrichment('pattern', 500)}
+                disabled={enriching}
+                className="px-3 py-1.5 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 font-medium"
+              >
+                {enriching ? '处理中...' : '邮箱模式补全 (500条)'}
+              </button>
+              <button
+                onClick={() => runEnrichment('ai', 10)}
+                disabled={enriching}
+                className="px-3 py-1.5 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium"
+              >
+                {enriching ? '处理中...' : 'AI 搜索补全 (10条)'}
+              </button>
+            </div>
+            {enrichResult && (
+              <div className="mt-3 p-2 bg-emerald-50 rounded-lg text-xs text-emerald-700">
+                完成：处理 {enrichResult.processed} 条，更新 {enrichResult.updated} 条，跳过 {enrichResult.skipped} 条
+              </div>
+            )}
+          </div>
+
           {/* Filter pills */}
           <div className="flex gap-2 flex-wrap">
             {[
               { key: 'all', label: '全部问题' },
               { key: 'missing_email', label: '缺邮箱' },
               { key: 'missing_faculty', label: '缺学院' },
-              { key: 'missing_profile_url', label: '缺 Profile' },
+              { key: 'missing_profile', label: '缺 Profile' },
               { key: 'missing_scholar', label: '缺 Scholar' },
             ].map(f => (
               <button
@@ -90,16 +172,16 @@ export default function QualityPage() {
           {/* Issues list */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 text-xs text-slate-500">
-              {filtered.length} 位教授有数据问题
+              {totalIssues} 位教授有数据问题
             </div>
-            {filtered.length === 0 ? (
+            {issues.length === 0 ? (
               <div className="p-8 text-center">
                 <CheckCircle className="size-8 mx-auto text-emerald-300 mb-2" />
                 <p className="text-sm text-slate-400">所有数据完整</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-50">
-                {filtered.slice(0, 100).map(prof => (
+                {issues.map(prof => (
                   <div key={prof.id} className="px-4 py-3 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
                     <div className="flex-1 min-w-0">
                       <Link href={`/dashboard/koala/professors/${prof.id}`} className="text-sm font-medium text-slate-800 hover:text-blue-600 no-underline">
@@ -109,7 +191,7 @@ export default function QualityPage() {
                       <div className="flex gap-1 mt-1 flex-wrap">
                         {prof.issues.map(issue => (
                           <span key={issue} className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600">
-                            {issue.replace('missing_', '缺 ').replace('no_', '无')}
+                            {issue}
                           </span>
                         ))}
                       </div>
@@ -122,6 +204,29 @@ export default function QualityPage() {
               </div>
             )}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-1">
+              <div className="text-xs text-slate-400">第 {page} / {totalPages} 页</div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition-colors"
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition-colors"
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
@@ -132,10 +237,10 @@ function StatCard({ label, value, total, color, icon }: {
   label: string; value: number; total: number; color: string; icon: React.ReactNode;
 }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
-  const colors: Record<string, { bg: string; text: string; bar: string }> = {
-    emerald: { bg: 'bg-emerald-50', text: 'text-emerald-700', bar: 'bg-emerald-400' },
-    red: { bg: 'bg-red-50', text: 'text-red-700', bar: 'bg-red-400' },
-    amber: { bg: 'bg-amber-50', text: 'text-amber-700', bar: 'bg-amber-400' },
+  const colors: Record<string, { text: string; bar: string }> = {
+    emerald: { text: 'text-emerald-700', bar: 'bg-emerald-400' },
+    red: { text: 'text-red-700', bar: 'bg-red-400' },
+    amber: { text: 'text-amber-700', bar: 'bg-amber-400' },
   };
   const c = colors[color] || colors.amber;
 
@@ -145,7 +250,7 @@ function StatCard({ label, value, total, color, icon }: {
         <span className="text-xs font-medium text-slate-500">{label}</span>
         <span className={c.text}>{icon}</span>
       </div>
-      <div className="text-2xl font-bold text-slate-900">{value}</div>
+      <div className="text-2xl font-bold text-slate-900">{value.toLocaleString()}</div>
       <div className="flex items-center gap-2 mt-2">
         <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
           <div className={`h-full rounded-full ${c.bar}`} style={{ width: `${pct}%` }} />

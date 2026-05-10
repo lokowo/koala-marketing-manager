@@ -423,6 +423,7 @@ export async function searchProfessorsForAI(params: {
     let q: any = supabaseAdmin
       .from('professors')
       .select('*')
+      .eq('verification_status', 'Verified')
       .order('h_index', { ascending: false, nullsFirst: false })
       .limit(500);
 
