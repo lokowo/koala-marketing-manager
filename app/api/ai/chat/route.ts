@@ -91,7 +91,11 @@ function detectIntent(message: string): 'outreach' | 'matching' | 'academic' | '
   const m = message.toLowerCase();
   if (/套磁|cold email|outreach|联系导师|给.*写.*信|写邮件/.test(m)) return 'outreach';
   if (/找导师|推荐导师|哪个导师|导师匹配|谁在做|what professor|supervisor/.test(m)) return 'matching';
-  if (/实验|论文|研究|方法|材料|数据|合成|分析|algorithm|electrode|catalyst|protein|gene|model|dataset/.test(m)) return 'academic';
+  // Broad academic intent detection — any research/technical question
+  if (/实验|论文|研究|方法|材料|数据|合成|分析|原理|机制|理论|假设|变量|模型|框架|范式/.test(m)) return 'academic';
+  if (/algorithm|electrode|catalyst|protein|gene|model|dataset|methodology|hypothesis|regression|neural|spectrum|synthesis|kinetics|thermodynamics|optimization|simulation|statistical/.test(m)) return 'academic';
+  if (/怎么做|如何设计|什么原理|为什么会|区别是什么|比较|对比|前沿|进展|综述|review|survey|state.of.the.art|benchmark/.test(m)) return 'academic';
+  if (/machine learning|deep learning|nlp|computer vision|reinforcement|transformer|diffusion|quantum|nano|bio|chem|phys/.test(m)) return 'academic';
   return 'general';
 }
 
@@ -258,9 +262,9 @@ H指数：${prof.hIndex ?? '未知'}`;
       const lastMsg = messages[messages.length - 1].content;
       try {
         const [academicResult, knowledgeChunks, professors] = await Promise.all([
-          searchAcademicSources(lastMsg, { limit: 12, yearFrom: new Date().getFullYear() - 4 }).catch(() => ({ papers: [], searchQueries: [], sources: [], totalFound: 0 })),
-          searchKnowledgeBase(lastMsg, 6).catch(() => []),
-          searchProfessorsByTags(lastMsg, 3).catch(() => []),
+          searchAcademicSources(lastMsg, { limit: 15, yearFrom: new Date().getFullYear() - 4 }).catch(() => ({ papers: [], searchQueries: [], sources: [], totalFound: 0 })),
+          searchKnowledgeBase(lastMsg, 8).catch(() => []),
+          searchProfessorsByTags(lastMsg, 5).catch(() => []),
         ]);
 
         allCitations = papersToCitations(academicResult.papers);
@@ -271,7 +275,8 @@ H指数：${prof.hIndex ?? '未知'}`;
         };
 
         const kbContext = assembleRAGContext({ knowledgeChunks, papers: [], professors });
-        const paperContext = papersToRAGContext(academicResult.papers);
+        // Full abstracts for research mode — gives Claude enough context for deep analysis
+        const paperContext = papersToRAGContext(academicResult.papers, { fullAbstract: true, maxPapers: 12 });
 
         if (kbContext || paperContext) {
           extraContext += '\n\n' + [paperContext, kbContext].filter(Boolean).join('\n\n');
@@ -301,13 +306,38 @@ H指数：${prof.hIndex ?? '未知'}`;
           const ragContext = assembleRAGContext({ knowledgeChunks: [...profProfiles, ...papers], papers: [], professors: profTags });
           if (ragContext) extraContext += '\n\n' + ragContext;
         } else if (intent === 'academic') {
-          const [papers, profProfiles, profTags] = await Promise.all([
-            searchPaperAbstracts(lastMsg, 8).catch(() => []),
+          // Academic intent in non-research modes: fire LIVE academic search too
+          // This gives deep, paper-backed answers even in chat/companion mode
+          const [academicResult, papers, profProfiles, profTags] = await Promise.all([
+            searchAcademicSources(lastMsg, { limit: 10, yearFrom: new Date().getFullYear() - 3 }).catch(() => ({ papers: [], searchQueries: [], sources: [], totalFound: 0 })),
+            searchPaperAbstracts(lastMsg, 6).catch(() => []),
             searchProfessorProfiles(lastMsg, 2).catch(() => []),
-            searchProfessorsByTags(lastMsg, 2).catch(() => []),
+            searchProfessorsByTags(lastMsg, 3).catch(() => []),
           ]);
+
+          // Store citations for cross-mode academic responses
+          if (academicResult.papers.length > 0) {
+            allCitations = papersToCitations(academicResult.papers);
+            academicSearchMeta = {
+              sources: academicResult.sources,
+              totalFound: academicResult.totalFound,
+              queries: academicResult.searchQueries,
+            };
+          }
+
           const ragContext = assembleRAGContext({ knowledgeChunks: [...papers, ...profProfiles], papers: [], professors: profTags });
-          if (ragContext) extraContext += '\n\n' + ragContext;
+          const paperContext = papersToRAGContext(academicResult.papers, { fullAbstract: true, maxPapers: 8 });
+
+          if (ragContext || paperContext) {
+            extraContext += '\n\n' + [paperContext, ragContext].filter(Boolean).join('\n\n');
+          }
+
+          // Add academic depth instruction for non-research modes with academic intent
+          extraContext += `\n\n## 学术问题检测
+用户的问题涉及学术/科研内容。即使当前不在"科研深潜"模式，也请：
+1. 引用检索到的真实论文作为依据
+2. 给出有深度的专业回答，而非泛泛而谈
+3. 如果话题适合深入讨论，建议用户切换到"科研深潜"模式获得更完整的分析`;
         } else {
           const [knowledgeChunks, professors] = await Promise.all([
             searchKnowledgeBase(lastMsg, 4).catch(() => []),
@@ -349,6 +379,11 @@ H指数：${prof.hIndex ?? '未知'}`;
     let rawReply = '';
     let toolSearchedProfessors: Professor[] = [];
 
+    // Determine max tokens: research mode and academic-intent get more room for deep answers
+    const lastUserMsg = messages.length > 0 ? messages[messages.length - 1].content : '';
+    const currentIntent = detectIntent(lastUserMsg);
+    const maxTokens = (mode === 'research' || currentIntent === 'academic') ? 4000 : 2000;
+
     if (useTools) {
       // Tool use loop: Claude may call searchProfessors, we execute and feed back
       let currentMessages: Anthropic.MessageParam[] = [...apiMessages];
@@ -360,7 +395,7 @@ H指数：${prof.hIndex ?? '未知'}`;
 
         const response = await client.messages.create({
           model: 'claude-sonnet-4-6',
-          max_tokens: 2000,
+          max_tokens: maxTokens,
           system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
           tools: [PROFESSOR_SEARCH_TOOL],
           messages: currentMessages,
@@ -435,10 +470,10 @@ H指数：${prof.hIndex ?? '未知'}`;
         break;
       }
     } else {
-      // Non-tool path (research mode)
+      // Non-tool path (research mode) — uses higher maxTokens for deep academic answers
       const response = await client.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
+        max_tokens: maxTokens,
         system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
         messages: apiMessages,
       });
@@ -463,7 +498,8 @@ H指数：${prof.hIndex ?? '未知'}`;
       result.scoreCard = { totalScore: blocks.scoreCard.totalScore, dimensions: blocks.scoreCard.dimensions };
     }
 
-    if (mode === 'research' && allCitations.length > 0) {
+    // Return citations for research mode AND any mode with academic intent
+    if (allCitations.length > 0) {
       result.citations = allCitations;
       result.academicSearch = academicSearchMeta;
     }

@@ -300,9 +300,17 @@ export async function searchAcademicSources(
 }
 
 // Helper: format papers for RAG context (sent to Claude as system context)
-export function papersToRAGContext(papers: AcademicPaper[]): string {
+// fullAbstract=true sends complete abstracts for deeper analysis (research mode)
+export function papersToRAGContext(papers: AcademicPaper[], options?: { fullAbstract?: boolean; maxPapers?: number }): string {
   if (!papers.length) return '';
-  return '## 实时检索到的学术论文\n\n' + papers.slice(0, 10).map((p, i) =>
-    `[${i + 1}] ${p.referenceText}\n标题：${p.title}\n${p.abstract ? `摘要：${p.abstract.slice(0, 300)}...` : ''}\n链接：${p.referenceLink || 'N/A'}`
-  ).join('\n\n');
+  const { fullAbstract = true, maxPapers = 12 } = options ?? {};
+  return '## 实时检索到的学术论文\n\n' + papers.slice(0, maxPapers).map((p, i) => {
+    const abstractText = p.abstract
+      ? (fullAbstract ? `摘要：${p.abstract}` : `摘要：${p.abstract.slice(0, 400)}...`)
+      : '';
+    const citationInfo = p.citations > 0 ? `引用数：${p.citations}` : '';
+    const doi = p.doiUrl ? `DOI：${p.doiUrl}` : '';
+    const details = [abstractText, citationInfo, doi, `链接：${p.referenceLink || 'N/A'}`].filter(Boolean).join('\n');
+    return `[${i + 1}] ${p.referenceText}\n标题：${p.title}\n${details}`;
+  }).join('\n\n');
 }
