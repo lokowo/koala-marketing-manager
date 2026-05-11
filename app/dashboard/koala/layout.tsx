@@ -214,6 +214,13 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
             {role === 'super_admin' ? '超级管理员' : role === 'admin' ? '管理员' : role === 'sales' ? '销售' : '只读'}
           </div>
         )}
+        <Link
+          href="/koala/home"
+          className="block w-full text-left text-[13px] text-slate-500 hover:text-white transition px-2 py-1.5 rounded hover:bg-slate-800/60 no-underline mb-1"
+          title="返回主页"
+        >
+          {collapsed && !mobile ? '🏠' : '🏠 返回主页'}
+        </Link>
         <button
           onClick={handleSignOut}
           className="w-full text-left text-[13px] text-slate-500 hover:text-white transition px-2 py-1.5 rounded hover:bg-slate-800/60"

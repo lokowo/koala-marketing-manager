@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     await logWork({
       userId: user.id,
-      role: role === 'super_admin' ? 'admin' : role as 'admin',
+      role: role === 'super_admin' ? 'admin' : role as 'admin' | 'sales',
       action: '复制问卷',
       actionCategory: 'survey',
       targetType: 'survey',

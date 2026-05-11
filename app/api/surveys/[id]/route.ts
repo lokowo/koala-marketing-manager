@@ -45,7 +45,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (body.status && actionMap[body.status]) {
       await logWork({
         userId: user.id,
-        role: role === 'super_admin' ? 'admin' : role as 'admin',
+        role: role === 'super_admin' ? 'admin' : role as 'admin' | 'sales',
         action: actionMap[body.status],
         actionCategory: 'survey',
         targetType: 'survey',
@@ -59,7 +59,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     } else {
       await logWork({
         userId: user.id,
-        role: role === 'super_admin' ? 'admin' : role as 'admin',
+        role: role === 'super_admin' ? 'admin' : role as 'admin' | 'sales',
         action: '更新问卷',
         actionCategory: 'survey',
         targetType: 'survey',
