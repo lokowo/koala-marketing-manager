@@ -62,7 +62,32 @@ export async function POST(req: Request) {
 
     const buffer = Buffer.from(await fileData.arrayBuffer());
     const base64 = buffer.toString('base64');
-    const mediaType = doc.file_type.startsWith('image/') ? doc.file_type : 'application/pdf';
+
+    const isImage = doc.file_type.startsWith('image/');
+    const isDocx = doc.file_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      || doc.file_name?.endsWith('.docx');
+    const isPdf = doc.file_type === 'application/pdf' || doc.file_name?.endsWith('.pdf');
+    const isDoc = doc.file_type === 'application/msword' || doc.file_name?.endsWith('.doc');
+
+    if (isDoc) {
+      await db
+        .from('user_documents')
+        .update({ ai_summary: JSON.stringify({ error: '不支持 .doc 格式，请转换为 .docx 后重新上传' }), updated_at: new Date().toISOString() })
+        .eq('id', document_id);
+      return Response.json({ error: '不支持 .doc 格式，请转换为 .docx 后重新上传' }, { status: 400 });
+    }
+
+    if (!isImage && !isPdf && !isDocx) {
+      await db
+        .from('user_documents')
+        .update({ ai_summary: JSON.stringify({ error: '不支持的文件格式' }), updated_at: new Date().toISOString() })
+        .eq('id', document_id);
+      return Response.json({ error: '不支持的文件格式，请上传 PDF、图片或 DOCX 文件' }, { status: 400 });
+    }
+
+    const mediaType = isImage ? doc.file_type
+      : isDocx ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      : 'application/pdf';
 
     const Anthropic = (await import('@anthropic-ai/sdk')).default;
     const client = new Anthropic();
@@ -75,9 +100,7 @@ export async function POST(req: Request) {
           role: 'user',
           content: [
             {
-              type: doc.file_type.startsWith('image/')
-                ? 'image' as const
-                : 'document' as const,
+              type: isImage ? 'image' as const : 'document' as const,
               source: {
                 type: 'base64' as const,
                 media_type: mediaType,

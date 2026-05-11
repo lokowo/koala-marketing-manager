@@ -1287,7 +1287,7 @@ export default function MyProfilePage() {
                 {docUploading && <span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />}
                 {docUploading ? '上传中…' : '+ 上传文件'}
               </button>
-              <input ref={docFileRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,image/*" className="hidden"
+              <input ref={docFileRef} type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.gif,.webp" className="hidden"
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleDocUpload(f); }}
               />
             </div>
@@ -1303,7 +1303,7 @@ export default function MyProfilePage() {
             ) : documents.length === 0 ? (
               <div className="px-4 py-4 text-center">
                 <p className="text-xs" style={{ color: '#6a7a7e' }}>上传简历、成绩单或学历证明</p>
-                <p className="text-[10px] mt-1" style={{ color: '#5a6a6e' }}>AI 自动解析，填充教育和工作经历</p>
+                <p className="text-[10px] mt-1" style={{ color: '#5a6a6e' }}>支持 PDF、图片（PNG/JPG）、Word 文档</p>
                 <button
                   onClick={() => !docUploading && docFileRef.current?.click()}
                   className="mt-2 text-xs font-medium"
