@@ -3,7 +3,7 @@ import { supabaseAdmin } from './supabase/server';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
-export type WorkLogRole = 'admin' | 'sales';
+export type WorkLogRole = 'admin' | 'sales' | 'system';
 
 export async function logWork(params: {
   userId: string;
@@ -17,7 +17,7 @@ export async function logWork(params: {
 }) {
   try {
     await db.from('admin_work_logs').insert({
-      user_id: params.userId,
+      admin_id: params.userId,
       action: params.action,
       action_category: params.actionCategory,
       target_type: params.targetType || null,

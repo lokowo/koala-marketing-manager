@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { buildEmailPrompt } from '../../../lib/prompts/email';
 import { getStudentContext, buildStudentBackgroundForEmail } from '../../../lib/server/student-context';
+import { logWork } from '../../../lib/worklog';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -148,6 +149,20 @@ export async function POST(request: NextRequest) {
     // 7. Deduct credit if user is logged in
     if (userId) {
       await deductCredit(userId).catch(() => {});
+    }
+
+    // 8. Log outreach generation
+    if (userId) {
+      await logWork({
+        userId,
+        role: 'system',
+        action: 'outreach_generate',
+        actionCategory: 'system_usage',
+        targetType: 'professor',
+        targetId: professorId,
+        targetName: `${prof.name} @ ${prof.university}`,
+        details: { tone, purpose, emailId: savedEmail?.id },
+      }).catch(() => {});
     }
 
     return Response.json({

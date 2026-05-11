@@ -39,7 +39,7 @@ export async function POST(
       await logWork({
         userId: caller.id,
         role: 'admin',
-        action: '删除用户',
+        action: 'user_delete',
         actionCategory: 'user_management',
         targetType: 'user',
         targetId,
@@ -67,7 +67,7 @@ export async function POST(
     await logWork({
       userId: caller.id,
       role: 'admin',
-      action: '申请删除用户',
+      action: 'user_delete_request',
       actionCategory: 'user_management',
       targetType: 'user',
       targetId,

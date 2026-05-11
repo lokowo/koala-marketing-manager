@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server';
 import { supabaseAdmin } from '../../lib/supabase/server';
+import { getServerUser } from '../../lib/auth';
+import { logWork } from '../../lib/worklog';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -97,6 +99,22 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
+    // Log blog creation
+    const user = await getServerUser();
+    if (user) {
+      const isPublish = status === 'published';
+      await logWork({
+        userId: user.id,
+        role: 'admin',
+        action: isPublish ? 'blog_publish' : 'blog_create',
+        actionCategory: 'blog_management',
+        targetType: 'blog_post',
+        targetId: data?.id,
+        targetName: title_zh || title_en || '未命名文章',
+        details: { category, status },
+      });
+    }
+
     return Response.json({ post: data });
   } catch (error) {
     console.error('[blog POST]', error);
@@ -124,6 +142,26 @@ export async function PUT(req: NextRequest) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
+    // Log blog update
+    const user = await getServerUser();
+    if (user) {
+      const isPinAction = updates.is_pinned !== undefined && Object.keys(updates).length <= 3;
+      const isPublish = updates.status === 'published';
+      const action = isPinAction
+        ? (updates.is_pinned ? 'blog_pin' : 'blog_unpin')
+        : isPublish ? 'blog_publish' : 'blog_update';
+      await logWork({
+        userId: user.id,
+        role: 'admin',
+        action,
+        actionCategory: 'blog_management',
+        targetType: 'blog_post',
+        targetId: id,
+        targetName: data?.title_zh || data?.title_en || '未命名文章',
+        details: { updatedFields: Object.keys(updates) },
+      });
+    }
+
     return Response.json({ post: data });
   } catch (error) {
     console.error('[blog PUT]', error);
@@ -139,11 +177,28 @@ export async function DELETE(req: NextRequest) {
       return Response.json({ error: 'id required' }, { status: 400 });
     }
 
+    // Get title before deleting
+    const { data: existing } = await db.from('blog_posts').select('title_zh, title_en').eq('id', id).single();
+
     const { error } = await db.from('blog_posts').delete().eq('id', id);
 
     if (error) {
       console.error('[blog DELETE]', error);
       return Response.json({ error: error.message }, { status: 500 });
+    }
+
+    // Log blog deletion
+    const user = await getServerUser();
+    if (user) {
+      await logWork({
+        userId: user.id,
+        role: 'admin',
+        action: 'blog_delete',
+        actionCategory: 'blog_management',
+        targetType: 'blog_post',
+        targetId: id,
+        targetName: existing?.title_zh || existing?.title_en || '未命名文章',
+      });
     }
 
     return Response.json({ success: true });

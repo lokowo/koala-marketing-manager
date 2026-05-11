@@ -42,8 +42,8 @@ export async function POST(req: NextRequest) {
     await logWork({
       userId: user.id,
       role: 'sales',
-      action: 'customer_contact',
-      actionCategory: 'sales_contact',
+      action: 'contact_log_add',
+      actionCategory: 'sales_communication',
       targetType: 'sales_customer',
       targetId: customerId,
       targetName: customer.user_profiles?.display_name || customer.user_profiles?.email || undefined,

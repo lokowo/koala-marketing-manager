@@ -107,12 +107,13 @@ export async function POST(req: Request) {
 
     await logWork({
       userId: user.id,
-      role: 'admin',
-      action: '提交角色申请',
-      actionCategory: 'role_management',
+      role: 'system',
+      action: 'role_application_submit',
+      actionCategory: 'system_registration',
       targetType: 'role_application',
       targetId: application?.id,
-      details: { appliedRole: role, reason },
+      targetName: `${fullName || email} 申请${roleName}`,
+      details: { appliedRole: role, reason, email },
     }).catch(() => {});
 
     notifyRoleApplication({

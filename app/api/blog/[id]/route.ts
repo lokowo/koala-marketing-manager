@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { getServerUser } from '../../../lib/auth';
+import { logWork } from '../../../lib/worklog';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -54,6 +56,25 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return Response.json({ error: error.message }, { status: 500 });
     }
 
+    const user = await getServerUser();
+    if (user) {
+      const isPinAction = updates.is_pinned !== undefined && Object.keys(updates).length <= 3;
+      const isPublish = updates.status === 'published';
+      const action = isPinAction
+        ? (updates.is_pinned ? 'blog_pin' : 'blog_unpin')
+        : isPublish ? 'blog_publish' : 'blog_update';
+      await logWork({
+        userId: user.id,
+        role: 'admin',
+        action,
+        actionCategory: 'blog_management',
+        targetType: 'blog_post',
+        targetId: id,
+        targetName: data?.title_zh || data?.title_en || '未命名文章',
+        details: { updatedFields: Object.keys(updates) },
+      });
+    }
+
     return Response.json({ post: data });
   } catch (error) {
     console.error('[blog/[id] PUT]', error);
@@ -65,10 +86,25 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const { id } = await params;
 
+    const { data: existing } = await db.from('blog_posts').select('title_zh, title_en').eq('id', id).single();
+
     const { error } = await db.from('blog_posts').delete().eq('id', id);
 
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });
+    }
+
+    const user = await getServerUser();
+    if (user) {
+      await logWork({
+        userId: user.id,
+        role: 'admin',
+        action: 'blog_delete',
+        actionCategory: 'blog_management',
+        targetType: 'blog_post',
+        targetId: id,
+        targetName: existing?.title_zh || existing?.title_en || '未命名文章',
+      });
     }
 
     return Response.json({ success: true });

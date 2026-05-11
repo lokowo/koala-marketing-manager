@@ -102,11 +102,11 @@ export async function POST(req: NextRequest) {
     await logWork({
       userId: user.id,
       role: 'admin',
-      action: action === 'approve' ? '批准角色申请' : '拒绝角色申请',
-      actionCategory: 'role_management',
+      action: action === 'approve' ? 'role_application_approve' : 'role_application_reject',
+      actionCategory: 'user_management',
       targetType: 'user',
       targetId: app.user_id,
-      targetName: app.email || app.full_name,
+      targetName: app.full_name || app.email || '未知用户',
       details: { appliedRole: app.applied_role, rejectReason },
     }).catch(() => {});
 

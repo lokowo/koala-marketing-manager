@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       await logWork({
         userId: caller.id,
         role: 'admin',
-        action: '批量删除用户',
+        action: 'user_batch_delete',
         actionCategory: 'user_management',
         targetType: 'user',
         targetId: uid,

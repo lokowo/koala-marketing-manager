@@ -140,7 +140,7 @@ export async function PATCH(
     await logWork({
       userId: caller.id,
       role: 'admin',
-      action: action === 'add_note' ? '添加用户备注' : '更新用户资料',
+      action: action === 'add_note' ? 'user_add_note' : 'user_update',
       actionCategory: 'user_management',
       targetType: 'user',
       targetId: id,
@@ -184,7 +184,7 @@ export async function DELETE(
     await logWork({
       userId: caller.id,
       role: 'admin',
-      action: '删除用户',
+      action: 'user_delete',
       actionCategory: 'user_management',
       targetType: 'user',
       targetId: id,

@@ -72,7 +72,7 @@ export async function PATCH(req: NextRequest) {
     await logWork({
       userId: caller.id,
       role: 'admin',
-      action: '变更用户角色',
+      action: 'user_role_change',
       actionCategory: 'user_management',
       targetType: 'user',
       targetId: userId,

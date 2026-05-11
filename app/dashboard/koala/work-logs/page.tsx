@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 
 interface WorkLog {
   id: string;
-  user_id: string;
+  admin_id: string;
   action: string;
   action_category: string | null;
   target_type: string;
@@ -18,10 +18,26 @@ interface WorkLog {
 }
 
 const ACTION_LABELS: Record<string, string> = {
+  // Admin / Content
   blog_generate: '生成博客',
   blog_generate_professor: '生成教授文章',
+  blog_create: '创建文章',
+  blog_update: '编辑文章',
+  blog_publish: '发布文章',
+  blog_delete: '删除文章',
+  blog_pin: '置顶文章',
+  blog_unpin: '取消置顶',
   professor_create: '创建教授',
+  professor_update: '编辑教授',
   professor_delete: '删除教授',
+  // User management
+  user_role_change: '修改角色',
+  user_delete: '删除用户',
+  user_batch_delete: '批量删除',
+  user_view: '查看用户',
+  role_application_approve: '审批角色申请',
+  role_application_reject: '拒绝角色申请',
+  // Sales
   customer_update: '客户跟进',
   create_qrcode: '生成推广码',
   customer_registered: '客户注册',
@@ -29,12 +45,26 @@ const ACTION_LABELS: Record<string, string> = {
   generate_email_for_customer: '帮客户生成套磁信',
   add_customer_note: '客户备注',
   share_qrcode: '分享二维码',
+  contact_log_add: '添加沟通记录',
+  // System / User actions
+  user_register: '新用户注册',
+  role_application_submit: '提交角色申请',
+  outreach_generate: '生成套磁信',
+  outreach_send: '发送套磁信',
+  ai_chat: 'AI 对话',
+  professor_search: '搜索教授',
+  // Admin user actions
+  user_add_note: '添加用户备注',
+  user_update: '更新用户资料',
+  user_delete_request: '申请删除用户',
+  customer_contact: '客户沟通',
 };
 
 const ADMIN_CATEGORIES = [
-  { value: 'blog_generate', label: '文章管理' },
-  { value: 'professor_create', label: '教授管理' },
-  { value: 'email_send', label: '邮件管理' },
+  { value: 'blog_management', label: '文章管理' },
+  { value: 'professor_management', label: '教授管理' },
+  { value: 'user_management', label: '用户管理' },
+  { value: 'admin_general', label: '其他管理' },
 ];
 
 const SALES_CATEGORIES = [
@@ -42,6 +72,11 @@ const SALES_CATEGORIES = [
   { value: 'sales_outreach', label: '套磁信' },
   { value: 'sales_communication', label: '客户沟通' },
   { value: 'sales_marketing', label: '营销推广' },
+];
+
+const SYSTEM_CATEGORIES = [
+  { value: 'system_registration', label: '用户注册' },
+  { value: 'system_usage', label: '平台使用' },
 ];
 
 export default function WorkLogsPage() {
@@ -95,7 +130,8 @@ export default function WorkLogsPage() {
 
   const categoryOptions = filterRole === 'admin' ? ADMIN_CATEGORIES
     : filterRole === 'sales' ? SALES_CATEGORIES
-    : [...ADMIN_CATEGORIES, ...SALES_CATEGORIES];
+    : filterRole === 'system' ? SYSTEM_CATEGORIES
+    : [...ADMIN_CATEGORIES, ...SALES_CATEGORIES, ...SYSTEM_CATEGORIES];
 
   return (
     <div>
@@ -121,6 +157,7 @@ export default function WorkLogsPage() {
             <option value="">全部角色</option>
             <option value="admin">Admin</option>
             <option value="sales">Sales</option>
+            <option value="system">System</option>
           </select>
           <select
             value={filterAdmin}
@@ -204,7 +241,7 @@ export default function WorkLogsPage() {
                         </td>
                         <td className="px-4 py-2.5">
                           <Link
-                            href={`/dashboard/koala/work-logs/${log.user_id}?role=${logRole}`}
+                            href={`/dashboard/koala/work-logs/${log.admin_id}?role=${logRole}`}
                             className="text-slate-700 hover:text-amber-600 no-underline font-medium"
                             onClick={e => e.stopPropagation()}
                           >
@@ -228,7 +265,7 @@ export default function WorkLogsPage() {
                         <tr>
                           <td colSpan={6} className="px-4 py-3 bg-slate-50">
                             <div className="text-xs space-y-1.5">
-                              <div><span className="text-slate-400 w-16 inline-block">操作人 ID:</span> <span className="text-slate-600 font-mono text-[10px]">{log.user_id}</span></div>
+                              <div><span className="text-slate-400 w-16 inline-block">操作人 ID:</span> <span className="text-slate-600 font-mono text-[10px]">{log.admin_id}</span></div>
                               <div><span className="text-slate-400 w-16 inline-block">角色:</span> <span className="text-slate-600">{logRole}</span></div>
                               <div><span className="text-slate-400 w-16 inline-block">目标类型:</span> <span className="text-slate-600">{log.target_type}</span></div>
                               {log.target_id && <div><span className="text-slate-400 w-16 inline-block">目标 ID:</span> <span className="text-slate-600 font-mono text-[10px]">{log.target_id}</span></div>}
