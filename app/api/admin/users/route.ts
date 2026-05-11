@@ -62,6 +62,18 @@ export async function PATCH(req: NextRequest) {
       return Response.json({ error: 'Cannot modify another super_admin' }, { status: 403 });
     }
 
+    // Ensure user_profiles row exists (FK requirement for user_roles)
+    const { data: targetAuth } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const targetEmail = targetAuth?.user?.email || '';
+    await db
+      .from('user_profiles')
+      .upsert({
+        id: userId,
+        email: targetEmail,
+        display_name: targetEmail.split('@')[0] || 'User',
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id', ignoreDuplicates: true });
+
     const { error } = await db
       .from('user_roles')
       .upsert({ user_id: userId, role }, { onConflict: 'user_id' });
