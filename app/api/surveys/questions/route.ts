@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     const user = await getServerUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     const role = await getUserRole(user.id);
-    if (!role || !['super_admin', 'admin'].includes(role)) {
+    if (!role || !['super_admin', 'admin', 'sales'].includes(role)) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -41,7 +41,7 @@ export async function PUT(req: NextRequest) {
     const user = await getServerUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     const role = await getUserRole(user.id);
-    if (!role || !['super_admin', 'admin'].includes(role)) {
+    if (!role || !['super_admin', 'admin', 'sales'].includes(role)) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -68,7 +68,7 @@ export async function DELETE(req: NextRequest) {
     const user = await getServerUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     const role = await getUserRole(user.id);
-    if (!role || !['super_admin', 'admin'].includes(role)) {
+    if (!role || !['super_admin', 'admin', 'sales'].includes(role)) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 

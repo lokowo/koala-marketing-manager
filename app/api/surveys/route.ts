@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
     const user = await getServerUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     const role = await getUserRole(user.id);
-    if (!role || !['super_admin', 'admin'].includes(role)) {
-      return Response.json({ error: 'Only admins can create surveys' }, { status: 403 });
+    if (!role || !['super_admin', 'admin', 'sales'].includes(role)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     await logWork({
       userId: user.id,
-      role: role === 'super_admin' ? 'admin' : role as 'admin',
+      role: role === 'super_admin' ? 'admin' : role as 'admin' | 'sales',
       action: '创建问卷',
       actionCategory: 'survey',
       targetType: 'survey',
