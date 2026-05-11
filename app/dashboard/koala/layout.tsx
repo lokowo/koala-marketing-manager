@@ -71,11 +71,11 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
       },
       { icon: '📝', label: '博客管理', href: '/dashboard/koala/blog' },
       {
-        icon: '📋', label: '问卷调研',
-        href: '/dashboard/koala/surveys',
+        icon: '📣', label: '营销工具',
+        href: '/dashboard/koala/marketing-tools',
         children: [
-          { label: '问卷列表', href: '/dashboard/koala/surveys' },
-          { label: '新建问卷', href: '/dashboard/koala/surveys/create' },
+          { label: '工具总览', href: '/dashboard/koala/marketing-tools' },
+          { label: '调研问卷', href: '/dashboard/koala/surveys' },
         ],
       },
       { icon: '👥', label: '用户管理', href: '/dashboard/koala/users', adminOnly: true },
