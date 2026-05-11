@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { getProfessor, updateProfessor, deleteProfessor } from '../../../lib/services/professorService';
 import { getServerUser } from '../../../lib/auth';
 import { logAdminAction } from '../../../lib/worklog';
+import { notifySuperAdmins } from '../../../lib/notifications';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -29,6 +30,7 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
   if (!deleted) return Response.json({ error: 'Not found' }, { status: 404 });
 
   await logAdminAction(user.id, 'professor_delete', 'professor', id);
+  await notifySuperAdmins('教授删除', `教授 ${id} 已被删除。`).catch(() => {});
 
   return Response.json({ success: true });
 }

@@ -107,12 +107,22 @@ export default function QualityPage() {
           {/* Stats overview */}
           {stats && (
             <>
-              <div className="bg-white rounded-xl border border-slate-200 p-4">
-                <h3 className="text-sm font-semibold text-slate-800 mb-2">📊 教授数据概览</h3>
-                <div className="text-xs text-slate-600 space-y-1">
-                  <div className="flex justify-between"><span>已验证教授总数</span><span className="font-bold text-slate-900">{stats.total.toLocaleString()}</span></div>
-                  <div className="flex justify-between"><span>├ 数据完整（所有核心字段）</span><span className="font-bold text-emerald-600">{stats.complete.toLocaleString()}</span></div>
-                  <div className="flex justify-between"><span>└ 缺少部分字段</span><span className="font-bold text-amber-600">{(stats.total - stats.complete).toLocaleString()}</span></div>
+              <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <div className="grid grid-cols-3 divide-x divide-slate-200">
+                  <div className="text-center px-4">
+                    <div className="text-3xl font-bold text-slate-900">{stats.total.toLocaleString()}</div>
+                    <div className="text-xs text-slate-500 mt-1">已验证教授总数</div>
+                  </div>
+                  <div className="text-center px-4">
+                    <div className="text-3xl font-bold text-emerald-600">{stats.complete.toLocaleString()}</div>
+                    <div className="text-xs text-slate-500 mt-1">数据完整</div>
+                    <div className="text-[10px] text-slate-400">{stats.total > 0 ? Math.round((stats.complete / stats.total) * 100) : 0}%</div>
+                  </div>
+                  <div className="text-center px-4">
+                    <div className="text-3xl font-bold text-amber-600">{(stats.total - stats.complete).toLocaleString()}</div>
+                    <div className="text-xs text-slate-500 mt-1">缺少部分字段</div>
+                    <div className="text-[10px] text-slate-400">{stats.total > 0 ? Math.round(((stats.total - stats.complete) / stats.total) * 100) : 0}%</div>
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

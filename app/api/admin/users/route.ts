@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { requireSuperAdmin } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { logWork } from '../../../lib/worklog';
-import { notifyUser } from '../../../lib/notifications';
+import { notifyUser, notifySuperAdmins } from '../../../lib/notifications';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -79,7 +79,8 @@ export async function PATCH(req: NextRequest) {
       details: { newRole: role, oldRole: existing?.role },
     }).catch(() => {});
 
-    await notifyUser(userId, '角色变更', `你的角色已变更为「${roleLabels[role] || role}」。`).catch(() => {});
+    await notifyUser(userId, '角色变更', `你的角色已被调整为「${roleLabels[role] || role}」。`).catch(() => {});
+    await notifySuperAdmins('用户角色变更', `用户 ${userId} 的角色已被调整为「${roleLabels[role] || role}」。`).catch(() => {});
 
     return Response.json({ success: true });
   } catch (error) {

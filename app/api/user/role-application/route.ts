@@ -2,6 +2,7 @@ import { getServerUser } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { notifyRoleApplication } from '../../../lib/server/slack';
 import { logWork } from '../../../lib/worklog';
+import { notifySuperAdmins } from '../../../lib/notifications';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -91,22 +92,8 @@ export async function POST(req: Request) {
       role_applied_at: new Date().toISOString(),
     }).eq('id', user.id);
 
-    const { data: superAdmins } = await db
-      .from('user_roles')
-      .select('user_id')
-      .eq('role', 'super_admin');
-
-    if (superAdmins?.length) {
-      const roleName = role === 'admin' ? '管理员' : '销售';
-      await db.from('notifications').insert(
-        superAdmins.map((sa: { user_id: string }) => ({
-          user_id: sa.user_id,
-          type: 'role_application',
-          title: '新角色申请',
-          content: `有用户申请${roleName}角色，请前往角色管理审核。`,
-        }))
-      );
-    }
+    const roleName = role === 'admin' ? '管理员' : '销售';
+    await notifySuperAdmins('新角色申请', `用户 ${fullName || email} 申请${roleName}角色，请前往角色管理审核。`).catch(() => {});
 
     await logWork({
       userId: user.id,
@@ -118,7 +105,6 @@ export async function POST(req: Request) {
       details: { appliedRole: role, reason },
     }).catch(() => {});
 
-    const roleName = role === 'admin' ? '管理员' : '销售';
     notifyRoleApplication({
       userName: fullName || email,
       email,

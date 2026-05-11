@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { requireAdmin, requireSuperAdmin } from '../../../../lib/auth';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
 import { logWork } from '../../../../lib/worklog';
-import { notifyUserAction } from '../../../../lib/notifications';
+import { notifyUser, notifySuperAdmins, notifyUserAction } from '../../../../lib/notifications';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -113,6 +113,11 @@ export async function PATCH(
       if (Object.keys(updates).length > 0) {
         const { error } = await db.from('user_profiles').update(updates).eq('id', id);
         if (error) throw error;
+      }
+
+      if (credits_remaining !== undefined) {
+        await notifyUser(id, '积分变更', `管理员已将你的积分余额调整为 ${Number(credits_remaining)}。`).catch(() => {});
+        await notifySuperAdmins('积分手动充值', `用户 ${id} 的积分已被调整为 ${Number(credits_remaining)}。`).catch(() => {});
       }
     }
 
