@@ -857,6 +857,16 @@ export async function getSurveyAnalytics(surveyId: string, salesCode?: string): 
 
 // ── Public Survey Flow (share-link → response → registration) ──
 
+async function syncSalesQrcodeScan(shortCode: string, newScanCount: number) {
+  try {
+    await db.from('sales_qrcodes')
+      .update({ scan_count: newScanCount })
+      .eq('code', shortCode);
+  } catch {
+    // Non-critical: don't fail the main flow if sync fails
+  }
+}
+
 export async function resolveShareCode(code: string): Promise<{
   survey: any;
   questions: any[];
@@ -888,6 +898,9 @@ export async function resolveShareCode(code: string): Promise<{
   await db.from('survey_share_links')
     .update({ scan_count: newScanCount })
     .eq('id', link.id);
+
+  // Sync scan_count to sales_qrcodes
+  await syncSalesQrcodeScan(link.short_code, newScanCount);
 
   return {
     survey,
@@ -982,11 +995,19 @@ export async function completeResponse(
     .select('share_link_id').eq('id', responseId).single();
   if (resp?.share_link_id) {
     const { data: link } = await db.from('survey_share_links')
-      .select('response_count').eq('id', resp.share_link_id).single();
+      .select('response_count, short_code').eq('id', resp.share_link_id).single();
     if (link) {
+      const newCount = (link.response_count || 0) + 1;
       await db.from('survey_share_links')
-        .update({ response_count: (link.response_count || 0) + 1 })
+        .update({ response_count: newCount })
         .eq('id', resp.share_link_id);
+
+      // Sync to sales_qrcodes (survey responses map to register_count)
+      if (link.short_code) {
+        await db.from('sales_qrcodes')
+          .update({ register_count: newCount })
+          .eq('code', link.short_code);
+      }
     }
   }
 
@@ -1048,13 +1069,20 @@ export async function registerFromSurvey(
     .single();
   if (resp?.share_link_id) {
     const { data: linkRow } = await db.from('survey_share_links')
-      .select('registration_count')
+      .select('registration_count, short_code')
       .eq('id', resp.share_link_id)
       .single();
     const newRegCount = ((linkRow?.registration_count as number) || 0) + 1;
     await db.from('survey_share_links')
       .update({ registration_count: newRegCount })
       .eq('id', resp.share_link_id);
+
+    // Sync to sales_qrcodes
+    if (linkRow?.short_code) {
+      await db.from('sales_qrcodes')
+        .update({ register_count: newRegCount })
+        .eq('code', linkRow.short_code);
+    }
   }
 
   // f. Get survey title and upsert into sales_customers

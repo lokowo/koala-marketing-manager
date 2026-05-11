@@ -256,7 +256,7 @@ export default function SalesDashboard() {
             {qrcodes.length > 0 ? (
               <div className="space-y-3">
                 {qrcodes.map(qr => {
-                  const chLabel: Record<string, string> = { wechat: '📱 微信', xiaohongshu: '📕 小红书', linkedin: '💼 LinkedIn', offline: '🏫 线下', douyin: '🎵 抖音', other: '📋 其他' };
+                  const chLabel: Record<string, string> = { wechat: '📱 微信', xiaohongshu: '📕 小红书', linkedin: '💼 LinkedIn', offline: '🏫 线下', douyin: '🎵 抖音', survey: '📋 调研', other: '🔗 其他' };
                   return (
                     <div key={qr.id} className="rounded-lg p-3 bg-[#F9FAFB] border border-[#E5E7EB]">
                       <div className="flex items-start gap-3">
