@@ -40,7 +40,11 @@ export async function POST(req: NextRequest) {
 
     const { channel, label } = await req.json();
     const ch = channel || 'wechat';
-    const lbl = label || '';
+    const lbl = (label || '').trim();
+
+    if (!lbl) {
+      return Response.json({ error: '备注不能为空，请填写备注方便追踪不同渠道' }, { status: 400 });
+    }
 
     // Check for existing code with same (sales_user_id, channel, label)
     let existingQuery = db

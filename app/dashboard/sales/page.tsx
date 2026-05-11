@@ -75,11 +75,22 @@ export default function SalesDashboard() {
     setLoading(false);
   }
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://koalaphd.com';
+
+  function getQrUrl(code: string) {
+    return `${baseUrl}/r/${code}`;
+  }
+
+  function getQrImageUrl(code: string) {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&format=png&data=${encodeURIComponent(getQrUrl(code))}`;
+  }
+
   async function createQRCode() {
+    if (!newLabel.trim()) { alert('请填写备注，方便追踪不同渠道的效果'); return; }
     const res = await fetch('/api/sales/qrcode', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ channel: newChannel, label: newLabel }),
+      body: JSON.stringify({ channel: newChannel, label: newLabel.trim() }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -93,13 +104,11 @@ export default function SalesDashboard() {
   }
 
   function downloadQR(code: string) {
-    const url = `${window.location.origin}/r/${code}`;
-    const text = encodeURIComponent(url);
-    window.open(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${text}`, '_blank');
+    window.open(getQrImageUrl(code), '_blank');
   }
 
   function shareQR(code: string, label: string | null) {
-    const url = `${window.location.origin}/r/${code}`;
+    const url = getQrUrl(code);
     if (navigator.share) {
       navigator.share({ title: label || 'Koala PhD 推广链接', url });
     } else {
@@ -210,64 +219,80 @@ export default function SalesDashboard() {
             </div>
 
             {showQrCreate && (
-              <div className="flex gap-2 mb-3">
-                <input
-                  placeholder="标签（如：朋友圈）"
-                  value={newLabel}
-                  onChange={e => setNewLabel(e.target.value)}
-                  className="flex-1 rounded-lg px-3 py-2 text-xs focus:outline-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] placeholder:text-[#9CA3AF]"
-                />
-                <select
-                  value={newChannel}
-                  onChange={e => setNewChannel(e.target.value)}
-                  className="rounded-lg px-3 py-2 text-xs focus:outline-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827]"
-                >
-                  <option value="wechat">微信</option>
-                  <option value="xiaohongshu">小红书</option>
-                  <option value="linkedin">LinkedIn</option>
-                  <option value="offline">线下活动</option>
-                  <option value="douyin">抖音</option>
-                  <option value="other">其他</option>
-                </select>
-                <button onClick={createQRCode} className="px-3 py-2 rounded-lg text-xs font-medium bg-[#D4A843] text-white">
-                  生成
-                </button>
+              <div className="space-y-2 mb-3">
+                <div className="flex gap-2">
+                  <input
+                    placeholder="备注（必填，如：微信群A、线下活动B）"
+                    value={newLabel}
+                    onChange={e => setNewLabel(e.target.value)}
+                    className="flex-1 rounded-lg px-3 py-2 text-xs focus:outline-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] placeholder:text-[#9CA3AF]"
+                  />
+                  <select
+                    value={newChannel}
+                    onChange={e => setNewChannel(e.target.value)}
+                    className="rounded-lg px-3 py-2 text-xs focus:outline-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827]"
+                  >
+                    <option value="wechat">微信</option>
+                    <option value="xiaohongshu">小红书</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="offline">线下活动</option>
+                    <option value="douyin">抖音</option>
+                    <option value="other">其他</option>
+                  </select>
+                  <button
+                    onClick={createQRCode}
+                    disabled={!newLabel.trim()}
+                    className="px-3 py-2 rounded-lg text-xs font-medium bg-[#D4A843] text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    生成
+                  </button>
+                </div>
+                {!newLabel.trim() && (
+                  <p className="text-[10px] text-[#EF4444]">请填写备注，方便追踪不同渠道的效果</p>
+                )}
               </div>
             )}
 
             {qrcodes.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {qrcodes.map(qr => {
                   const chLabel: Record<string, string> = { wechat: '📱 微信', xiaohongshu: '📕 小红书', linkedin: '💼 LinkedIn', offline: '🏫 线下', douyin: '🎵 抖音', other: '📋 其他' };
                   return (
-                    <div key={qr.id} className="rounded-lg px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB]">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/10 text-[#374151]">
-                            {chLabel[qr.channel] || qr.channel}
-                          </span>
-                          {qr.label && <span className="text-[10px] text-[#6B7280]">{qr.label}</span>}
-                        </div>
-                        <div className="flex items-center gap-3 text-[10px] text-[#6B7280]">
-                          <span>👁 {qr.scan_count} 扫描</span>
-                          <span>📥 {qr.register_count} 注册</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between mt-1.5">
-                        <span className="text-[10px] font-mono text-[#D4A843]">{qr.code}</span>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => downloadQR(qr.code)}
-                            className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
-                          >
-                            二维码
-                          </button>
-                          <button
-                            onClick={() => shareQR(qr.code, qr.label)}
-                            className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
-                          >
-                            分享
-                          </button>
+                    <div key={qr.id} className="rounded-lg p-3 bg-[#F9FAFB] border border-[#E5E7EB]">
+                      <div className="flex items-start gap-3">
+                        <img
+                          src={getQrImageUrl(qr.code)}
+                          alt={`QR: ${qr.label || qr.code}`}
+                          width={100}
+                          height={100}
+                          className="rounded border border-[#E5E7EB] bg-white flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/10 text-[#374151]">
+                              {chLabel[qr.channel] || qr.channel}
+                            </span>
+                            {qr.label && <span className="text-xs font-medium text-[#111827]">{qr.label}</span>}
+                          </div>
+                          <div className="text-[10px] font-mono text-[#D4A843]">{qr.code}</div>
+                          <div className="flex items-center gap-3 text-[10px] text-[#6B7280]">
+                            <span>👁 {qr.scan_count} 扫描</span>
+                            <span>📥 {qr.register_count} 注册</span>
+                          </div>
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              onClick={() => downloadQR(qr.code)}
+                              className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
+                            >
+                              下载大图
+                            </button>
+                            <button
+                              onClick={() => shareQR(qr.code, qr.label)}
+                              className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
+                            >
+                              分享链接
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
