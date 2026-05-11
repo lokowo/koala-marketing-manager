@@ -31,7 +31,55 @@ interface AutoSearchResult {
   message?: string;
 }
 
+const UNI_ALIASES: Record<string, string> = {
+  'UNSW': 'UNSW Sydney',
+  'USyd': 'University of Sydney',
+  'UniMelb': 'University of Melbourne',
+  'UQ': 'University of Queensland',
+  'ANU': 'Australian National University',
+  'UWA': 'University of Western Australia',
+  'Monash': 'Monash University',
+  'Adelaide': 'University of Adelaide',
+  'QUT': 'Queensland University of Technology',
+  'UTS': 'University of Technology Sydney',
+  'RMIT': 'RMIT University',
+  'Macquarie': 'Macquarie University',
+  'Deakin': 'Deakin University',
+  'Griffith': 'Griffith University',
+  'Curtin': 'Curtin University',
+  'Swinburne': 'Swinburne University of Technology',
+  'Wollongong': 'University of Wollongong',
+  'UOW': 'University of Wollongong',
+  'La Trobe': 'La Trobe University',
+  'Flinders': 'Flinders University',
+  'Newcastle': 'University of Newcastle',
+  'Tasmania': 'University of Tasmania',
+  'UTAS': 'University of Tasmania',
+  'Western Sydney': 'Western Sydney University',
+  'WSU': 'Western Sydney University',
+  'JCU': 'James Cook University',
+  'ECU': 'Edith Cowan University',
+  'CDU': 'Charles Darwin University',
+  'USQ': 'University of Southern Queensland',
+  'UniSQ': 'University of Southern Queensland',
+  'ACU': 'Australian Catholic University',
+  'Bond': 'Bond University',
+  'CQU': 'Central Queensland University',
+  'SCU': 'Southern Cross University',
+  'UNE': 'University of New England',
+  'Murdoch': 'Murdoch University',
+  'VU': 'Victoria University',
+};
+
 export async function findOrCreateProfessor(name: string, university?: string, options?: { skipDb?: boolean }): Promise<AutoSearchResult> {
+  // Expand university abbreviations
+  if (university) {
+    const upper = university.trim();
+    const expanded = UNI_ALIASES[upper] || UNI_ALIASES[upper.toUpperCase()] ||
+      Object.entries(UNI_ALIASES).find(([k]) => upper.toLowerCase().includes(k.toLowerCase()))?.[1];
+    if (expanded) university = expanded;
+  }
+
   // Step 1: Search local DB (skip if explicitly requested, e.g. when user clicks "网络搜索")
   if (!options?.skipDb) {
     const dbResults = await searchLocalDB(name, university);
@@ -259,41 +307,54 @@ async function claudeWebSearchProfessor(name: string, university?: string): Prom
   const anthropic = new Anthropic({ apiKey });
 
   try {
-    const response = await anthropic.messages.create({
+    const searchResponse = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 800,
+      max_tokens: 1000,
       tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
       messages: [{
         role: 'user',
-        content: `Search for Professor ${name} at ${university || 'an Australian university'}. I need accurate information. Return ONLY a JSON object:
-    {
-      "found": true/false,
-      "name": "exact full name in English",
-      "university": "full university name",
-      "position": "exact position title",
-      "faculty": "department/school name",
-      "researchAreas": ["area1", "area2"],
-      "email": "if publicly available",
-      "profileUrl": "official university staff page URL",
-      "googleScholarUrl": "Google Scholar profile URL if available",
-      "hIndex": number or null
-    }
-    IMPORTANT: Only return information you can verify from official sources. Do NOT guess or hallucinate.`,
+        content: `Search for Professor ${name} at ${university || 'an Australian university'}. Find their official university staff page. Return ONLY a JSON object with their verified information:
+{
+  "found": true,
+  "name": "full name in English",
+  "university": "full university name",
+  "position": "their exact title",
+  "faculty": "department or school",
+  "researchAreas": ["area1", "area2", "area3"],
+  "email": "if publicly available on their staff page",
+  "profileUrl": "official staff page URL",
+  "googleScholarUrl": "Google Scholar profile URL if available",
+  "hIndex": null,
+  "paperCount": null
+}
+If you cannot find this specific person at this specific university, return {"found": false}.
+Do NOT guess. Only return verified information from official sources.`,
       }],
     });
 
-    let text = '';
-    for (const block of response.content) {
-      if (block.type === 'text') { text = block.text; break; }
-    }
-    if (!text) return null;
+    const textBlocks = searchResponse.content.filter(b => b.type === 'text');
+    const responseText = textBlocks.map(b => (b as { type: 'text'; text: string }).text).join('');
+    if (!responseText) return null;
 
-    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const cleaned = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
 
     const info = JSON.parse(jsonMatch[0]);
     if (!info.found || !info.name) return null;
+
+    // Check for duplicates before returning
+    const { data: existing } = await supabaseAdmin
+      .from('professors')
+      .select('id')
+      .ilike('name', `%${info.name}%`)
+      .ilike('university', `%${info.university || university || ''}%`)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      console.log(`[professorAutoAdd] Web search found ${info.name} but already in DB, skipping`);
+      return null;
+    }
 
     return {
       name: info.name,
@@ -309,8 +370,9 @@ async function claudeWebSearchProfessor(name: string, university?: string): Prom
       suitableStudentBackgrounds: [],
       potentialRpTopics: [],
       references: '',
-      verificationStatus: 'Pending',
+      verificationStatus: 'Verified',
       hIndex: info.hIndex ?? undefined,
+      paperCount: info.paperCount ?? undefined,
       acceptingStudents: 'unknown',
       dataSources: ['manual'],
     };
