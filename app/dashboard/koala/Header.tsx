@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, X } from 'lucide-react';
+import Link from 'next/link';
+import { Search, X, ExternalLink } from 'lucide-react';
 
 const TITLES: Record<string, string> = {
   '/dashboard/koala': '仪表盘',
@@ -80,6 +81,15 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
         </button>
       )}
       <h2 className="text-base md:text-lg font-semibold text-slate-900 flex-1 truncate">{title}</h2>
+
+      <Link
+        href="/koala/home"
+        target="_blank"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors no-underline"
+      >
+        <ExternalLink className="size-3.5" />
+        <span className="hidden sm:inline">前往前端</span>
+      </Link>
 
       {/* Search trigger */}
       <button
