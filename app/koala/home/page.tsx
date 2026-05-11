@@ -80,6 +80,7 @@ function fmtNum(n?: number): string {
 
 interface BlogPost {
   id: string;
+  slug?: string;
   tag: string;
   date: string;
   title: string;
@@ -166,6 +167,7 @@ export default function HomePage() {
         const posts = d.posts ?? [];
         setBlogPosts(posts.map((p: Record<string, unknown>) => ({
           id: p.id as string,
+          slug: (p.slug as string) || undefined,
           tag: CATEGORY_LABELS[p.category as string] || (p.category as string) || '博客',
           date: p.published_at
             ? new Date(p.published_at as string).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })
@@ -518,7 +520,7 @@ export default function HomePage() {
             {displayPosts.map(b => (
               <Link
                 key={b.id}
-                href="/koala/blog"
+                href={`/koala/blog/${b.slug || b.id}`}
                 className="rounded-2xl p-4 flex flex-col gap-2 no-underline"
                 style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 4px 16px rgba(196,160,80,0.08)', border: '1px solid rgba(201,169,110,0.06)' }}
               >

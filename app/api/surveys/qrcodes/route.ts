@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     const salesCode = `s_${user.id.slice(0, 8)}_${Date.now().toString(36)}`;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://koalastudy.net';
-    const surveyUrl = `${baseUrl}/s/${survey.share_code}?ref=${salesCode}`;
+    const surveyUrl = `${baseUrl}/s/${salesCode}`;
 
     const qrDataUrl = await QRCode.toDataURL(surveyUrl, {
       width: 512,
