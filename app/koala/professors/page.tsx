@@ -172,6 +172,7 @@ function ProfessorsPageInner() {
   const [webSearching, setWebSearching] = useState(false);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [addingName, setAddingName] = useState<string | null>(null);
+  const [multipleWarning, setMultipleWarning] = useState<string | null>(null);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -198,6 +199,7 @@ function ProfessorsPageInner() {
     setProfessors([]);
     setWebResults([]);
     setWebSearching(false);
+    setMultipleWarning(null);
     setPage(1);
     setHasMore(true);
     apiFetch(filters)
@@ -211,6 +213,9 @@ function ProfessorsPageInner() {
           fetch(`/api/professors/auto-search?name=${encodeURIComponent(debouncedSearch)}`)
             .then(r => r.json())
             .then(wd => {
+              if (wd.multipleResults && wd.message) {
+                setMultipleWarning(wd.message);
+              }
               if (wd.created > 0) {
                 apiFetch(filters)
                   .then(refreshed => {
@@ -542,6 +547,20 @@ function ProfessorsPageInner() {
           professors.map(p => <ProfCard key={p.id} p={p} />)
         )}
       </div>
+
+      {/* Multiple results warning */}
+      {multipleWarning && !loading && (
+        <div className="px-4 pt-2 lg:px-0">
+          <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)' }}>
+            <p className="text-xs font-medium" style={{ color: '#eab308' }}>
+              ⚠️ {multipleWarning}
+            </p>
+            <p className="text-xs mt-1" style={{ color: '#6a7a7e' }}>
+              搜索到同名研究者，请通过大学和研究方向确认你要找的教授。
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Web search fallback */}
       {debouncedSearch && !loading && (webSearching || webResults.length > 0) && (

@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
       results: result.professors,
       created: result.created,
       total: result.professors.length,
+      multipleResults: result.multipleResults ?? false,
+      message: result.message ?? null,
     });
   } catch (error) {
     console.error('[professors/auto-search GET]', error);

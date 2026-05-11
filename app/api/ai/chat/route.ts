@@ -434,9 +434,24 @@ H指数：${prof.hIndex ?? '未知'}`;
             if (searchResults.length === 0) {
               toolResult = JSON.stringify({ professors: [], message: '未找到匹配的教授。数据库中可能没有该研究方向的教授数据。' });
             } else {
+              // Check for auto-imported professors that need verification warnings
+              const hasAutoImported = searchResults.some(r =>
+                r.professor.dataSources?.includes('manual') && !r.professor.email
+              );
+              const hasDuplicateNames = new Set(searchResults.map(r => r.professor.name)).size < searchResults.length;
+
+              let warning = '';
+              if (hasAutoImported) {
+                warning = '\n\n⚠️ 注意：以下部分教授信息来自学术数据库自动匹配，建议你在学校官网确认后再发送套磁信。';
+              }
+              if (hasDuplicateNames) {
+                warning += '\n⚠️ 搜索结果中存在同名教授，请特别注意核实是否为你想联系的那位教授。';
+              }
+
               toolResult = JSON.stringify({
                 professors: searchResults.map(r => professorToToolResult(r.professor, r.score, r.reasons)),
                 total: searchResults.length,
+                warning: warning || undefined,
               });
             }
           } catch (err) {

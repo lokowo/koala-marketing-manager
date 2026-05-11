@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../supabase/server';
 import { createProfessor } from './professorService';
 import type { Professor } from '../types';
+import Anthropic from '@anthropic-ai/sdk';
 
 interface OpenAlexAuthor {
   id: string;
@@ -26,6 +27,8 @@ interface AutoSearchResult {
   source: 'db' | 'openalex' | 'web';
   professors: Professor[];
   created: number;
+  multipleResults?: boolean;
+  message?: string;
 }
 
 export async function findOrCreateProfessor(name: string, university?: string, options?: { skipDb?: boolean }): Promise<AutoSearchResult> {
@@ -33,13 +36,43 @@ export async function findOrCreateProfessor(name: string, university?: string, o
   if (!options?.skipDb) {
     const dbResults = await searchLocalDB(name, university);
     if (dbResults.length > 0) {
+      if (dbResults.length > 1) {
+        return {
+          source: 'db',
+          professors: dbResults,
+          created: 0,
+          multipleResults: true,
+          message: `找到 ${dbResults.length} 位名为 "${name}" 的研究者，请确认：`,
+        };
+      }
       return { source: 'db', professors: dbResults, created: 0 };
     }
   }
 
-  // Step 2: Search OpenAlex (always reached when skipDb=true)
+  // Step 2: Search OpenAlex with strict university matching
   const openAlexResults = await searchOpenAlex(name, university);
   if (openAlexResults.length > 0) {
+    // If multiple results, return all for user selection instead of auto-importing
+    if (openAlexResults.length > 1) {
+      const created: Professor[] = [];
+      for (const prof of openAlexResults) {
+        try {
+          const saved = await createProfessor(prof);
+          created.push(saved);
+        } catch (e) {
+          console.error('[professorAutoAdd] insert error:', e);
+        }
+      }
+      return {
+        source: 'openalex',
+        professors: created,
+        created: created.length,
+        multipleResults: true,
+        message: `找到 ${created.length} 位名为 "${name}" 的研究者，请确认：`,
+      };
+    }
+
+    // Single result — auto-import
     const created: Professor[] = [];
     for (const prof of openAlexResults) {
       try {
@@ -51,6 +84,27 @@ export async function findOrCreateProfessor(name: string, university?: string, o
     }
     if (created.length > 0) {
       return { source: 'openalex', professors: created, created: created.length };
+    }
+  }
+
+  // Step 3: Claude web search fallback when OpenAlex fails
+  if (name.trim().length >= 2) {
+    try {
+      const webResult = await claudeWebSearchProfessor(name, university);
+      if (webResult) {
+        const created: Professor[] = [];
+        try {
+          const saved = await createProfessor(webResult);
+          created.push(saved);
+        } catch (e) {
+          console.error('[professorAutoAdd] web search insert error:', e);
+        }
+        if (created.length > 0) {
+          return { source: 'web', professors: created, created: created.length };
+        }
+      }
+    } catch (e) {
+      console.error('[professorAutoAdd] Claude web search failed:', e);
     }
   }
 
@@ -91,7 +145,14 @@ async function searchLocalDB(name: string, university?: string): Promise<Profess
 
 async function searchOpenAlex(name: string, university?: string): Promise<Omit<Professor, 'id' | 'createdAt' | 'updatedAt'>[]> {
   const query = encodeURIComponent(name);
-  const url = `https://api.openalex.org/authors?search=${query}&per_page=5&mailto=koalaphd@gmail.com`;
+
+  // If university specified, add institution filter to OpenAlex query
+  let url: string;
+  if (university) {
+    url = `https://api.openalex.org/authors?search=${query}&filter=last_known_institutions.display_name.search:${encodeURIComponent(university)}&per_page=5&mailto=koalaphd@gmail.com`;
+  } else {
+    url = `https://api.openalex.org/authors?search=${query}&per_page=5&mailto=koalaphd@gmail.com`;
+  }
 
   let data: { results: OpenAlexAuthor[] };
   try {
@@ -107,6 +168,21 @@ async function searchOpenAlex(name: string, university?: string): Promise<Omit<P
   const professors: Omit<Professor, 'id' | 'createdAt' | 'updatedAt'>[] = [];
 
   for (const author of data.results) {
+    // Strict university verification: double-check institutions match
+    if (university) {
+      const allInstitutions = [
+        ...(author.last_known_institutions ?? []).map(i => i.display_name),
+        ...(author.affiliations ?? []).map(a => a.institution.display_name),
+      ];
+      const isMatch = allInstitutions.some(
+        inst => inst.toLowerCase().includes(university.toLowerCase())
+      );
+      if (!isMatch) {
+        console.log(`[professorAutoAdd] ${author.display_name} not actually at ${university}, skipping`);
+        continue;
+      }
+    }
+
     const institution = pickInstitution(author, university);
     if (!institution) continue;
 
@@ -174,6 +250,74 @@ function extractResearchAreas(author: OpenAlexAuthor): string[] {
   }
 
   return areas.slice(0, 8);
+}
+
+async function claudeWebSearchProfessor(name: string, university?: string): Promise<Omit<Professor, 'id' | 'createdAt' | 'updatedAt'> | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
+
+  const anthropic = new Anthropic({ apiKey });
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 800,
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
+      messages: [{
+        role: 'user',
+        content: `Search for Professor ${name} at ${university || 'an Australian university'}. I need accurate information. Return ONLY a JSON object:
+    {
+      "found": true/false,
+      "name": "exact full name in English",
+      "university": "full university name",
+      "position": "exact position title",
+      "faculty": "department/school name",
+      "researchAreas": ["area1", "area2"],
+      "email": "if publicly available",
+      "profileUrl": "official university staff page URL",
+      "googleScholarUrl": "Google Scholar profile URL if available",
+      "hIndex": number or null
+    }
+    IMPORTANT: Only return information you can verify from official sources. Do NOT guess or hallucinate.`,
+      }],
+    });
+
+    let text = '';
+    for (const block of response.content) {
+      if (block.type === 'text') { text = block.text; break; }
+    }
+    if (!text) return null;
+
+    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+
+    const info = JSON.parse(jsonMatch[0]);
+    if (!info.found || !info.name) return null;
+
+    return {
+      name: info.name,
+      university: info.university || university || '',
+      faculty: info.faculty || '',
+      title: '',
+      positionTitle: info.position || undefined,
+      researchAreas: info.researchAreas || [],
+      email: info.email || '',
+      profileUrl: info.profileUrl || '',
+      googleScholarUrl: info.googleScholarUrl || '',
+      grantStatus: 'Inactive',
+      suitableStudentBackgrounds: [],
+      potentialRpTopics: [],
+      references: '',
+      verificationStatus: 'Pending',
+      hIndex: info.hIndex ?? undefined,
+      acceptingStudents: 'unknown',
+      dataSources: ['manual'],
+    };
+  } catch (e) {
+    console.error('[professorAutoAdd] Claude web search error:', e);
+    return null;
+  }
 }
 
 function fromRow(row: Record<string, unknown>): Professor {

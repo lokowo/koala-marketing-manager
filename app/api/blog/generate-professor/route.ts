@@ -81,6 +81,72 @@ export async function POST(req: NextRequest) {
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
+  // Step 3.5: Verify professor identity via web search before generating
+  let verifiedProfileUrl = professor.profile_url || '';
+  let verifiedGoogleScholarUrl = professor.google_scholar_url || '';
+  try {
+    const verifyResponse = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
+      messages: [{
+        role: 'user',
+        content: `Verify the following professor's identity and get accurate current information:
+    Name: ${profName}
+    University: ${university}
+
+    Search their official university staff page and Google Scholar.
+    Return JSON:
+    {
+      "verified": true/false,
+      "correctedInfo": {
+        "name": "correct name",
+        "university": "correct university",
+        "position": "correct position",
+        "faculty": "correct department",
+        "researchAreas": ["accurate research areas"],
+        "profileUrl": "official staff page URL",
+        "googleScholarUrl": "Google Scholar URL",
+        "email": "if publicly listed"
+      },
+      "warning": "any discrepancy found, e.g. 'This person is at Max Planck, not UNSW'"
+    }`,
+      }],
+    });
+
+    let verifyText = '';
+    for (const block of verifyResponse.content) {
+      if (block.type === 'text') { verifyText = block.text; break; }
+    }
+    if (verifyText) {
+      const cleaned = verifyText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const verifiedData = JSON.parse(jsonMatch[0]);
+        if (verifiedData.warning || !verifiedData.verified) {
+          return Response.json({
+            error: `身份验证警告：${verifiedData.warning || '无法确认该教授信息'}`,
+            suggestion: '请核实教授姓名和大学后重试',
+          }, { status: 400 });
+        }
+        if (verifiedData.correctedInfo?.profileUrl) verifiedProfileUrl = verifiedData.correctedInfo.profileUrl;
+        if (verifiedData.correctedInfo?.googleScholarUrl) verifiedGoogleScholarUrl = verifiedData.correctedInfo.googleScholarUrl;
+
+        // Update professor record with verified URLs
+        if (verifiedProfileUrl || verifiedGoogleScholarUrl) {
+          const updates: Record<string, string> = {};
+          if (verifiedProfileUrl && !professor.profile_url) updates.profile_url = verifiedProfileUrl;
+          if (verifiedGoogleScholarUrl && !professor.google_scholar_url) updates.google_scholar_url = verifiedGoogleScholarUrl;
+          if (Object.keys(updates).length > 0) {
+            await db.from('professors').update(updates).eq('id', professorId);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[generate-professor] Verification failed (non-blocking):', (e as Error).message);
+  }
+
   // Step 4: Generate Chinese article (Sonnet)
   let zhData: { titleZh: string; excerptZh: string; contentZh: string; tags: string[] };
   try {
@@ -122,6 +188,15 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
 - 不要编造任何数据，所有数字来自上面提供的数据
 - Markdown 格式，但禁止使用 --- 水平线和 > 引用块
 - 涉及数据对比（如论文引用、H-index、经费金额）时，用 markdown 表格展示，不要把数字堆在文字段落里
+- 教授名字始终用英文原名，不要翻译成中文。例如写 "Wenjie Zhang" 不要写 "张文杰"
+- 大学名始终用英文官方名称，可以在括号里加中文注释。例如 "UNSW Sydney（新南威尔士大学）"
+- 研究方向、学科术语、期刊名、论文标题保持英文
+- 文章末尾必须附上信息来源，格式：
+  📎 信息来源
+  • 官方主页：${verifiedProfileUrl || '暂无'}
+  • Google Scholar：${verifiedGoogleScholarUrl || '暂无'}
+  • 数据更新时间：${new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })}
+- 如果某些信息无法确认，必须标注「⚠️ 此信息待确认」
 - 文末加一句引导：想了解更多？在 Koala PhD 查看 ${profName} 教授的完整档案
 
 返回JSON：{"titleZh": "中文标题", "excerptZh": "100字摘要", "contentZh": "正文markdown", "tags": ["标签1","标签2",...]}` }],

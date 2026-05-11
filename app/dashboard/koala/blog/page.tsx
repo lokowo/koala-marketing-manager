@@ -379,7 +379,7 @@ interface WebSearchProfessor {
   opportunityScore: number;
 }
 
-type ModalStep = 'search' | 'web-searching' | 'web-result' | 'generating' | 'done';
+type ModalStep = 'search' | 'web-searching' | 'web-result' | 'web-candidates' | 'generating' | 'done';
 
 function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void; onGenerated: () => void }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -388,6 +388,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedProf, setSelectedProf] = useState<Professor | null>(null);
   const [webResult, setWebResult] = useState<WebSearchProfessor | null>(null);
+  const [webCandidates, setWebCandidates] = useState<WebSearchProfessor[]>([]);
   const [step, setStep] = useState<ModalStep>('search');
   const [genStep, setGenStep] = useState('');
   const [error, setError] = useState('');
@@ -455,28 +456,33 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
     setStep('web-searching');
     setError('');
     try {
-      // Always skip DB for web search — the autocomplete dropdown already searched DB
       const uniParam = universityHint.trim() ? `&university=${encodeURIComponent(universityHint.trim())}` : '';
       const res = await fetch(`/api/professors/auto-search?name=${encodeURIComponent(searchQuery)}&skipDb=true${uniParam}`);
       const data = await res.json();
       if (data.results && data.results.length > 0) {
-        const prof = data.results[0];
-        setWebResult({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mapped: WebSearchProfessor[] = data.results.map((prof: any) => ({
           name: prof.name,
           university: prof.university,
-          faculty: prof.faculty,
-          positionTitle: prof.positionTitle,
-          email: prof.email,
-          researchAreas: prof.researchAreas,
-          hIndex: prof.hIndex,
-          paperCount: prof.paperCount,
-          citationCount: prof.citationCount,
-          profileUrl: prof.profileUrl,
-          googleScholarUrl: prof.googleScholarUrl,
-          opportunityScore: prof.opportunityScore,
-        });
-        // Always show the web result for admin to confirm — never auto-redirect
-        setStep('web-result');
+          faculty: prof.faculty ?? null,
+          positionTitle: prof.positionTitle ?? null,
+          email: prof.email ?? null,
+          researchAreas: prof.researchAreas ?? [],
+          hIndex: prof.hIndex ?? null,
+          paperCount: prof.paperCount ?? null,
+          citationCount: prof.citationCount ?? null,
+          profileUrl: prof.profileUrl ?? null,
+          googleScholarUrl: prof.googleScholarUrl ?? null,
+          opportunityScore: prof.opportunityScore ?? 50,
+        }));
+
+        if (data.multipleResults && mapped.length > 1) {
+          setWebCandidates(mapped);
+          setStep('web-candidates');
+        } else {
+          setWebResult(mapped[0]);
+          setStep('web-result');
+        }
       } else {
         setError(`未在 OpenAlex 中找到「${searchQuery}」。可以尝试：1) 输入英文全名 2) 添加大学名 3) 检查拼写`);
         setStep('search');
@@ -704,6 +710,44 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                 ❌ 不是，重新搜索
               </button>
             </div>
+          </div>
+        )}
+
+        {step === 'web-candidates' && webCandidates.length > 0 && (
+          <div className="mb-4">
+            <p className="text-sm text-amber-700 font-medium mb-3">
+              ⚠️ 找到 {webCandidates.length} 位同名研究者，请选择正确的教授：
+            </p>
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+              {webCandidates.map((c, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => { setWebResult(c); setStep('web-result'); }}
+                  className="w-full text-left border border-slate-200 rounded-lg p-3 hover:border-purple-400 hover:bg-purple-50 transition"
+                >
+                  <p className="font-medium text-slate-900">{c.name}</p>
+                  <p className="text-sm text-slate-600">{c.positionTitle ? `${c.positionTitle} — ` : ''}{c.university}</p>
+                  {c.researchAreas.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {c.researchAreas.slice(0, 5).map((tag, i) => (
+                        <span key={i} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-3 mt-1.5 text-xs text-slate-500">
+                    {c.hIndex != null && <span>H-index: {c.hIndex}</span>}
+                    {c.paperCount != null && <span>论文: {c.paperCount}</span>}
+                    {c.citationCount != null && <span>引用: {c.citationCount}</span>}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => { setStep('search'); setWebCandidates([]); }}
+              className="mt-3 text-sm text-slate-500 hover:text-slate-700"
+            >
+              ← 返回重新搜索
+            </button>
           </div>
         )}
 
