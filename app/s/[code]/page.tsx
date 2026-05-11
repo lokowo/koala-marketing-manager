@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, use } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import QuestionRenderer from '../../components/survey/QuestionRenderer';
 import { generateDeviceFingerprint } from '../../lib/services/deviceFingerprint';
 
@@ -27,11 +27,11 @@ interface SurveyData {
   allow_anonymous: boolean;
 }
 
+type PageState = 'cover' | 'questions' | 'submitted';
+
 export default function PublicSurveyPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const ref = searchParams.get('ref');
 
   const [survey, setSurvey] = useState<SurveyData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,17 +39,22 @@ export default function PublicSurveyPage({ params }: { params: Promise<{ code: s
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [submitting, setSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [pageState, setPageState] = useState<PageState>('cover');
   const startTime = useRef(Date.now());
 
   useEffect(() => {
-    const url = `/api/surveys/public?code=${code}${ref ? `&ref=${ref}` : ''}`;
-    fetch(url)
-      .then(r => { if (!r.ok) throw new Error('Survey not found'); return r.json(); })
-      .then(data => { setSurvey(data); setShowWelcome(!!data.welcome_message); })
+    fetch(`/api/surveys/public?code=${code}&ref=${code}`)
+      .then(async r => {
+        if (!r.ok) {
+          const data = await r.json().catch(() => ({}));
+          throw new Error(data.error || '问卷不存在');
+        }
+        return r.json();
+      })
+      .then(data => setSurvey(data))
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, [code, ref]);
+  }, [code]);
 
   function handleAnswer(questionId: string, value: unknown) {
     setAnswers(prev => {
@@ -72,7 +77,13 @@ export default function PublicSurveyPage({ params }: { params: Promise<{ code: s
   async function handleSubmit() {
     if (!survey) return;
 
-    const missing = survey.questions.filter(q => q.required && (answers[q.id] === undefined || answers[q.id] === '' || (Array.isArray(answers[q.id]) && (answers[q.id] as unknown[]).length === 0)));
+    const missing = survey.questions.filter(q =>
+      q.required && (
+        answers[q.id] === undefined ||
+        answers[q.id] === '' ||
+        (Array.isArray(answers[q.id]) && (answers[q.id] as unknown[]).length === 0)
+      )
+    );
     if (missing.length > 0) {
       const firstMissing = survey.questions.indexOf(missing[0]);
       setCurrentStep(firstMissing);
@@ -92,14 +103,14 @@ export default function PublicSurveyPage({ params }: { params: Promise<{ code: s
           answers,
           device_fingerprint: fingerprint,
           metadata: { duration_seconds: duration, user_agent: navigator.userAgent },
-          sales_code: ref || undefined,
+          sales_code: code,
         }),
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (res.status === 409) { setError('你已经提交过这份问卷了'); return; }
-        throw new Error(data.error || 'Submit failed');
+        throw new Error(data.error || '提交失败');
       }
 
       router.push(`/s/${code}/success`);
@@ -120,10 +131,11 @@ export default function PublicSurveyPage({ params }: { params: Promise<{ code: s
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
           <div className="text-4xl mb-3">😥</div>
           <p className="text-slate-600 text-sm">{error}</p>
+          <p className="text-xs text-slate-400 mt-2">如有疑问请联系 Koala Study Advisors</p>
         </div>
       </div>
     );
@@ -133,33 +145,47 @@ export default function PublicSurveyPage({ params }: { params: Promise<{ code: s
 
   const brandColor = survey.brand_color || '#D4A843';
   const questions = survey.questions || [];
-  const isLastStep = currentStep >= questions.length - 1;
+  const estimatedMinutes = Math.max(1, Math.ceil(questions.length * 0.5));
 
-  // Welcome screen
-  if (showWelcome && survey.welcome_message) {
+  // Cover page
+  if (pageState === 'cover') {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center space-y-6">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center space-y-5">
           {survey.cover_image && (
             <img src={survey.cover_image} alt="" className="w-full h-40 object-cover rounded-xl" />
           )}
+          <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center text-2xl" style={{ backgroundColor: `${brandColor}15` }}>
+            📋
+          </div>
           <h1 className="text-xl font-bold text-slate-800">{survey.title}</h1>
-          {survey.description && <p className="text-sm text-slate-500">{survey.description}</p>}
-          <p className="text-sm text-slate-600">{survey.welcome_message}</p>
+          {survey.description && (
+            <p className="text-sm text-slate-500 leading-relaxed">{survey.description}</p>
+          )}
+          {survey.welcome_message && (
+            <p className="text-sm text-slate-600">{survey.welcome_message}</p>
+          )}
+          <div className="flex items-center justify-center gap-4 text-xs text-slate-400">
+            <span>共 {questions.length} 题</span>
+            <span>·</span>
+            <span>约 {estimatedMinutes} 分钟</span>
+          </div>
           <button
-            onClick={() => setShowWelcome(false)}
+            onClick={() => { setPageState('questions'); startTime.current = Date.now(); }}
             className="w-full py-3 rounded-xl text-white text-sm font-medium"
             style={{ backgroundColor: brandColor }}
           >
             开始填写
           </button>
-          <p className="text-xs text-slate-400">共 {questions.length} 题 · 约 {Math.max(1, Math.ceil(questions.length * 0.5))} 分钟</p>
+          <p className="text-xs text-slate-300">您的回答将被保密处理</p>
         </div>
       </div>
     );
   }
 
+  // Questions
   const currentQuestion = questions[currentStep];
+  const isLastStep = currentStep >= questions.length - 1;
 
   return (
     <div className="min-h-screen bg-slate-50">

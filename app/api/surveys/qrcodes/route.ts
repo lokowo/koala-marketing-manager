@@ -70,7 +70,11 @@ export async function POST(req: NextRequest) {
         qrImageUrl = urlData?.publicUrl;
       }
     } catch {
-      // QR image upload failed, continue without stored image
+      // Storage upload failed — fall through to free API fallback
+    }
+
+    if (!qrImageUrl) {
+      qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(surveyUrl)}`;
     }
 
     const qrcode = await createQRCode({

@@ -52,9 +52,13 @@ function EditContent() {
   const searchParams = useSearchParams();
   const surveyId = searchParams.get('id');
 
+  const initialTab = (['questions', 'settings', 'preview', 'share'] as const).includes(
+    searchParams.get('tab') as 'questions' | 'settings' | 'preview' | 'share'
+  ) ? searchParams.get('tab') as 'questions' | 'settings' | 'preview' | 'share' : 'questions';
+
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'questions' | 'settings' | 'preview' | 'share'>('questions');
+  const [tab, setTab] = useState<'questions' | 'settings' | 'preview' | 'share'>(initialTab);
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -360,6 +364,7 @@ function EditContent() {
       {tab === 'share' && (
         <ShareCard
           shareCode={survey.share_code}
+          surveyId={survey.id}
           title={survey.title}
           brandColor={brandColor}
           qrCodes={qrCodes}

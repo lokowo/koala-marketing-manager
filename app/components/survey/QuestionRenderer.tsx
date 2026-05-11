@@ -34,15 +34,17 @@ export default function QuestionRenderer({ question, value, onChange, brandColor
       return (
         <div className="space-y-2">
           {question.options?.map((opt) => (
-            <label
+            <button
+              type="button"
               key={opt}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all ${
+              onClick={() => onChange(opt)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all text-left ${
                 value === opt ? 'border-current bg-opacity-5' : 'border-slate-200 hover:border-slate-300'
               }`}
               style={value === opt ? { borderColor: brandColor, backgroundColor: `${brandColor}10` } : {}}
             >
               <div
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
                   value === opt ? 'border-current' : 'border-slate-300'
                 }`}
                 style={value === opt ? { borderColor: brandColor } : {}}
@@ -50,7 +52,7 @@ export default function QuestionRenderer({ question, value, onChange, brandColor
                 {value === opt && <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: brandColor }} />}
               </div>
               <span className="text-sm text-slate-700">{opt}</span>
-            </label>
+            </button>
           ))}
         </div>
       );
@@ -61,15 +63,17 @@ export default function QuestionRenderer({ question, value, onChange, brandColor
           {question.options?.map((opt) => {
             const selected = Array.isArray(value) && value.includes(opt);
             return (
-              <label
+              <button
+                type="button"
                 key={opt}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all ${
+                onClick={() => onChange(opt)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all text-left ${
                   selected ? 'bg-opacity-5' : 'border-slate-200 hover:border-slate-300'
                 }`}
                 style={selected ? { borderColor: brandColor, backgroundColor: `${brandColor}10` } : {}}
               >
                 <div
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
                     selected ? '' : 'border-slate-300'
                   }`}
                   style={selected ? { borderColor: brandColor, backgroundColor: brandColor } : {}}
@@ -77,7 +81,7 @@ export default function QuestionRenderer({ question, value, onChange, brandColor
                   {selected && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                 </div>
                 <span className="text-sm text-slate-700">{opt}</span>
-              </label>
+              </button>
             );
           })}
         </div>

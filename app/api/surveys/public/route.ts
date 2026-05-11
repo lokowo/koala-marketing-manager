@@ -10,10 +10,12 @@ export async function GET(req: NextRequest) {
     const ref = req.nextUrl.searchParams.get('ref');
 
     const survey = await getSurveyByCode(code);
-    if (!survey) return Response.json({ error: 'Survey not found' }, { status: 404 });
-    if (survey.status !== 'active') return Response.json({ error: 'Survey is not active' }, { status: 400 });
+    if (!survey) return Response.json({ error: '链接不存在或已失效' }, { status: 404 });
+    if (survey.status === 'draft') return Response.json({ error: '问卷尚未发布' }, { status: 400 });
+    if (survey.status === 'closed') return Response.json({ error: '问卷已结束' }, { status: 400 });
+    if (survey.status === 'paused') return Response.json({ error: '问卷已暂停' }, { status: 400 });
     if (survey.end_at && new Date(survey.end_at) < new Date()) {
-      return Response.json({ error: 'Survey has ended' }, { status: 400 });
+      return Response.json({ error: '问卷已结束' }, { status: 400 });
     }
 
     if (ref) {

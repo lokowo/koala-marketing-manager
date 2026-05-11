@@ -28,6 +28,11 @@ export default function SurveysPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [userRole, setUserRole] = useState('');
+
+  useEffect(() => {
+    fetch('/api/admin/me').then(r => r.json()).then(d => setUserRole(d.role || '')).catch(() => {});
+  }, []);
 
   const fetchSurveys = useCallback(async () => {
     setLoading(true);
@@ -72,6 +77,9 @@ export default function SurveysPage() {
     });
     fetchSurveys();
   }
+
+  const isSales = userRole === 'sales';
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
 
   return (
     <div className="space-y-5">
@@ -136,7 +144,7 @@ export default function SurveysPage() {
                 <th className="px-4 py-3 text-slate-500 font-medium w-24">状态</th>
                 <th className="px-4 py-3 text-slate-500 font-medium w-20 text-center">回复数</th>
                 <th className="px-4 py-3 text-slate-500 font-medium w-32">创建时间</th>
-                <th className="px-4 py-3 text-slate-500 font-medium w-48 text-right">操作</th>
+                <th className="px-4 py-3 text-slate-500 font-medium w-52 text-right">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -158,7 +166,7 @@ export default function SurveysPage() {
                     <td className="px-4 py-3 text-center text-slate-600">{s.response_count ?? '—'}</td>
                     <td className="px-4 py-3 text-slate-400 text-xs">{new Date(s.created_at).toLocaleDateString('zh-CN')}</td>
                     <td className="px-4 py-3 text-right">
-                      <div className="flex items-center gap-1 justify-end">
+                      <div className="flex items-center gap-1 justify-end flex-wrap">
                         <Link
                           href={`/dashboard/koala/surveys/edit?id=${s.id}`}
                           className="px-2 py-1 text-xs rounded hover:bg-slate-100 text-slate-500 no-underline"
@@ -171,27 +179,45 @@ export default function SurveysPage() {
                         >
                           分析
                         </Link>
-                        {s.status === 'draft' && (
+                        {/* Sales: promote active surveys */}
+                        {isSales && s.status === 'active' && (
+                          <Link
+                            href={`/dashboard/koala/surveys/edit?id=${s.id}&tab=share`}
+                            className="px-2 py-1 text-xs rounded hover:bg-teal-50 text-teal-600 no-underline font-medium"
+                          >
+                            推广
+                          </Link>
+                        )}
+                        {/* Admin/Super Admin: status controls */}
+                        {isAdmin && s.status === 'draft' && (
                           <button onClick={() => handleStatusChange(s.id, 'active')} className="px-2 py-1 text-xs rounded hover:bg-green-50 text-green-600">
                             发布
                           </button>
                         )}
-                        {s.status === 'active' && (
+                        {isAdmin && s.status === 'active' && (
                           <button onClick={() => handleStatusChange(s.id, 'paused')} className="px-2 py-1 text-xs rounded hover:bg-amber-50 text-amber-600">
                             暂停
                           </button>
                         )}
-                        {s.status === 'paused' && (
+                        {isAdmin && s.status === 'paused' && (
                           <button onClick={() => handleStatusChange(s.id, 'active')} className="px-2 py-1 text-xs rounded hover:bg-green-50 text-green-600">
                             恢复
+                          </button>
+                        )}
+                        {/* Sales can also publish their own drafts */}
+                        {isSales && s.status === 'draft' && (
+                          <button onClick={() => handleStatusChange(s.id, 'active')} className="px-2 py-1 text-xs rounded hover:bg-green-50 text-green-600">
+                            发布
                           </button>
                         )}
                         <button onClick={() => handleDuplicate(s.id)} className="px-2 py-1 text-xs rounded hover:bg-slate-100 text-slate-500">
                           复制
                         </button>
-                        <button onClick={() => handleDelete(s.id)} className="px-2 py-1 text-xs rounded hover:bg-red-50 text-red-400">
-                          删除
-                        </button>
+                        {isAdmin && (
+                          <button onClick={() => handleDelete(s.id)} className="px-2 py-1 text-xs rounded hover:bg-red-50 text-red-400">
+                            删除
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
