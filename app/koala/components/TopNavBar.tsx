@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Users, MessageCircle, BookOpen, UserCircle } from 'lucide-react';
 import { useAuth } from './AuthContext';
+import { useTheme } from '../../lib/theme';
 
 const NAV_ITEMS: { href: string; icon: React.ElementType; label: string; highlight?: boolean }[] = [
   { href: '/koala/discover', icon: Home, label: '发现' },
@@ -17,6 +18,9 @@ const NAV_ITEMS: { href: string; icon: React.ElementType; label: string; highlig
 export default function TopNavBar() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const themeIcons: Record<string, string> = { light: '☀️', dark: '🌙', system: '💻' };
+  const themeLabels: Record<string, string> = { light: '浅色', dark: '深色', system: '系统' };
 
   function isActive(href: string) {
     return pathname.startsWith(href);
@@ -40,6 +44,19 @@ export default function TopNavBar() {
 
       {/* Nav links */}
       <div className="flex items-center gap-1">
+        {/* Theme toggle */}
+        <button
+          onClick={() => {
+            const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
+            setTheme(next);
+          }}
+          className="flex items-center gap-1 px-3 py-2 rounded-full text-xs transition-colors mr-1"
+          style={{ color: '#6a7a7e' }}
+          title={`当前: ${themeLabels[theme]}`}
+        >
+          <span>{themeIcons[theme]}</span>
+          <span className="hidden xl:inline">{themeLabels[theme]}</span>
+        </button>
         {NAV_ITEMS.map(item => {
           const active = isActive(item.href);
           const Icon = item.icon;

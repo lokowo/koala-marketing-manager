@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, use } from 'react';
 import dynamic from 'next/dynamic';
 import { generateDeviceFingerprint } from '../../lib/services/deviceFingerprint';
+import '../survey-dark-theme.css';
 
 const SurveyRenderer = dynamic(
   () => import('../../components/survey/SurveyRenderer'),

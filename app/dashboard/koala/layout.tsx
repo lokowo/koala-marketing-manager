@@ -25,6 +25,10 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    document.documentElement.classList.remove('dark');
+  }, []);
+
+  useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) {
         router.replace(`/login?from=${pathname}`);

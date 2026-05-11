@@ -1,0 +1,98 @@
+/* Force SurveyJS dark theme for /s/ survey pages */
+.sd-root-modern {
+  --sjs-general-forecolor: #ffffff !important;
+  --sjs-general-forecolor-light: #9CA3AF !important;
+  --sjs-general-backcolor: #0F1419 !important;
+  --sjs-general-backcolor-dim: #080C10 !important;
+  --sjs-primary-backcolor: #D4A843 !important;
+  --sjs-primary-backcolor-light: rgba(212,168,67,0.15) !important;
+  --sjs-primary-backcolor-dark: #B8922F !important;
+  --sjs-primary-forecolor: #080C10 !important;
+  --sjs-secondary-backcolor: #4ECDC4 !important;
+  --sjs-border-default: rgba(212,168,67,0.2) !important;
+  --sjs-border-light: rgba(255,255,255,0.1) !important;
+  --sjs-shadow-small: 0 1px 4px rgba(0,0,0,0.3) !important;
+}
+
+.sd-root-modern .sd-input {
+  background: rgba(255,255,255,0.05) !important;
+  color: #ffffff !important;
+  border-color: rgba(255,255,255,0.15) !important;
+}
+
+.sd-root-modern .sd-input:focus {
+  border-color: rgba(212,168,67,0.5) !important;
+}
+
+.sd-root-modern .sd-input::placeholder {
+  color: #6B7280 !important;
+}
+
+.sd-root-modern .sd-selectbase__item {
+  color: #ffffff !important;
+}
+
+.sd-root-modern .sd-item__control-label {
+  color: #ffffff !important;
+}
+
+.sd-root-modern .sd-element__title {
+  color: #ffffff !important;
+}
+
+.sd-root-modern .sd-description {
+  color: #9CA3AF !important;
+}
+
+.sd-root-modern .sd-page__title {
+  color: #ffffff !important;
+}
+
+.sd-root-modern .sd-page__description {
+  color: #9CA3AF !important;
+}
+
+.sd-root-modern .sd-progress__text {
+  color: #9CA3AF !important;
+}
+
+.sd-root-modern .sd-body__progress {
+  background: rgba(255,255,255,0.05) !important;
+}
+
+.sd-root-modern .sd-rating__item-text {
+  color: #ffffff !important;
+}
+
+.sd-root-modern .sd-element--with-frame {
+  background: rgba(255,255,255,0.03) !important;
+}
+
+.sd-root-modern .sd-panel {
+  background: transparent !important;
+}
+
+.sd-root-modern .sd-checkbox__svg,
+.sd-root-modern .sd-radio__svg {
+  border-color: rgba(255,255,255,0.3) !important;
+}
+
+.sd-root-modern .sd-header__text h3 {
+  color: #ffffff !important;
+}
+
+.sd-root-modern .sd-completedpage {
+  color: #ffffff !important;
+}
+
+.sd-root-modern .sd-completedpage h2 {
+  color: #ffffff !important;
+}
+
+.sd-root-modern .sd-completedpage p {
+  color: #9CA3AF !important;
+}
+
+.sd-root-modern .sd-question__required-text {
+  color: #D4A843 !important;
+}
