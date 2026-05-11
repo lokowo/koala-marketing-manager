@@ -6,6 +6,7 @@ import QuestionEditor from '../../../../components/survey/QuestionEditor';
 import SurveyPreview from '../../../../components/survey/SurveyPreview';
 import ShareCard from '../../../../components/survey/ShareCard';
 import type { QuestionType } from '../../../../lib/services/surveyService';
+import { questionsToSurveyJson } from '../../../../lib/services/surveyJsonBuilder';
 
 interface Question {
   id: string;
@@ -104,9 +105,18 @@ function EditContent() {
     }
   }, [surveyId, tab]);
 
+  function buildSurveyJson() {
+    const qs = survey?.questions || [];
+    return questionsToSurveyJson(
+      { title, description, welcome_message: welcomeMessage, brand_color: brandColor },
+      qs.map(q => ({ ...q, config: q.config as Record<string, unknown> | undefined })),
+    );
+  }
+
   async function handleSaveSettings() {
     if (!surveyId) return;
     setSaving(true);
+    const surveyJson = buildSurveyJson();
     await fetch(`/api/surveys/${surveyId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -118,10 +128,28 @@ function EditContent() {
         require_login: requireLogin,
         allow_anonymous: allowAnonymous,
         one_per_device: onePerDevice,
+        survey_json: surveyJson,
       }),
     });
     await fetchSurvey();
     setSaving(false);
+  }
+
+  async function syncSurveyJson() {
+    if (!surveyId) return;
+    const res = await fetch(`/api/surveys/${surveyId}`);
+    if (!res.ok) return;
+    const freshSurvey = await res.json();
+    const qs = freshSurvey.questions || [];
+    const json = questionsToSurveyJson(
+      { title: freshSurvey.title, description: freshSurvey.description, welcome_message: freshSurvey.welcome_message, brand_color: freshSurvey.brand_color },
+      qs.map((q: { config?: Record<string, unknown> }) => ({ ...q, config: q.config as Record<string, unknown> | undefined })),
+    );
+    await fetch(`/api/surveys/${surveyId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ survey_json: json }),
+    });
   }
 
   async function handleAddQuestion(data: { type: QuestionType; title: string; description?: string; options?: string[]; required: boolean; config?: Record<string, unknown> }) {
@@ -132,7 +160,8 @@ function EditContent() {
       body: JSON.stringify({ survey_id: surveyId, ...data }),
     });
     setAddingQuestion(false);
-    fetchSurvey();
+    await fetchSurvey();
+    syncSurveyJson();
   }
 
   async function handleUpdateQuestion(qId: string, data: { type: QuestionType; title: string; description?: string; options?: string[]; required: boolean; config?: Record<string, unknown> }) {
@@ -141,7 +170,8 @@ function EditContent() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: qId, ...data }),
     });
-    fetchSurvey();
+    await fetchSurvey();
+    syncSurveyJson();
   }
 
   async function handleDeleteQuestion(qId: string) {
@@ -151,7 +181,8 @@ function EditContent() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: qId }),
     });
-    fetchSurvey();
+    await fetchSurvey();
+    syncSurveyJson();
   }
 
   async function handleMoveQuestion(qId: string, direction: 'up' | 'down') {
@@ -167,17 +198,19 @@ function EditContent() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reorder: true, survey_id: surveyId, question_ids: qs.map(q => q.id) }),
     });
-    fetchSurvey();
+    await fetchSurvey();
+    syncSurveyJson();
   }
 
   async function handlePublish() {
     if (!surveyId) return;
     const questions = survey?.questions || [];
     if (questions.length === 0) { alert('请至少添加一个问题'); return; }
+    const surveyJson = buildSurveyJson();
     await fetch(`/api/surveys/${surveyId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'active' }),
+      body: JSON.stringify({ status: 'active', survey_json: surveyJson }),
     });
     fetchSurvey();
   }

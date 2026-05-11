@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getSurveyByCode, submitResponse, incrementQRScan, incrementQRResponse } from '../../../lib/services/surveyService';
+import { questionsToSurveyJson } from '../../../lib/services/surveyJsonBuilder';
 import { notifyAdmins } from '../../../lib/notifications';
 
 export async function GET(req: NextRequest) {
@@ -22,6 +23,11 @@ export async function GET(req: NextRequest) {
       await incrementQRScan(ref).catch(() => {});
     }
 
+    const surveyJson = survey.survey_json || questionsToSurveyJson(
+      { title: survey.title, description: survey.description, welcome_message: survey.welcome_message, brand_color: survey.brand_color },
+      (survey.questions || []).map(q => ({ ...q, config: q.config as Record<string, unknown> | undefined })),
+    );
+
     return Response.json({
       id: survey.id,
       title: survey.title,
@@ -30,6 +36,7 @@ export async function GET(req: NextRequest) {
       brand_color: survey.brand_color,
       cover_image: survey.cover_image,
       questions: survey.questions,
+      survey_json: surveyJson,
       require_login: survey.require_login,
       allow_anonymous: survey.allow_anonymous,
     });

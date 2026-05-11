@@ -43,7 +43,9 @@
     "react-tinder-card": "^1.6.4",
     "recharts": "^3.8.1",
     "resend": "^6.12.2",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "survey-core": "^2.5.23",
+    "survey-react-ui": "^2.5.23"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

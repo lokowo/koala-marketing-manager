@@ -43,6 +43,7 @@ export interface Survey {
   thank_you_message?: string;
   brand_color?: string;
   cover_image?: string;
+  survey_json?: Record<string, unknown>;
   questions?: SurveyQuestion[];
   response_count?: number;
   created_at: string;
@@ -87,6 +88,7 @@ function mapSurveyRow(row: any): Survey {
     thank_you_message: s.thank_you_message_zh || undefined,
     brand_color: s.brand_color || undefined,
     cover_image: row.share_image_url || undefined,
+    survey_json: row.survey_json || undefined,
     start_at: undefined,
     end_at: s.auto_end_date || row.ended_at || undefined,
     created_at: row.created_at,
@@ -265,6 +267,7 @@ export async function updateSurvey(id: string, updates: Partial<{
   thank_you_message: string;
   brand_color: string;
   cover_image: string;
+  survey_json: Record<string, unknown>;
 }>): Promise<Survey> {
   // Build direct column updates
   const dbUpdates: Record<string, unknown> = {
@@ -277,6 +280,7 @@ export async function updateSurvey(id: string, updates: Partial<{
   if (updates.description_en !== undefined) dbUpdates.description_en = updates.description_en;
   if (updates.status !== undefined) dbUpdates.status = updates.status;
   if (updates.cover_image !== undefined) dbUpdates.share_image_url = updates.cover_image;
+  if (updates.survey_json !== undefined) dbUpdates.survey_json = updates.survey_json;
 
   if (updates.status === 'active') dbUpdates.published_at = new Date().toISOString();
   if (updates.status === 'closed') dbUpdates.ended_at = new Date().toISOString();
