@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { requireSuperAdmin } from '../../../lib/auth';
+import { requireSuperAdmin, requireAdmin } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -7,9 +7,17 @@ const db = supabaseAdmin as any;
 
 export async function GET(req: NextRequest) {
   try {
-    await requireSuperAdmin();
-
     const sp = req.nextUrl.searchParams;
+    const isMine = sp.get('mine') === 'true';
+
+    let callerId: string;
+    if (isMine) {
+      const { user } = await requireAdmin();
+      callerId = user.id;
+    } else {
+      await requireSuperAdmin();
+      callerId = '';
+    }
     const limit = Math.min(parseInt(sp.get('limit') ?? '50', 10), 200);
     const page = Math.max(parseInt(sp.get('page') ?? '1', 10), 1);
     const userId = sp.get('userId');
@@ -26,7 +34,8 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
       .range((page - 1) * limit, page * limit - 1);
 
-    if (userId) query = query.eq('user_id', userId);
+    if (isMine) query = query.eq('user_id', callerId);
+    else if (userId) query = query.eq('user_id', userId);
     if (action) query = query.eq('action', action);
     if (category) query = query.eq('action_category', category);
     if (dateFrom) query = query.gte('created_at', dateFrom);

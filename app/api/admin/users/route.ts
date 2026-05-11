@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import { requireSuperAdmin } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { logWork } from '../../../lib/worklog';
+import { notifyUser } from '../../../lib/notifications';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -42,7 +44,7 @@ export async function PATCH(req: NextRequest) {
     if (!userId || !role) {
       return Response.json({ error: 'Missing userId or role' }, { status: 400 });
     }
-    if (!['super_admin', 'admin', 'viewer'].includes(role)) {
+    if (!['super_admin', 'admin', 'sales', 'viewer'].includes(role)) {
       return Response.json({ error: 'Invalid role' }, { status: 400 });
     }
     if (userId === caller.id) {
@@ -65,6 +67,20 @@ export async function PATCH(req: NextRequest) {
       .upsert({ user_id: userId, role }, { onConflict: 'user_id' });
 
     if (error) throw error;
+
+    const roleLabels: Record<string, string> = { super_admin: '超级管理员', admin: '管理员', sales: '销售', viewer: '只读' };
+    await logWork({
+      userId: caller.id,
+      role: 'admin',
+      action: '变更用户角色',
+      actionCategory: 'user_management',
+      targetType: 'user',
+      targetId: userId,
+      details: { newRole: role, oldRole: existing?.role },
+    }).catch(() => {});
+
+    await notifyUser(userId, '角色变更', `你的角色已变更为「${roleLabels[role] || role}」。`).catch(() => {});
+
     return Response.json({ success: true });
   } catch (error) {
     const msg = (error as Error).message;

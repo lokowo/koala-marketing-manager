@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { requireSuperAdmin } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { logWork } from '../../../lib/worklog';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -97,6 +98,17 @@ export async function POST(req: NextRequest) {
         body: rejectReason ? `原因：${rejectReason}` : '你的角色申请未通过，如有疑问请联系管理员。',
       });
     }
+
+    await logWork({
+      userId: user.id,
+      role: 'admin',
+      action: action === 'approve' ? '批准角色申请' : '拒绝角色申请',
+      actionCategory: 'role_management',
+      targetType: 'user',
+      targetId: app.user_id,
+      targetName: app.email || app.full_name,
+      details: { appliedRole: app.applied_role, rejectReason },
+    }).catch(() => {});
 
     return Response.json({ success: true, action });
   } catch (e) {

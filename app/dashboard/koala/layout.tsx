@@ -87,6 +87,11 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
       );
     }
 
+    if (userRole === 'admin' || userRole === 'sales') {
+      const filtered = nav.filter(n => !n.adminOnly);
+      filtered.push({ icon: '📝', label: '我的操作记录', href: '/dashboard/koala/my-logs' });
+      return filtered;
+    }
     if (userRole !== 'super_admin') {
       return nav.filter(n => !n.adminOnly);
     }

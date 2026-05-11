@@ -1,6 +1,7 @@
 import { getServerUser } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { notifyRoleApplication } from '../../../lib/server/slack';
+import { logWork } from '../../../lib/worklog';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -106,6 +107,16 @@ export async function POST(req: Request) {
         }))
       );
     }
+
+    await logWork({
+      userId: user.id,
+      role: 'admin',
+      action: '提交角色申请',
+      actionCategory: 'role_management',
+      targetType: 'role_application',
+      targetId: application?.id,
+      details: { appliedRole: role, reason },
+    }).catch(() => {});
 
     const roleName = role === 'admin' ? '管理员' : '销售';
     notifyRoleApplication({

@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
-import { requireAdmin } from '../../../../lib/auth';
+import { requireAdmin, requireSuperAdmin } from '../../../../lib/auth';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
+import { logWork } from '../../../../lib/worklog';
+import { notifyUserAction } from '../../../../lib/notifications';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -130,12 +132,74 @@ export async function PATCH(
       if (error) throw error;
     }
 
+    await logWork({
+      userId: caller.id,
+      role: 'admin',
+      action: action === 'add_note' ? '添加用户备注' : '更新用户资料',
+      actionCategory: 'user_management',
+      targetType: 'user',
+      targetId: id,
+      details: body,
+    }).catch(() => {});
+
     return Response.json({ success: true });
   } catch (error) {
     const msg = (error as Error).message;
     if (msg === 'Unauthorized') return Response.json({ error: 'Unauthorized' }, { status: 401 });
     if (msg === 'Forbidden') return Response.json({ error: 'Forbidden' }, { status: 403 });
     console.error('[admin/users/[id] PATCH]', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { user: caller } = await requireSuperAdmin();
+    const { id } = await params;
+
+    if (id === caller.id) {
+      return Response.json({ error: '不能删除自己' }, { status: 400 });
+    }
+
+    const { data: targetAuth } = await supabaseAdmin.auth.admin.getUserById(id);
+    const targetEmail = targetAuth?.user?.email || id;
+
+    const { error: delErr } = await supabaseAdmin.auth.admin.deleteUser(id);
+    if (delErr) throw delErr;
+
+    const { data: callerProfile } = await db
+      .from('user_profiles')
+      .select('display_name')
+      .eq('id', caller.id)
+      .single();
+
+    await logWork({
+      userId: caller.id,
+      role: 'admin',
+      action: '删除用户',
+      actionCategory: 'user_management',
+      targetType: 'user',
+      targetId: id,
+      targetName: targetEmail,
+    }).catch(() => {});
+
+    await notifyUserAction({
+      actionBy: caller.id,
+      actionByName: callerProfile?.display_name || caller.email || 'Admin',
+      action: '删除了用户',
+      targetUserId: id,
+      targetUserEmail: targetEmail,
+    }).catch(() => {});
+
+    return Response.json({ success: true });
+  } catch (error) {
+    const msg = (error as Error).message;
+    if (msg === 'Unauthorized') return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (msg === 'Forbidden') return Response.json({ error: 'Forbidden' }, { status: 403 });
+    console.error('[admin/users/[id] DELETE]', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

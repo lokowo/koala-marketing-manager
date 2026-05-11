@@ -106,12 +106,22 @@ export default function QualityPage() {
         <>
           {/* Stats overview */}
           {stats && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <StatCard label="数据完整" value={stats.complete} total={stats.total} color="emerald" icon={<CheckCircle className="size-4" />} />
-              <StatCard label="缺少邮箱" value={stats.missingEmail} total={stats.total} color="red" icon={<AlertTriangle className="size-4" />} />
-              <StatCard label="缺少学院" value={stats.missingFaculty} total={stats.total} color="amber" icon={<AlertTriangle className="size-4" />} />
-              <StatCard label="缺少 Profile URL" value={stats.missingProfile} total={stats.total} color="amber" icon={<AlertTriangle className="size-4" />} />
-            </div>
+            <>
+              <div className="bg-white rounded-xl border border-slate-200 p-4">
+                <h3 className="text-sm font-semibold text-slate-800 mb-2">📊 教授数据概览</h3>
+                <div className="text-xs text-slate-600 space-y-1">
+                  <div className="flex justify-between"><span>已验证教授总数</span><span className="font-bold text-slate-900">{stats.total.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span>├ 数据完整（所有核心字段）</span><span className="font-bold text-emerald-600">{stats.complete.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span>└ 缺少部分字段</span><span className="font-bold text-amber-600">{(stats.total - stats.complete).toLocaleString()}</span></div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <StatCard label="数据完整" value={stats.complete} total={stats.total} color="emerald" icon={<CheckCircle className="size-4" />} />
+                <StatCard label="缺少邮箱" value={stats.missingEmail} total={stats.total} color="red" icon={<AlertTriangle className="size-4" />} />
+                <StatCard label="缺少学院" value={stats.missingFaculty} total={stats.total} color="amber" icon={<AlertTriangle className="size-4" />} />
+                <StatCard label="缺少 Profile URL" value={stats.missingProfile} total={stats.total} color="amber" icon={<AlertTriangle className="size-4" />} />
+              </div>
+            </>
           )}
 
           {/* Batch enrichment panel */}
