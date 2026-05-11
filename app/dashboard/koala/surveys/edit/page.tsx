@@ -133,6 +133,7 @@ function EditContent() {
     });
     await fetchSurvey();
     setSaving(false);
+    setTab('questions');
   }
 
   async function syncSurveyJson() {
