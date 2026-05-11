@@ -70,6 +70,14 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
         ],
       },
       { icon: '📝', label: '博客管理', href: '/dashboard/koala/blog' },
+      {
+        icon: '📋', label: '问卷调研',
+        href: '/dashboard/koala/surveys',
+        children: [
+          { label: '问卷列表', href: '/dashboard/koala/surveys' },
+          { label: '新建问卷', href: '/dashboard/koala/surveys/create' },
+        ],
+      },
       { icon: '👥', label: '用户管理', href: '/dashboard/koala/users', adminOnly: true },
       { icon: '📈', label: '数据分析', href: '/dashboard/koala/analytics' },
       { icon: '🌱', label: '用户增长', href: '/dashboard/koala/growth' },
