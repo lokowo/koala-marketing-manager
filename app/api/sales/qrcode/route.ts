@@ -39,6 +39,31 @@ export async function POST(req: NextRequest) {
     }
 
     const { channel, label } = await req.json();
+    const ch = channel || 'wechat';
+    const lbl = label || '';
+
+    // Check for existing code with same (sales_user_id, channel, label)
+    let existingQuery = db
+      .from('sales_qrcodes')
+      .select('*')
+      .eq('sales_user_id', user.id)
+      .eq('channel', ch);
+
+    if (lbl) {
+      existingQuery = existingQuery.eq('label', lbl);
+    } else {
+      existingQuery = existingQuery.is('label', null);
+    }
+
+    const { data: existing } = await existingQuery.maybeSingle();
+
+    if (existing) {
+      return Response.json({
+        data: existing,
+        existing: true,
+        message: '该渠道+标签已有推广码',
+      });
+    }
 
     const code = `S${user.id.slice(0, 4).toUpperCase()}${Date.now().toString(36).toUpperCase()}`;
 
@@ -47,8 +72,8 @@ export async function POST(req: NextRequest) {
       .insert({
         sales_user_id: user.id,
         code,
-        channel: channel || 'wechat',
-        label: label || null,
+        channel: ch,
+        label: lbl || null,
       })
       .select()
       .single();
@@ -62,8 +87,8 @@ export async function POST(req: NextRequest) {
       actionCategory: 'sales_marketing',
       targetType: 'sales_qrcode',
       targetId: data.id,
-      targetName: label || code,
-      details: { channel: channel || 'wechat', label },
+      targetName: lbl || code,
+      details: { channel: ch, label: lbl },
     });
 
     return Response.json({ data }, { status: 201 });

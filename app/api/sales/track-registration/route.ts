@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
     const { data: qrcode } = await db
       .from('sales_qrcodes')
-      .select('id, sales_user_id')
+      .select('id, sales_user_id, register_count')
       .eq('code', salesCode)
       .single();
 
@@ -20,6 +20,7 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Invalid sales code' }, { status: 404 });
     }
 
+    // Link user to sales customer record
     const { data: userProfile } = await db
       .from('user_profiles')
       .select('id')
@@ -36,9 +37,10 @@ export async function POST(req: Request) {
       }, { onConflict: 'sales_user_id,customer_user_id' });
     }
 
+    // Increment register_count (not scan_count — scans are tracked at /r/[code])
     await db
       .from('sales_qrcodes')
-      .update({ scan_count: db.raw('scan_count + 1') })
+      .update({ register_count: (qrcode.register_count || 0) + 1 })
       .eq('id', qrcode.id);
 
     return Response.json({ success: true });

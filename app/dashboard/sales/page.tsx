@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase } from '../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
-interface QRCode { id: string; code: string; channel: string; label: string | null; scan_count: number; created_at: string }
+interface QRCode { id: string; code: string; channel: string; label: string | null; scan_count: number; register_count: number; created_at: string }
 interface Customer { id: string; customer_user_id: string; stage: string; note: string | null; created_at: string; user_profiles?: { display_name: string; email: string; avatar_url: string | null } }
 interface FunnelData { funnel: Record<string, number>; total: number; conversionRate: string }
 interface KpiData { leads: { current: number; target: number }; followups: { current: number; target: number }; conversions: { current: number; target: number } }
@@ -82,6 +82,10 @@ export default function SalesDashboard() {
       body: JSON.stringify({ channel: newChannel, label: newLabel }),
     });
     if (res.ok) {
+      const data = await res.json();
+      if (data.existing) {
+        alert(`该渠道已有推广码：${data.data.code}`);
+      }
       setNewLabel('');
       setShowQrCreate(false);
       loadData();
@@ -223,6 +227,8 @@ export default function SalesDashboard() {
                 >
                   <option value="wechat">微信</option>
                   <option value="xiaohongshu">小红书</option>
+                  <option value="linkedin">LinkedIn</option>
+                  <option value="offline">线下活动</option>
                   <option value="douyin">抖音</option>
                   <option value="other">其他</option>
                 </select>
@@ -234,33 +240,44 @@ export default function SalesDashboard() {
 
             {qrcodes.length > 0 ? (
               <div className="space-y-2">
-                {qrcodes.map(qr => (
-                  <div key={qr.id} className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-xs font-mono" style={{ color: '#c9a96e' }}>{qr.code}</span>
-                        {qr.label && <span className="text-[10px] ml-2" style={{ color: '#6a7a7e' }}>{qr.label}</span>}
+                {qrcodes.map(qr => {
+                  const chLabel: Record<string, string> = { wechat: '📱 微信', xiaohongshu: '📕 小红书', linkedin: '💼 LinkedIn', offline: '🏫 线下', douyin: '🎵 抖音', other: '📋 其他' };
+                  return (
+                    <div key={qr.id} className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(201,169,110,0.1)', color: '#a8b8ac' }}>
+                            {chLabel[qr.channel] || qr.channel}
+                          </span>
+                          {qr.label && <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{qr.label}</span>}
+                        </div>
+                        <div className="flex items-center gap-3 text-[10px]" style={{ color: '#6a7a7e' }}>
+                          <span>👁 {qr.scan_count} 扫描</span>
+                          <span>📥 {qr.register_count} 注册</span>
+                        </div>
                       </div>
-                      <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{qr.scan_count} 扫描</span>
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className="text-[10px] font-mono" style={{ color: '#c9a96e' }}>{qr.code}</span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => downloadQR(qr.code)}
+                            className="text-[10px] px-2 py-0.5 rounded"
+                            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                          >
+                            二维码
+                          </button>
+                          <button
+                            onClick={() => shareQR(qr.code, qr.label)}
+                            className="text-[10px] px-2 py-0.5 rounded"
+                            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                          >
+                            分享
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex gap-2 mt-1.5">
-                      <button
-                        onClick={() => downloadQR(qr.code)}
-                        className="text-[10px] px-2 py-0.5 rounded"
-                        style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
-                      >
-                        保存二维码
-                      </button>
-                      <button
-                        onClick={() => shareQR(qr.code, qr.label)}
-                        className="text-[10px] px-2 py-0.5 rounded"
-                        style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
-                      >
-                        分享
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="text-xs py-4 text-center" style={{ color: '#6a7a7e' }}>暂无推广码，点击上方「新建」创建</p>
