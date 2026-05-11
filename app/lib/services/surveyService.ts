@@ -484,6 +484,10 @@ export async function submitResponse(data: {
   }
 
   const durationSeconds = data.metadata?.duration_seconds as number | undefined;
+  const contactName = data.metadata?.contact_name as string | undefined;
+  const contactPhone = data.metadata?.contact_phone as string | undefined;
+  const contactEmail = data.metadata?.contact_email as string | undefined;
+  const contactWechat = data.metadata?.contact_wechat as string | undefined;
 
   const { data: row, error } = await db.from('survey_responses').insert({
     survey_id: data.survey_id,
@@ -491,6 +495,10 @@ export async function submitResponse(data: {
     sales_user_id: salesUserId,
     share_link_id: shareLinkId,
     registered_user_id: data.respondent_id || null,
+    respondent_name: contactName || null,
+    respondent_phone: contactPhone || null,
+    respondent_email: contactEmail || null,
+    respondent_wechat: contactWechat || null,
     status: 'completed',
     completed_at: new Date().toISOString(),
     started_at: new Date(Date.now() - (durationSeconds || 0) * 1000).toISOString(),

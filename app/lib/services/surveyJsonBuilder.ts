@@ -105,6 +105,50 @@ export function questionsToSurveyJson(
     ],
   });
 
+  // Contact info page (auto-injected)
+  pages.push({
+    name: 'contact',
+    title: '基本信息',
+    description: '请填写您的联系方式，方便我们与您沟通',
+    elements: [
+      {
+        type: 'text',
+        name: '__contact_name',
+        title: '您的姓名',
+        isRequired: true,
+        placeholder: '请输入您的姓名',
+      },
+      {
+        type: 'text',
+        name: '__contact_phone',
+        title: '手机号',
+        isRequired: true,
+        inputType: 'tel',
+        placeholder: '请输入手机号',
+      },
+      {
+        type: 'text',
+        name: '__contact_email',
+        title: '邮箱',
+        isRequired: true,
+        inputType: 'email',
+        placeholder: '请输入邮箱地址',
+      },
+      {
+        type: 'text',
+        name: '__contact_wechat',
+        title: '微信号（选填）',
+        isRequired: false,
+        placeholder: '请输入微信号',
+      },
+      {
+        type: 'html',
+        name: '__registration_hint',
+        html: '<div id="registration-panel-mount"></div>',
+      },
+    ],
+  });
+
   // Questions page
   pages.push({
     name: 'questions',

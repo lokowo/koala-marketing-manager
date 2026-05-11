@@ -1,9 +1,11 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 import { Model } from 'survey-core';
 import { Survey } from 'survey-react-ui';
-import 'survey-core/defaultV2.min.css';
+import 'survey-core/survey-core.min.css';
+import InlineRegistrationPanel from './InlineRegistrationPanel';
 
 const koalaTheme = {
   cssVariables: {
@@ -31,35 +33,46 @@ interface SurveyRendererProps {
   surveyJson: Record<string, unknown>;
   onComplete: (results: Record<string, unknown>) => void;
   onPageChanged?: (data: Record<string, unknown>, pageNo: number) => void;
+  salesCode?: string;
+  onRegistered?: (userId: string) => void;
 }
 
-export default function SurveyRenderer({ surveyJson, onComplete, onPageChanged }: SurveyRendererProps) {
+export default function SurveyRenderer({ surveyJson, onComplete, onPageChanged, salesCode, onRegistered }: SurveyRendererProps) {
   const modelRef = useRef<Model | null>(null);
+  const registrationRootRef = useRef<ReturnType<typeof createRoot> | null>(null);
+  const [, setReady] = useState(false);
 
-  const surveyRef = useCallback((node: HTMLDivElement | null) => {
-    if (!node) return;
-    if (modelRef.current) return;
+  const mountRegistrationPanel = useCallback((model: Model) => {
+    const mountEl = document.getElementById('registration-panel-mount');
+    if (!mountEl) return;
 
-    const model = new Model(surveyJson);
-    model.applyTheme(koalaTheme as Parameters<typeof model.applyTheme>[0]);
-    model.locale = 'zh-cn';
+    const emailValue = model.getValue('__contact_email') || '';
+    if (!emailValue) return;
 
-    model.onCurrentPageChanged.add((sender) => {
-      if (onPageChanged) {
-        onPageChanged(sender.data, sender.currentPageNo);
+    if (!registrationRootRef.current) {
+      registrationRootRef.current = createRoot(mountEl);
+    }
+
+    registrationRootRef.current.render(
+      <InlineRegistrationPanel
+        email={emailValue}
+        salesCode={salesCode}
+        onRegistered={(userId) => {
+          if (onRegistered) onRegistered(userId);
+        }}
+      />
+    );
+  }, [salesCode, onRegistered]);
+
+  useEffect(() => {
+    return () => {
+      if (registrationRootRef.current) {
+        registrationRootRef.current.unmount();
+        registrationRootRef.current = null;
       }
-    });
+    };
+  }, []);
 
-    model.onComplete.add((sender) => {
-      onComplete(sender.data);
-    });
-
-    modelRef.current = model;
-    // Force re-render with model
-    node.dataset.ready = 'true';
-  }, [surveyJson, onComplete, onPageChanged]);
-
-  // We need to create the model once and render Survey with it
   if (!modelRef.current) {
     const model = new Model(surveyJson);
     model.applyTheme(koalaTheme as Parameters<typeof model.applyTheme>[0]);
@@ -71,6 +84,18 @@ export default function SurveyRenderer({ surveyJson, onComplete, onPageChanged }
       }
     });
 
+    model.onAfterRenderPage.add((sender) => {
+      if (sender.currentPage?.name === 'contact') {
+        setTimeout(() => mountRegistrationPanel(sender), 100);
+      }
+    });
+
+    model.onValueChanged.add((sender, options) => {
+      if (options.name === '__contact_email' && sender.currentPage?.name === 'contact') {
+        setTimeout(() => mountRegistrationPanel(sender), 100);
+      }
+    });
+
     model.onComplete.add((sender) => {
       onComplete(sender.data);
     });
@@ -78,9 +103,14 @@ export default function SurveyRenderer({ surveyJson, onComplete, onPageChanged }
     modelRef.current = model;
   }
 
+  const surveyRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    setReady(true);
+  }, []);
+
   return (
     <div ref={surveyRef}>
-      <Survey model={modelRef.current} />
+      {modelRef.current && <Survey model={modelRef.current} />}
     </div>
   );
 }
