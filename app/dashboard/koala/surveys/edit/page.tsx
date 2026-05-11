@@ -248,9 +248,10 @@ function EditContent() {
             survey.status === 'active' ? 'bg-green-100 text-green-600'
             : survey.status === 'paused' ? 'bg-amber-100 text-amber-600'
             : survey.status === 'closed' ? 'bg-red-100 text-red-600'
+            : survey.status === 'deleted' ? 'bg-slate-100 text-slate-500'
             : 'bg-slate-100 text-slate-500'
           }`}>
-            {survey.status === 'active' ? '进行中' : survey.status === 'paused' ? '已暂停' : survey.status === 'closed' ? '已关闭' : '草稿'}
+            {survey.status === 'active' ? '进行中' : survey.status === 'paused' ? '已暂停' : survey.status === 'closed' ? '已关闭' : survey.status === 'deleted' ? '已删除' : '草稿'}
           </span>
         </div>
         <div className="flex gap-2">

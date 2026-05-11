@@ -5,7 +5,7 @@ const db = supabaseAdmin as any;
 
 // ── Types ──────────────────────────────────────────────
 
-export type SurveyStatus = 'draft' | 'active' | 'paused' | 'closed';
+export type SurveyStatus = 'draft' | 'active' | 'paused' | 'closed' | 'deleted';
 export type QuestionType = 'single_choice' | 'multiple_choice' | 'text' | 'rating' | 'scale' | 'dropdown' | 'date' | 'file_upload';
 
 export interface SurveyQuestion {
@@ -221,7 +221,11 @@ export async function listSurveys(params: {
   const offset = (page - 1) * limit;
 
   let query = db.from('surveys').select('*', { count: 'exact' });
-  if (params.status) query = query.eq('status', params.status);
+  if (params.status) {
+    query = query.eq('status', params.status);
+  } else {
+    query = query.neq('status', 'deleted');
+  }
   if (params.created_by) query = query.eq('created_by', params.created_by);
   if (params.search) query = query.ilike('title_zh', `%${params.search}%`);
   query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
@@ -284,6 +288,7 @@ export async function updateSurvey(id: string, updates: Partial<{
 
   if (updates.status === 'active') dbUpdates.published_at = new Date().toISOString();
   if (updates.status === 'closed') dbUpdates.ended_at = new Date().toISOString();
+  if (updates.status === 'deleted') dbUpdates.ended_at = new Date().toISOString();
 
   // Merge settings-level fields into existing settings
   const settingsKeys = ['max_responses', 'allow_anonymous', 'one_per_device',

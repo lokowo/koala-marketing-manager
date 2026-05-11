@@ -19,6 +19,7 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   active: { label: '进行中', color: '#22c55e', bg: '#f0fdf4' },
   paused: { label: '已暂停', color: '#f59e0b', bg: '#fffbeb' },
   closed: { label: '已关闭', color: '#ef4444', bg: '#fef2f2' },
+  deleted: { label: '已删除', color: '#9ca3b8', bg: '#f1f5f9' },
 };
 
 export default function SurveysPage() {
@@ -69,11 +70,11 @@ export default function SurveysPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('确定要删除这份问卷吗？此操作不可撤销。')) return;
-    await fetch('/api/surveys', {
-      method: 'DELETE',
+    if (!confirm('确定要删除这份问卷吗？')) return;
+    await fetch(`/api/surveys/${id}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ status: 'deleted' }),
     });
     fetchSurveys();
   }
@@ -116,6 +117,7 @@ export default function SurveysPage() {
           <option value="active">进行中</option>
           <option value="paused">已暂停</option>
           <option value="closed">已关闭</option>
+          <option value="deleted">已删除</option>
         </select>
         <span className="text-sm text-slate-400">共 {total} 份</span>
       </div>
