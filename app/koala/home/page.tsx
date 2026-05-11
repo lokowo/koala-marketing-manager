@@ -8,6 +8,27 @@ import { ArrowRight, Bell, ChevronRight, X } from 'lucide-react';
 import type { Professor } from '../../lib/types';
 import { useAuth } from '../components/AuthContext';
 
+function useCountUp(target: number, duration = 1500) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (target <= 0) return;
+    const totalFrames = Math.round(duration / 16);
+    const step = Math.max(1, Math.ceil(target / totalFrames));
+    let current = 0;
+    const timer = setInterval(() => {
+      current += step;
+      if (current >= target) {
+        setCount(target);
+        clearInterval(timer);
+      } else {
+        setCount(current);
+      }
+    }, 16);
+    return () => clearInterval(timer);
+  }, [target, duration]);
+  return count;
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   phd_guide: 'PhD指南',
   application: '申请攻略',
@@ -89,11 +110,13 @@ export default function HomePage() {
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [profCount, setProfCount] = useState('4,200+');
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [matchCount, setMatchCount] = useState(0);
   const [showNotif, setShowNotif] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<{ id: string; title: string; body: string; read: boolean; created_at: string }[]>([]);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const displayMatchCount = useCountUp(matchCount);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -120,6 +143,11 @@ export default function HomePage() {
         setProfessors(d.data ?? []);
         if (d.total) setProfCount(d.total.toLocaleString());
       })
+      .catch(() => {});
+
+    fetch('/api/stats/match-count')
+      .then(r => r.json())
+      .then(d => { if (d.count > 0) setMatchCount(d.count); })
       .catch(() => {});
 
     if (user) {
@@ -340,7 +368,9 @@ export default function HomePage() {
                 开始匹配 <ArrowRight className="size-4" />
               </Link>
               <div className="mt-3 text-[11px]" style={{ color: 'rgba(201,169,110,0.4)' }}>
-                已帮助 500+ 位同学找到理想导师
+                {matchCount > 0
+                  ? `已帮助 ${displayMatchCount.toLocaleString()} 位同学匹配理想导师`
+                  : '已帮助众多同学匹配理想导师'}
               </div>
             </div>
           </div>

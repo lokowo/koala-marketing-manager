@@ -107,6 +107,30 @@ function extractProfessorName(message: string): string | null {
   return null;
 }
 
+/** Fire-and-forget: record professor interactions for the match counter */
+async function recordProfessorInteractions(
+  userId: string | null,
+  professorIds: string[],
+  interactionType: string,
+) {
+  if (professorIds.length === 0) return;
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) return;
+    const supabase = createClient(url, key);
+    const rows = professorIds.map(pid => ({
+      user_id: userId || null,
+      professor_id: pid,
+      interaction_type: interactionType,
+    }));
+    await supabase.from('professor_interactions').insert(rows);
+  } catch (err) {
+    console.error('[recordProfessorInteractions]', err);
+  }
+}
+
 function shouldSuggestConsultation(messages: ChatMessage[], mode: AIMode): boolean {
   if (messages.length < 6) return false;
   if (mode === 'path' && messages.length >= 8) return true;
@@ -431,6 +455,13 @@ H指数：${prof.hIndex ?? '未知'}`;
 
             toolSearchedProfessors = searchResults.map(r => ({ ...r.professor, _matchScore: r.score, _matchReasons: r.reasons }));
 
+            // Record 'searched' interactions (fire-and-forget for match counter)
+            if (searchResults.length > 0) {
+              const interactionUserId = userId || (studentCtx as { userId?: string } | null)?.userId || null;
+              const profIds = searchResults.map(r => r.professor.id);
+              recordProfessorInteractions(interactionUserId, profIds, 'searched').catch(() => {});
+            }
+
             if (searchResults.length === 0) {
               toolResult = JSON.stringify({ professors: [], message: '未找到匹配的教授。数据库中可能没有该研究方向的教授数据。' });
             } else {
@@ -567,7 +598,20 @@ H指数：${prof.hIndex ?? '未知'}`;
 
     result.suggestConsultation = shouldSuggestConsultation(messages, mode);
 
-    // 6. Save async + extract user profile
+    // 6. Record 'matched' interactions when AI recommends professors
+    //    and 'email_generated' when writing mode produces an email
+    {
+      const interactionUserId = (body.userId as string | undefined) || null;
+      if (toolSearchedProfessors.length > 0 && result.matchedProfessors) {
+        const matchedIds = toolSearchedProfessors.map(p => p.id);
+        recordProfessorInteractions(interactionUserId, matchedIds, 'matched').catch(() => {});
+      }
+      if (mode === 'write' && blocks.email && activeProfId) {
+        recordProfessorInteractions(interactionUserId, [activeProfId], 'email_generated').catch(() => {});
+      }
+    }
+
+    // 7. Save async + extract user profile
     try {
       const { getServerUser: getUser } = await import('../../../lib/auth');
       const u = await getUser();

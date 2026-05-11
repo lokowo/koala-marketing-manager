@@ -69,7 +69,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const body = await req.json();
     const { type, userId, notes } = body as {
-      type: 'viewed' | 'saved' | 'email_generated' | 'email_sent' | 'rejected' | 'contacted';
+      type: 'viewed' | 'saved' | 'searched' | 'matched' | 'email_generated' | 'email_sent' | 'rejected' | 'contacted' | 'interview_prep';
       userId?: string;
       notes?: string;
     };
