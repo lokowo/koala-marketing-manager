@@ -22,6 +22,7 @@ interface SearchCandidate {
   profileUrl?: string;
   source: 'database' | 'openalex' | 'claude_web_search';
   confidence: 'high' | 'medium' | 'low';
+  universityMismatch?: boolean;
   existsInDb: boolean;
   dbId?: string;
 }
@@ -569,7 +570,7 @@ function ProfessorsPageInner() {
                       : { label: '低���配', color: '#6a7a7e' };
 
                   return (
-                    <div key={idx} className="px-4 py-3 flex items-start gap-3">
+                    <div key={idx} className={`px-4 py-3 flex items-start gap-3 ${c.universityMismatch ? 'opacity-60' : ''}`}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-semibold truncate" style={{ color: '#e8e4dc' }}>{c.name}</p>
@@ -577,10 +578,16 @@ function ProfessorsPageInner() {
                             {sourceBadge.label}
                           </span>
                           <span className="text-[10px]" style={{ color: confBadge.color }}>{confBadge.label}</span>
+                          {c.universityMismatch && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
+                              大学不匹配 ⚠️
+                            </span>
+                          )}
                         </div>
-                        <p className="text-xs mt-0.5" style={{ color: '#6a7a7e' }}>
+                        <p className="text-xs mt-0.5" style={{ color: c.universityMismatch ? '#ef4444' : '#6a7a7e' }}>
                           {c.position && <span>{c.position} · </span>}
                           {c.university}
+                          {c.universityMismatch && <span className="ml-1.5 font-semibold">[不推荐]</span>}
                         </p>
                         {c.researchAreas.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
@@ -598,7 +605,7 @@ function ProfessorsPageInner() {
                           {c.citationCount != null && <span>{fmtCitations(c.citationCount)}引</span>}
                         </div>
                       </div>
-                      {!c.existsInDb && (
+                      {!c.existsInDb && !c.universityMismatch && (
                         <button
                           onClick={() => !added && !adding && handleAddCandidate(c)}
                           disabled={added || adding}

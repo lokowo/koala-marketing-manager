@@ -378,6 +378,7 @@ interface SearchCandidate {
   googleScholarUrl?: string;
   source: 'database' | 'openalex' | 'claude_web_search';
   confidence: 'high' | 'medium' | 'low';
+  universityMismatch?: boolean;
   existsInDb: boolean;
   dbId?: string;
 }
@@ -665,16 +666,21 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                 return (
                   <button
                     key={idx}
-                    onClick={() => handleSelectCandidate(c)}
-                    className="w-full text-left border border-slate-200 rounded-lg p-3 hover:border-purple-400 hover:bg-purple-50 transition"
+                    onClick={() => !c.universityMismatch && handleSelectCandidate(c)}
+                    disabled={!!c.universityMismatch}
+                    className={`w-full text-left border rounded-lg p-3 transition ${c.universityMismatch ? 'border-red-200 bg-red-50/50 opacity-60 cursor-not-allowed' : 'border-slate-200 hover:border-purple-400 hover:bg-purple-50'}`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${sourceBadge.cls}`}>{sourceBadge.label}</span>
                       {c.confidence === 'high' && <span className="text-[10px] text-green-600">高匹配</span>}
                       {c.confidence === 'medium' && <span className="text-[10px] text-amber-600">中匹配</span>}
+                      {c.universityMismatch && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-medium">大学不匹配 ⚠️</span>}
                     </div>
                     <p className="font-medium text-slate-900">{c.name}</p>
-                    <p className="text-sm text-slate-600">{c.position ? `${c.position} — ` : ''}{c.university}</p>
+                    <p className={`text-sm ${c.universityMismatch ? 'text-red-600' : 'text-slate-600'}`}>
+                      {c.position ? `${c.position} — ` : ''}{c.university}
+                      {c.universityMismatch && <span className="ml-1.5 font-semibold">[不推荐]</span>}
+                    </p>
                     {c.faculty && <p className="text-xs text-slate-500">{c.faculty}</p>}
                     {c.researchAreas.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1.5">

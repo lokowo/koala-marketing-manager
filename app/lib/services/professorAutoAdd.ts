@@ -37,6 +37,7 @@ export interface ProfessorCandidate {
   googleScholarUrl?: string;
   source: 'database' | 'openalex' | 'claude_web_search';
   confidence: 'high' | 'medium' | 'low';
+  universityMismatch?: boolean;
   existsInDb: boolean;
   dbId?: string;
 }
@@ -220,12 +221,8 @@ export async function findOrCreateProfessor(name: string, university?: string): 
 
 async function searchOpenAlexCandidates(name: string, university?: string): Promise<ProfessorCandidate[]> {
   const query = encodeURIComponent(name);
-  let url: string;
-  if (university) {
-    url = `https://api.openalex.org/authors?search=${query}&filter=last_known_institutions.display_name.search:${encodeURIComponent(university)}&per_page=5&mailto=koalaphd@gmail.com`;
-  } else {
-    url = `https://api.openalex.org/authors?search=${query}&per_page=5&mailto=koalaphd@gmail.com`;
-  }
+  // Always search by name only — no institution filter — so we find all matches
+  const url = `https://api.openalex.org/authors?search=${query}&per_page=5&mailto=koalaphd@gmail.com`;
 
   let data: { results: OpenAlexAuthor[] };
   try {
@@ -241,21 +238,29 @@ async function searchOpenAlexCandidates(name: string, university?: string): Prom
   const candidates: ProfessorCandidate[] = [];
 
   for (const author of data.results) {
-    // Strict university verification when specified
-    if (university) {
-      const allInstitutions = [
-        ...(author.last_known_institutions ?? []).map(i => i.display_name),
-        ...(author.affiliations ?? []).map(a => a.institution.display_name),
-      ];
-      const isMatch = allInstitutions.some(
-        inst => inst.toLowerCase().includes(university.toLowerCase())
-      );
-      if (!isMatch) continue;
-    }
+    const allInstitutions = [
+      ...(author.last_known_institutions ?? []).map(i => i.display_name),
+      ...(author.affiliations ?? []).map(a => a.institution.display_name),
+    ];
 
     const institution = author.last_known_institutions?.[0]?.display_name
       || author.affiliations?.[0]?.institution.display_name
       || 'Unknown';
+
+    let confidence: ProfessorCandidate['confidence'] = 'medium';
+    let universityMismatch = false;
+
+    if (university) {
+      const isMatch = allInstitutions.some(
+        inst => inst.toLowerCase().includes(university.toLowerCase())
+      );
+      if (isMatch) {
+        confidence = 'high';
+      } else {
+        confidence = 'low';
+        universityMismatch = true;
+      }
+    }
 
     const researchAreas: string[] = [];
     if (author.topics) {
@@ -269,11 +274,6 @@ async function searchOpenAlexCandidates(name: string, university?: string): Prom
       }
     }
 
-    const confidence: ProfessorCandidate['confidence'] = university &&
-      (author.last_known_institutions ?? []).some(
-        i => i.display_name.toLowerCase().includes(university.toLowerCase())
-      ) ? 'high' : 'medium';
-
     candidates.push({
       name: author.display_name,
       university: institution,
@@ -283,6 +283,7 @@ async function searchOpenAlexCandidates(name: string, university?: string): Prom
       citationCount: author.cited_by_count ?? undefined,
       source: 'openalex',
       confidence,
+      universityMismatch,
       existsInDb: false,
     });
   }
