@@ -31,6 +31,11 @@ export async function GET(req: NextRequest) {
       query = query.or(`title_zh.ilike.%${search}%,title_en.ilike.%${search}%,excerpt_zh.ilike.%${search}%,excerpt_en.ilike.%${search}%`);
     }
 
+    // Always sort pinned first for public queries
+    if (publicOnly) {
+      query = query.order('is_pinned', { ascending: false, nullsFirst: false });
+    }
+
     if (sort === 'hot' || sort === 'views') {
       query = query.order('view_count', { ascending: false, nullsFirst: false });
     } else {

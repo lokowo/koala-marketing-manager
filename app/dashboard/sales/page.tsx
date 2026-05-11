@@ -10,6 +10,8 @@ interface Customer { id: string; customer_user_id: string; stage: string; note: 
 interface FunnelData { funnel: Record<string, number>; total: number; conversionRate: string }
 interface KpiData { leads: { current: number; target: number }; followups: { current: number; target: number }; conversions: { current: number; target: number } }
 interface WorkLog { id: string; action: string; target_type: string; target_id: string | null; details: Record<string, unknown> | null; created_at: string }
+interface EngagementEntry { userId: string; displayName: string; email: string; totalScore: number; level: 'high' | 'medium' | 'low' | 'dormant'; breakdown: { chatActivity: number; professorEngagement: number; profileCompleteness: number; outreachActivity: number; recency: number }; stats: { conversationCount: number; savedProfessors: number; emailsGenerated: number; profilePct: number; daysSinceLastActive: number; registeredDaysAgo: number } }
+interface EngagementSummary { high: number; medium: number; low: number; dormant: number; total: number; avgScore: number }
 
 const STAGE_LABELS: Record<string, { label: string; color: string }> = {
   lead: { label: '线索', color: '#6a7a7e' },
@@ -39,6 +41,8 @@ export default function SalesDashboard() {
   const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [kpi, setKpi] = useState<KpiData | null>(null);
   const [logs, setLogs] = useState<WorkLog[]>([]);
+  const [engagement, setEngagement] = useState<EngagementEntry[]>([]);
+  const [engSummary, setEngSummary] = useState<EngagementSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [newLabel, setNewLabel] = useState('');
   const [newChannel, setNewChannel] = useState('wechat');
@@ -53,18 +57,21 @@ export default function SalesDashboard() {
 
   async function loadData() {
     setLoading(true);
-    const [qr, cust, fn, kpiRes, logsRes] = await Promise.all([
+    const [qr, cust, fn, kpiRes, logsRes, engRes] = await Promise.all([
       fetch('/api/sales/qrcode').then(r => r.json()),
       fetch('/api/sales/customers').then(r => r.json()),
       fetch('/api/sales/funnel').then(r => r.json()),
       fetch('/api/sales/my-kpi').then(r => r.ok ? r.json() : null),
       fetch('/api/sales/my-logs?limit=10').then(r => r.ok ? r.json() : { data: [] }),
+      fetch('/api/sales/customer-engagement').then(r => r.ok ? r.json() : { data: [], summary: null }),
     ]);
     setQrcodes(qr.data ?? []);
     setCustomers(cust.data ?? []);
     setFunnel(fn);
     setKpi(kpiRes);
     setLogs(logsRes.data ?? []);
+    setEngagement(engRes.data ?? []);
+    setEngSummary(engRes.summary ?? null);
     setLoading(false);
   }
 
@@ -260,6 +267,64 @@ export default function SalesDashboard() {
             )}
           </div>
         </div>
+
+        {/* Customer Engagement */}
+        {engagement.length > 0 && (
+          <div className="rounded-xl p-5" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+            <h2 className="text-sm font-semibold mb-3" style={{ color: '#a8b8ac' }}>📊 客户活跃度</h2>
+            {engSummary && (
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
+                {[
+                  { label: '平均分', value: engSummary.avgScore, icon: '📈', color: '#c9a96e' },
+                  { label: '🔥 高活跃', value: engSummary.high, icon: '', color: '#2ecc71' },
+                  { label: '🟡 中等', value: engSummary.medium, icon: '', color: '#c9a96e' },
+                  { label: '🔵 低活跃', value: engSummary.low, icon: '', color: '#4a90d9' },
+                  { label: '⚪ 沉默', value: engSummary.dormant, icon: '', color: '#6a7a7e' },
+                ].map(item => (
+                  <div key={item.label} className="rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    <div className="text-lg font-bold" style={{ color: item.color }}>{item.value}</div>
+                    <div className="text-[10px]" style={{ color: '#6a7a7e' }}>{item.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="space-y-1.5">
+              {engagement.map(e => {
+                const levelConfig = {
+                  high: { emoji: '🔥', color: '#2ecc71', bg: 'rgba(46,204,113,0.1)' },
+                  medium: { emoji: '🟡', color: '#c9a96e', bg: 'rgba(201,169,110,0.1)' },
+                  low: { emoji: '🔵', color: '#4a90d9', bg: 'rgba(74,144,217,0.1)' },
+                  dormant: { emoji: '⚪', color: '#6a7a7e', bg: 'rgba(106,122,126,0.1)' },
+                }[e.level];
+                return (
+                  <div key={e.userId} className="flex items-center gap-3 rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                    <div className="size-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: levelConfig.bg, color: levelConfig.color }}>
+                      {e.totalScore}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium truncate" style={{ color: '#e8e4dc' }}>{e.displayName || e.email || '未知'}</span>
+                        <span className="text-[10px]" style={{ color: levelConfig.color }}>{levelConfig.emoji}</span>
+                      </div>
+                      <div className="flex gap-2 mt-0.5 text-[10px]" style={{ color: '#6a7a7e' }}>
+                        <span>💬{e.stats.conversationCount}</span>
+                        <span>📌{e.stats.savedProfessors}</span>
+                        <span>✉️{e.stats.emailsGenerated}</span>
+                        <span>📝{e.stats.profilePct}%</span>
+                        {e.stats.daysSinceLastActive <= 3 && <span style={{ color: '#2ecc71' }}>● 近期活跃</span>}
+                        {e.stats.daysSinceLastActive > 14 && <span style={{ color: '#b06040' }}>● {e.stats.daysSinceLastActive}天未活跃</span>}
+                      </div>
+                    </div>
+                    {/* Mini score bar */}
+                    <div className="w-16 h-2 rounded-full overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                      <div className="h-full rounded-full" style={{ width: `${e.totalScore}%`, background: levelConfig.color }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Customers */}
         <div className="rounded-xl p-5" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>

@@ -53,6 +53,16 @@ export async function POST(req: Request) {
       fullName = profile?.full_name || profile?.display_name || email.split('@')[0] || '';
     }
 
+    // Ensure user_profiles row exists (FK requirement)
+    await db
+      .from('user_profiles')
+      .upsert({
+        id: user.id,
+        email: email,
+        display_name: fullName || email.split('@')[0],
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id', ignoreDuplicates: true });
+
     const { data: existing } = await db
       .from('role_applications')
       .select('id, status')

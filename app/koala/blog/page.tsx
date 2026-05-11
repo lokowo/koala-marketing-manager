@@ -18,6 +18,7 @@ interface BlogPost {
   cover_image_url: string | null;
   tags: string[];
   view_count?: number;
+  is_pinned?: boolean;
 }
 
 const CATEGORIES: { key: string; label: string }[] = [
@@ -216,6 +217,11 @@ export default function BlogPage() {
                     <span className="text-[11px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e' }}>
                       {CATEGORY_LABELS[post.category] || post.category}
                     </span>
+                    {post.is_pinned && (
+                      <span className="text-[11px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(201,169,110,0.15)', color: '#c9a96e' }}>
+                        📌 置顶
+                      </span>
+                    )}
                     <span className="text-[10px]" style={{ color: '#5a6a6e' }}>
                       {getSourceLabel(post.category)}
                     </span>
