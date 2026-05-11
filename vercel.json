@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "app/api/user/documents/parse/route.ts": {
+      "maxDuration": 60
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/weekly-sales-report",

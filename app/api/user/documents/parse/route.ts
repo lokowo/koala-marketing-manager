@@ -60,8 +60,7 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Failed to download file' }, { status: 500 });
     }
 
-    const buffer = Buffer.from(await fileData.arrayBuffer());
-    const base64 = buffer.toString('base64');
+    let buffer = Buffer.from(await fileData.arrayBuffer());
 
     const isImage = doc.file_type.startsWith('image/');
     const isDocx = doc.file_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -85,12 +84,31 @@ export async function POST(req: Request) {
       return Response.json({ error: '不支持的文件格式，请上传 PDF、图片或 DOCX 文件' }, { status: 400 });
     }
 
-    const mediaType = isImage ? doc.file_type
-      : isDocx ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      : 'application/pdf';
+    let mediaType: string;
+
+    if (isImage) {
+      const sharp = (await import('sharp')).default;
+      buffer = await sharp(buffer)
+        .resize(1600, 1600, { fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 80 })
+        .toBuffer();
+      mediaType = 'image/jpeg';
+      console.log(`[parse] Compressed image: ${doc.file_name} → ${buffer.length} bytes`);
+    } else if (isDocx) {
+      mediaType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    } else {
+      mediaType = 'application/pdf';
+    }
+
+    const base64 = buffer.toString('base64');
 
     const Anthropic = (await import('@anthropic-ai/sdk')).default;
     const client = new Anthropic();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fileBlock: any = isImage
+      ? { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } }
+      : { type: 'document', source: { type: 'base64', media_type: mediaType, data: base64 } };
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
@@ -99,14 +117,7 @@ export async function POST(req: Request) {
         {
           role: 'user',
           content: [
-            {
-              type: isImage ? 'image' as const : 'document' as const,
-              source: {
-                type: 'base64' as const,
-                media_type: mediaType,
-                data: base64,
-              },
-            },
+            fileBlock,
             {
               type: 'text' as const,
               text: `请解析这份文档（简历/成绩单/学历证明），提取以下信息并以JSON格式返回。
@@ -237,7 +248,8 @@ export async function POST(req: Request) {
       work_count: parsed.work?.length ?? 0,
     });
   } catch (error) {
-    console.error('[user/documents/parse POST]', error);
+    const err = error as Error;
+    console.error('[user/documents/parse POST]', err.message, err.stack);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
