@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface Question {
@@ -13,6 +13,8 @@ interface Question {
 interface SurveyResponse {
   id: string;
   answers: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  respondent_id?: string;
   device_fingerprint?: string;
   source?: string;
   sales_code?: string;
@@ -22,6 +24,7 @@ interface SurveyResponse {
 
 function ResponsesContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const surveyId = searchParams.get('id') || searchParams.get('survey_id');
 
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
@@ -31,6 +34,17 @@ function ResponsesContent() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState('');
+
+  useEffect(() => {
+    fetch('/api/admin/me').then(r => r.json()).then(d => {
+      const role = d.role || '';
+      setUserRole(role);
+      if (role === 'admin') {
+        router.replace(`/dashboard/koala/surveys/analytics?id=${surveyId}`);
+      }
+    }).catch(() => {});
+  }, [router, surveyId]);
 
   const fetchData = useCallback(async () => {
     if (!surveyId) return;
@@ -54,6 +68,8 @@ function ResponsesContent() {
     return String(value);
   }
 
+  const isSales = userRole === 'sales';
+  const isSuperAdmin = userRole === 'super_admin';
   const selectedResponse = responses.find(r => r.id === selectedId);
 
   if (!surveyId) return <div className="text-center py-20 text-slate-500">缺少问卷 ID</div>;
@@ -75,46 +91,71 @@ function ResponsesContent() {
         </div>
       ) : (
         <div className="flex gap-5">
-          {/* Response list */}
           <div className="flex-1 bg-white rounded-xl border border-slate-200 overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 text-left">
                   <th className="px-4 py-3 text-slate-500 font-medium">#</th>
                   <th className="px-4 py-3 text-slate-500 font-medium">提交时间</th>
+                  {/* Contact info visible to sales and super_admin */}
+                  {(isSales || isSuperAdmin) && (
+                    <>
+                      <th className="px-4 py-3 text-slate-500 font-medium">姓名</th>
+                      <th className="px-4 py-3 text-slate-500 font-medium">手机</th>
+                      <th className="px-4 py-3 text-slate-500 font-medium">邮箱</th>
+                    </>
+                  )}
                   <th className="px-4 py-3 text-slate-500 font-medium">来源</th>
-                  {questions.slice(0, 3).map(q => (
+                  <th className="px-4 py-3 text-slate-500 font-medium">注册</th>
+                  {!isSales && !isSuperAdmin && questions.slice(0, 3).map(q => (
                     <th key={q.id} className="px-4 py-3 text-slate-500 font-medium max-w-[150px] truncate">{q.title}</th>
                   ))}
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody>
-                {responses.map((r, i) => (
-                  <tr key={r.id} className={`border-t border-slate-100 cursor-pointer transition-colors ${
-                    selectedId === r.id ? 'bg-amber-50' : 'hover:bg-slate-50/50'
-                  }`} onClick={() => setSelectedId(r.id)}>
-                    <td className="px-4 py-3 text-slate-400">{(page - 1) * 30 + i + 1}</td>
-                    <td className="px-4 py-3 text-slate-600 text-xs">
-                      {new Date(r.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${
-                        r.source === 'qrcode' ? 'bg-purple-100 text-purple-600' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {r.source === 'qrcode' ? '二维码' : '直接访问'}
-                      </span>
-                    </td>
-                    {questions.slice(0, 3).map(q => (
-                      <td key={q.id} className="px-4 py-3 text-slate-600 text-xs max-w-[150px] truncate">
-                        {formatAnswer(r.answers[q.id])}
+                {responses.map((r, i) => {
+                  const meta = r.metadata || {};
+                  return (
+                    <tr key={r.id} className={`border-t border-slate-100 cursor-pointer transition-colors ${
+                      selectedId === r.id ? 'bg-amber-50' : 'hover:bg-slate-50/50'
+                    }`} onClick={() => setSelectedId(r.id)}>
+                      <td className="px-4 py-3 text-slate-400">{(page - 1) * 30 + i + 1}</td>
+                      <td className="px-4 py-3 text-slate-600 text-xs">
+                        {new Date(r.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </td>
-                    ))}
-                    <td className="px-4 py-3 text-right">
-                      <span className="text-xs text-amber-500">查看</span>
-                    </td>
-                  </tr>
-                ))}
+                      {(isSales || isSuperAdmin) && (
+                        <>
+                          <td className="px-4 py-3 text-slate-700 text-xs">{(meta.respondent_name as string) || '—'}</td>
+                          <td className="px-4 py-3 text-slate-700 text-xs">{(meta.respondent_phone as string) || '—'}</td>
+                          <td className="px-4 py-3 text-slate-700 text-xs">{(meta.respondent_email as string) || '—'}</td>
+                        </>
+                      )}
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${
+                          r.source === 'qrcode' ? 'bg-purple-100 text-purple-600' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {r.source === 'qrcode' ? '二维码' : '直接访问'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {r.respondent_id ? (
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-600">已注册</span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-400">未注册</span>
+                        )}
+                      </td>
+                      {!isSales && !isSuperAdmin && questions.slice(0, 3).map(q => (
+                        <td key={q.id} className="px-4 py-3 text-slate-600 text-xs max-w-[150px] truncate">
+                          {formatAnswer(r.answers[q.id])}
+                        </td>
+                      ))}
+                      <td className="px-4 py-3 text-right">
+                        <span className="text-xs text-amber-500">查看</span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
 
@@ -129,13 +170,29 @@ function ResponsesContent() {
             )}
           </div>
 
-          {/* Response detail panel */}
           {selectedResponse && (
             <div className="w-80 bg-white rounded-xl border border-slate-200 p-5 space-y-4 flex-shrink-0 self-start sticky top-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-700">回复详情</h3>
                 <button onClick={() => setSelectedId(null)} className="text-slate-400 hover:text-slate-600 text-xs">关闭</button>
               </div>
+              {/* Contact info section */}
+              {(isSales || isSuperAdmin) && (
+                <div className="bg-slate-50 rounded-lg p-3 space-y-1">
+                  <div className="text-xs font-medium text-slate-500 mb-1">联系信息</div>
+                  <div className="text-sm text-slate-700">{(selectedResponse.metadata?.respondent_name as string) || '—'}</div>
+                  <div className="text-xs text-slate-500">{(selectedResponse.metadata?.respondent_phone as string) || '—'}</div>
+                  <div className="text-xs text-slate-500">{(selectedResponse.metadata?.respondent_email as string) || '—'}</div>
+                  {selectedResponse.metadata?.respondent_wechat ? (
+                    <div className="text-xs text-slate-500">微信: {String(selectedResponse.metadata.respondent_wechat)}</div>
+                  ) : null}
+                  {selectedResponse.respondent_id ? (
+                    <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-600">已注册</span>
+                  ) : (
+                    <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-400">未注册</span>
+                  )}
+                </div>
+              )}
               <div className="text-xs text-slate-400 space-y-1">
                 <div>提交时间: {new Date(selectedResponse.created_at).toLocaleString('zh-CN')}</div>
                 <div>来源: {selectedResponse.source === 'qrcode' ? '二维码' : '直接访问'}</div>

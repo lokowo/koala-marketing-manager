@@ -105,26 +105,25 @@ export function questionsToSurveyJson(
     ],
   });
 
-  // Contact info page (auto-injected)
+  // Contact info page (auto-injected for every survey)
   pages.push({
-    name: 'contact',
-    title: '基本信息',
-    description: '请填写您的联系方式，方便我们与您沟通',
+    name: 'contact_info',
+    title: '请先填写您的联系方式',
+    description: '我们会保密处理您的信息，仅用于为您提供更好的服务',
     elements: [
       {
         type: 'text',
         name: '__contact_name',
         title: '您的姓名',
         isRequired: true,
-        placeholder: '请输入您的姓名',
       },
       {
         type: 'text',
         name: '__contact_phone',
-        title: '手机号',
+        title: '手机号码',
         isRequired: true,
         inputType: 'tel',
-        placeholder: '请输入手机号',
+        validators: [{ type: 'regex', regex: '^1[3-9]\\d{9}$', text: '请输入有效手机号' }],
       },
       {
         type: 'text',
@@ -132,19 +131,17 @@ export function questionsToSurveyJson(
         title: '邮箱',
         isRequired: true,
         inputType: 'email',
-        placeholder: '请输入邮箱地址',
       },
       {
         type: 'text',
         name: '__contact_wechat',
         title: '微信号（选填）',
         isRequired: false,
-        placeholder: '请输入微信号',
       },
       {
         type: 'html',
-        name: '__registration_hint',
-        html: '<div id="registration-panel-mount"></div>',
+        name: '__reg_hint',
+        html: '<div id="inline-reg-container"></div>',
       },
     ],
   });

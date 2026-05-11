@@ -22,13 +22,18 @@ interface QuestionEditorProps {
   onMoveDown?: () => void;
 }
 
-const QUESTION_TYPES: { value: QuestionType; label: string; icon: string }[] = [
+const QUESTION_TYPES: { value: string; label: string; icon: string }[] = [
   { value: 'single_choice', label: '单选', icon: '⭕' },
   { value: 'multiple_choice', label: '多选', icon: '☑️' },
-  { value: 'text', label: '文本', icon: '✏️' },
+  { value: 'text', label: '短文本', icon: '✏️' },
+  { value: 'long_text', label: '长文本', icon: '📝' },
   { value: 'rating', label: '评分', icon: '⭐' },
+  { value: 'nps', label: 'NPS推荐度', icon: '📈' },
   { value: 'scale', label: '量表', icon: '📊' },
   { value: 'dropdown', label: '下拉', icon: '📋' },
+  { value: 'phone', label: '手机号', icon: '📱' },
+  { value: 'email', label: '邮箱', icon: '📧' },
+  { value: 'education', label: '学历', icon: '🎓' },
   { value: 'date', label: '日期', icon: '📅' },
 ];
 

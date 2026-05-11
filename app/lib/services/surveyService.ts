@@ -6,7 +6,7 @@ const db = supabaseAdmin as any;
 // ── Types ──────────────────────────────────────────────
 
 export type SurveyStatus = 'draft' | 'active' | 'paused' | 'closed' | 'deleted';
-export type QuestionType = 'single_choice' | 'multiple_choice' | 'text' | 'rating' | 'scale' | 'dropdown' | 'date' | 'file_upload';
+export type QuestionType = 'single_choice' | 'multiple_choice' | 'text' | 'long_text' | 'rating' | 'nps' | 'scale' | 'dropdown' | 'phone' | 'email' | 'education' | 'date' | 'file_upload';
 
 export interface SurveyQuestion {
   id: string;
@@ -853,4 +853,256 @@ export async function getSurveyAnalytics(surveyId: string, salesCode?: string): 
     responses_by_source,
     question_stats,
   };
+}
+
+// ── Public Survey Flow (share-link → response → registration) ──
+
+export async function resolveShareCode(code: string): Promise<{
+  survey: any;
+  questions: any[];
+  salesUserId: string;
+  shareLinkId: string;
+} | null> {
+  // Look up the share link by short_code
+  const { data: link, error: linkErr } = await db.from('survey_share_links')
+    .select('*')
+    .eq('short_code', code)
+    .single();
+  if (linkErr || !link) return null;
+
+  // Fetch the survey
+  const { data: survey, error: surveyErr } = await db.from('surveys')
+    .select('*')
+    .eq('id', link.survey_id)
+    .single();
+  if (surveyErr || !survey) return null;
+
+  // Fetch questions ordered by order_index
+  const { data: questions } = await db.from('survey_questions')
+    .select('*')
+    .eq('survey_id', survey.id)
+    .order('order_index', { ascending: true });
+
+  // Increment scan_count on the share link
+  const newScanCount = (link.scan_count || 0) + 1;
+  await db.from('survey_share_links')
+    .update({ scan_count: newScanCount })
+    .eq('id', link.id);
+
+  return {
+    survey,
+    questions: questions || [],
+    salesUserId: link.sales_user_id,
+    shareLinkId: link.id,
+  };
+}
+
+export async function startResponse(
+  surveyId: string,
+  salesUserId: string,
+  shareLinkId: string,
+  fingerprint?: string,
+): Promise<any> {
+  const { data: row, error } = await db.from('survey_responses').insert({
+    survey_id: surveyId,
+    sales_user_id: salesUserId,
+    share_link_id: shareLinkId,
+    device_fingerprint: fingerprint || null,
+    status: 'in_progress',
+    started_at: new Date().toISOString(),
+  }).select().single();
+  if (error) throw new Error(`Failed to start survey response: ${error.message}`);
+  return row;
+}
+
+export async function saveProgress(
+  responseId: string,
+  answers: Record<string, unknown>,
+  currentPage: number,
+): Promise<void> {
+  const { error: updateErr } = await db.from('survey_responses')
+    .update({ current_page: currentPage })
+    .eq('id', responseId);
+  if (updateErr) throw new Error(`Failed to save progress: ${updateErr.message}`);
+
+  await db.from('survey_answers').delete().eq('response_id', responseId);
+
+  const entries = Object.entries(answers).filter(([k]) => !k.startsWith('__'));
+  if (entries.length > 0) {
+    const rows = entries.map(([questionId, value]) => ({
+      response_id: responseId,
+      question_id: questionId,
+      answer_value: typeof value === 'object' ? value : { value },
+      answered_at: new Date().toISOString(),
+    }));
+    const { error: insertErr } = await db.from('survey_answers').insert(rows);
+    if (insertErr) throw new Error(`Failed to save answers: ${insertErr.message}`);
+  }
+}
+
+export async function completeResponse(
+  responseId: string,
+  answers: Record<string, unknown>,
+  metadata?: Record<string, unknown>,
+): Promise<{ id: string }> {
+  const contactName = metadata?.contact_name as string | undefined;
+  const contactPhone = metadata?.contact_phone as string | undefined;
+  const contactEmail = metadata?.contact_email as string | undefined;
+  const contactWechat = metadata?.contact_wechat as string | undefined;
+  const durationSeconds = metadata?.duration_seconds as number | undefined;
+
+  const { error: updateErr } = await db.from('survey_responses')
+    .update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      respondent_name: contactName || null,
+      respondent_phone: contactPhone || null,
+      respondent_email: contactEmail || null,
+      respondent_wechat: contactWechat || null,
+      time_spent_seconds: durationSeconds || null,
+    })
+    .eq('id', responseId);
+  if (updateErr) throw new Error(`Failed to complete response: ${updateErr.message}`);
+
+  await db.from('survey_answers').delete().eq('response_id', responseId);
+
+  const entries = Object.entries(answers).filter(([k]) => !k.startsWith('__'));
+  if (entries.length > 0) {
+    const rows = entries.map(([questionId, value]) => ({
+      response_id: responseId,
+      question_id: questionId,
+      answer_value: typeof value === 'object' ? value : { value },
+      answered_at: new Date().toISOString(),
+    }));
+    await db.from('survey_answers').insert(rows);
+  }
+
+  // Increment response_count on the share link
+  const { data: resp } = await db.from('survey_responses')
+    .select('share_link_id').eq('id', responseId).single();
+  if (resp?.share_link_id) {
+    const { data: link } = await db.from('survey_share_links')
+      .select('response_count').eq('id', resp.share_link_id).single();
+    if (link) {
+      await db.from('survey_share_links')
+        .update({ response_count: (link.response_count || 0) + 1 })
+        .eq('id', resp.share_link_id);
+    }
+  }
+
+  return { id: responseId };
+}
+
+export async function registerFromSurvey(
+  responseId: string,
+  email: string,
+  password: string,
+  fullName: string,
+  phone?: string,
+): Promise<{ userId: string; credits: number }> {
+  // a. Create the user via Supabase Auth
+  const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName, phone: phone || null },
+  });
+  if (authErr || !authData?.user) {
+    throw new Error(`Failed to create user: ${authErr?.message || 'Unknown auth error'}`);
+  }
+  const newUserId = authData.user.id;
+
+  // b. Upsert user_profiles
+  const { error: profileErr } = await db.from('user_profiles').upsert({
+    id: newUserId,
+    full_name: fullName,
+    phone: phone || null,
+    email,
+    credit_balance: 20,
+  });
+  if (profileErr) throw new Error(`Failed to create user profile: ${profileErr.message}`);
+
+  // c. Update survey_responses with registered user
+  const { error: respErr } = await db.from('survey_responses')
+    .update({
+      registered_user_id: newUserId,
+      registration_credits_awarded: true,
+    })
+    .eq('id', responseId);
+  if (respErr) throw new Error(`Failed to link response to user: ${respErr.message}`);
+
+  // d. Insert credit transaction
+  const { error: creditErr } = await db.from('credit_transactions').insert({
+    user_id: newUserId,
+    amount: 20,
+    type: 'credit',
+    source: 'survey_registration',
+    description: '问卷注册奖励',
+  });
+  if (creditErr) throw new Error(`Failed to record credit transaction: ${creditErr.message}`);
+
+  // e. Get the share_link from the response to increment registration_count
+  const { data: resp } = await db.from('survey_responses')
+    .select('share_link_id')
+    .eq('id', responseId)
+    .single();
+  if (resp?.share_link_id) {
+    const { data: linkRow } = await db.from('survey_share_links')
+      .select('registration_count')
+      .eq('id', resp.share_link_id)
+      .single();
+    const newRegCount = ((linkRow?.registration_count as number) || 0) + 1;
+    await db.from('survey_share_links')
+      .update({ registration_count: newRegCount })
+      .eq('id', resp.share_link_id);
+  }
+
+  // f. Get survey title and upsert into sales_customers
+  const { data: respForSurvey } = await db.from('survey_responses')
+    .select('survey_id, sales_user_id')
+    .eq('id', responseId)
+    .single();
+  if (respForSurvey) {
+    const { data: surveyRow } = await db.from('surveys')
+      .select('title_zh')
+      .eq('id', respForSurvey.survey_id)
+      .single();
+    const surveyTitle = surveyRow?.title_zh || '未知问卷';
+
+    const { error: custErr } = await db.from('sales_customers').upsert({
+      sales_user_id: respForSurvey.sales_user_id,
+      customer_user_id: newUserId,
+      source: 'survey',
+      registered_at: new Date().toISOString(),
+      stage: 'new',
+      notes: `通过调研问卷《${surveyTitle}》注册`,
+    });
+    if (custErr) throw new Error(`Failed to create sales customer record: ${custErr.message}`);
+  }
+
+  // g. Return result
+  return { userId: newUserId, credits: 20 };
+}
+
+export async function endSurvey(
+  id: string,
+  userId: string,
+  userRole: string,
+): Promise<void> {
+  // Super admins can end any survey; others can only end their own
+  if (userRole !== 'super_admin') {
+    const { data: survey, error: fetchErr } = await db.from('surveys')
+      .select('created_by')
+      .eq('id', id)
+      .single();
+    if (fetchErr || !survey) throw new Error('Survey not found');
+    if (survey.created_by !== userId) {
+      throw new Error('Permission denied: you can only end surveys you created');
+    }
+  }
+
+  const { error } = await db.from('surveys')
+    .update({ status: 'closed', ended_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw new Error(`Failed to end survey: ${error.message}`);
 }
