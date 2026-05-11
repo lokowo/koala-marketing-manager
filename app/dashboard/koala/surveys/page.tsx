@@ -154,7 +154,7 @@ export default function SurveysPage() {
                   <span className="text-sm text-slate-700">{s.title}</span>
                   <div className="flex gap-2">
                     <Link
-                      href={`/dashboard/koala/surveys/edit?id=${s.id}&tab=share`}
+                      href={`/dashboard/koala/surveys/${s.id}/share`}
                       className="px-3 py-1 text-xs rounded-lg font-medium text-teal-600 bg-teal-50 no-underline"
                     >
                       推广码
@@ -299,19 +299,14 @@ export default function SurveysPage() {
                               </Link>
                             )}
 
-                            {/* Sales: generate promo code for active surveys in plaza */}
-                            {isSales && s.status === 'active' && tab === 'plaza' && (
+                            {/* Sales: generate promo code for active surveys */}
+                            {isSales && s.status === 'active' && (
                               <Link
-                                href={`/dashboard/koala/surveys/edit?id=${s.id}&tab=share`}
+                                href={`/dashboard/koala/surveys/${s.id}/share`}
                                 className="px-2 py-1 text-xs rounded hover:bg-teal-50 text-teal-600 no-underline font-medium"
                               >
-                                生成推广码
+                                推广
                               </Link>
-                            )}
-
-                            {/* Admin in plaza: show hint instead of promo button */}
-                            {isAdmin && !isSuperAdmin && s.status === 'active' && tab === 'plaza' && (
-                              <span className="px-2 py-1 text-xs text-slate-400">请通知销售推广</span>
                             )}
 
                             {/* Draft: publish */}

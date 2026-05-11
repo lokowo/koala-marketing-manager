@@ -53,9 +53,11 @@ function EditContent() {
   const searchParams = useSearchParams();
   const surveyId = searchParams.get('id');
 
-  const initialTab = (['questions', 'settings', 'preview', 'share'] as const).includes(
-    searchParams.get('tab') as 'questions' | 'settings' | 'preview' | 'share'
-  ) ? searchParams.get('tab') as 'questions' | 'settings' | 'preview' | 'share' : 'questions';
+  const rawTab = searchParams.get('tab');
+  const validTabs = ['questions', 'settings', 'preview', 'share'] as const;
+  const initialTab = validTabs.includes(rawTab as typeof validTabs[number])
+    ? (rawTab as typeof validTabs[number])
+    : 'questions';
 
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,10 @@ function EditContent() {
   useEffect(() => { fetchSurvey(); }, [fetchSurvey]);
 
   useEffect(() => {
-    fetch('/api/admin/me').then(r => r.json()).then(d => setUserRole(d.role || '')).catch(() => {});
+    fetch('/api/admin/me').then(r => r.json()).then(d => {
+      setUserRole(d.role || '');
+      if (d.role !== 'sales' && tab === 'share') setTab('questions');
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -271,10 +276,10 @@ function EditContent() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-        {(['questions', 'settings', 'preview', 'share'] as const).map(t => (
+        {(['questions', 'settings', 'preview', ...(userRole === 'sales' ? ['share'] as const : [])] as const).map(t => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => setTab(t as typeof tab)}
             className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
               tab === t ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
