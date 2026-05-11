@@ -342,6 +342,7 @@ export default function BlogPage() {
                     👁
                   </Link>
                   <CoverButton post={post} onDone={fetchPosts} showToast={showToast} />
+                  <ImageManagerButton post={post} onDone={fetchPosts} showToast={showToast} />
                   <button onClick={() => handleDelete(post.id)} title="删除" className="text-sm px-1.5 py-1 rounded hover:bg-slate-100 text-red-400">
                     🗑️
                   </button>
@@ -772,5 +773,662 @@ function CoverButton({ post, onDone, showToast }: { post: BlogPost; onDone: () =
     >
       {generating ? '⏳' : hasImage ? '🔄' : '🎨'}
     </button>
+  );
+}
+
+// ─── Image Manager ─────────────────────────────────────────────────────────
+
+interface ImagePrompt {
+  index: number;
+  promptEn: string;
+  suggestedHeading: string;
+}
+
+interface ManagedImage {
+  index: number;
+  url: string;
+  prompt: string;
+  suggestedHeading: string;
+  position: string; // 'auto' | 'after:heading'
+}
+
+type ImageManagerStatus = 'idle' | 'generating_prompts' | 'generating_images' | 'done' | 'editing';
+
+function ImageManagerButton({ post, onDone, showToast }: { post: BlogPost; onDone: () => void; showToast: (msg: string) => void }) {
+  const [showModal, setShowModal] = useState(false);
+
+  return (
+    <>
+      <button
+        onClick={() => setShowModal(true)}
+        title="管理插图"
+        className="text-sm px-1.5 py-1 rounded hover:bg-slate-100 text-blue-500"
+      >
+        📸
+      </button>
+      {showModal && (
+        <ImageManagerModal
+          post={post}
+          onClose={() => setShowModal(false)}
+          onDone={() => { onDone(); showToast('插图已更新'); }}
+          showToast={showToast}
+        />
+      )}
+    </>
+  );
+}
+
+function extractHeadings(content: string): string[] {
+  const matches = content.match(/^##\s+(.+)$/gm);
+  return matches ? matches.map(m => m.replace(/^##\s+/, '')) : [];
+}
+
+function extractExistingImages(content: string): { alt: string; url: string }[] {
+  const regex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  const images: { alt: string; url: string }[] = [];
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    images.push({ alt: match[1], url: match[2] });
+  }
+  return images;
+}
+
+function ImageManagerModal({
+  post,
+  onClose,
+  onDone,
+  showToast,
+}: {
+  post: BlogPost;
+  onClose: () => void;
+  onDone: () => void;
+  showToast: (msg: string) => void;
+}) {
+  const [status, setStatus] = useState<ImageManagerStatus>('idle');
+  const [imageCount, setImageCount] = useState(3);
+  const [prompts, setPrompts] = useState<ImagePrompt[]>([]);
+  const [images, setImages] = useState<ManagedImage[]>([]);
+  const [currentGenerating, setCurrentGenerating] = useState(0);
+  const [totalGenerating, setTotalGenerating] = useState(0);
+  const [showPreview, setShowPreview] = useState(false);
+  const [postContent, setPostContent] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [extraPromptInput, setExtraPromptInput] = useState('');
+  const [generatingExtra, setGeneratingExtra] = useState(false);
+
+  // Load post content on mount
+  useEffect(() => {
+    fetch(`/api/blog/${post.id}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.post?.content_zh) setPostContent(data.post.content_zh);
+      })
+      .catch(() => {});
+  }, [post.id]);
+
+  const headings = extractHeadings(postContent);
+  const existingImages = extractExistingImages(postContent);
+
+  async function handleGenerate() {
+    setStatus('generating_prompts');
+    setPrompts([]);
+    setImages([]);
+
+    try {
+      const res = await fetch('/api/blog/generate-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: post.id, imageCount }),
+      });
+      const data = await res.json();
+
+      if (!data.prompts?.length) {
+        showToast('未能生成图片建议');
+        setStatus('idle');
+        return;
+      }
+
+      setPrompts(data.prompts);
+      setStatus('generating_images');
+      setTotalGenerating(data.prompts.length);
+
+      const generated: ManagedImage[] = [];
+      for (let i = 0; i < data.prompts.length; i++) {
+        setCurrentGenerating(i + 1);
+        try {
+          const imgRes = await fetch('/api/blog/generate-single-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              postId: post.id,
+              promptEn: data.prompts[i].promptEn,
+              index: i,
+            }),
+          });
+          const imgData = await imgRes.json();
+          if (imgData.imageUrl) {
+            const newImg: ManagedImage = {
+              index: generated.length,
+              url: imgData.imageUrl,
+              prompt: data.prompts[i].promptEn,
+              suggestedHeading: data.prompts[i].suggestedHeading,
+              position: 'auto',
+            };
+            generated.push(newImg);
+            setImages([...generated]);
+          }
+        } catch {
+          // Skip failed image
+        }
+      }
+
+      setStatus(generated.length > 0 ? 'done' : 'idle');
+      if (generated.length === 0) showToast('所有图片生成失败');
+    } catch {
+      showToast('生成失败，请重试');
+      setStatus('idle');
+    }
+  }
+
+  async function handleGenerateExtra() {
+    setGeneratingExtra(true);
+    try {
+      const res = await fetch('/api/blog/generate-single-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: post.id,
+          promptEn: extraPromptInput.trim() || 'A professional academic research environment, modern university setting, natural lighting',
+          index: images.length,
+        }),
+      });
+      const data = await res.json();
+      if (data.imageUrl) {
+        setImages(prev => [...prev, {
+          index: prev.length,
+          url: data.imageUrl,
+          prompt: extraPromptInput.trim() || 'additional illustration',
+          suggestedHeading: '',
+          position: 'auto',
+        }]);
+        setExtraPromptInput('');
+        showToast('新图片已生成');
+      } else {
+        showToast('生成失败');
+      }
+    } catch {
+      showToast('生成失败');
+    }
+    setGeneratingExtra(false);
+  }
+
+  function moveImage(idx: number, direction: 'up' | 'down') {
+    const swap = direction === 'up' ? idx - 1 : idx + 1;
+    if (swap < 0 || swap >= images.length) return;
+    const newImages = [...images];
+    [newImages[idx], newImages[swap]] = [newImages[swap], newImages[idx]];
+    newImages.forEach((img, i) => { img.index = i; });
+    setImages(newImages);
+  }
+
+  function removeImage(idx: number) {
+    setImages(prev => {
+      const filtered = prev.filter((_, i) => i !== idx);
+      filtered.forEach((img, i) => { img.index = i; });
+      return filtered;
+    });
+  }
+
+  function updatePosition(idx: number, position: string) {
+    setImages(prev => prev.map((img, i) => i === idx ? { ...img, position } : img));
+  }
+
+  async function handleSaveAndInsert() {
+    if (images.length === 0) return;
+    setSaving(true);
+    try {
+      const res = await fetch('/api/blog/insert-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: post.id,
+          images: images.map(img => ({
+            url: img.url,
+            alt: img.suggestedHeading || img.prompt.slice(0, 30),
+            position: img.position === 'auto' ? 'auto' : img.position,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPostContent(data.updatedContent);
+        onDone();
+        onClose();
+      } else {
+        showToast(data.error || '插入失败');
+      }
+    } catch {
+      showToast('插入失败');
+    }
+    setSaving(false);
+  }
+
+  const progressPercent = totalGenerating > 0
+    ? Math.round((images.length / totalGenerating) * 100)
+    : 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-6 py-4 rounded-t-2xl flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">📸 文章插图</h3>
+            <p className="text-xs text-slate-500 mt-0.5 truncate max-w-md">
+              {post.title_zh || post.title_en || '未命名文章'}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+        </div>
+
+        <div className="p-6">
+          {/* Existing images info */}
+          {existingImages.length > 0 && status === 'idle' && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-700">
+                文章中已有 {existingImages.length} 张插图。生成的新图片将追加插入。
+              </p>
+            </div>
+          )}
+
+          {/* State 1: Initial */}
+          {status === 'idle' && (
+            <div className="text-center py-8">
+              <p className="text-4xl mb-4">📸</p>
+              <p className="text-sm text-slate-600 mb-6">选择插图数量，AI 将分析文章内容生成适配插图</p>
+              <div className="flex items-center justify-center gap-3 mb-6">
+                {[1, 3, 5].map(n => (
+                  <button
+                    key={n}
+                    onClick={() => setImageCount(n)}
+                    className={`px-5 py-2.5 text-sm rounded-lg border-2 transition font-medium ${
+                      imageCount === n
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-slate-200 text-slate-600 hover:border-blue-300'
+                    }`}
+                  >
+                    {n} 张
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={handleGenerate}
+                className="px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-semibold transition"
+              >
+                🎨 开始生成
+              </button>
+            </div>
+          )}
+
+          {/* State 2: Generating */}
+          {(status === 'generating_prompts' || status === 'generating_images') && (
+            <div className="py-6">
+              <div className="text-center mb-6">
+                <div className="inline-block w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
+                <p className="text-sm font-medium text-slate-800">
+                  {status === 'generating_prompts'
+                    ? '正在分析文章内容，生成图片描述...'
+                    : `正在生成第 ${currentGenerating}/${totalGenerating} 张插图...`
+                  }
+                </p>
+              </div>
+
+              {status === 'generating_images' && (
+                <>
+                  {/* Progress bar */}
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+                      <span>进度</span>
+                      <span>{progressPercent}%</span>
+                    </div>
+                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Per-image status */}
+                  <div className="space-y-2">
+                    {prompts.map((p, i) => {
+                      const generated = images.find(img => img.prompt === p.promptEn);
+                      const isActive = i + 1 === currentGenerating && !generated;
+                      const isPending = i + 1 > currentGenerating && !generated;
+                      return (
+                        <div
+                          key={i}
+                          className={`flex items-center gap-3 p-3 rounded-lg border ${
+                            generated ? 'border-green-200 bg-green-50' :
+                            isActive ? 'border-blue-200 bg-blue-50' :
+                            'border-slate-100 bg-slate-50'
+                          }`}
+                        >
+                          <span className="text-lg flex-shrink-0">
+                            {generated ? '✅' : isActive ? '⏳' : isPending ? '⬜' : '⬜'}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-xs font-medium ${generated ? 'text-green-700' : isActive ? 'text-blue-700' : 'text-slate-400'}`}>
+                              {generated ? `第 ${i + 1} 张已完成` : isActive ? `正在生成第 ${i + 1} 张...` : `第 ${i + 1} 张等待中`}
+                            </p>
+                            <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                              Prompt: {p.promptEn.slice(0, 80)}...
+                            </p>
+                          </div>
+                          {generated && (
+                            <img src={generated.url} alt="" className="w-12 h-12 rounded object-cover flex-shrink-0" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* State 3: Done (Preview mode) */}
+          {status === 'done' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm font-medium text-slate-800">
+                  📸 文章插图 ({images.length} 张)
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setStatus('editing')}
+                    className="px-3 py-1.5 text-xs border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                  >
+                    ✏️ 编辑图片
+                  </button>
+                  <button
+                    onClick={() => setShowPreview(true)}
+                    className="px-3 py-1.5 text-xs border border-green-300 text-green-700 rounded-lg hover:bg-green-50"
+                  >
+                    👁 预览文章
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                {images.map(img => (
+                  <div key={img.index} className="border border-slate-200 rounded-xl overflow-hidden">
+                    <img src={img.url} alt="" className="w-full h-28 object-cover" />
+                    <div className="p-2">
+                      <p className="text-[10px] text-slate-500 truncate">{img.suggestedHeading || img.prompt.slice(0, 30)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStatus('editing')}
+                  className="flex-1 px-4 py-2.5 text-sm border border-slate-300 rounded-xl hover:bg-slate-50"
+                >
+                  ✏️ 编辑排列
+                </button>
+                <button
+                  onClick={handleSaveAndInsert}
+                  disabled={saving}
+                  className="flex-1 px-4 py-2.5 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 font-medium"
+                >
+                  {saving ? '⏳ 保存中...' : '💾 保存并插入文章'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* State 4: Editing */}
+          {status === 'editing' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm font-medium text-slate-800">📸 图片编辑器</p>
+                <button
+                  onClick={() => setStatus('done')}
+                  className="text-xs text-slate-500 hover:text-slate-700"
+                >
+                  ← 返回预览
+                </button>
+              </div>
+
+              {/* Sortable image list */}
+              <div className="space-y-3 mb-6">
+                {images.map((img, idx) => (
+                  <div key={img.url} className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl bg-white">
+                    <img src={img.url} alt="" className="w-24 h-24 rounded-lg object-cover flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-700 mb-1">图片 {idx + 1}</p>
+                      <p className="text-[10px] text-slate-400 truncate mb-2">{img.prompt.slice(0, 60)}...</p>
+
+                      {/* Position select */}
+                      <select
+                        value={img.position}
+                        onChange={e => updatePosition(idx, e.target.value)}
+                        className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5"
+                      >
+                        <option value="auto">自动（AI 选择最佳位置）</option>
+                        {headings.map(h => (
+                          <option key={h} value={`after:${h}`}>在标题「{h}」后</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Reorder + Delete */}
+                    <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => moveImage(idx, 'up')}
+                        disabled={idx === 0}
+                        className="text-xs text-slate-400 hover:text-slate-700 px-1.5 py-1 rounded hover:bg-slate-100 disabled:opacity-30"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        onClick={() => moveImage(idx, 'down')}
+                        disabled={idx === images.length - 1}
+                        className="text-xs text-slate-400 hover:text-slate-700 px-1.5 py-1 rounded hover:bg-slate-100 disabled:opacity-30"
+                      >
+                        ▼
+                      </button>
+                      <button
+                        onClick={() => removeImage(idx)}
+                        className="text-xs text-red-400 hover:text-red-600 px-1.5 py-1 rounded hover:bg-red-50"
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Generate more */}
+              <div className="border border-dashed border-slate-300 rounded-xl p-4 mb-6">
+                <p className="text-xs font-medium text-slate-600 mb-2">➕ 生成更多图片</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={extraPromptInput}
+                    onChange={e => setExtraPromptInput(e.target.value)}
+                    placeholder="描述想要的图片（可选，留空则自动生成）"
+                    className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-xs"
+                  />
+                  <button
+                    onClick={handleGenerateExtra}
+                    disabled={generatingExtra}
+                    className="px-4 py-2 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {generatingExtra ? '⏳ 生成中...' : '🎨 生成'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Save */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowPreview(true)}
+                  className="flex-1 px-4 py-2.5 text-sm border border-green-300 text-green-700 rounded-xl hover:bg-green-50"
+                >
+                  👁 预览文章
+                </button>
+                <button
+                  onClick={handleSaveAndInsert}
+                  disabled={saving || images.length === 0}
+                  className="flex-1 px-4 py-2.5 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 font-medium"
+                >
+                  {saving ? '⏳ 保存中...' : '💾 保存并插入文章'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Article Preview Modal */}
+        {showPreview && (
+          <ArticlePreviewModal
+            post={post}
+            content={postContent}
+            images={images}
+            onClose={() => setShowPreview(false)}
+            onEdit={() => { setShowPreview(false); setStatus('editing'); }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Article Preview Modal ─────────────────────────────────────────────────
+
+function ArticlePreviewModal({
+  post,
+  content,
+  images,
+  onClose,
+  onEdit,
+}: {
+  post: BlogPost;
+  content: string;
+  images: ManagedImage[];
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const previewContent = React.useMemo(() => {
+    if (!content) return '';
+
+    let result = content;
+    const headings = (result.match(/^##\s+(.+)$/gm) || []).map(h => h.replace(/^##\s+/, ''));
+
+    // Insert images at their positions (from bottom up)
+    const toInsert = images.map(img => {
+      let heading = '';
+      if (img.position === 'auto') {
+        const idx = Math.min(img.index, headings.length - 1);
+        heading = headings[idx] || '';
+      } else if (img.position.startsWith('after:')) {
+        heading = img.position.slice(6);
+      }
+      const pattern = new RegExp(
+        `(##\\s*${heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^\n]*)`,
+        'i'
+      );
+      const match = result.match(pattern);
+      return { ...img, matchIndex: match?.index ?? -1, matchLength: match?.[0].length ?? 0 };
+    });
+
+    toInsert
+      .filter(img => img.matchIndex >= 0)
+      .sort((a, b) => b.matchIndex - a.matchIndex)
+      .forEach(img => {
+        const insertPos = img.matchIndex + img.matchLength;
+        const md = `\n\n![${img.suggestedHeading || 'illustration'}](${img.url})\n`;
+        result = result.slice(0, insertPos) + md + result.slice(insertPos);
+      });
+
+    // Convert markdown to simple HTML
+    return result
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2" style="width:100%;border-radius:8px;margin:16px 0" />')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#2563eb">$1</a>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/g, '<ul style="margin-left:20px;margin-bottom:16px">$&</ul>')
+      .replace(/\n{2,}/g, '</p><p>')
+      .replace(/^(?!<[hupolia])(.+)$/gm, '<p>$1</p>')
+      .replace(/<p><\/p>/g, '');
+  }, [content, images]);
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-6 py-3 rounded-t-2xl flex items-center justify-between">
+          <span className="text-sm font-medium text-green-700">👁 文章预览</span>
+          <div className="flex gap-2">
+            <button onClick={onEdit} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              ✏️ 进入编辑模式
+            </button>
+            <button onClick={onClose} className="px-3 py-1.5 text-xs bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">
+              关闭
+            </button>
+          </div>
+        </div>
+
+        <div className="p-8">
+          {/* Cover */}
+          {post.cover_image_url && (
+            <img
+              src={post.cover_image_url}
+              alt=""
+              className="w-full h-64 object-cover rounded-xl mb-6"
+            />
+          )}
+
+          {/* Title */}
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+            {post.title_zh || post.title_en || '无标题'}
+          </h1>
+
+          {post.excerpt_zh && (
+            <p className="text-sm text-slate-500 mb-6">{post.excerpt_zh}</p>
+          )}
+
+          {/* Content */}
+          <div
+            className="prose prose-lg max-w-none
+              [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-8 [&_h2]:mb-3
+              [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mt-6 [&_h3]:mb-2
+              [&_p]:text-sm [&_p]:text-slate-700 [&_p]:leading-relaxed [&_p]:mb-3
+              [&_li]:text-sm [&_li]:text-slate-700
+              [&_strong]:text-slate-900
+              [&_a]:text-blue-600
+              [&_img]:rounded-lg [&_img]:my-4"
+            dangerouslySetInnerHTML={{ __html: previewContent }}
+          />
+
+          {/* New images badge */}
+          {images.length > 0 && (
+            <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-700">
+                📸 预览包含 {images.length} 张新插图（尚未保存到文章）
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

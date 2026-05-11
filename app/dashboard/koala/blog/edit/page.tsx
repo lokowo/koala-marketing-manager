@@ -249,20 +249,42 @@ function BlogEditPageInner() {
     if (!editId || aiWorking === 'add_inline' || imageCount < 1) return;
     setAiWorking('add_inline');
     try {
-      const res = await fetch('/api/blog/generate-images', {
+      // Step 1: Get prompts
+      const promptRes = await fetch('/api/blog/generate-images', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ postId: editId, imageCount }),
       });
-      const data = await res.json();
-      if (data.success && data.imagesInserted > 0) {
-        const postRes = await fetch(`/api/blog/${editId}`);
-        const postData = await postRes.json();
-        if (postData.post?.content_zh) {
-          setForm(prev => ({ ...prev, content_zh: postData.post.content_zh }));
+      const { prompts } = await promptRes.json();
+      if (!prompts?.length) { alert('未能生成图片建议'); setAiWorking(null); return; }
+
+      // Step 2: Generate images one by one, then insert
+      const generatedImages: { url: string; position: string }[] = [];
+      for (let i = 0; i < prompts.length; i++) {
+        const imgRes = await fetch('/api/blog/generate-single-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postId: editId, promptEn: prompts[i].promptEn, index: i }),
+        });
+        const imgData = await imgRes.json();
+        if (imgData.imageUrl) {
+          generatedImages.push({ url: imgData.imageUrl, position: `after:${prompts[i].suggestedHeading}` });
+        }
+      }
+
+      // Step 3: Insert all images
+      if (generatedImages.length > 0) {
+        const insertRes = await fetch('/api/blog/insert-images', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postId: editId, images: generatedImages }),
+        });
+        const insertData = await insertRes.json();
+        if (insertData.updatedContent) {
+          setForm(prev => ({ ...prev, content_zh: insertData.updatedContent }));
         }
       } else {
-        alert('插图生成失败或无合适位置');
+        alert('插图生成失败');
       }
     } catch { alert('插图生成失败'); }
     setAiWorking(null);
