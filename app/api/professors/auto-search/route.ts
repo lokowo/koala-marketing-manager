@@ -5,12 +5,13 @@ export async function GET(req: NextRequest) {
   try {
     const name = req.nextUrl.searchParams.get('name');
     const university = req.nextUrl.searchParams.get('university') || undefined;
+    const skipDb = req.nextUrl.searchParams.get('skipDb') === 'true';
 
     if (!name || name.trim().length < 2) {
       return Response.json({ error: 'Missing or too short name param' }, { status: 400 });
     }
 
-    const result = await findOrCreateProfessor(name.trim(), university);
+    const result = await findOrCreateProfessor(name.trim(), university, { skipDb });
 
     return Response.json({
       source: result.source,

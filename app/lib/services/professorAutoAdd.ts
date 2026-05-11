@@ -28,14 +28,16 @@ interface AutoSearchResult {
   created: number;
 }
 
-export async function findOrCreateProfessor(name: string, university?: string): Promise<AutoSearchResult> {
-  // Step 1: Search local DB
-  const dbResults = await searchLocalDB(name, university);
-  if (dbResults.length > 0) {
-    return { source: 'db', professors: dbResults, created: 0 };
+export async function findOrCreateProfessor(name: string, university?: string, options?: { skipDb?: boolean }): Promise<AutoSearchResult> {
+  // Step 1: Search local DB (skip if explicitly requested, e.g. when user clicks "网络搜索")
+  if (!options?.skipDb) {
+    const dbResults = await searchLocalDB(name, university);
+    if (dbResults.length > 0) {
+      return { source: 'db', professors: dbResults, created: 0 };
+    }
   }
 
-  // Step 2: Search OpenAlex
+  // Step 2: Search OpenAlex (always reached when skipDb=true)
   const openAlexResults = await searchOpenAlex(name, university);
   if (openAlexResults.length > 0) {
     const created: Professor[] = [];

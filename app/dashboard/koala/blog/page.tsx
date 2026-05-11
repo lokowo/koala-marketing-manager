@@ -383,6 +383,7 @@ type ModalStep = 'search' | 'web-searching' | 'web-result' | 'generating' | 'don
 
 function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void; onGenerated: () => void }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [universityHint, setUniversityHint] = useState('');
   const [suggestions, setSuggestions] = useState<Professor[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedProf, setSelectedProf] = useState<Professor | null>(null);
@@ -454,7 +455,9 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
     setStep('web-searching');
     setError('');
     try {
-      const res = await fetch(`/api/professors/auto-search?name=${encodeURIComponent(searchQuery)}`);
+      // Always skip DB for web search — the autocomplete dropdown already searched DB
+      const uniParam = universityHint.trim() ? `&university=${encodeURIComponent(universityHint.trim())}` : '';
+      const res = await fetch(`/api/professors/auto-search?name=${encodeURIComponent(searchQuery)}&skipDb=true${uniParam}`);
       const data = await res.json();
       if (data.results && data.results.length > 0) {
         const prof = data.results[0];
@@ -472,15 +475,10 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
           googleScholarUrl: prof.googleScholarUrl,
           opportunityScore: prof.opportunityScore,
         });
-        if (data.source === 'db' && prof.id) {
-          setSelectedProf(prof);
-          setSearchQuery(prof.name);
-          setStep('search');
-        } else {
-          setStep('web-result');
-        }
+        // Always show the web result for admin to confirm — never auto-redirect
+        setStep('web-result');
       } else {
-        setError('未找到教授信息');
+        setError(`未在 OpenAlex 中找到「${searchQuery}」。可以尝试：1) 输入英文全名 2) 添加大学名 3) 检查拼写`);
         setStep('search');
       }
     } catch {
@@ -580,7 +578,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                   value={searchQuery}
                   onChange={e => handleInputChange(e.target.value)}
                   onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
-                  placeholder="输入教授姓名、大学或研究方向..."
+                  placeholder="输入教授英文全名（如 John Smith）"
                   className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm"
                 />
                 <button
@@ -588,16 +586,26 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                   disabled={!searchQuery.trim() || step === 'web-searching'}
                   className="px-3 py-2 text-sm border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 disabled:opacity-50 whitespace-nowrap"
                 >
-                  {step === 'web-searching' ? '搜索中...' : '🔍 网络搜索'}
+                  {step === 'web-searching' ? '⏳ 搜索中...' : '🌐 网络搜索'}
                 </button>
               </div>
-              <button
-                onClick={fetchRandomProf}
-                disabled={loadingRandom}
-                className="mt-2 px-3 py-1.5 text-xs border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 disabled:opacity-50"
-              >
-                {loadingRandom ? '加载中...' : '🎲 随机推荐'}
-              </button>
+              <div className="flex gap-2 mt-2">
+                <input
+                  type="text"
+                  value={universityHint}
+                  onChange={e => setUniversityHint(e.target.value)}
+                  placeholder="大学名称（可选，帮助精确匹配）"
+                  className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-600"
+                />
+                <button
+                  onClick={fetchRandomProf}
+                  disabled={loadingRandom}
+                  className="px-3 py-1.5 text-xs border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 disabled:opacity-50 whitespace-nowrap"
+                >
+                  {loadingRandom ? '加载中...' : '🎲 随机推荐'}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1.5">💡 输入自动搜索数据库 → 找不到可点「🌐 网络搜索」从 OpenAlex 查找</p>
 
               {showDropdown && (
                 <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-[50vh] overflow-y-auto">
@@ -653,28 +661,31 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
               </div>
             )}
 
-            {!selectedProf && searchQuery.trim().length >= 2 && (
-              <p className="text-xs text-slate-500 mb-2">
-                数据库中没有？点击右侧"🔍 网络搜索"从网上查找教授信息
-              </p>
+            {!selectedProf && searchQuery.trim().length >= 2 && !showDropdown && (
+              <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 mb-4 text-xs text-amber-800 space-y-1">
+                <p className="font-medium">数据库中未找到完全匹配的教授</p>
+                <p>👉 点击「🌐 网络搜索」从 OpenAlex 学术数据库查找</p>
+                <p>👉 可在上方填入大学名称以提高匹配精度</p>
+                <p>👉 建议使用教授的英文全名搜索（如 &quot;Kirill Koshelev&quot;）</p>
+              </div>
             )}
           </>
         )}
 
         {step === 'web-result' && webResult && (
           <div className="border border-green-200 bg-green-50 rounded-lg p-4 mb-4">
-            <p className="text-xs text-green-700 font-medium mb-2">🌐 网络搜索结果</p>
-            <p className="font-medium text-slate-900">{webResult.name}</p>
+            <p className="text-xs text-green-700 font-medium mb-2">🌐 OpenAlex 搜索结果 — 请确认是否为目标教授</p>
+            <p className="font-medium text-slate-900 text-base">{webResult.name}</p>
             <p className="text-sm text-slate-600">{webResult.positionTitle} — {webResult.university}</p>
             {webResult.faculty && <p className="text-sm text-slate-500">{webResult.faculty}</p>}
             <div className="flex gap-3 mt-2 text-xs text-slate-600">
-              {webResult.hIndex && <span>H-index: {webResult.hIndex}</span>}
-              {webResult.paperCount && <span>论文: {webResult.paperCount}</span>}
-              {webResult.citationCount && <span>引用: {webResult.citationCount}</span>}
+              {webResult.hIndex != null && <span className="bg-white px-2 py-0.5 rounded">H-index: {webResult.hIndex}</span>}
+              {webResult.paperCount != null && <span className="bg-white px-2 py-0.5 rounded">论文: {webResult.paperCount}</span>}
+              {webResult.citationCount != null && <span className="bg-white px-2 py-0.5 rounded">引用: {webResult.citationCount}</span>}
             </div>
             {webResult.researchAreas?.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
-                {webResult.researchAreas.slice(0, 5).map((tag, i) => (
+                {webResult.researchAreas.slice(0, 8).map((tag, i) => (
                   <span key={i} className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{tag}</span>
                 ))}
               </div>
@@ -684,13 +695,13 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                 onClick={handleAddAndGenerate}
                 className="flex-1 px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
               >
-                ✨ 确认并生成文章
+                ✅ 确认是此教授，生成文章
               </button>
               <button
-                onClick={() => { setStep('search'); setWebResult(null); }}
+                onClick={() => { setStep('search'); setWebResult(null); setError(''); }}
                 className="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50"
               >
-                返回
+                ❌ 不是，重新搜索
               </button>
             </div>
           </div>
