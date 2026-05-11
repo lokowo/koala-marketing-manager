@@ -953,6 +953,11 @@ function ChatPageInner() {
                 {msg.role === 'assistant' && msg.matchedProfessors?.map((p, i) => (
                   <ProfessorMatchCard key={i} match={p} />
                 ))}
+                {msg.role === 'assistant' && msg.matchedProfessors && msg.matchedProfessors.length > 0 && (
+                  <p className="text-[11px] mt-1.5 ml-1" style={{ color: '#8a8078' }}>
+                    不是你要找的教授？告诉我正确的教授名字和大学
+                  </p>
+                )}
                 {msg.role === 'assistant' && msg.matchedProfessors && msg.matchedProfessors.length > 1 && (
                   <button
                     onClick={() => setBatchProfessors(msg.matchedProfessors!.map(p => ({ id: p.professorId, name: p.name, institution: p.institution, matchScore: p.matchScore })))}

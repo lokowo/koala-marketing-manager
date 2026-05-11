@@ -642,8 +642,8 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
 
             {!selectedProf && searchQuery.trim().length >= 2 && !showDropdown && (
               <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 mb-4 text-xs text-amber-800 space-y-1">
-                <p className="font-medium">数据库中未找到完全匹配的教授</p>
-                <p>👉 点击「🌐 网络搜索」从 OpenAlex 学术数据库查找</p>
+                <p className="font-medium">⚠️ 不是你要找的教授？点击「🌐 网络搜索」用 AI 深度搜索</p>
+                <p>👉 从 OpenAlex 学术数据库 + 大学官网 + 网络搜索查找</p>
                 <p>👉 可在上方填入大学名称以提高匹配精度</p>
                 <p>👉 建议使用教授的英文全名搜索（如 &quot;Kirill Koshelev&quot;）</p>
               </div>
@@ -653,6 +653,9 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
 
         {step === 'candidates' && searchCandidates.length > 0 && (
           <div className="mb-4">
+            <div className="border border-purple-200 bg-purple-50 rounded-lg px-3 py-2 mb-3 text-xs text-purple-700">
+              ⚠️ 不是你要找的教授？返回重新搜索，输入更精确的教授全名和大学名
+            </div>
             <p className="text-sm text-slate-700 font-medium mb-3">
               找到 {searchCandidates.length} 位候选人 — 请确认目标教授：
             </p>

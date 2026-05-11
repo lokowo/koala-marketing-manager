@@ -176,6 +176,15 @@ function ProfessorsPageInner() {
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [addingName, setAddingName] = useState<string | null>(null);
 
+  // Deep search
+  const [showDeepSearch, setShowDeepSearch] = useState(false);
+  const [deepName, setDeepName] = useState('');
+  const [deepUni, setDeepUni] = useState('');
+  const [deepSearching, setDeepSearching] = useState(false);
+  const [deepCandidates, setDeepCandidates] = useState<SearchCandidate[]>([]);
+  const [deepAddedIds, setDeepAddedIds] = useState<Set<string>>(new Set());
+  const [deepAddingName, setDeepAddingName] = useState<string | null>(null);
+
   const sentinelRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -259,6 +268,39 @@ function ProfessorsPageInner() {
       }
     } catch { /* ignore */ }
     setAddingName(null);
+  }, [filters]);
+
+  const handleDeepSearch = useCallback(async () => {
+    if (!deepName.trim()) return;
+    setDeepSearching(true);
+    setDeepCandidates([]);
+    try {
+      const params = new URLSearchParams({ name: deepName.trim(), deep: 'true' });
+      if (deepUni.trim()) params.set('university', deepUni.trim());
+      const res = await fetch(`/api/professors/auto-search?${params}`);
+      const data = await res.json();
+      setDeepCandidates(data.candidates || []);
+    } catch { /* ignore */ }
+    setDeepSearching(false);
+  }, [deepName, deepUni]);
+
+  const handleDeepAddCandidate = useCallback(async (candidate: SearchCandidate) => {
+    setDeepAddingName(candidate.name);
+    try {
+      const res = await fetch('/api/professors/auto-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidate }),
+      });
+      if (res.ok) {
+        setDeepAddedIds(prev => new Set(prev).add(candidate.name));
+        const refreshed = await apiFetch(filters);
+        setProfessors(refreshed.data);
+        setTotal(refreshed.total);
+        setHasMore(refreshed.hasMore);
+      }
+    } catch { /* ignore */ }
+    setDeepAddingName(null);
   }, [filters]);
 
   // Category counts once on mount
@@ -507,6 +549,116 @@ function ProfessorsPageInner() {
             {{ h_index: 'H指数', paper_count: '论文数', citation_count: '引用数', updated_at: '最近更新' }[sortBy] ?? sortBy}
           </span>
           <button onClick={() => setSortBy('opportunity_score')} className="text-xs underline" style={{ color: '#c9a96e' }}>重置</button>
+        </div>
+      )}
+
+      {/* Deep search banner */}
+      {debouncedSearch && !loading && (
+        <div className="px-4 pt-3 lg:px-0">
+          {!showDeepSearch ? (
+            <button
+              onClick={() => { setShowDeepSearch(true); setDeepName(debouncedSearch); setDeepUni(university); }}
+              className="w-full rounded-xl px-4 py-3 text-left text-xs leading-relaxed"
+              style={{ background: 'rgba(168,130,255,0.08)', border: '1px solid rgba(168,130,255,0.2)', color: '#a882ff' }}
+            >
+              ⚠️ 不是你要找的教授？点击这里用 AI 深度搜索
+            </button>
+          ) : (
+            <div className="rounded-xl overflow-hidden" style={{ background: '#111c28', border: '1px solid rgba(168,130,255,0.25)' }}>
+              <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(168,130,255,0.12)' }}>
+                <span className="text-sm font-semibold" style={{ color: '#a882ff' }}>🔍 AI 深度搜索</span>
+                <button onClick={() => { setShowDeepSearch(false); setDeepCandidates([]); }} className="text-xs" style={{ color: '#6a7a7e' }}>收起</button>
+              </div>
+              <div className="px-4 py-3 space-y-2">
+                <input
+                  type="text" value={deepName} onChange={e => setDeepName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleDeepSearch(); }}
+                  placeholder="教授全名（英文）"
+                  className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                  style={{ background: '#0d1520', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.15)' }}
+                />
+                <input
+                  type="text" value={deepUni} onChange={e => setDeepUni(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleDeepSearch(); }}
+                  placeholder="大学名称（可选，帮助精确匹配）"
+                  className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                  style={{ background: '#0d1520', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.15)' }}
+                />
+                <button
+                  onClick={handleDeepSearch}
+                  disabled={!deepName.trim() || deepSearching}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50"
+                  style={{ background: '#a882ff', color: '#fff' }}
+                >
+                  {deepSearching ? '正在从学术网络和大学官网搜索…' : '🔍 AI 深度搜索'}
+                </button>
+              </div>
+              {/* Deep search results */}
+              {deepCandidates.length > 0 && (
+                <div className="divide-y" style={{ borderTop: '1px solid rgba(168,130,255,0.12)', borderColor: 'rgba(168,130,255,0.08)' }}>
+                  {deepCandidates.map((c, idx) => {
+                    const added = deepAddedIds.has(c.name) || c.existsInDb;
+                    const adding = deepAddingName === c.name;
+                    const sourceBadge = c.source === 'database'
+                      ? { label: '✅ 已收录', bg: 'rgba(34,197,94,0.15)', color: '#22c55e' }
+                      : c.source === 'openalex'
+                        ? { label: '📊 学术数据库', bg: 'rgba(96,165,250,0.15)', color: '#60a5fa' }
+                        : { label: '🔍 网络搜索', bg: 'rgba(168,130,255,0.15)', color: '#a882ff' };
+                    return (
+                      <div key={idx} className={`px-4 py-3 flex items-start gap-3 ${c.universityMismatch ? 'opacity-60' : ''}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold truncate" style={{ color: '#e8e4dc' }}>{c.name}</p>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: sourceBadge.bg, color: sourceBadge.color }}>{sourceBadge.label}</span>
+                          </div>
+                          <p className="text-xs mt-0.5" style={{ color: '#6a7a7e' }}>
+                            {c.position && <span>{c.position} · </span>}{c.university}
+                          </p>
+                          {c.researchAreas.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {c.researchAreas.slice(0, 4).map(area => (
+                                <span key={area} className="rounded-full text-[10px] px-2 py-0.5" style={{ border: '1px solid rgba(201,169,110,0.25)', color: '#c9a96e' }}>{area}</span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex gap-3 mt-1.5 text-xs" style={{ color: '#6a7a7e' }}>
+                            {c.hIndex != null && <span style={{ color: '#c9a96e', fontWeight: 600 }}>H:{c.hIndex}</span>}
+                            {c.paperCount != null && <span>{c.paperCount}篇</span>}
+                            {c.citationCount != null && <span>{fmtCitations(c.citationCount)}引</span>}
+                          </div>
+                        </div>
+                        {c.existsInDb ? (
+                          <span className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>
+                            <Check className="size-3" /> 已收录
+                          </span>
+                        ) : !c.universityMismatch && (
+                          <button
+                            onClick={() => !added && !adding && handleDeepAddCandidate(c)}
+                            disabled={added || adding}
+                            className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70"
+                            style={added
+                              ? { background: 'rgba(34,197,94,0.15)', color: '#22c55e' }
+                              : { background: '#a882ff', color: '#fff' }}
+                          >
+                            {added ? <><Check className="size-3" /> 已录入</> : adding ? <><Loader2 className="size-3 animate-spin" /> 录入中</> : <><Plus className="size-3" /> 确认录入数据库</>}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {deepSearching && (
+                <div className="px-4 py-6 text-center">
+                  <Loader2 className="size-5 animate-spin mx-auto mb-2" style={{ color: '#a882ff' }} />
+                  <p className="text-xs" style={{ color: '#6a7a7e' }}>正在从学术网络和大学官网搜索…</p>
+                </div>
+              )}
+              {!deepSearching && deepCandidates.length === 0 && deepName && (
+                <div className="px-4 pb-4" />
+              )}
+            </div>
+          )}
         </div>
       )}
 

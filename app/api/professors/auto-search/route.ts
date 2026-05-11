@@ -6,6 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     const name = req.nextUrl.searchParams.get('name');
     const university = req.nextUrl.searchParams.get('university') || undefined;
+    const deep = req.nextUrl.searchParams.get('deep') === 'true';
 
     if (!name || name.trim().length < 2) {
       return Response.json({ error: 'Missing or too short name param' }, { status: 400 });
