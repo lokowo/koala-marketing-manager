@@ -338,6 +338,9 @@ export default function BlogPage() {
                   <Link href={`/dashboard/koala/blog/edit?id=${post.id}`} title="编辑" className="text-sm px-1.5 py-1 rounded hover:bg-slate-100 text-slate-600">
                     ✏️
                   </Link>
+                  <Link href={`/dashboard/koala/blog/edit?id=${post.id}&mode=preview`} title="预览发布效果" className="text-sm px-1.5 py-1 rounded hover:bg-slate-100 text-green-500">
+                    👁
+                  </Link>
                   <CoverButton post={post} onDone={fetchPosts} showToast={showToast} />
                   <button onClick={() => handleDelete(post.id)} title="删除" className="text-sm px-1.5 py-1 rounded hover:bg-slate-100 text-red-400">
                     🗑️
