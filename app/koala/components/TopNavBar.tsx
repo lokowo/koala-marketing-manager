@@ -32,8 +32,8 @@ export default function TopNavBar() {
         height: 64,
       }}
     >
-      {/* Logo */}
-      <Link href="/koala/discover" className="flex items-center gap-2" style={{ textDecoration: 'none' }}>
+      {/* Logo — always goes to homepage */}
+      <Link href="/koala/home" className="flex items-center gap-2" style={{ textDecoration: 'none' }}>
         <span className="text-2xl">🐨</span>
         <span className="font-bold text-base" style={{ color: '#c9a96e' }}>Koala PhD</span>
       </Link>
