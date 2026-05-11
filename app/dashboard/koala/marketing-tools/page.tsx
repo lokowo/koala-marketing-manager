@@ -79,8 +79,8 @@ export default function MarketingToolsPage() {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">营销工具</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        <h1 className="text-2xl font-bold text-slate-900 text-slate-900">营销工具</h1>
+        <p className="text-sm text-slate-500 mt-1">
           管理调研问卷、推广活动等营销工具
         </p>
       </div>
@@ -91,46 +91,46 @@ export default function MarketingToolsPage() {
             <Link
               key={tool.id}
               href={tool.href}
-              className="group relative block rounded-xl border border-amber-500/30 bg-white dark:bg-slate-900/60 p-6 no-underline transition-all hover:border-amber-400/60 hover:shadow-lg hover:shadow-amber-500/5 hover:-translate-y-0.5"
+              className="group relative block rounded-xl border border-amber-500/30 bg-white p-6 no-underline transition-all hover:border-amber-400/60 hover:shadow-lg hover:shadow-amber-500/5 hover:-translate-y-0.5"
             >
               <div className="absolute top-0 left-6 w-10 h-1 rounded-b bg-gradient-to-r from-amber-400 to-teal-400" />
               <div className="flex items-start gap-4">
                 <span className="text-2xl">{tool.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white">{tool.title}</h3>
-                    <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                    <h3 className="text-base font-semibold text-slate-900 text-slate-900">{tool.title}</h3>
+                    <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 text-emerald-600">
                       可用 ✅
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5">{tool.subtitle}</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">{tool.description}</p>
+                  <p className="text-sm text-slate-600 mt-2">{tool.description}</p>
 
-                  <div className="flex gap-4 mt-4 text-xs text-slate-500 dark:text-slate-400">
-                    <span><strong className="text-slate-700 dark:text-slate-200">{stats.total}</strong> 份问卷</span>
-                    <span><strong className="text-slate-700 dark:text-slate-200">{stats.active}</strong> 活跃中</span>
-                    <span><strong className="text-slate-700 dark:text-slate-200">{stats.responses}</strong> 份回复</span>
+                  <div className="flex gap-4 mt-4 text-xs text-slate-500">
+                    <span><strong className="text-slate-700">{stats.total}</strong> 份问卷</span>
+                    <span><strong className="text-slate-700">{stats.active}</strong> 活跃中</span>
+                    <span><strong className="text-slate-700">{stats.responses}</strong> 份回复</span>
                   </div>
                 </div>
               </div>
-              <div className="absolute top-5 right-5 text-slate-300 dark:text-slate-600 group-hover:text-amber-400 transition-colors">
+              <div className="absolute top-5 right-5 text-slate-300 group-hover:text-amber-400 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
               </div>
             </Link>
           ) : (
             <div
               key={tool.id}
-              className="relative rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 p-6 opacity-50 cursor-not-allowed"
+              className="relative rounded-xl border border-slate-200 bg-white/50 p-6 opacity-50 cursor-not-allowed"
             >
-              <span className="absolute top-4 right-4 inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+              <span className="absolute top-4 right-4 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
                 Coming Soon 🔜
               </span>
               <div className="flex items-start gap-4">
                 <span className="text-2xl grayscale">{tool.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-semibold text-slate-600 dark:text-slate-400">{tool.title}</h3>
+                  <h3 className="text-base font-semibold text-slate-600">{tool.title}</h3>
                   <p className="text-xs text-slate-400 mt-0.5">{tool.subtitle}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-500 mt-2">{tool.description}</p>
+                  <p className="text-sm text-slate-500 mt-2">{tool.description}</p>
                 </div>
               </div>
             </div>

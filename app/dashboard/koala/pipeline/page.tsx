@@ -72,7 +72,7 @@ export default function PipelinePage() {
           <button
             onClick={triggerSync}
             disabled={triggering}
-            className="px-4 py-2 bg-slate-900 text-white text-sm rounded-lg disabled:opacity-50 hover:bg-slate-800 transition"
+            className="px-4 py-2 bg-[#D4A843] text-white text-sm rounded-lg disabled:opacity-50 hover:bg-[#C09A3A] transition"
           >
             {triggering ? '采集中...' : '一键触发'}
           </button>

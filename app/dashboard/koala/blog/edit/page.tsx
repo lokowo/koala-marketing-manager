@@ -457,7 +457,7 @@ function BlogEditPageInner() {
               </button>
               <button
                 onClick={() => setEditorMode('edit')}
-                className="px-3 py-1.5 text-xs bg-slate-800 text-white rounded-lg hover:bg-slate-900"
+                className="px-3 py-1.5 text-xs bg-[#D4A843] text-white rounded-lg hover:bg-[#C09A3A]"
               >
                 ← 返回编辑
               </button>

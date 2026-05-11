@@ -108,7 +108,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
 
   if (!authChecked) {
     return (
-      <div className="flex h-screen bg-slate-950 items-center justify-center">
+      <div className="flex h-screen bg-[#F9FAFB] items-center justify-center">
         <p className="text-slate-400 text-sm">验证身份中...</p>
       </div>
     );
@@ -123,19 +123,19 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
 
   const sidebarContent = (mobile?: boolean) => (
     <>
-      <div className={`${collapsed && !mobile ? 'px-3 py-4' : 'px-5 py-5'} border-b border-slate-800 flex items-center gap-3`}>
+      <div className={`${collapsed && !mobile ? 'px-3 py-4' : 'px-5 py-5'} border-b border-[#E5E7EB] flex items-center gap-3`}>
         {(!collapsed || mobile) && (
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-bold tracking-tight">Koala PhD</h1>
-            <p className="text-[10px] text-slate-500 mt-0.5">Admin Console</p>
+            <h1 className="text-base font-bold tracking-tight text-[#111827]">Koala PhD</h1>
+            <p className="text-[10px] text-[#9CA3AF] mt-0.5">Admin Console</p>
           </div>
         )}
         {mobile ? (
-          <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors flex-shrink-0">
+          <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-[#F3F4F6] text-[#9CA3AF] hover:text-[#374151] transition-colors flex-shrink-0">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
           </button>
         ) : (
-          <button onClick={() => setCollapsed(v => !v)} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors flex-shrink-0">
+          <button onClick={() => setCollapsed(v => !v)} className="p-1.5 rounded-lg hover:bg-[#F3F4F6] text-[#9CA3AF] hover:text-[#374151] transition-colors flex-shrink-0">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               {collapsed ? <path d="M9 18l6-6-6-6" /> : <path d="M15 18l-6-6 6-6" />}
             </svg>
@@ -157,7 +157,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
                     <button
                       onClick={() => setExpanded(isExp ? null : section.href)}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors ${
-                        active ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                        active ? 'bg-[#FEF3C7] text-[#92400E] font-medium' : 'text-[#374151] hover:bg-[#F3F4F6] hover:text-[#111827]'
                       }`}
                       title={!showLabel ? section.label : undefined}
                     >
@@ -179,7 +179,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
                               href={child.href}
                               onClick={() => mobile && setSidebarOpen(false)}
                               className={`block px-3 py-1.5 rounded text-[13px] transition-colors no-underline ${
-                                pathname === child.href ? 'text-amber-400 bg-slate-800/40' : 'text-slate-500 hover:text-slate-300'
+                                pathname === child.href ? 'text-[#D4A843] font-medium bg-[#FFFBEB]' : 'text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB]'
                               }`}
                             >
                               {child.label}
@@ -194,7 +194,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
                     href={section.href}
                     onClick={() => mobile && setSidebarOpen(false)}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors no-underline ${
-                      active ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                      active ? 'bg-[#FEF3C7] text-[#92400E] font-medium' : 'text-[#374151] hover:bg-[#F3F4F6] hover:text-[#111827]'
                     }`}
                     title={!showLabel ? section.label : undefined}
                   >
@@ -208,22 +208,22 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
         </ul>
       </nav>
 
-      <div className={`${collapsed && !mobile ? 'px-2' : 'px-4'} py-3 border-t border-slate-800`}>
+      <div className={`${collapsed && !mobile ? 'px-2' : 'px-4'} py-3 border-t border-[#E5E7EB]`}>
         {(!collapsed || mobile) && (
-          <div className="text-[11px] text-slate-600 mb-2">
+          <div className="text-[11px] text-[#9CA3AF] mb-2">
             {role === 'super_admin' ? '超级管理员' : role === 'admin' ? '管理员' : role === 'sales' ? '销售' : '只读'}
           </div>
         )}
         <Link
           href="/koala/home"
-          className="block w-full text-left text-[13px] text-slate-500 hover:text-white transition px-2 py-1.5 rounded hover:bg-slate-800/60 no-underline mb-1"
+          className="block w-full text-left text-[13px] text-[#6B7280] hover:text-[#111827] transition px-2 py-1.5 rounded hover:bg-[#F3F4F6] no-underline mb-1"
           title="返回主页"
         >
           {collapsed && !mobile ? '🏠' : '🏠 返回主页'}
         </Link>
         <button
           onClick={handleSignOut}
-          className="w-full text-left text-[13px] text-slate-500 hover:text-white transition px-2 py-1.5 rounded hover:bg-slate-800/60"
+          className="w-full text-left text-[13px] text-[#6B7280] hover:text-[#111827] transition px-2 py-1.5 rounded hover:bg-[#F3F4F6]"
           title="退出登录"
         >
           {collapsed && !mobile ? '🚪' : '退出登录'}
@@ -233,19 +233,19 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] dark:bg-slate-950">
+    <div className="flex h-screen bg-[#F9FAFB]">
       {/* Mobile hamburger overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-          <div className="absolute top-0 left-0 w-[280px] h-full bg-[#0a1018] text-white flex flex-col z-10">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setSidebarOpen(false)} />
+          <div className="absolute top-0 left-0 w-[280px] h-full bg-white flex flex-col z-10 shadow-lg">
             {sidebarContent(true)}
           </div>
         </div>
       )}
 
       {/* Desktop sidebar */}
-      <div className={`${collapsed ? 'w-16' : 'w-60'} bg-[#0f172a] text-white hidden md:flex flex-col shrink-0 transition-all duration-200`}>
+      <div className={`${collapsed ? 'w-16' : 'w-60'} bg-white border-r border-[#E5E7EB] hidden md:flex flex-col shrink-0 transition-all duration-200`}>
         {sidebarContent()}
       </div>
 

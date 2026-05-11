@@ -14,12 +14,12 @@ interface EngagementEntry { userId: string; displayName: string; email: string; 
 interface EngagementSummary { high: number; medium: number; low: number; dormant: number; total: number; avgScore: number }
 
 const STAGE_LABELS: Record<string, { label: string; color: string }> = {
-  lead: { label: '线索', color: '#6a7a7e' },
-  contacted: { label: '已联系', color: '#c9a96e' },
-  interested: { label: '有意向', color: '#5a8060' },
-  trial: { label: '试用中', color: '#4a90d9' },
-  converted: { label: '已转化', color: '#2ecc71' },
-  churned: { label: '流失', color: '#b06040' },
+  lead: { label: '线索', color: '#6B7280' },
+  contacted: { label: '已联系', color: '#D4A843' },
+  interested: { label: '有意向', color: '#059669' },
+  trial: { label: '试用中', color: '#3B82F6' },
+  converted: { label: '已转化', color: '#10B981' },
+  churned: { label: '流失', color: '#EF4444' },
 };
 
 const FUNNEL_STAGES = ['lead', 'contacted', 'interested', 'trial', 'converted'] as const;
@@ -110,8 +110,8 @@ export default function SalesDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#080c10' }}>
-        <p className="text-sm" style={{ color: '#6a7a7e' }}>加载中…</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB]">
+        <p className="text-sm text-[#6B7280]">加载中…</p>
       </div>
     );
   }
@@ -119,14 +119,14 @@ export default function SalesDashboard() {
   const maxFunnel = Math.max(...FUNNEL_STAGES.map(s => funnel?.funnel[s] ?? 0), 1);
 
   return (
-    <div className="min-h-screen p-4 sm:p-6" style={{ background: '#080c10', color: '#e8e4dc' }}>
+    <div className="min-h-screen p-4 sm:p-6 bg-[#F9FAFB] text-[#111827]">
       <div className="max-w-4xl mx-auto space-y-5">
-        <h1 className="text-xl font-bold" style={{ color: '#c9a96e' }}>Sales Dashboard</h1>
+        <h1 className="text-xl font-bold text-[#D4A843]">Sales Dashboard</h1>
 
         {/* KPI Progress */}
         {kpi && (
-          <div className="rounded-xl p-5" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
-            <h2 className="text-sm font-semibold mb-4" style={{ color: '#a8b8ac' }}>本周 KPI</h2>
+          <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
+            <h2 className="text-sm font-semibold mb-4 text-[#374151]">本周 KPI</h2>
             <div className="space-y-4">
               {[
                 { label: '注册', icon: '📥', ...kpi.leads },
@@ -138,17 +138,17 @@ export default function SalesDashboard() {
                 return (
                   <div key={item.label}>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs" style={{ color: '#a8b8ac' }}>{item.icon} {item.label}</span>
-                      <span className="text-xs font-bold" style={{ color: met ? '#2ecc71' : '#c9a96e' }}>
+                      <span className="text-xs text-[#374151]">{item.icon} {item.label}</span>
+                      <span className="text-xs font-bold" style={{ color: met ? '#10B981' : '#D4A843' }}>
                         {item.current}/{item.target} {met && '✓'}
                       </span>
                     </div>
-                    <div className="h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                    <div className="h-3 rounded-full overflow-hidden bg-[#F3F4F6]">
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${pct}%`,
-                          background: met ? '#2ecc71' : pct > 60 ? '#c9a96e' : '#b06040',
+                          background: met ? '#10B981' : pct > 60 ? '#D4A843' : '#EF4444',
                         }}
                       />
                     </div>
@@ -157,7 +157,7 @@ export default function SalesDashboard() {
                         <div
                           key={i}
                           className="size-2 rounded-sm"
-                          style={{ background: i < item.current ? (met ? '#2ecc71' : '#c9a96e') : 'rgba(255,255,255,0.08)' }}
+                          style={{ background: i < item.current ? (met ? '#10B981' : '#D4A843') : '#E5E7EB' }}
                         />
                       )).slice(0, 20)}
                     </div>
@@ -172,8 +172,8 @@ export default function SalesDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Funnel */}
           {funnel && (
-            <div className="rounded-xl p-5" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
-              <h2 className="text-sm font-semibold mb-3" style={{ color: '#a8b8ac' }}>客户漏斗</h2>
+            <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
+              <h2 className="text-sm font-semibold mb-3 text-[#374151]">客户漏斗</h2>
               <div className="space-y-2">
                 {FUNNEL_STAGES.map(key => {
                   const count = funnel.funnel[key] ?? 0;
@@ -181,8 +181,8 @@ export default function SalesDashboard() {
                   return (
                     <div key={key} className="flex items-center gap-3">
                       <span className="text-[10px] w-12 text-right" style={{ color: STAGE_LABELS[key].color }}>{STAGE_LABELS[key].label}</span>
-                      <div className="flex-1 h-5 rounded" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                        <div className="h-full rounded flex items-center justify-end pr-2 transition-all" style={{ width: `${Math.max(pct, 8)}%`, background: `${STAGE_LABELS[key].color}40` }}>
+                      <div className="flex-1 h-5 rounded bg-[#F3F4F6]">
+                        <div className="h-full rounded flex items-center justify-end pr-2 transition-all" style={{ width: `${Math.max(pct, 8)}%`, background: `${STAGE_LABELS[key].color}20` }}>
                           <span className="text-[10px] font-bold" style={{ color: STAGE_LABELS[key].color }}>{count}</span>
                         </div>
                       </div>
@@ -190,7 +190,7 @@ export default function SalesDashboard() {
                   );
                 })}
               </div>
-              <div className="mt-3 flex items-center justify-between text-[10px]" style={{ color: '#6a7a7e' }}>
+              <div className="mt-3 flex items-center justify-between text-[10px] text-[#6B7280]">
                 <span>总计 {funnel.total}</span>
                 <span>转化率 {funnel.conversionRate}%</span>
               </div>
@@ -198,13 +198,12 @@ export default function SalesDashboard() {
           )}
 
           {/* QR Codes */}
-          <div className="rounded-xl p-5" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+          <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold" style={{ color: '#a8b8ac' }}>推广码</h2>
+              <h2 className="text-sm font-semibold text-[#374151]">推广码</h2>
               <button
                 onClick={() => setShowQrCreate(!showQrCreate)}
-                className="text-[10px] px-2.5 py-1 rounded-lg"
-                style={{ background: 'rgba(201,169,110,0.15)', color: '#c9a96e' }}
+                className="text-[10px] px-2.5 py-1 rounded-lg bg-[#D4A843]/10 text-[#D4A843]"
               >
                 + 新建
               </button>
@@ -216,14 +215,12 @@ export default function SalesDashboard() {
                   placeholder="标签（如：朋友圈）"
                   value={newLabel}
                   onChange={e => setNewLabel(e.target.value)}
-                  className="flex-1 rounded-lg px-3 py-2 text-xs focus:outline-none"
-                  style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+                  className="flex-1 rounded-lg px-3 py-2 text-xs focus:outline-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] placeholder:text-[#9CA3AF]"
                 />
                 <select
                   value={newChannel}
                   onChange={e => setNewChannel(e.target.value)}
-                  className="rounded-lg px-3 py-2 text-xs focus:outline-none"
-                  style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+                  className="rounded-lg px-3 py-2 text-xs focus:outline-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827]"
                 >
                   <option value="wechat">微信</option>
                   <option value="xiaohongshu">小红书</option>
@@ -232,7 +229,7 @@ export default function SalesDashboard() {
                   <option value="douyin">抖音</option>
                   <option value="other">其他</option>
                 </select>
-                <button onClick={createQRCode} className="px-3 py-2 rounded-lg text-xs font-medium" style={{ background: '#c9a96e', color: '#080c10' }}>
+                <button onClick={createQRCode} className="px-3 py-2 rounded-lg text-xs font-medium bg-[#D4A843] text-white">
                   生成
                 </button>
               </div>
@@ -243,33 +240,31 @@ export default function SalesDashboard() {
                 {qrcodes.map(qr => {
                   const chLabel: Record<string, string> = { wechat: '📱 微信', xiaohongshu: '📕 小红书', linkedin: '💼 LinkedIn', offline: '🏫 线下', douyin: '🎵 抖音', other: '📋 其他' };
                   return (
-                    <div key={qr.id} className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                    <div key={qr.id} className="rounded-lg px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB]">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(201,169,110,0.1)', color: '#a8b8ac' }}>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/10 text-[#374151]">
                             {chLabel[qr.channel] || qr.channel}
                           </span>
-                          {qr.label && <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{qr.label}</span>}
+                          {qr.label && <span className="text-[10px] text-[#6B7280]">{qr.label}</span>}
                         </div>
-                        <div className="flex items-center gap-3 text-[10px]" style={{ color: '#6a7a7e' }}>
+                        <div className="flex items-center gap-3 text-[10px] text-[#6B7280]">
                           <span>👁 {qr.scan_count} 扫描</span>
                           <span>📥 {qr.register_count} 注册</span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between mt-1.5">
-                        <span className="text-[10px] font-mono" style={{ color: '#c9a96e' }}>{qr.code}</span>
+                        <span className="text-[10px] font-mono text-[#D4A843]">{qr.code}</span>
                         <div className="flex gap-2">
                           <button
                             onClick={() => downloadQR(qr.code)}
-                            className="text-[10px] px-2 py-0.5 rounded"
-                            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                            className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
                           >
                             二维码
                           </button>
                           <button
                             onClick={() => shareQR(qr.code, qr.label)}
-                            className="text-[10px] px-2 py-0.5 rounded"
-                            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                            className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
                           >
                             分享
                           </button>
@@ -280,27 +275,27 @@ export default function SalesDashboard() {
                 })}
               </div>
             ) : (
-              <p className="text-xs py-4 text-center" style={{ color: '#6a7a7e' }}>暂无推广码，点击上方「新建」创建</p>
+              <p className="text-xs py-4 text-center text-[#6B7280]">暂无推广码，点击上方「新建」创建</p>
             )}
           </div>
         </div>
 
         {/* Customer Engagement */}
         {engagement.length > 0 && (
-          <div className="rounded-xl p-5" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
-            <h2 className="text-sm font-semibold mb-3" style={{ color: '#a8b8ac' }}>📊 客户活跃度</h2>
+          <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
+            <h2 className="text-sm font-semibold mb-3 text-[#374151]">📊 客户活跃度</h2>
             {engSummary && (
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
                 {[
-                  { label: '平均分', value: engSummary.avgScore, icon: '📈', color: '#c9a96e' },
-                  { label: '🔥 高活跃', value: engSummary.high, icon: '', color: '#2ecc71' },
-                  { label: '🟡 中等', value: engSummary.medium, icon: '', color: '#c9a96e' },
-                  { label: '🔵 低活跃', value: engSummary.low, icon: '', color: '#4a90d9' },
-                  { label: '⚪ 沉默', value: engSummary.dormant, icon: '', color: '#6a7a7e' },
+                  { label: '平均分', value: engSummary.avgScore, icon: '📈', color: '#D4A843' },
+                  { label: '🔥 高活跃', value: engSummary.high, icon: '', color: '#10B981' },
+                  { label: '🟡 中等', value: engSummary.medium, icon: '', color: '#D4A843' },
+                  { label: '🔵 低活跃', value: engSummary.low, icon: '', color: '#3B82F6' },
+                  { label: '⚪ 沉默', value: engSummary.dormant, icon: '', color: '#6B7280' },
                 ].map(item => (
-                  <div key={item.label} className="rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  <div key={item.label} className="rounded-lg px-3 py-2 text-center bg-[#F9FAFB] border border-[#E5E7EB]">
                     <div className="text-lg font-bold" style={{ color: item.color }}>{item.value}</div>
-                    <div className="text-[10px]" style={{ color: '#6a7a7e' }}>{item.label}</div>
+                    <div className="text-[10px] text-[#6B7280]">{item.label}</div>
                   </div>
                 ))}
               </div>
@@ -308,32 +303,31 @@ export default function SalesDashboard() {
             <div className="space-y-1.5">
               {engagement.map(e => {
                 const levelConfig = {
-                  high: { emoji: '🔥', color: '#2ecc71', bg: 'rgba(46,204,113,0.1)' },
-                  medium: { emoji: '🟡', color: '#c9a96e', bg: 'rgba(201,169,110,0.1)' },
-                  low: { emoji: '🔵', color: '#4a90d9', bg: 'rgba(74,144,217,0.1)' },
-                  dormant: { emoji: '⚪', color: '#6a7a7e', bg: 'rgba(106,122,126,0.1)' },
+                  high: { emoji: '🔥', color: '#10B981', bg: 'rgba(16,185,129,0.1)' },
+                  medium: { emoji: '🟡', color: '#D4A843', bg: 'rgba(212,168,67,0.1)' },
+                  low: { emoji: '🔵', color: '#3B82F6', bg: 'rgba(59,130,246,0.1)' },
+                  dormant: { emoji: '⚪', color: '#6B7280', bg: 'rgba(107,114,128,0.1)' },
                 }[e.level];
                 return (
-                  <div key={e.userId} className="flex items-center gap-3 rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                  <div key={e.userId} className="flex items-center gap-3 rounded-lg px-3 py-2 bg-[#F9FAFB]">
                     <div className="size-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: levelConfig.bg, color: levelConfig.color }}>
                       {e.totalScore}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium truncate" style={{ color: '#e8e4dc' }}>{e.displayName || e.email || '未知'}</span>
+                        <span className="text-xs font-medium truncate text-[#111827]">{e.displayName || e.email || '未知'}</span>
                         <span className="text-[10px]" style={{ color: levelConfig.color }}>{levelConfig.emoji}</span>
                       </div>
-                      <div className="flex gap-2 mt-0.5 text-[10px]" style={{ color: '#6a7a7e' }}>
+                      <div className="flex gap-2 mt-0.5 text-[10px] text-[#6B7280]">
                         <span>💬{e.stats.conversationCount}</span>
                         <span>📌{e.stats.savedProfessors}</span>
                         <span>✉️{e.stats.emailsGenerated}</span>
                         <span>📝{e.stats.profilePct}%</span>
-                        {e.stats.daysSinceLastActive <= 3 && <span style={{ color: '#2ecc71' }}>● 近期活跃</span>}
-                        {e.stats.daysSinceLastActive > 14 && <span style={{ color: '#b06040' }}>● {e.stats.daysSinceLastActive}天未活跃</span>}
+                        {e.stats.daysSinceLastActive <= 3 && <span className="text-[#10B981]">● 近期活跃</span>}
+                        {e.stats.daysSinceLastActive > 14 && <span className="text-[#EF4444]">● {e.stats.daysSinceLastActive}天未活跃</span>}
                       </div>
                     </div>
-                    {/* Mini score bar */}
-                    <div className="w-16 h-2 rounded-full overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                    <div className="w-16 h-2 rounded-full overflow-hidden flex-shrink-0 bg-[#E5E7EB]">
                       <div className="h-full rounded-full" style={{ width: `${e.totalScore}%`, background: levelConfig.color }} />
                     </div>
                   </div>
@@ -344,24 +338,23 @@ export default function SalesDashboard() {
         )}
 
         {/* Customers */}
-        <div className="rounded-xl p-5" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
-          <h2 className="text-sm font-semibold mb-3" style={{ color: '#a8b8ac' }}>客户列表</h2>
+        <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
+          <h2 className="text-sm font-semibold mb-3 text-[#374151]">客户列表</h2>
           {customers.length > 0 ? (
             <div className="space-y-2">
               {customers.map(c => (
                 <Link
                   key={c.id}
                   href={`/dashboard/sales/customer/${c.id}`}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-lg no-underline hover:bg-white/5 transition"
-                  style={{ background: 'rgba(255,255,255,0.02)' }}
+                  className="flex items-center justify-between px-3 py-2.5 rounded-lg no-underline hover:bg-[#F3F4F6] transition bg-[#F9FAFB] border border-[#E5E7EB]"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="size-7 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: '#c9a96e', color: '#080c10' }}>
+                    <div className="size-7 rounded-full flex items-center justify-center text-[10px] font-bold bg-[#D4A843] text-white">
                       {(c.user_profiles?.display_name || c.user_profiles?.email || '?')[0].toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-xs" style={{ color: '#e8e4dc' }}>{c.user_profiles?.display_name || c.user_profiles?.email || '未知'}</p>
-                      <p className="text-[10px]" style={{ color: '#6a7a7e' }}>{new Date(c.created_at).toLocaleDateString('zh-CN')}</p>
+                      <p className="text-xs text-[#111827]">{c.user_profiles?.display_name || c.user_profiles?.email || '未知'}</p>
+                      <p className="text-[10px] text-[#6B7280]">{new Date(c.created_at).toLocaleDateString('zh-CN')}</p>
                     </div>
                   </div>
                   <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${STAGE_LABELS[c.stage]?.color}20`, color: STAGE_LABELS[c.stage]?.color }}>
@@ -371,42 +364,42 @@ export default function SalesDashboard() {
               ))}
             </div>
           ) : (
-            <p className="text-xs py-4 text-center" style={{ color: '#6a7a7e' }}>暂无客户</p>
+            <p className="text-xs py-4 text-center text-[#6B7280]">暂无客户</p>
           )}
         </div>
 
         {/* Work Log */}
-        <div className="rounded-xl p-5" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
-          <h2 className="text-sm font-semibold mb-3" style={{ color: '#a8b8ac' }}>我的工作日志</h2>
+        <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
+          <h2 className="text-sm font-semibold mb-3 text-[#374151]">我的工作日志</h2>
           {logs.length > 0 ? (
             <div className="space-y-0">
               {logs.map(log => (
-                <div key={log.id} className="flex items-start gap-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                  <div className="mt-1.5 size-1.5 rounded-full flex-shrink-0" style={{ background: '#c9a96e' }} />
+                <div key={log.id} className="flex items-start gap-3 py-2.5 border-b border-[#F3F4F6] last:border-0">
+                  <div className="mt-1.5 size-1.5 rounded-full flex-shrink-0 bg-[#D4A843]" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(201,169,110,0.1)', color: '#a8b8ac' }}>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/10 text-[#374151]">
                         {ACTION_LABELS[log.action] || log.action}
                       </span>
                       {log.target_type && (
-                        <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{log.target_type}</span>
+                        <span className="text-[10px] text-[#6B7280]">{log.target_type}</span>
                       )}
                     </div>
                     {log.details && (
-                      <p className="text-[10px] mt-0.5 truncate" style={{ color: '#6a7a7e' }}>
+                      <p className="text-[10px] mt-0.5 truncate text-[#6B7280]">
                         {typeof (log.details as Record<string, unknown>).stage === 'string' ? (log.details as Record<string, unknown>).stage as string : ''}
                         {typeof (log.details as Record<string, unknown>).note === 'string' ? ` ${(log.details as Record<string, unknown>).note as string}` : ''}
                       </p>
                     )}
                   </div>
-                  <span className="text-[10px] flex-shrink-0" style={{ color: '#6a7a7e' }}>
+                  <span className="text-[10px] flex-shrink-0 text-[#6B7280]">
                     {new Date(log.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs py-4 text-center" style={{ color: '#6a7a7e' }}>暂无工作记录</p>
+            <p className="text-xs py-4 text-center text-[#6B7280]">暂无工作记录</p>
           )}
         </div>
       </div>
