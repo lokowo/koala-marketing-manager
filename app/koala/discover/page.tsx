@@ -240,8 +240,8 @@ export default function DiscoverPage() {
       <div className="flex-1 flex items-center justify-center relative px-4 lg:px-8">
         <div className="flex gap-6 items-stretch w-full justify-center" style={{ maxWidth: 900 }}>
 
-          {/* Card stack */}
-          <div className="relative w-full lg:w-auto lg:flex-shrink-0" style={{ maxWidth: 340, height: 440 }}>
+          {/* Card stack — explicit width on desktop since children are absolute-positioned */}
+          <div className="relative w-full lg:w-[340px] lg:flex-shrink-0" style={{ maxWidth: 340, height: 440 }}>
             {professors.map((prof, index) => {
               if (index > currentIndex) return null;
               const stackPos = currentIndex - index;
