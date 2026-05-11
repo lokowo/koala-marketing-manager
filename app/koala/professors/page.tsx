@@ -9,19 +9,21 @@ import {
 } from 'lucide-react';
 import type { Professor } from '../../lib/types';
 
-interface WebProfessor {
+interface SearchCandidate {
   name: string;
   university: string;
-  faculty?: string | null;
-  positionTitle?: string | null;
-  email?: string | null;
-  researchAreas?: string[];
-  hIndex?: number | null;
-  paperCount?: number | null;
-  citationCount?: number | null;
-  profileUrl?: string | null;
-  googleScholarUrl?: string | null;
-  opportunityScore?: number | null;
+  position?: string;
+  faculty?: string;
+  researchAreas: string[];
+  hIndex?: number;
+  paperCount?: number;
+  citationCount?: number;
+  email?: string;
+  profileUrl?: string;
+  source: 'database' | 'openalex' | 'claude_web_search';
+  confidence: 'high' | 'medium' | 'low';
+  existsInDb: boolean;
+  dbId?: string;
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -167,12 +169,11 @@ function ProfessorsPageInner() {
   const [sortBy, setSortBy]         = useState('opportunity_score');
   const [university, setUniversity] = useState('');
 
-  // Web search fallback
-  const [webResults, setWebResults] = useState<WebProfessor[]>([]);
-  const [webSearching, setWebSearching] = useState(false);
+  // External search candidates
+  const [candidates, setCandidates] = useState<SearchCandidate[]>([]);
+  const [searching, setSearching] = useState(false);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [addingName, setAddingName] = useState<string | null>(null);
-  const [multipleWarning, setMultipleWarning] = useState<string | null>(null);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -197,9 +198,8 @@ function ProfessorsPageInner() {
   useEffect(() => {
     setLoading(true);
     setProfessors([]);
-    setWebResults([]);
-    setWebSearching(false);
-    setMultipleWarning(null);
+    setCandidates([]);
+    setSearching(false);
     setPage(1);
     setHasMore(true);
     apiFetch(filters)
@@ -209,14 +209,19 @@ function ProfessorsPageInner() {
         setHasMore(d.hasMore);
         setPage(2);
         if (debouncedSearch && d.data.length < 3) {
-          setWebSearching(true);
+          setSearching(true);
           fetch(`/api/professors/auto-search?name=${encodeURIComponent(debouncedSearch)}`)
             .then(r => r.json())
             .then(wd => {
-              if (wd.multipleResults && wd.message) {
-                setMultipleWarning(wd.message);
-              }
-              if (wd.created > 0) {
+              const externalCandidates = (wd.candidates || []).filter(
+                (c: SearchCandidate) => !d.data.some((dp: Professor) => dp.name === c.name && dp.university === c.university)
+              );
+              setCandidates(externalCandidates);
+              // If any DB-sourced candidates were found that we missed, refresh
+              const hasNewDbResults = (wd.candidates || []).some(
+                (c: SearchCandidate) => c.existsInDb && !d.data.some((dp: Professor) => dp.id === c.dbId)
+              );
+              if (hasNewDbResults) {
                 apiFetch(filters)
                   .then(refreshed => {
                     setProfessors(refreshed.data);
@@ -225,10 +230,9 @@ function ProfessorsPageInner() {
                   })
                   .catch(() => {});
               }
-              setWebResults(wd.results?.filter((p: WebProfessor) => !d.data.some((dp: Professor) => dp.name === p.name)) ?? []);
             })
             .catch(() => {})
-            .finally(() => setWebSearching(false));
+            .finally(() => setSearching(false));
         }
       })
       .catch(() => {})
@@ -236,32 +240,17 @@ function ProfessorsPageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, category, accepting, hIndexMin, sortBy, university]);
 
-  // Add web professor to database
-  const handleAddProfessor = useCallback(async (wp: WebProfessor) => {
-    setAddingName(wp.name);
+  // Add candidate to database via POST
+  const handleAddCandidate = useCallback(async (candidate: SearchCandidate) => {
+    setAddingName(candidate.name);
     try {
-      const res = await fetch('/api/professors', {
+      const res = await fetch('/api/professors/auto-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: wp.name,
-          university: wp.university,
-          faculty: wp.faculty,
-          position_title: wp.positionTitle,
-          email: wp.email,
-          research_areas: wp.researchAreas ?? [],
-          h_index: wp.hIndex,
-          paper_count: wp.paperCount,
-          citation_count: wp.citationCount,
-          profile_url: wp.profileUrl,
-          google_scholar_url: wp.googleScholarUrl,
-          opportunity_score: wp.opportunityScore ?? 50,
-          verification_status: 'Pending',
-          data_sources: ['web_search'],
-        }),
+        body: JSON.stringify({ candidate }),
       });
       if (res.ok) {
-        setAddedIds(prev => new Set(prev).add(wp.name));
+        setAddedIds(prev => new Set(prev).add(candidate.name));
         const refreshed = await apiFetch(filters);
         setProfessors(refreshed.data);
         setTotal(refreshed.total);
@@ -548,51 +537,54 @@ function ProfessorsPageInner() {
         )}
       </div>
 
-      {/* Multiple results warning */}
-      {multipleWarning && !loading && (
-        <div className="px-4 pt-2 lg:px-0">
-          <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)' }}>
-            <p className="text-xs font-medium" style={{ color: '#eab308' }}>
-              ⚠️ {multipleWarning}
-            </p>
-            <p className="text-xs mt-1" style={{ color: '#6a7a7e' }}>
-              搜索到同名研究者，请通过大学和研究方向确认你要找的教授。
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Web search fallback */}
-      {debouncedSearch && !loading && (webSearching || webResults.length > 0) && (
+      {/* External search candidates */}
+      {debouncedSearch && !loading && (searching || candidates.length > 0) && (
         <div className="px-4 pt-2 pb-4 lg:px-0">
           <div className="rounded-2xl overflow-hidden" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.12)' }}>
             <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(201,169,110,0.08)' }}>
-              <span className="text-sm font-semibold" style={{ color: '#c9a96e' }}>🌐 OpenAlex 学术搜索结果</span>
-              {webSearching && <Loader2 className="size-4 animate-spin" style={{ color: '#c9a96e' }} />}
+              <span className="text-sm font-semibold" style={{ color: '#c9a96e' }}>全网搜索结果</span>
+              {searching && <Loader2 className="size-4 animate-spin" style={{ color: '#c9a96e' }} />}
             </div>
-            {webSearching && webResults.length === 0 && (
+            {searching && candidates.length === 0 && (
               <div className="px-4 py-6 text-center">
                 <p className="text-xs" style={{ color: '#6a7a7e' }}>
-                  数据库中未找到足够的 &ldquo;{debouncedSearch}&rdquo; 相关结果，正在从 OpenAlex 学术数据库搜索…
+                  正在从 OpenAlex + 网络搜索 &ldquo;{debouncedSearch}&rdquo;…
                 </p>
               </div>
             )}
-            {webResults.length > 0 && (
+            {candidates.length > 0 && (
               <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.06)' }}>
-                {webResults.map((wp, idx) => {
-                  const added = addedIds.has(wp.name);
-                  const adding = addingName === wp.name;
+                {candidates.map((c, idx) => {
+                  const added = addedIds.has(c.name) || c.existsInDb;
+                  const adding = addingName === c.name;
+                  const sourceBadge = c.source === 'database'
+                    ? { label: '✅ 已收录', bg: 'rgba(34,197,94,0.15)', color: '#22c55e' }
+                    : c.source === 'openalex'
+                      ? { label: '📊 学术数据库', bg: 'rgba(96,165,250,0.15)', color: '#60a5fa' }
+                      : { label: '🔍 网络搜索', bg: 'rgba(168,130,255,0.15)', color: '#a882ff' };
+                  const confBadge = c.confidence === 'high'
+                    ? { label: '高匹配', color: '#22c55e' }
+                    : c.confidence === 'medium'
+                      ? { label: '中匹配', color: '#eab308' }
+                      : { label: '低���配', color: '#6a7a7e' };
+
                   return (
                     <div key={idx} className="px-4 py-3 flex items-start gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate" style={{ color: '#e8e4dc' }}>{wp.name}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold truncate" style={{ color: '#e8e4dc' }}>{c.name}</p>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: sourceBadge.bg, color: sourceBadge.color }}>
+                            {sourceBadge.label}
+                          </span>
+                          <span className="text-[10px]" style={{ color: confBadge.color }}>{confBadge.label}</span>
+                        </div>
                         <p className="text-xs mt-0.5" style={{ color: '#6a7a7e' }}>
-                          {wp.positionTitle && <span>{wp.positionTitle} · </span>}
-                          {wp.university}
+                          {c.position && <span>{c.position} · </span>}
+                          {c.university}
                         </p>
-                        {(wp.researchAreas ?? []).length > 0 && (
+                        {c.researchAreas.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
-                            {wp.researchAreas!.slice(0, 4).map(area => (
+                            {c.researchAreas.slice(0, 4).map(area => (
                               <span key={area} className="rounded-full text-[10px] px-2 py-0.5"
                                 style={{ border: '1px solid rgba(201,169,110,0.25)', color: '#c9a96e' }}>
                                 {area}
@@ -601,29 +593,31 @@ function ProfessorsPageInner() {
                           </div>
                         )}
                         <div className="flex gap-3 mt-1.5 text-xs" style={{ color: '#6a7a7e' }}>
-                          {wp.hIndex != null && <span style={{ color: '#c9a96e', fontWeight: 600 }}>H:{wp.hIndex}</span>}
-                          {wp.paperCount != null && <span>{wp.paperCount}篇</span>}
-                          {wp.citationCount != null && <span>{fmtCitations(wp.citationCount)}引</span>}
+                          {c.hIndex != null && <span style={{ color: '#c9a96e', fontWeight: 600 }}>H:{c.hIndex}</span>}
+                          {c.paperCount != null && <span>{c.paperCount}篇</span>}
+                          {c.citationCount != null && <span>{fmtCitations(c.citationCount)}引</span>}
                         </div>
                       </div>
-                      <button
-                        onClick={() => !added && !adding && handleAddProfessor(wp)}
-                        disabled={added || adding}
-                        className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70"
-                        style={added
-                          ? { background: 'rgba(34,197,94,0.15)', color: '#22c55e' }
-                          : { background: '#c9a96e', color: '#080c10' }}
-                      >
-                        {added ? <><Check className="size-3" /> 已添加</> : adding ? <><Loader2 className="size-3 animate-spin" /> 添加中</> : <><Plus className="size-3" /> 添加到数据库</>}
-                      </button>
+                      {!c.existsInDb && (
+                        <button
+                          onClick={() => !added && !adding && handleAddCandidate(c)}
+                          disabled={added || adding}
+                          className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70"
+                          style={added
+                            ? { background: 'rgba(34,197,94,0.15)', color: '#22c55e' }
+                            : { background: '#c9a96e', color: '#080c10' }}
+                        >
+                          {added ? <><Check className="size-3" /> 已添加</> : adding ? <><Loader2 className="size-3 animate-spin" /> 添加中</> : <><Plus className="size-3" /> 录入数据库</>}
+                        </button>
+                      )}
                     </div>
                   );
                 })}
               </div>
             )}
-            {!webSearching && webResults.length === 0 && (
+            {!searching && candidates.length === 0 && (
               <div className="px-4 py-4 text-center">
-                <p className="text-xs" style={{ color: '#6a7a7e' }}>网络搜索未找到相关教授</p>
+                <p className="text-xs" style={{ color: '#6a7a7e' }}>未找到相关教授</p>
               </div>
             )}
           </div>

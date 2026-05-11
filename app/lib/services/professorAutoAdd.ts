@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '../supabase/server';
-import { createProfessor } from './professorService';
 import type { Professor } from '../types';
-import Anthropic from '@anthropic-ai/sdk';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface OpenAlexAuthor {
   id: string;
@@ -23,13 +23,25 @@ interface OpenAlexAuthor {
   x_concepts?: Array<{ display_name: string; score: number }>;
 }
 
-interface AutoSearchResult {
-  source: 'db' | 'openalex' | 'web';
-  professors: Professor[];
-  created: number;
-  multipleResults?: boolean;
-  message?: string;
+export interface ProfessorCandidate {
+  name: string;
+  university: string;
+  position?: string;
+  faculty?: string;
+  researchAreas: string[];
+  hIndex?: number;
+  paperCount?: number;
+  citationCount?: number;
+  email?: string;
+  profileUrl?: string;
+  googleScholarUrl?: string;
+  source: 'database' | 'openalex' | 'claude_web_search';
+  confidence: 'high' | 'medium' | 'low';
+  existsInDb: boolean;
+  dbId?: string;
 }
+
+// ─── University Aliases ──────────────────────────────────────────────────────
 
 const UNI_ALIASES: Record<string, string> = {
   'UNSW': 'UNSW Sydney',
@@ -71,130 +83,143 @@ const UNI_ALIASES: Record<string, string> = {
   'VU': 'Victoria University',
 };
 
-export async function findOrCreateProfessor(name: string, university?: string, options?: { skipDb?: boolean }): Promise<AutoSearchResult> {
-  // Expand university abbreviations
-  if (university) {
-    const upper = university.trim();
-    const expanded = UNI_ALIASES[upper] || UNI_ALIASES[upper.toUpperCase()] ||
-      Object.entries(UNI_ALIASES).find(([k]) => upper.toLowerCase().includes(k.toLowerCase()))?.[1];
-    if (expanded) university = expanded;
-  }
-
-  // Step 1: Search local DB (skip if explicitly requested, e.g. when user clicks "网络搜索")
-  if (!options?.skipDb) {
-    const dbResults = await searchLocalDB(name, university);
-    if (dbResults.length > 0) {
-      if (dbResults.length > 1) {
-        return {
-          source: 'db',
-          professors: dbResults,
-          created: 0,
-          multipleResults: true,
-          message: `找到 ${dbResults.length} 位名为 "${name}" 的研究者，请确认：`,
-        };
-      }
-      return { source: 'db', professors: dbResults, created: 0 };
-    }
-  }
-
-  // Step 2: Search OpenAlex with strict university matching
-  const openAlexResults = await searchOpenAlex(name, university);
-  if (openAlexResults.length > 0) {
-    // If multiple results, return all for user selection instead of auto-importing
-    if (openAlexResults.length > 1) {
-      const created: Professor[] = [];
-      for (const prof of openAlexResults) {
-        try {
-          const saved = await createProfessor(prof);
-          created.push(saved);
-        } catch (e) {
-          console.error('[professorAutoAdd] insert error:', e);
-        }
-      }
-      return {
-        source: 'openalex',
-        professors: created,
-        created: created.length,
-        multipleResults: true,
-        message: `找到 ${created.length} 位名为 "${name}" 的研究者，请确认：`,
-      };
-    }
-
-    // Single result — auto-import
-    const created: Professor[] = [];
-    for (const prof of openAlexResults) {
-      try {
-        const saved = await createProfessor(prof);
-        created.push(saved);
-      } catch (e) {
-        console.error('[professorAutoAdd] insert error:', e);
-      }
-    }
-    if (created.length > 0) {
-      return { source: 'openalex', professors: created, created: created.length };
-    }
-  }
-
-  // Step 3: Claude web search fallback when OpenAlex fails
-  if (name.trim().length >= 2) {
-    try {
-      const webResult = await claudeWebSearchProfessor(name, university);
-      if (webResult) {
-        const created: Professor[] = [];
-        try {
-          const saved = await createProfessor(webResult);
-          created.push(saved);
-        } catch (e) {
-          console.error('[professorAutoAdd] web search insert error:', e);
-        }
-        if (created.length > 0) {
-          return { source: 'web', professors: created, created: created.length };
-        }
-      }
-    } catch (e) {
-      console.error('[professorAutoAdd] Claude web search failed:', e);
-    }
-  }
-
-  return { source: 'openalex', professors: [], created: 0 };
+function expandUniversity(university?: string): string | undefined {
+  if (!university) return undefined;
+  const trimmed = university.trim();
+  const match = UNI_ALIASES[trimmed] || UNI_ALIASES[trimmed.toUpperCase()] ||
+    Object.entries(UNI_ALIASES).find(([k]) => trimmed.toLowerCase().includes(k.toLowerCase()))?.[1];
+  return match || trimmed;
 }
 
-async function searchLocalDB(name: string, university?: string): Promise<Professor[]> {
-  const terms = name.split(/\s+/).filter(t => t.length >= 2);
-  if (terms.length === 0) return [];
+// ─── Main: Search All Sources (parallel) ─────────────────────────────────────
 
-  const orClauses = terms.map(t => `name.ilike.%${t}%`).join(',');
+export async function searchProfessorAllSources(name: string, university?: string): Promise<ProfessorCandidate[]> {
+  const expandedUni = expandUniversity(university);
+  const candidates: ProfessorCandidate[] = [];
 
+  // === Source 1: Local database ===
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let q: any = supabaseAdmin
+  let dbQuery: any = supabaseAdmin
     .from('professors')
     .select('*')
-    .or(orClauses)
-    .order('opportunity_score', { ascending: false, nullsFirst: false })
-    .limit(10);
+    .ilike('name', `%${name}%`);
+  if (expandedUni) dbQuery = dbQuery.ilike('university', `%${expandedUni}%`);
+  const { data: dbResults } = await dbQuery.limit(5);
 
-  if (university) {
-    q = q.ilike('university', `%${university}%`);
+  if (dbResults?.length) {
+    for (const p of dbResults) {
+      candidates.push({
+        name: p.name,
+        university: p.university,
+        position: p.position_title || undefined,
+        faculty: p.faculty || undefined,
+        researchAreas: p.research_areas || [],
+        hIndex: p.h_index || undefined,
+        paperCount: p.paper_count || undefined,
+        citationCount: p.citation_count || undefined,
+        email: p.email || undefined,
+        profileUrl: p.profile_url || undefined,
+        googleScholarUrl: p.google_scholar_url || undefined,
+        source: 'database',
+        confidence: 'high',
+        existsInDb: true,
+        dbId: p.id,
+      });
+    }
   }
 
-  const { data, error } = await q;
-  if (error || !data) return [];
+  // === Source 2 & 3: OpenAlex + Claude Web Search (parallel) ===
+  const oaPromise = searchOpenAlexCandidates(name, expandedUni);
+  const claudePromise = searchClaudeCandidates(name, expandedUni);
 
-  // Re-rank: exact name match scores higher
-  const lower = name.toLowerCase();
-  const sorted = data.sort((a: { name: string }, b: { name: string }) => {
-    const aExact = a.name.toLowerCase().includes(lower) ? 1 : 0;
-    const bExact = b.name.toLowerCase().includes(lower) ? 1 : 0;
-    return bExact - aExact;
+  const [oaResults, claudeResults] = await Promise.all([oaPromise, claudePromise]);
+  candidates.push(...oaResults, ...claudeResults);
+
+  // Deduplicate: same name + university keeps highest confidence / database source
+  const deduped = new Map<string, ProfessorCandidate>();
+  for (const c of candidates) {
+    const key = `${c.name.toLowerCase()}|${c.university.toLowerCase()}`;
+    const existing = deduped.get(key);
+    if (!existing || c.source === 'database' ||
+      (c.confidence === 'high' && existing.confidence !== 'high' && existing.source !== 'database')) {
+      deduped.set(key, c);
+    }
+  }
+
+  // Sort: database > claude_web_search(high) > openalex(high) > rest
+  const priority: Record<string, number> = { database: 0, claude_web_search: 1, openalex: 2 };
+  const confPriority: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+  return Array.from(deduped.values()).sort((a, b) => {
+    return (priority[a.source] - priority[b.source]) || (confPriority[a.confidence] - confPriority[b.confidence]);
   });
-
-  return sorted.map(fromRow);
 }
 
-async function searchOpenAlex(name: string, university?: string): Promise<Omit<Professor, 'id' | 'createdAt' | 'updatedAt'>[]> {
-  const query = encodeURIComponent(name);
+// ─── Save Candidate to DB ────────────────────────────────────────────────────
 
-  // If university specified, add institution filter to OpenAlex query
+export async function saveCandidateToDb(candidate: ProfessorCandidate): Promise<Professor | null> {
+  // Check duplicate
+  const { data: existing } = await supabaseAdmin
+    .from('professors')
+    .select('*')
+    .eq('name', candidate.name)
+    .eq('university', candidate.university)
+    .maybeSingle();
+  if (existing) return fromRow(existing);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabaseAdmin as any)
+    .from('professors')
+    .insert({
+      name: candidate.name,
+      university: candidate.university,
+      position_title: candidate.position || null,
+      faculty: candidate.faculty || null,
+      research_areas: candidate.researchAreas,
+      h_index: candidate.hIndex || null,
+      paper_count: candidate.paperCount || null,
+      citation_count: candidate.citationCount || null,
+      email: candidate.email || null,
+      profile_url: candidate.profileUrl || null,
+      google_scholar_url: candidate.googleScholarUrl || null,
+      verification_status: candidate.source === 'claude_web_search' ? 'Verified' : 'Pending',
+      data_sources: [candidate.source],
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[saveCandidateToDb]', error);
+    return null;
+  }
+  return data ? fromRow(data) : null;
+}
+
+// ─── Backward-compatible wrapper (used by AI chat) ───────────────────────────
+
+export async function findOrCreateProfessor(name: string, university?: string): Promise<{ source: string; professors: Professor[]; created: number }> {
+  const candidates = await searchProfessorAllSources(name, university);
+  if (candidates.length === 0) {
+    return { source: 'openalex', professors: [], created: 0 };
+  }
+
+  // Auto-select the best candidate for AI chat (needs fast response)
+  const best = candidates[0];
+  if (best.existsInDb && best.dbId) {
+    const { data } = await supabaseAdmin.from('professors').select('*').eq('id', best.dbId).single();
+    if (data) return { source: best.source, professors: [fromRow(data)], created: 0 };
+  }
+
+  // Auto-save best candidate
+  const saved = await saveCandidateToDb(best);
+  if (saved) return { source: best.source, professors: [saved], created: 1 };
+  return { source: best.source, professors: [], created: 0 };
+}
+
+// ─── OpenAlex search (returns candidates, does NOT save to DB) ───────────────
+
+async function searchOpenAlexCandidates(name: string, university?: string): Promise<ProfessorCandidate[]> {
+  const query = encodeURIComponent(name);
   let url: string;
   if (university) {
     url = `https://api.openalex.org/authors?search=${query}&filter=last_known_institutions.display_name.search:${encodeURIComponent(university)}&per_page=5&mailto=koalaphd@gmail.com`;
@@ -213,10 +238,10 @@ async function searchOpenAlex(name: string, university?: string): Promise<Omit<P
 
   if (!data.results || data.results.length === 0) return [];
 
-  const professors: Omit<Professor, 'id' | 'createdAt' | 'updatedAt'>[] = [];
+  const candidates: ProfessorCandidate[] = [];
 
   for (const author of data.results) {
-    // Strict university verification: double-check institutions match
+    // Strict university verification when specified
     if (university) {
       const allInstitutions = [
         ...(author.last_known_institutions ?? []).map(i => i.display_name),
@@ -225,162 +250,106 @@ async function searchOpenAlex(name: string, university?: string): Promise<Omit<P
       const isMatch = allInstitutions.some(
         inst => inst.toLowerCase().includes(university.toLowerCase())
       );
-      if (!isMatch) {
-        console.log(`[professorAutoAdd] ${author.display_name} not actually at ${university}, skipping`);
-        continue;
+      if (!isMatch) continue;
+    }
+
+    const institution = author.last_known_institutions?.[0]?.display_name
+      || author.affiliations?.[0]?.institution.display_name
+      || 'Unknown';
+
+    const researchAreas: string[] = [];
+    if (author.topics) {
+      for (const t of author.topics.slice(0, 5)) {
+        researchAreas.push(t.display_name);
+      }
+    }
+    if (researchAreas.length < 3 && author.x_concepts) {
+      for (const c of author.x_concepts.filter(c => c.score > 30).slice(0, 3)) {
+        if (!researchAreas.includes(c.display_name)) researchAreas.push(c.display_name);
       }
     }
 
-    const institution = pickInstitution(author, university);
-    if (!institution) continue;
+    const confidence: ProfessorCandidate['confidence'] = university &&
+      (author.last_known_institutions ?? []).some(
+        i => i.display_name.toLowerCase().includes(university.toLowerCase())
+      ) ? 'high' : 'medium';
 
-    const researchAreas = extractResearchAreas(author);
-
-    professors.push({
+    candidates.push({
       name: author.display_name,
       university: institution,
-      faculty: '',
-      title: '',
-      positionTitle: undefined,
       researchAreas,
-      email: '',
-      profileUrl: '',
-      googleScholarUrl: '',
-      grantStatus: 'Inactive',
-      suitableStudentBackgrounds: [],
-      potentialRpTopics: [],
-      references: '',
-      verificationStatus: 'Pending',
       hIndex: author.summary_stats?.h_index ?? undefined,
       paperCount: author.works_count ?? undefined,
       citationCount: author.cited_by_count ?? undefined,
-      acceptingStudents: 'unknown',
-      dataSources: ['manual'],
-      semanticScholarId: author.ids?.orcid ?? undefined,
+      source: 'openalex',
+      confidence,
+      existsInDb: false,
     });
   }
 
-  return professors;
+  return candidates;
 }
 
-function pickInstitution(author: OpenAlexAuthor, preferredUni?: string): string | null {
-  const institutions = author.last_known_institutions ?? [];
-  const affiliations = author.affiliations ?? [];
+// ─── Claude Web Search (returns candidates, does NOT save to DB) ─────────────
 
-  if (preferredUni) {
-    const lower = preferredUni.toLowerCase();
-    const match = institutions.find(i => i.display_name.toLowerCase().includes(lower));
-    if (match) return match.display_name;
-    const affMatch = affiliations.find(a => a.institution.display_name.toLowerCase().includes(lower));
-    if (affMatch) return affMatch.institution.display_name;
-  }
-
-  if (institutions.length > 0) return institutions[0].display_name;
-  if (affiliations.length > 0) return affiliations[0].institution.display_name;
-  return null;
-}
-
-function extractResearchAreas(author: OpenAlexAuthor): string[] {
-  const areas: string[] = [];
-
-  if (author.topics) {
-    for (const t of author.topics.slice(0, 8)) {
-      areas.push(t.display_name);
-    }
-  }
-
-  if (areas.length < 3 && author.x_concepts) {
-    for (const c of author.x_concepts.filter(c => c.score > 30).slice(0, 5)) {
-      if (!areas.includes(c.display_name)) {
-        areas.push(c.display_name);
-      }
-    }
-  }
-
-  return areas.slice(0, 8);
-}
-
-async function claudeWebSearchProfessor(name: string, university?: string): Promise<Omit<Professor, 'id' | 'createdAt' | 'updatedAt'> | null> {
+async function searchClaudeCandidates(name: string, university?: string): Promise<ProfessorCandidate[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
-
-  const anthropic = new Anthropic({ apiKey });
+  if (!apiKey) return [];
 
   try {
-    const searchResponse = await anthropic.messages.create({
+    const Anthropic = (await import('@anthropic-ai/sdk')).default;
+    const client = new Anthropic({ apiKey });
+
+    const searchQuery = university
+      ? `Professor ${name} at ${university}`
+      : `Professor ${name} Australian university`;
+
+    const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1000,
       tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
       messages: [{
         role: 'user',
-        content: `Search for Professor ${name} at ${university || 'an Australian university'}. Find their official university staff page. Return ONLY a JSON object with their verified information:
-{
-  "found": true,
-  "name": "full name in English",
-  "university": "full university name",
-  "position": "their exact title",
-  "faculty": "department or school",
-  "researchAreas": ["area1", "area2", "area3"],
-  "email": "if publicly available on their staff page",
-  "profileUrl": "official staff page URL",
-  "googleScholarUrl": "Google Scholar profile URL if available",
-  "hIndex": null,
-  "paperCount": null
-}
-If you cannot find this specific person at this specific university, return {"found": false}.
-Do NOT guess. Only return verified information from official sources.`,
+        content: `Search for ${searchQuery}. Find their official university staff page. Return ONLY a JSON object:
+{"found":true,"name":"full English name","university":"full university name","position":"exact title","faculty":"department","researchAreas":["area1","area2"],"email":"if public","profileUrl":"staff page URL","googleScholarUrl":"Google Scholar URL if available","hIndex":null,"paperCount":null}
+If not found: {"found":false}. Only return verified info from official sources. Do NOT guess.`,
       }],
     });
 
-    const textBlocks = searchResponse.content.filter(b => b.type === 'text');
-    const responseText = textBlocks.map(b => (b as { type: 'text'; text: string }).text).join('');
-    if (!responseText) return null;
+    const textBlocks = response.content.filter(b => b.type === 'text');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const text = textBlocks.map((b: any) => b.text).join('');
+    if (!text) return [];
 
-    const cleaned = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return null;
+    if (!jsonMatch) return [];
 
     const info = JSON.parse(jsonMatch[0]);
-    if (!info.found || !info.name) return null;
+    if (!info.found || !info.name) return [];
 
-    // Check for duplicates before returning
-    const { data: existing } = await supabaseAdmin
-      .from('professors')
-      .select('id')
-      .ilike('name', `%${info.name}%`)
-      .ilike('university', `%${info.university || university || ''}%`)
-      .limit(1);
-
-    if (existing && existing.length > 0) {
-      console.log(`[professorAutoAdd] Web search found ${info.name} but already in DB, skipping`);
-      return null;
-    }
-
-    return {
+    return [{
       name: info.name,
-      university: info.university || university || '',
-      faculty: info.faculty || '',
-      title: '',
-      positionTitle: info.position || undefined,
+      university: info.university || university || 'Unknown',
+      position: info.position || undefined,
+      faculty: info.faculty || undefined,
       researchAreas: info.researchAreas || [],
-      email: info.email || '',
-      profileUrl: info.profileUrl || '',
-      googleScholarUrl: info.googleScholarUrl || '',
-      grantStatus: 'Inactive',
-      suitableStudentBackgrounds: [],
-      potentialRpTopics: [],
-      references: '',
-      verificationStatus: 'Verified',
       hIndex: info.hIndex ?? undefined,
       paperCount: info.paperCount ?? undefined,
-      acceptingStudents: 'unknown',
-      dataSources: ['manual'],
-    };
+      email: info.email || undefined,
+      profileUrl: info.profileUrl || undefined,
+      googleScholarUrl: info.googleScholarUrl || undefined,
+      source: 'claude_web_search',
+      confidence: 'high',
+      existsInDb: false,
+    }];
   } catch (e) {
-    console.error('[professorAutoAdd] Claude web search error:', e);
-    return null;
+    console.error('[professorSearch] Claude search failed:', e);
+    return [];
   }
 }
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function fromRow(row: Record<string, unknown>): Professor {
   return {
