@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, X, ExternalLink } from 'lucide-react';
+import { Search, X, ExternalLink, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../../lib/theme';
 
 const TITLES: Record<string, string> = {
   '/dashboard/koala': '仪表盘',
@@ -28,6 +29,7 @@ interface SearchResult {
 export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -73,19 +75,29 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   }
 
   return (
-    <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-3 flex items-center gap-3 md:gap-4">
+    <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 md:px-6 py-3 flex items-center gap-3 md:gap-4">
       {/* Mobile hamburger */}
       {onMenuClick && (
-        <button onClick={onMenuClick} className="md:hidden p-1.5 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100">
+        <button onClick={onMenuClick} className="md:hidden p-1.5 -ml-1 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
         </button>
       )}
-      <h2 className="text-base md:text-lg font-semibold text-slate-900 flex-1 truncate">{title}</h2>
+      <h2 className="text-base md:text-lg font-semibold text-slate-900 dark:text-slate-100 flex-1 truncate">{title}</h2>
 
+      {/* Theme toggle */}
+      <button
+        onClick={toggleTheme}
+        className="p-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        title={theme === 'light' ? '切换到深色模式' : '切换到浅色模式'}
+      >
+        {theme === 'light' ? <Moon className="size-4" /> : <Sun className="size-4" />}
+      </button>
+
+      {/* Link to frontend */}
       <Link
         href="/koala/home"
         target="_blank"
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors no-underline"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors no-underline"
       >
         <ExternalLink className="size-3.5" />
         <span className="hidden sm:inline">前往前端</span>
@@ -94,19 +106,19 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
       {/* Search trigger */}
       <button
         onClick={() => setSearchOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-400 hover:border-slate-300 hover:text-slate-500 transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-sm text-slate-400 dark:text-slate-500 hover:border-slate-300 dark:hover:border-slate-500 hover:text-slate-500 dark:hover:text-slate-300 transition-colors"
       >
         <Search className="size-3.5" />
         <span className="hidden sm:inline">搜索操作日志...</span>
-        <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-mono ml-2 hidden sm:inline">⌘K</kbd>
+        <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-400 font-mono ml-2 hidden sm:inline">⌘K</kbd>
       </button>
 
       {/* Search overlay */}
       {searchOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
           <div className="absolute inset-0 bg-black/30" onClick={() => { setSearchOpen(false); setQuery(''); setResults([]); }} />
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
               <Search className="size-4 text-slate-400 flex-shrink-0" />
               <input
                 ref={inputRef}
@@ -114,10 +126,10 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="搜索操作日志...（如「删除 Jones」「生成文章」）"
-                className="flex-1 text-sm outline-none text-slate-800 placeholder:text-slate-400"
+                className="flex-1 text-sm outline-none text-slate-800 dark:text-slate-200 placeholder:text-slate-400 bg-transparent"
               />
               {query && (
-                <button onClick={() => { setQuery(''); setResults([]); }} className="text-slate-400 hover:text-slate-600">
+                <button onClick={() => { setQuery(''); setResults([]); }} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                   <X className="size-4" />
                 </button>
               )}
@@ -134,14 +146,14 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                 <button
                   key={r.id}
                   onClick={() => handleSelect(r)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
                   <span className="text-sm flex-shrink-0">📋</span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-slate-800 truncate">{r.title}</div>
+                    <div className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{r.title}</div>
                     <div className="text-xs text-slate-400 truncate">{r.subtitle}</div>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 flex-shrink-0">日志</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-400 flex-shrink-0">日志</span>
                 </button>
               ))}
             </div>

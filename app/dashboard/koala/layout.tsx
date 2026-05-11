@@ -218,7 +218,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="flex h-screen bg-[#f8fafc]">
+    <div className="flex h-screen bg-[#f8fafc] dark:bg-slate-950">
       {/* Mobile hamburger overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
