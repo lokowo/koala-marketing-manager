@@ -1820,6 +1820,18 @@ export default function MyProfilePage() {
                 <Link href="/koala/tools" className="flex items-center px-4 py-2.5 text-xs no-underline" style={{ color: '#a8b8ac' }}>
                   🔧 更多工具
                 </Link>
+                {profile?.role && ['admin', 'sales', 'super_admin'].includes(profile.role) && (
+                  <Link
+                    href={profile.role === 'sales' ? '/dashboard/sales' : '/dashboard/koala'}
+                    className="flex items-center justify-between px-4 py-2.5 text-xs no-underline"
+                    style={{ color: '#c9a96e' }}
+                  >
+                    <span>🖥️ 进入后台管理</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(201,169,110,0.12)', color: '#c9a96e' }}>
+                      {profile.role === 'super_admin' ? 'Super Admin' : profile.role === 'admin' ? 'Admin' : 'Sales'}
+                    </span>
+                  </Link>
+                )}
                 <button
                   className="w-full flex items-center px-4 py-2.5 text-xs text-left"
                   style={{ color: '#a8b8ac', background: 'transparent' }}
