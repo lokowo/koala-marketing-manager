@@ -546,6 +546,7 @@ export async function listResponses(surveyId: string, params?: {
   page?: number;
   limit?: number;
   sales_code?: string;
+  sales_user_id?: string;
 }): Promise<{ responses: SurveyResponse[]; total: number }> {
   const page = params?.page || 1;
   const limit = params?.limit || 50;
@@ -555,8 +556,13 @@ export async function listResponses(surveyId: string, params?: {
     .select('*', { count: 'exact' })
     .eq('survey_id', surveyId);
 
-  if (params?.sales_code) {
-    // Look up share link first
+  if (params?.sales_user_id) {
+    const { data: links } = await db.from('survey_share_links')
+      .select('id').eq('sales_id', params.sales_user_id);
+    const linkIds = (links || []).map((l: { id: string }) => l.id);
+    if (linkIds.length === 0) return { responses: [], total: 0 };
+    query = query.in('share_link_id', linkIds);
+  } else if (params?.sales_code) {
     const { data: link } = await db.from('survey_share_links')
       .select('id').eq('short_code', params.sales_code).single();
     if (link) {

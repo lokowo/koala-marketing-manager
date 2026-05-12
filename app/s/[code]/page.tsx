@@ -152,7 +152,6 @@ export default function PublicSurveyPage({ params }: { params: Promise<{ code: s
       <header className="border-b border-white/5 px-4 py-3 flex items-center gap-3">
         <span className="text-xl">🐨</span>
         <span className="text-sm font-medium text-white/80">Koala PhD</span>
-        <span className="text-xs text-white/30 ml-1">调研问卷</span>
       </header>
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6">

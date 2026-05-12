@@ -44,13 +44,19 @@ export default function SalesDashboard() {
   const [engagement, setEngagement] = useState<EngagementEntry[]>([]);
   const [engSummary, setEngSummary] = useState<EngagementSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState<string | null>(null);
   const [newLabel, setNewLabel] = useState('');
   const [newChannel, setNewChannel] = useState('wechat');
   const [showQrCreate, setShowQrCreate] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.replace('/login'); return; }
+      const res = await fetch('/api/admin/me');
+      if (res.ok) {
+        const { role: r } = await res.json();
+        setRole(r);
+      }
       loadData();
     });
   }, [router]);
@@ -133,12 +139,11 @@ export default function SalesDashboard() {
       <div className="bg-white border-b border-[#E5E7EB] px-4 sm:px-6 py-3 flex items-center justify-between">
         <h1 className="text-base font-bold text-[#111827]">Sales Dashboard</h1>
         <div className="flex items-center gap-2">
-          <Link href="/dashboard/koala/surveys" className="px-3 py-1.5 rounded-lg text-xs font-medium text-[#D4A843] bg-[#D4A843]/10 no-underline hover:bg-[#D4A843]/20 transition">
-            📋 调研问卷
-          </Link>
-          <Link href="/dashboard/koala" className="px-3 py-1.5 rounded-lg text-xs text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] no-underline transition">
-            管理后台 →
-          </Link>
+          {(role === 'admin' || role === 'super_admin') && (
+            <Link href="/dashboard/koala" className="px-3 py-1.5 rounded-lg text-xs text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] no-underline transition">
+              管理后台 →
+            </Link>
+          )}
           <Link href="/koala/home" className="px-3 py-1.5 rounded-lg text-xs text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] no-underline transition">
             🏠 主页
           </Link>

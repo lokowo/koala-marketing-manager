@@ -123,7 +123,7 @@ export function questionsToSurveyJson(
         title: '手机号码',
         isRequired: true,
         inputType: 'tel',
-        validators: [{ type: 'regex', regex: '^1[3-9]\\d{9}$', text: '请输入有效手机号' }],
+        placeholder: '请输入手机号码',
       },
       {
         type: 'text',

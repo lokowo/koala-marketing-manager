@@ -23,9 +23,12 @@ export async function GET(req: NextRequest) {
 
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
-    const salesCode = role === 'sales' ? searchParams.get('sales_code') || undefined : undefined;
 
-    const result = await listResponses(surveyId, { page, limit, sales_code: salesCode });
+    const result = await listResponses(surveyId, {
+      page,
+      limit,
+      sales_user_id: role === 'sales' ? user.id : undefined,
+    });
     return Response.json(result);
   } catch (error) {
     console.error('[responses GET]', error);

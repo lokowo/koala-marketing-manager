@@ -74,6 +74,102 @@ export default function SurveyRenderer({
     );
   }, [shareCode, responseId, onRegistered]);
 
+  const countryCodeRef = useRef('+61');
+
+  const COUNTRY_CODES = [
+    { code: '+61', label: '🇦🇺 +61', country: 'AU' },
+    { code: '+86', label: '🇨🇳 +86', country: 'CN' },
+    { code: '+852', label: '🇭🇰 +852', country: 'HK' },
+    { code: '+886', label: '🇹🇼 +886', country: 'TW' },
+    { code: '+65', label: '🇸🇬 +65', country: 'SG' },
+    { code: '+60', label: '🇲🇾 +60', country: 'MY' },
+    { code: '+81', label: '🇯🇵 +81', country: 'JP' },
+    { code: '+82', label: '🇰🇷 +82', country: 'KR' },
+    { code: '+1', label: '🇺🇸 +1', country: 'US' },
+    { code: '+44', label: '🇬🇧 +44', country: 'UK' },
+    { code: '+64', label: '🇳🇿 +64', country: 'NZ' },
+    { code: '+91', label: '🇮🇳 +91', country: 'IN' },
+  ];
+
+  const EMAIL_DOMAINS = ['gmail.com', 'qq.com', '163.com', 'outlook.com', 'hotmail.com', 'yahoo.com', 'icloud.com', '126.com', 'foxmail.com'];
+
+  const injectPhoneCountryCode = useCallback((question: { name: string; value: string }, htmlElement: HTMLElement, model: Model) => {
+    const input = htmlElement.querySelector('input[type="tel"]') as HTMLInputElement;
+    if (!input || htmlElement.querySelector('.country-code-select')) return;
+
+    const wrapper = input.parentElement;
+    if (!wrapper) return;
+    wrapper.style.display = 'flex';
+    wrapper.style.gap = '0';
+    wrapper.style.alignItems = 'stretch';
+
+    const select = document.createElement('select');
+    select.className = 'country-code-select';
+    Object.assign(select.style, {
+      width: '90px', flexShrink: '0',
+      background: '#0F1419', color: '#fff', border: '1px solid rgba(212,168,67,0.2)',
+      borderRight: 'none', borderRadius: '12px 0 0 12px',
+      padding: '0 4px', fontSize: '14px', outline: 'none', cursor: 'pointer',
+    });
+    for (const cc of COUNTRY_CODES) {
+      const opt = document.createElement('option');
+      opt.value = cc.code;
+      opt.textContent = cc.label;
+      if (cc.code === countryCodeRef.current) opt.selected = true;
+      select.appendChild(opt);
+    }
+    input.style.borderRadius = '0 12px 12px 0';
+
+    select.addEventListener('change', () => {
+      countryCodeRef.current = select.value;
+      syncPhoneValue(input, model, question.name);
+    });
+    input.addEventListener('input', () => syncPhoneValue(input, model, question.name));
+    input.addEventListener('blur', () => {
+      let val = input.value.replace(/\s/g, '');
+      if (val.startsWith('0')) val = val.slice(1);
+      input.value = val;
+      syncPhoneValue(input, model, question.name);
+    });
+
+    wrapper.insertBefore(select, input);
+  }, []);
+
+  function syncPhoneValue(input: HTMLInputElement, model: Model, questionName: string) {
+    let phone = input.value.replace(/\s/g, '');
+    if (phone.startsWith('0')) phone = phone.slice(1);
+    if (phone) {
+      model.setValue(questionName, `${countryCodeRef.current}${phone}`);
+    } else {
+      model.setValue(questionName, '');
+    }
+  }
+
+  const injectEmailAutocomplete = useCallback((_question: { name: string }, htmlElement: HTMLElement) => {
+    const input = htmlElement.querySelector('input[type="email"]') as HTMLInputElement;
+    if (!input || input.getAttribute('list')) return;
+
+    const listId = 'email-domain-suggestions';
+    if (!document.getElementById(listId)) {
+      const datalist = document.createElement('datalist');
+      datalist.id = listId;
+      document.body.appendChild(datalist);
+    }
+
+    input.setAttribute('list', listId);
+    input.addEventListener('input', () => {
+      const datalist = document.getElementById(listId) as HTMLDataListElement;
+      if (!datalist) return;
+      const val = input.value;
+      const atIdx = val.indexOf('@');
+      if (atIdx < 1) { datalist.innerHTML = ''; return; }
+      const prefix = val.slice(0, atIdx);
+      const domainPart = val.slice(atIdx + 1).toLowerCase();
+      const matches = EMAIL_DOMAINS.filter(d => d.startsWith(domainPart));
+      datalist.innerHTML = matches.map(d => `<option value="${prefix}@${d}">`).join('');
+    });
+  }, []);
+
   const injectVoiceButton = useCallback((question: { getType: () => string; name: string }, htmlElement: HTMLElement) => {
     if (question.getType() !== 'comment') return;
     if (!('webkitSpeechRecognition' in window)) return;
@@ -172,8 +268,14 @@ export default function SurveyRenderer({
       }
     });
 
-    model.onAfterRenderQuestion.add((_sender, options) => {
+    model.onAfterRenderQuestion.add((sender, options) => {
       injectVoiceButton(options.question, options.htmlElement);
+      if (options.question.name === '__contact_phone') {
+        injectPhoneCountryCode(options.question, options.htmlElement, sender);
+      }
+      if (options.question.name === '__contact_email') {
+        injectEmailAutocomplete(options.question, options.htmlElement);
+      }
     });
 
     model.onComplete.add((sender) => {
