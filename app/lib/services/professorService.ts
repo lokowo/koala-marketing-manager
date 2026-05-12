@@ -112,9 +112,9 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
     .select('*')
     .order(sortField, { ascending: false, nullsFirst: false });
 
-  // When category filter is active, fetch more rows and filter in JS
-  // (PostgREST can't do ilike on text[] columns)
-  if (!hasCategory) {
+  const hasSearch = !!filters?.search?.trim();
+  // When category or search is active, fetch more rows and rank/filter in JS
+  if (!hasCategory && !hasSearch) {
     q = q.range(offset, offset + limit - 1);
   } else {
     q = q.limit(500);
@@ -205,6 +205,18 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
       });
       results = [...results, ...areaMatched];
     }
+
+    // Rank results: professors matching MORE terms in name come first
+    if (searchTerms.length > 1) {
+      results.sort((a: Professor, b: Professor) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        const aHits = searchTerms.filter(t => aName.includes(t)).length;
+        const bHits = searchTerms.filter(t => bName.includes(t)).length;
+        if (aHits !== bHits) return bHits - aHits;
+        return (b.opportunityScore ?? 0) - (a.opportunityScore ?? 0);
+      });
+    }
   }
 
   if (hasCategory) {
@@ -260,12 +272,12 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
     if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
-    const term = searchTerm.toLowerCase();
+    const countTerms = searchTerm.split(/[\s,;，；]+/).filter(s => s.length > 0).map(t => t.toLowerCase());
     return (data ?? []).filter((row: { name: string; university: string; research_areas: string[] | null }) => {
-      if (row.name.toLowerCase().includes(term)) return true;
-      if (row.university.toLowerCase().includes(term)) return true;
+      const nameL = row.name.toLowerCase();
+      const uniL = row.university.toLowerCase();
       const areasText = (row.research_areas ?? []).join(' ').toLowerCase();
-      return areasText.includes(term);
+      return countTerms.some(t => nameL.includes(t) || uniL.includes(t) || areasText.includes(t));
     }).length;
   }
 

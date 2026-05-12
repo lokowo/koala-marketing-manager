@@ -4,6 +4,8 @@ import type { ProfessorCandidate } from '../../../lib/services/professorAutoAdd'
 
 export async function GET(req: NextRequest) {
   try {
+    console.log('[auto-search] ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
+    console.log('[auto-search] ANTHROPIC_API_KEY length:', process.env.ANTHROPIC_API_KEY?.length);
     const name = req.nextUrl.searchParams.get('name');
     const university = req.nextUrl.searchParams.get('university') || undefined;
     const deep = req.nextUrl.searchParams.get('deep') === 'true';
