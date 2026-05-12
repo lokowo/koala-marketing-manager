@@ -59,11 +59,14 @@ export default function SurveyRenderer({
 
     registrationRootRef.current.render(
       <InlineRegistrationPanel
-        getContactData={() => ({
-          name: model.getValue('__contact_name') || '',
-          phone: model.getValue('__contact_phone') || '',
-          email: model.getValue('__contact_email') || '',
-        })}
+        getContactData={() => {
+          const rawPhone = model.getValue('__contact_phone') || '';
+          return {
+            name: model.getValue('__contact_name') || '',
+            phone: rawPhone ? `${countryCodeRef.current}${rawPhone}` : '',
+            email: model.getValue('__contact_email') || '',
+          };
+        }}
         shareCode={shareCode || ''}
         responseId={responseId || ''}
         onRegistered={(userId) => {
@@ -122,28 +125,22 @@ export default function SurveyRenderer({
 
     select.addEventListener('change', () => {
       countryCodeRef.current = select.value;
-      syncPhoneValue(input, model, question.name);
     });
-    input.addEventListener('input', () => syncPhoneValue(input, model, question.name));
+    input.addEventListener('input', () => {
+      let phone = input.value.replace(/[^\d]/g, '');
+      if (phone.startsWith('0')) phone = phone.slice(1);
+      if (phone !== input.value) input.value = phone;
+      model.setValue(question.name, phone);
+    });
     input.addEventListener('blur', () => {
-      let val = input.value.replace(/\s/g, '');
-      if (val.startsWith('0')) val = val.slice(1);
-      input.value = val;
-      syncPhoneValue(input, model, question.name);
+      let phone = input.value.replace(/[^\d]/g, '');
+      if (phone.startsWith('0')) phone = phone.slice(1);
+      if (phone !== input.value) input.value = phone;
+      model.setValue(question.name, phone);
     });
 
     wrapper.insertBefore(select, input);
   }, []);
-
-  function syncPhoneValue(input: HTMLInputElement, model: Model, questionName: string) {
-    let phone = input.value.replace(/\s/g, '');
-    if (phone.startsWith('0')) phone = phone.slice(1);
-    if (phone) {
-      model.setValue(questionName, `${countryCodeRef.current}${phone}`);
-    } else {
-      model.setValue(questionName, '');
-    }
-  }
 
   const injectEmailAutocomplete = useCallback((_question: { name: string }, htmlElement: HTMLElement) => {
     const input = htmlElement.querySelector('input[type="email"]') as HTMLInputElement;
@@ -279,7 +276,12 @@ export default function SurveyRenderer({
     });
 
     model.onComplete.add((sender) => {
-      onComplete(sender.data);
+      const data = { ...sender.data };
+      const rawPhone = data.__contact_phone;
+      if (rawPhone && !String(rawPhone).startsWith('+')) {
+        data.__contact_phone = `${countryCodeRef.current}${rawPhone}`;
+      }
+      onComplete(data);
     });
 
     modelRef.current = model;
