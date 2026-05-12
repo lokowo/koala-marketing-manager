@@ -17,58 +17,121 @@ export async function GET(req: NextRequest) {
     }
 
     const sp = req.nextUrl.searchParams;
-    const limit = Math.min(parseInt(sp.get('limit') ?? '50', 10), 200);
-    const page = Math.max(parseInt(sp.get('page') ?? '1', 10), 1);
     const stage = sp.get('stage');
+    const search = sp.get('search');
+    const sort = sp.get('sort') || 'created_at';
     const qrCode = sp.get('qr_code');
 
-    // If filtering by QR code, find customer_user_ids linked to that code
-    let qrCustomerIds: string[] | null = null;
-    if (qrCode) {
-      const ids = new Set<string>();
+    // 1. Registered customers
+    const { data: registered } = await db
+      .from('sales_customers')
+      .select('id, stage, source, source_channel, source_code, last_contacted_at, contact_count, notes, created_at, customer_user_id, user_profiles!customer_user_id(id, display_name, email, phone, avatar_url, credit_balance, created_at)')
+      .eq('sales_user_id', user.id)
+      .order('created_at', { ascending: false });
 
-      // Survey QR codes: sales_qrcodes → survey_share_links → survey_responses.registered_user_id
+    // 2. Unregistered survey leads
+    const { data: unregistered } = await db
+      .from('survey_responses')
+      .select('id, respondent_name, respondent_phone, respondent_email, respondent_wechat, follow_up_status, follow_up_notes, value_score, completed_at, survey_id, surveys!survey_id(title_zh)')
+      .eq('sales_user_id', user.id)
+      .eq('status', 'completed')
+      .is('registered_user_id', null)
+      .order('completed_at', { ascending: false });
+
+    // Map follow_up_status to stage
+    const statusToStage: Record<string, string> = {
+      pending: 'lead', contacted: 'contacted', converted: 'converted', lost: 'lost',
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    type AnyRow = any;
+
+    const allClients = [
+      ...(registered ?? []).map((r: AnyRow) => ({
+        id: r.id,
+        type: 'registered' as const,
+        name: r.user_profiles?.display_name || '未知',
+        phone: r.user_profiles?.phone || '',
+        email: r.user_profiles?.email || '',
+        wechat: '',
+        stage: r.stage || 'lead',
+        source: r.source || 'direct',
+        source_channel: r.source_channel || '',
+        registered: true,
+        value_score: null as number | null,
+        survey_title: '',
+        last_contacted_at: r.last_contacted_at,
+        contact_count: r.contact_count || 0,
+        notes: r.notes || '',
+        created_at: r.created_at,
+        customer_user_id: r.customer_user_id,
+      })),
+      ...(unregistered ?? []).map((u: AnyRow) => ({
+        id: u.id,
+        type: 'survey_lead' as const,
+        name: u.respondent_name || '未知',
+        phone: u.respondent_phone || '',
+        email: u.respondent_email || '',
+        wechat: u.respondent_wechat || '',
+        stage: statusToStage[u.follow_up_status] || 'lead',
+        source: 'survey',
+        source_channel: 'survey',
+        registered: false,
+        value_score: u.value_score as number | null,
+        survey_title: u.surveys?.title_zh || '',
+        last_contacted_at: null,
+        contact_count: 0,
+        notes: u.follow_up_notes || '',
+        created_at: u.completed_at,
+        customer_user_id: null,
+      })),
+    ];
+
+    // Filter by stage
+    let filtered = stage ? allClients.filter(c => c.stage === stage) : allClients;
+
+    // Filter by QR code
+    if (qrCode) {
+      const matchIds = new Set<string>();
       const { data: shareLink } = await db.from('survey_share_links')
         .select('id').eq('short_code', qrCode).single();
       if (shareLink) {
         const { data: responses } = await db.from('survey_responses')
-          .select('registered_user_id')
-          .eq('share_link_id', shareLink.id)
-          .not('registered_user_id', 'is', null);
+          .select('id, registered_user_id')
+          .eq('share_link_id', shareLink.id);
         for (const r of responses ?? []) {
-          if (r.registered_user_id) ids.add(r.registered_user_id);
+          if (r.registered_user_id) matchIds.add(r.registered_user_id);
+          matchIds.add(r.id);
         }
       }
-
-      // Fallback / social QR codes: check notes field for matching code
       const { data: noteMatches } = await db.from('sales_customers')
-        .select('customer_user_id')
+        .select('id, customer_user_id')
         .eq('sales_user_id', user.id)
         .ilike('notes', `%${qrCode}%`);
-      for (const m of noteMatches ?? []) ids.add(m.customer_user_id);
+      for (const m of noteMatches ?? []) { matchIds.add(m.id); if (m.customer_user_id) matchIds.add(m.customer_user_id); }
 
-      qrCustomerIds = [...ids];
+      filtered = filtered.filter(c => matchIds.has(c.id) || (c.customer_user_id && matchIds.has(c.customer_user_id)));
     }
 
-    let query = db
-      .from('sales_customers')
-      .select('*, user_profiles(display_name, email, avatar_url)', { count: 'exact' })
-      .eq('sales_user_id', user.id)
-      .order('created_at', { ascending: false })
-      .range((page - 1) * limit, page * limit - 1);
-
-    if (stage) query = query.eq('stage', stage);
-    if (qrCustomerIds !== null) {
-      if (qrCustomerIds.length === 0) {
-        return Response.json({ data: [], total: 0, page, limit });
-      }
-      query = query.in('customer_user_id', qrCustomerIds);
+    // Search
+    if (search) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        c.phone.includes(q) ||
+        c.email.toLowerCase().includes(q),
+      );
     }
 
-    const { data, count, error } = await query;
-    if (error) throw error;
+    // Sort
+    if (sort === 'value_score') {
+      filtered.sort((a, b) => (b.value_score ?? 0) - (a.value_score ?? 0));
+    } else if (sort === 'name') {
+      filtered.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+    }
+    // default: already sorted by created_at desc
 
-    return Response.json({ data: data ?? [], total: count ?? 0, page, limit });
+    return Response.json({ data: filtered, total: filtered.length });
   } catch (e) {
     console.error('[sales/customers GET]', e);
     return Response.json({ error: (e as Error).message }, { status: 500 });

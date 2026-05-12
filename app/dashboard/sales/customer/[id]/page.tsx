@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../../../lib/supabase/client';
 import { use } from 'react';
 
-const STAGES = ['lead', 'contacted', 'interested', 'trial', 'converted', 'churned'] as const;
+const STAGES = ['lead', 'contacted', 'interested', 'trial', 'converted', 'lost'] as const;
 const STAGE_LABELS: Record<string, { label: string; color: string }> = {
-  lead: { label: '线索', color: '#6B7280' },
+  lead: { label: '线索', color: '#3B82F6' },
   contacted: { label: '已联系', color: '#D4A843' },
   interested: { label: '有意向', color: '#059669' },
-  trial: { label: '试用中', color: '#3B82F6' },
+  trial: { label: '试用中', color: '#7C3AED' },
   converted: { label: '已转化', color: '#10B981' },
+  lost: { label: '已流失', color: '#9CA3AF' },
   churned: { label: '流失', color: '#EF4444' },
 };
 
@@ -141,7 +142,7 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
         {/* Stage progress bar */}
         <div className="rounded-xl p-4 bg-white border border-[#E5E7EB]">
           <div className="flex items-center gap-1">
-            {STAGES.filter(s => s !== 'churned').map((s, i) => (
+            {STAGES.filter(s => s !== 'lost').map((s, i) => (
               <div key={s} className="flex-1 flex flex-col items-center gap-1">
                 <div
                   className="w-full h-1.5 rounded-full"

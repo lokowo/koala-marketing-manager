@@ -1,13 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
 interface QRCode { id: string; code: string; channel: string; label: string | null; scan_count: number; register_count: number; created_at: string }
-interface Customer { id: string; customer_user_id: string; stage: string; note: string | null; created_at: string; user_profiles?: { display_name: string; email: string; avatar_url: string | null } }
-interface FunnelData { funnel: Record<string, number>; total: number; conversionRate: string }
+
+interface Client {
+  id: string; type: 'registered' | 'survey_lead'; name: string; phone: string; email: string;
+  wechat?: string; stage: string; source: string; source_channel: string; registered: boolean;
+  value_score: number | null; survey_title: string; last_contacted_at: string | null;
+  contact_count: number; notes: string; created_at: string; customer_user_id: string | null;
+}
+
+interface FunnelData { funnel: Record<string, number>; total: number; conversionRate: string; lost: number }
 interface KpiData { leads: { current: number; target: number }; followups: { current: number; target: number }; conversions: { current: number; target: number } }
 interface WorkLog { id: string; action: string; target_type: string; target_id: string | null; details: Record<string, unknown> | null; created_at: string }
 interface EngagementEntry { userId: string; displayName: string; email: string; totalScore: number; level: 'high' | 'medium' | 'low' | 'dormant'; breakdown: { chatActivity: number; professorEngagement: number; profileCompleteness: number; outreachActivity: number; recency: number }; stats: { conversationCount: number; savedProfessors: number; emailsGenerated: number; profilePct: number; daysSinceLastActive: number; registeredDaysAgo: number } }
@@ -26,41 +33,35 @@ interface PerfData {
   ai_insight: string;
 }
 
-const STAGE_LABELS: Record<string, { label: string; color: string }> = {
-  lead: { label: '线索', color: '#6B7280' },
-  contacted: { label: '已联系', color: '#D4A843' },
-  interested: { label: '有意向', color: '#059669' },
-  trial: { label: '试用中', color: '#3B82F6' },
-  converted: { label: '已转化', color: '#10B981' },
-  churned: { label: '流失', color: '#EF4444' },
+const STAGE_CFG: Record<string, { label: string; color: string; bg: string }> = {
+  lead: { label: '线索', color: '#3B82F6', bg: 'rgba(59,130,246,0.1)' },
+  contacted: { label: '已联系', color: '#D4A843', bg: 'rgba(212,168,67,0.1)' },
+  interested: { label: '有意向', color: '#059669', bg: 'rgba(5,150,105,0.1)' },
+  trial: { label: '试用中', color: '#7C3AED', bg: 'rgba(124,58,237,0.1)' },
+  converted: { label: '已转化', color: '#10B981', bg: 'rgba(16,185,129,0.1)' },
+  lost: { label: '已流失', color: '#9CA3AF', bg: 'rgba(156,163,175,0.1)' },
 };
 
 const FUNNEL_STAGES = ['lead', 'contacted', 'interested', 'trial', 'converted'] as const;
 
+const ALL_STAGES = ['lead', 'contacted', 'interested', 'trial', 'converted', 'lost'] as const;
+
 const ACTION_LABELS: Record<string, string> = {
-  customer_update: '客户跟进',
-  create_qrcode: '生成推广码',
-  customer_registered: '客户注册',
-  view_customer: '查看客户',
-  generate_email_for_customer: '生成套磁信',
-  add_customer_note: '客户备注',
-  share_qrcode: '分享二维码',
+  customer_update: '客户跟进', customer_stage_change: '阶段变更',
+  create_qrcode: '生成推广码', customer_registered: '客户注册',
+  view_customer: '查看客户', generate_email_for_customer: '生成套磁信',
+  add_customer_note: '客户备注', share_qrcode: '分享二维码',
 };
 
 const CH_LABELS: Record<string, string> = {
-  wechat: '📱 微信',
-  xiaohongshu: '📕 小红书',
-  linkedin: '💼 LinkedIn',
-  offline: '🏫 线下',
-  douyin: '🎵 抖音',
-  survey: '📋 调研',
-  other: '🔗 其他',
+  wechat: '📱 微信', xiaohongshu: '📕 小红书', linkedin: '💼 LinkedIn',
+  offline: '🏫 线下', douyin: '🎵 抖音', survey: '📋 调研', other: '🔗 其他',
 };
 
 export default function SalesDashboard() {
   const router = useRouter();
   const [qrcodes, setQrcodes] = useState<QRCode[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [kpi, setKpi] = useState<KpiData | null>(null);
   const [logs, setLogs] = useState<WorkLog[]>([]);
@@ -72,23 +73,12 @@ export default function SalesDashboard() {
   const [newLabel, setNewLabel] = useState('');
   const [newChannel, setNewChannel] = useState('wechat');
   const [showQrCreate, setShowQrCreate] = useState(false);
-  const [viewingCustomersFor, setViewingCustomersFor] = useState<string | null>(null);
-  const [qrCustomers, setQrCustomers] = useState<Customer[]>([]);
-  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [filterStage, setFilterStage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedClient, setExpandedClient] = useState<string | null>(null);
+  const [updatingStage, setUpdatingStage] = useState<string | null>(null);
 
-  useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) { router.replace('/login'); return; }
-      const res = await fetch('/api/admin/me');
-      if (res.ok) {
-        const { role: r } = await res.json();
-        setRole(r);
-      }
-      loadData();
-    });
-  }, [router]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const [qr, cust, fn, kpiRes, logsRes, engRes, perfRes] = await Promise.all([
       fetch('/api/sales/qrcode').then(r => r.json()),
@@ -100,56 +90,74 @@ export default function SalesDashboard() {
       fetch('/api/sales/performance').then(r => r.ok ? r.json() : null),
     ]);
     setQrcodes(qr.data ?? []);
-    setCustomers(cust.data ?? []);
-    setFunnel(fn);
+    setClients(cust.data ?? []);
+    setFunnel(fn.funnel ? fn : null);
     setKpi(kpiRes);
     setLogs(logsRes.data ?? []);
     setEngagement(engRes.data ?? []);
     setEngSummary(engRes.summary ?? null);
     setPerf(perfRes);
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) { router.replace('/login'); return; }
+      const res = await fetch('/api/admin/me');
+      if (res.ok) {
+        const { role: r } = await res.json();
+        setRole(r);
+      }
+      loadData();
+    });
+  }, [router, loadData]);
+
+  async function updateClientStage(client: Client, newStage: string) {
+    setUpdatingStage(client.id);
+    try {
+      const url = client.type === 'survey_lead'
+        ? `/api/sales/survey-leads/${client.id}/stage`
+        : `/api/sales/customers/${client.id}/stage`;
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: newStage }),
+      });
+      if (res.ok) {
+        // Refresh funnel + client list
+        const [fn, cust] = await Promise.all([
+          fetch('/api/sales/funnel').then(r => r.json()),
+          fetch('/api/sales/customers').then(r => r.json()),
+        ]);
+        setFunnel(fn.funnel ? fn : null);
+        setClients(cust.data ?? []);
+      }
+    } catch { /* ignore */ }
+    setUpdatingStage(null);
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://koalaphd.com';
-
-  function getQrUrl(code: string) {
-    return `${baseUrl}/r/${code}`;
-  }
-
-  function getQrImageUrl(code: string) {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&format=png&data=${encodeURIComponent(getQrUrl(code))}`;
-  }
+  function getQrUrl(code: string) { return `${baseUrl}/r/${code}`; }
+  function getQrImageUrl(code: string) { return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&format=png&data=${encodeURIComponent(getQrUrl(code))}`; }
 
   async function createQRCode() {
     if (!newLabel.trim()) { alert('请填写备注，方便追踪不同渠道的效果'); return; }
     const res = await fetch('/api/sales/qrcode', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ channel: newChannel, label: newLabel.trim() }),
     });
     if (res.ok) {
       const data = await res.json();
-      if (data.existing) {
-        alert(`该渠道已有推广码：${data.data.code}`);
-      }
-      setNewLabel('');
-      setShowQrCreate(false);
-      loadData();
+      if (data.existing) alert(`该渠道已有推广码：${data.data.code}`);
+      setNewLabel(''); setShowQrCreate(false); loadData();
     }
   }
 
-  function downloadQR(code: string) {
-    window.open(getQrImageUrl(code), '_blank');
-  }
-
+  function downloadQR(code: string) { window.open(getQrImageUrl(code), '_blank'); }
   function shareQR(code: string, label: string | null) {
     const url = getQrUrl(code);
-    if (navigator.share) {
-      navigator.share({ title: label || 'Koala PhD 推广链接', url });
-    } else {
-      navigator.clipboard.writeText(url);
-      alert('链接已复制到剪贴板');
-    }
+    if (navigator.share) { navigator.share({ title: label || 'Koala PhD 推广链接', url }); }
+    else { navigator.clipboard.writeText(url); alert('链接已复制到剪贴板'); }
   }
 
   if (loading) {
@@ -162,26 +170,19 @@ export default function SalesDashboard() {
 
   const maxFunnel = Math.max(...FUNNEL_STAGES.map(s => funnel?.funnel[s] ?? 0), 1);
   const isAdmin = role === 'admin' || role === 'super_admin';
-
-  async function viewCustomersForCode(code: string) {
-    if (viewingCustomersFor === code) { setViewingCustomersFor(null); return; }
-    setViewingCustomersFor(code);
-    setLoadingCustomers(true);
-    try {
-      const res = await fetch(`/api/sales/customers?qr_code=${encodeURIComponent(code)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setQrCustomers(data.data ?? []);
-      }
-    } catch { /* ignore */ }
-    setLoadingCustomers(false);
-  }
-
-  // Group QR codes
   const surveyQrcodes = qrcodes.filter(q => q.channel === 'survey');
   const socialQrcodes = qrcodes.filter(q => q.channel !== 'survey');
   const surveySubtotal = { scans: surveyQrcodes.reduce((s, q) => s + q.scan_count, 0), registers: surveyQrcodes.reduce((s, q) => s + q.register_count, 0) };
   const socialSubtotal = { scans: socialQrcodes.reduce((s, q) => s + q.scan_count, 0), registers: socialQrcodes.reduce((s, q) => s + q.register_count, 0) };
+
+  // Filter + search clients
+  let filteredClients = filterStage ? clients.filter(c => c.stage === filterStage) : clients;
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filteredClients = filteredClients.filter(c =>
+      c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.email.toLowerCase().includes(q),
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] text-[#111827]">
@@ -233,8 +234,6 @@ export default function SalesDashboard() {
             <h2 className="text-sm font-semibold mb-4 text-[#374151]">
               📊 {isAdmin ? '推广总览' : '我的推广业绩'}
             </h2>
-
-            {/* Top stat cards */}
             <div className="grid grid-cols-3 gap-3 mb-5">
               {[
                 { label: '总扫码', value: isAdmin ? perf.team_stats.total_scans : perf.my_stats.total_scans, rank: perf.my_rank.scan_rank },
@@ -252,8 +251,6 @@ export default function SalesDashboard() {
                 </div>
               ))}
             </div>
-
-            {/* Admin: Sales leaderboard */}
             {isAdmin && perf.sales_leaderboard && perf.sales_leaderboard.length > 0 && (
               <div className="mb-4">
                 <h3 className="text-xs font-semibold text-[#6B7280] mb-2">── Sales 排名 ──</h3>
@@ -270,8 +267,6 @@ export default function SalesDashboard() {
                 </div>
               </div>
             )}
-
-            {/* Admin: Channel breakdown */}
             {isAdmin && perf.channel_breakdown && perf.channel_breakdown.length > 0 && (
               <div className="mb-4">
                 <h3 className="text-xs font-semibold text-[#6B7280] mb-2">── 按渠道 ──</h3>
@@ -286,11 +281,8 @@ export default function SalesDashboard() {
                 </div>
               </div>
             )}
-
-            {/* Sales: By category breakdown */}
             {!isAdmin && (
               <>
-                {/* Survey category */}
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1.5">
                     <h3 className="text-xs font-semibold text-[#374151]">📋 调研工具</h3>
@@ -310,8 +302,6 @@ export default function SalesDashboard() {
                     <p className="text-[10px] text-[#9CA3AF] px-3">暂无调研推广</p>
                   )}
                 </div>
-
-                {/* Social category */}
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1.5">
                     <h3 className="text-xs font-semibold text-[#374151]">📱 社交媒体推广</h3>
@@ -332,31 +322,23 @@ export default function SalesDashboard() {
                     <p className="text-[10px] text-[#9CA3AF] px-3">暂无社交媒体推广</p>
                   )}
                 </div>
-
-                {/* Team comparison */}
                 {perf.my_rank.total_sales > 1 && (
                   <div className="rounded-lg p-3 bg-[#F9FAFB] border border-[#E5E7EB] mb-3">
                     <h3 className="text-xs font-semibold text-[#6B7280] mb-1.5">── 团队对比 ──</h3>
                     <div className="grid grid-cols-2 gap-2 text-[10px]">
                       <div className="text-[#6B7280]">
                         全团队总扫码：<span className="font-medium text-[#374151]">{perf.team_stats.total_scans}</span>
-                        {perf.team_stats.total_scans > 0 && (
-                          <span className="ml-1">我占比 {((perf.my_stats.total_scans / perf.team_stats.total_scans) * 100).toFixed(1)}%</span>
-                        )}
+                        {perf.team_stats.total_scans > 0 && <span className="ml-1">我占比 {((perf.my_stats.total_scans / perf.team_stats.total_scans) * 100).toFixed(1)}%</span>}
                       </div>
                       <div className="text-[#6B7280]">
                         全团队总注册：<span className="font-medium text-[#374151]">{perf.team_stats.total_registers}</span>
-                        {perf.team_stats.total_registers > 0 && (
-                          <span className="ml-1">我占比 {((perf.my_stats.total_registers / perf.team_stats.total_registers) * 100).toFixed(1)}%</span>
-                        )}
+                        {perf.team_stats.total_registers > 0 && <span className="ml-1">我占比 {((perf.my_stats.total_registers / perf.team_stats.total_registers) * 100).toFixed(1)}%</span>}
                       </div>
                     </div>
                   </div>
                 )}
               </>
             )}
-
-            {/* AI Insight */}
             {perf.ai_insight && !isAdmin && (
               <div className="rounded-lg p-3 bg-[#FFFBEB] border border-[#D4A843]/20">
                 <p className="text-xs text-[#92400E]">💡 {perf.ai_insight}</p>
@@ -386,22 +368,7 @@ export default function SalesDashboard() {
                       </span>
                     </div>
                     <div className="h-3 rounded-full overflow-hidden bg-[#F3F4F6]">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${pct}%`,
-                          background: met ? '#10B981' : pct > 60 ? '#D4A843' : '#EF4444',
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-between mt-1">
-                      {Array.from({ length: item.target }, (_, i) => (
-                        <div
-                          key={i}
-                          className="size-2 rounded-sm"
-                          style={{ background: i < item.current ? (met ? '#10B981' : '#D4A843') : '#E5E7EB' }}
-                        />
-                      )).slice(0, 20)}
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: met ? '#10B981' : pct > 60 ? '#D4A843' : '#EF4444' }} />
                     </div>
                   </div>
                 );
@@ -410,9 +377,9 @@ export default function SalesDashboard() {
           </div>
         )}
 
-        {/* Funnel + QR Code side by side on desktop */}
+        {/* Funnel + QR Code side by side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Funnel */}
+          {/* Funnel — clickable */}
           {funnel && (
             <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
               <h2 className="text-sm font-semibold mb-3 text-[#374151]">客户漏斗</h2>
@@ -420,12 +387,19 @@ export default function SalesDashboard() {
                 {FUNNEL_STAGES.map(key => {
                   const count = funnel.funnel[key] ?? 0;
                   const pct = (count / maxFunnel) * 100;
+                  const cfg = STAGE_CFG[key];
+                  const active = filterStage === key;
                   return (
-                    <div key={key} className="flex items-center gap-3">
-                      <span className="text-[10px] w-12 text-right" style={{ color: STAGE_LABELS[key].color }}>{STAGE_LABELS[key].label}</span>
+                    <div
+                      key={key}
+                      onClick={() => setFilterStage(active ? null : key)}
+                      className={`flex items-center gap-3 cursor-pointer rounded-lg px-1 py-0.5 transition ${active ? 'bg-[#F3F4F6]' : 'hover:bg-[#F9FAFB]'}`}
+                      style={active ? { outline: `1px solid ${cfg.color}` } : undefined}
+                    >
+                      <span className="text-[10px] w-14 text-right font-medium" style={{ color: cfg.color }}>{cfg.label}</span>
                       <div className="flex-1 h-5 rounded bg-[#F3F4F6]">
-                        <div className="h-full rounded flex items-center justify-end pr-2 transition-all" style={{ width: `${Math.max(pct, 8)}%`, background: `${STAGE_LABELS[key].color}20` }}>
-                          <span className="text-[10px] font-bold" style={{ color: STAGE_LABELS[key].color }}>{count}</span>
+                        <div className="h-full rounded flex items-center justify-end pr-2 transition-all" style={{ width: `${Math.max(pct, 8)}%`, background: cfg.bg }}>
+                          <span className="text-[10px] font-bold" style={{ color: cfg.color }}>{count}</span>
                         </div>
                       </div>
                     </div>
@@ -433,9 +407,14 @@ export default function SalesDashboard() {
                 })}
               </div>
               <div className="mt-3 flex items-center justify-between text-[10px] text-[#6B7280]">
-                <span>总计 {funnel.total}</span>
+                <span>总计 {funnel.total}{funnel.lost > 0 ? ` (已流失 ${funnel.lost})` : ''}</span>
                 <span>转化率 {funnel.conversionRate}%</span>
               </div>
+              {filterStage && (
+                <button onClick={() => setFilterStage(null)} className="mt-2 text-[10px] text-[#D4A843] hover:underline">
+                  清除筛选
+                </button>
+              )}
             </div>
           )}
 
@@ -443,28 +422,13 @@ export default function SalesDashboard() {
           <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-[#374151]">推广码</h2>
-              <button
-                onClick={() => setShowQrCreate(!showQrCreate)}
-                className="text-[10px] px-2.5 py-1 rounded-lg bg-[#D4A843]/10 text-[#D4A843]"
-              >
-                + 新建
-              </button>
+              <button onClick={() => setShowQrCreate(!showQrCreate)} className="text-[10px] px-2.5 py-1 rounded-lg bg-[#D4A843]/10 text-[#D4A843]">+ 新建</button>
             </div>
-
             {showQrCreate && (
               <div className="space-y-2 mb-3">
                 <div className="flex gap-2">
-                  <input
-                    placeholder="备注（必填，如：微信群A、线下活动B）"
-                    value={newLabel}
-                    onChange={e => setNewLabel(e.target.value)}
-                    className="flex-1 rounded-lg px-3 py-2 text-xs focus:outline-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] placeholder:text-[#9CA3AF]"
-                  />
-                  <select
-                    value={newChannel}
-                    onChange={e => setNewChannel(e.target.value)}
-                    className="rounded-lg px-3 py-2 text-xs focus:outline-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827]"
-                  >
+                  <input placeholder="备注（必填）" value={newLabel} onChange={e => setNewLabel(e.target.value)} className="flex-1 rounded-lg px-3 py-2 text-xs focus:outline-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] placeholder:text-[#9CA3AF]" />
+                  <select value={newChannel} onChange={e => setNewChannel(e.target.value)} className="rounded-lg px-3 py-2 text-xs focus:outline-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827]">
                     <option value="wechat">微信</option>
                     <option value="xiaohongshu">小红书</option>
                     <option value="linkedin">LinkedIn</option>
@@ -472,23 +436,12 @@ export default function SalesDashboard() {
                     <option value="douyin">抖音</option>
                     <option value="other">其他</option>
                   </select>
-                  <button
-                    onClick={createQRCode}
-                    disabled={!newLabel.trim()}
-                    className="px-3 py-2 rounded-lg text-xs font-medium bg-[#D4A843] text-white disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    生成
-                  </button>
+                  <button onClick={createQRCode} disabled={!newLabel.trim()} className="px-3 py-2 rounded-lg text-xs font-medium bg-[#D4A843] text-white disabled:opacity-40 disabled:cursor-not-allowed">生成</button>
                 </div>
-                {!newLabel.trim() && (
-                  <p className="text-[10px] text-[#EF4444]">请填写备注，方便追踪不同渠道的效果</p>
-                )}
               </div>
             )}
-
             {qrcodes.length > 0 ? (
               <div className="space-y-4">
-                {/* Survey group */}
                 {surveyQrcodes.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -500,14 +453,11 @@ export default function SalesDashboard() {
                     </div>
                     <div className="space-y-2">
                       {surveyQrcodes.map(qr => (
-                        <QRCodeRow key={qr.id} qr={qr} getQrImageUrl={getQrImageUrl} onDownload={downloadQR} onShare={shareQR}
-                          onViewCustomers={viewCustomersForCode} viewingCode={viewingCustomersFor} qrCustomers={qrCustomers} loadingCustomers={loadingCustomers} />
+                        <QRCodeRow key={qr.id} qr={qr} getQrImageUrl={getQrImageUrl} onDownload={downloadQR} onShare={shareQR} />
                       ))}
                     </div>
                   </div>
                 )}
-
-                {/* Social group */}
                 {socialQrcodes.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -519,8 +469,7 @@ export default function SalesDashboard() {
                     </div>
                     <div className="space-y-2">
                       {socialQrcodes.map(qr => (
-                        <QRCodeRow key={qr.id} qr={qr} getQrImageUrl={getQrImageUrl} onDownload={downloadQR} onShare={shareQR}
-                          onViewCustomers={viewCustomersForCode} viewingCode={viewingCustomersFor} qrCustomers={qrCustomers} loadingCustomers={loadingCustomers} />
+                        <QRCodeRow key={qr.id} qr={qr} getQrImageUrl={getQrImageUrl} onDownload={downloadQR} onShare={shareQR} />
                       ))}
                     </div>
                   </div>
@@ -562,9 +511,7 @@ export default function SalesDashboard() {
                 }[e.level];
                 return (
                   <div key={e.userId} className="flex items-center gap-3 rounded-lg px-3 py-2 bg-[#F9FAFB]">
-                    <div className="size-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: levelConfig.bg, color: levelConfig.color }}>
-                      {e.totalScore}
-                    </div>
+                    <div className="size-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: levelConfig.bg, color: levelConfig.color }}>{e.totalScore}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-medium truncate text-[#111827]">{e.displayName || e.email || '未知'}</span>
@@ -574,7 +521,6 @@ export default function SalesDashboard() {
                         <span>💬{e.stats.conversationCount}</span>
                         <span>📌{e.stats.savedProfessors}</span>
                         <span>✉️{e.stats.emailsGenerated}</span>
-                        <span>📝{e.stats.profilePct}%</span>
                         {e.stats.daysSinceLastActive <= 3 && <span className="text-[#10B981]">● 近期活跃</span>}
                         {e.stats.daysSinceLastActive > 14 && <span className="text-[#EF4444]">● {e.stats.daysSinceLastActive}天未活跃</span>}
                       </div>
@@ -589,34 +535,157 @@ export default function SalesDashboard() {
           </div>
         )}
 
-        {/* Customers */}
+        {/* ── Client Management ── */}
         <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
-          <h2 className="text-sm font-semibold mb-3 text-[#374151]">客户列表</h2>
-          {customers.length > 0 ? (
-            <div className="space-y-2">
-              {customers.map(c => (
-                <Link
-                  key={c.id}
-                  href={`/dashboard/sales/customer/${c.id}`}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-lg no-underline hover:bg-[#F3F4F6] transition bg-[#F9FAFB] border border-[#E5E7EB]"
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-[#374151]">客户管理</h2>
+            <span className="text-[10px] text-[#6B7280]">{filteredClients.length} 人</span>
+          </div>
+
+          {/* Stage filter tabs */}
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            <button
+              onClick={() => setFilterStage(null)}
+              className={`text-[10px] px-2.5 py-1 rounded-full transition ${!filterStage ? 'bg-[#111827] text-white' : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]'}`}
+            >
+              全部 {clients.length}
+            </button>
+            {ALL_STAGES.map(s => {
+              const count = clients.filter(c => c.stage === s).length;
+              if (count === 0 && s !== filterStage) return null;
+              const cfg = STAGE_CFG[s];
+              return (
+                <button
+                  key={s}
+                  onClick={() => setFilterStage(filterStage === s ? null : s)}
+                  className="text-[10px] px-2.5 py-1 rounded-full transition"
+                  style={{
+                    background: filterStage === s ? cfg.color : cfg.bg,
+                    color: filterStage === s ? 'white' : cfg.color,
+                  }}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="size-7 rounded-full flex items-center justify-center text-[10px] font-bold bg-[#D4A843] text-white">
-                      {(c.user_profiles?.display_name || c.user_profiles?.email || '?')[0].toUpperCase()}
+                  {cfg.label} {count}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search */}
+          <input
+            placeholder="搜索姓名/手机/邮箱..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full rounded-lg px-3 py-2 text-xs mb-3 focus:outline-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] placeholder:text-[#9CA3AF]"
+          />
+
+          {/* Client list */}
+          {filteredClients.length > 0 ? (
+            <div className="space-y-2">
+              {filteredClients.map(c => {
+                const cfg = STAGE_CFG[c.stage] || STAGE_CFG.lead;
+                const isExpanded = expandedClient === c.id;
+                return (
+                  <div key={c.id} className="rounded-lg border border-[#E5E7EB] overflow-hidden">
+                    {/* Row */}
+                    <div
+                      className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-[#F9FAFB] transition"
+                      onClick={() => setExpandedClient(isExpanded ? null : c.id)}
+                    >
+                      <div className="size-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: cfg.bg, color: cfg.color }}>
+                        {c.name[0]?.toUpperCase() || '?'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium truncate text-[#111827]">{c.name}</span>
+                          {c.registered ? (
+                            <span className="text-[8px] px-1 rounded bg-[#10B981]/10 text-[#10B981]">✅ 已注册</span>
+                          ) : (
+                            <span className="text-[8px] px-1 rounded bg-[#EF4444]/10 text-[#EF4444]">⚠️ 未注册</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-[#6B7280]">
+                          {c.source === 'survey' && <span>📋 {c.survey_title || '调研'}</span>}
+                          {c.source !== 'survey' && c.source_channel && <span>{CH_LABELS[c.source_channel] || c.source_channel}</span>}
+                          {c.phone && <span>📱{c.phone.slice(-4)}</span>}
+                          {c.email && <span>📧{c.email.split('@')[0]}</span>}
+                        </div>
+                      </div>
+                      {c.value_score !== null && (
+                        <span className="text-[10px] font-medium text-[#D4A843] flex-shrink-0">⭐{c.value_score}</span>
+                      )}
+                      {/* Stage dropdown */}
+                      <select
+                        value={c.stage}
+                        onClick={e => e.stopPropagation()}
+                        onChange={e => { e.stopPropagation(); updateClientStage(c, e.target.value); }}
+                        disabled={updatingStage === c.id}
+                        className="text-[10px] px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none flex-shrink-0"
+                        style={{ background: cfg.bg, color: cfg.color }}
+                      >
+                        {ALL_STAGES.map(s => (
+                          <option key={s} value={s}>{STAGE_CFG[s].label}</option>
+                        ))}
+                      </select>
                     </div>
-                    <div>
-                      <p className="text-xs text-[#111827]">{c.user_profiles?.display_name || c.user_profiles?.email || '未知'}</p>
-                      <p className="text-[10px] text-[#6B7280]">{new Date(c.created_at).toLocaleDateString('zh-CN')}</p>
-                    </div>
+
+                    {/* Expanded detail panel */}
+                    {isExpanded && (
+                      <div className="px-3 pb-3 pt-1 border-t border-[#F3F4F6] bg-[#FAFAFA]">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[10px] mb-3">
+                          {c.phone && <div><span className="text-[#6B7280]">📱 手机：</span><span className="text-[#111827]">{c.phone}</span></div>}
+                          {c.email && <div><span className="text-[#6B7280]">📧 邮箱：</span><span className="text-[#111827]">{c.email}</span></div>}
+                          {c.wechat && <div><span className="text-[#6B7280]">💬 微信：</span><span className="text-[#111827]">{c.wechat}</span></div>}
+                          {c.survey_title && <div><span className="text-[#6B7280]">📋 来源：</span><span className="text-[#111827]">{c.survey_title}</span></div>}
+                          <div><span className="text-[#6B7280]">📅 获取时间：</span><span className="text-[#111827]">{new Date(c.created_at).toLocaleDateString('zh-CN')}</span></div>
+                          {c.contact_count > 0 && <div><span className="text-[#6B7280]">📞 联系次数：</span><span className="text-[#111827]">{c.contact_count}</span></div>}
+                          {c.last_contacted_at && <div><span className="text-[#6B7280]">🕐 最后联系：</span><span className="text-[#111827]">{new Date(c.last_contacted_at).toLocaleDateString('zh-CN')}</span></div>}
+                          {c.value_score !== null && <div><span className="text-[#6B7280]">⭐ 价值评分：</span><span className="font-medium text-[#D4A843]">{c.value_score}/100</span></div>}
+                        </div>
+                        {c.notes && (
+                          <div className="text-[10px] mb-3">
+                            <span className="text-[#6B7280]">备注：</span>
+                            <span className="text-[#374151]">{c.notes}</span>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-1.5">
+                          {ALL_STAGES.filter(s => s !== c.stage).map(s => (
+                            <button
+                              key={s}
+                              onClick={() => updateClientStage(c, s)}
+                              disabled={updatingStage === c.id}
+                              className="text-[10px] px-2 py-1 rounded-lg transition disabled:opacity-50"
+                              style={{ background: STAGE_CFG[s].bg, color: STAGE_CFG[s].color }}
+                            >
+                              标记{STAGE_CFG[s].label}
+                            </button>
+                          ))}
+                          {c.type === 'registered' && (
+                            <Link
+                              href={`/dashboard/sales/customer/${c.id}`}
+                              className="text-[10px] px-2 py-1 rounded-lg bg-[#D4A843]/10 text-[#D4A843] no-underline"
+                            >
+                              查看详情 →
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${STAGE_LABELS[c.stage]?.color}20`, color: STAGE_LABELS[c.stage]?.color }}>
-                    {STAGE_LABELS[c.stage]?.label || c.stage}
-                  </span>
-                </Link>
-              ))}
+                );
+              })}
+            </div>
+          ) : clients.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-sm text-[#6B7280] mb-3">还没有客户？去问卷广场选择一份调研来推广吧！</p>
+              <Link
+                href="/dashboard/koala/surveys?tab=plaza"
+                className="inline-block px-4 py-2 rounded-lg bg-[#D4A843] text-white text-xs font-medium no-underline hover:opacity-90 transition"
+              >
+                去问卷广场 →
+              </Link>
             </div>
           ) : (
-            <p className="text-xs py-4 text-center text-[#6B7280]">暂无客户</p>
+            <p className="text-xs py-4 text-center text-[#6B7280]">没有匹配的客户</p>
           )}
         </div>
 
@@ -633,13 +702,13 @@ export default function SalesDashboard() {
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/10 text-[#374151]">
                         {ACTION_LABELS[log.action] || log.action}
                       </span>
-                      {log.target_type && (
-                        <span className="text-[10px] text-[#6B7280]">{log.target_type}</span>
-                      )}
+                      {log.target_type && <span className="text-[10px] text-[#6B7280]">{log.target_type}</span>}
                     </div>
                     {log.details && (
                       <p className="text-[10px] mt-0.5 truncate text-[#6B7280]">
-                        {typeof (log.details as Record<string, unknown>).stage === 'string' ? (log.details as Record<string, unknown>).stage as string : ''}
+                        {typeof (log.details as Record<string, unknown>).old_stage === 'string' && typeof (log.details as Record<string, unknown>).new_stage === 'string'
+                          ? `${STAGE_CFG[(log.details as Record<string, unknown>).old_stage as string]?.label || (log.details as Record<string, unknown>).old_stage} → ${STAGE_CFG[(log.details as Record<string, unknown>).new_stage as string]?.label || (log.details as Record<string, unknown>).new_stage}`
+                          : typeof (log.details as Record<string, unknown>).stage === 'string' ? (log.details as Record<string, unknown>).stage as string : ''}
                         {typeof (log.details as Record<string, unknown>).note === 'string' ? ` ${(log.details as Record<string, unknown>).note as string}` : ''}
                       </p>
                     )}
@@ -660,89 +729,33 @@ export default function SalesDashboard() {
   );
 }
 
-function QRCodeRow({ qr, getQrImageUrl, onDownload, onShare, onViewCustomers, viewingCode, qrCustomers, loadingCustomers }: {
+function QRCodeRow({ qr, getQrImageUrl, onDownload, onShare }: {
   qr: QRCode;
   getQrImageUrl: (code: string) => string;
   onDownload: (code: string) => void;
   onShare: (code: string, label: string | null) => void;
-  onViewCustomers?: (code: string) => void;
-  viewingCode?: string | null;
-  qrCustomers?: Customer[];
-  loadingCustomers?: boolean;
 }) {
-  const isViewing = viewingCode === qr.code;
   return (
     <div className="rounded-lg p-3 bg-[#F9FAFB] border border-[#E5E7EB]">
       <div className="flex items-start gap-3">
-        <img
-          src={getQrImageUrl(qr.code)}
-          alt={`QR: ${qr.label || qr.code}`}
-          width={80}
-          height={80}
-          className="rounded border border-[#E5E7EB] bg-white flex-shrink-0"
-        />
+        <img src={getQrImageUrl(qr.code)} alt={`QR: ${qr.label || qr.code}`} width={80} height={80} className="rounded border border-[#E5E7EB] bg-white flex-shrink-0" />
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/10 text-[#374151]">
-              {CH_LABELS[qr.channel] || qr.channel}
-            </span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/10 text-[#374151]">{CH_LABELS[qr.channel] || qr.channel}</span>
             {qr.label && <span className="text-xs font-medium text-[#111827]">{qr.label}</span>}
           </div>
           <div className="text-[10px] font-mono text-[#D4A843]">{qr.code}</div>
           <div className="flex items-center gap-3 text-[10px] text-[#6B7280]">
             <span>👁 {qr.scan_count} 扫码</span>
             <span>📥 {qr.register_count} 注册</span>
-            {qr.scan_count > 0 && (
-              <span className="text-[#D4A843]">{((qr.register_count / qr.scan_count) * 100).toFixed(0)}%</span>
-            )}
+            {qr.scan_count > 0 && <span className="text-[#D4A843]">{((qr.register_count / qr.scan_count) * 100).toFixed(0)}%</span>}
           </div>
           <div className="flex gap-2 pt-0.5">
-            <button
-              onClick={() => onDownload(qr.code)}
-              className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
-            >
-              下载
-            </button>
-            <button
-              onClick={() => onShare(qr.code, qr.label)}
-              className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
-            >
-              分享
-            </button>
-            {onViewCustomers && qr.register_count > 0 && (
-              <button
-                onClick={() => onViewCustomers(qr.code)}
-                className={`text-[10px] px-2 py-0.5 rounded ${isViewing ? 'bg-[#D4A843] text-white' : 'bg-[#D4A843]/10 text-[#D4A843]'}`}
-              >
-                {isViewing ? '收起' : '查看客户'}
-              </button>
-            )}
+            <button onClick={() => onDownload(qr.code)} className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]">下载</button>
+            <button onClick={() => onShare(qr.code, qr.label)} className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]">分享</button>
           </div>
         </div>
       </div>
-      {isViewing && (
-        <div className="mt-2 pt-2 border-t border-[#E5E7EB]">
-          {loadingCustomers ? (
-            <p className="text-[10px] text-[#6B7280] text-center py-2">加载中…</p>
-          ) : (qrCustomers && qrCustomers.length > 0) ? (
-            <div className="space-y-1">
-              {qrCustomers.map(c => (
-                <div key={c.id} className="flex items-center justify-between px-2 py-1.5 rounded bg-white text-[10px]">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="size-5 rounded-full flex items-center justify-center text-[8px] font-bold bg-[#D4A843] text-white flex-shrink-0">
-                      {(c.user_profiles?.display_name || c.user_profiles?.email || '?')[0].toUpperCase()}
-                    </div>
-                    <span className="truncate text-[#111827]">{c.user_profiles?.display_name || c.user_profiles?.email || '未知'}</span>
-                  </div>
-                  <span className="text-[#6B7280] flex-shrink-0 ml-2">{new Date(c.created_at).toLocaleDateString('zh-CN')}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[10px] text-[#9CA3AF] text-center py-2">暂无通过此码注册的客户</p>
-          )}
-        </div>
-      )}
     </div>
   );
 }
