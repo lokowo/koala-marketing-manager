@@ -190,21 +190,12 @@ function ProfessorsPageInner() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  const [searchTrigger, setSearchTrigger] = useState(0);
-
   // Active filter count for badge
   const activeFilters = [accepting !== '', hIndexMin > 0, sortBy !== 'opportunity_score', university !== ''].filter(Boolean).length;
 
-  // Trigger search explicitly (button click or Enter)
+  // Trigger search explicitly (button click or Enter) — no auto-debounce
   const triggerSearch = useCallback(() => {
-    setDB(search);
-    setSearchTrigger(n => n + 1);
-  }, [search]);
-
-  // Debounce
-  useEffect(() => {
-    const t = setTimeout(() => setDB(search), 350);
-    return () => clearTimeout(t);
+    setDB(search.trim());
   }, [search]);
 
   const filters: Filters = { page: 1, search: debouncedSearch, category, accepting, hIndexMin, sortBy, university };
@@ -253,7 +244,7 @@ function ProfessorsPageInner() {
       .catch(() => {})
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, category, accepting, hIndexMin, sortBy, university, searchTrigger]);
+  }, [debouncedSearch, category, accepting, hIndexMin, sortBy, university]);
 
   // Add candidate to database via POST
   const handleAddCandidate = useCallback(async (candidate: SearchCandidate) => {
@@ -406,12 +397,12 @@ function ProfessorsPageInner() {
               placeholder="搜索教授、学校、研究方向…"
               className="flex-1 bg-transparent text-sm outline-none text-gray-900 dark:text-[#e8e4dc]"
             />
-            {search && <button onClick={() => setSearch('')} className="text-xs text-[#D4A843]">清除</button>}
+            {search && <button type="button" onClick={() => { setSearch(''); setDB(''); }} className="text-xs text-[#D4A843]">清除</button>}
             <VoiceInputButton
               onTranscript={(text) => setSearch(prev => prev + text)}
               size="sm"
             />
-            <button onClick={triggerSearch} className="size-7 rounded-lg flex items-center justify-center shrink-0 bg-[#D4A843]">
+            <button type="button" onClick={triggerSearch} className="size-7 rounded-lg flex items-center justify-center shrink-0 relative z-10 bg-[#D4A843] active:scale-90 transition-transform cursor-pointer">
               <Search className="size-3.5" style={{ color: '#080c10' }} />
             </button>
           </div>
@@ -420,7 +411,7 @@ function ProfessorsPageInner() {
           {!search && (
             <div className="flex flex-wrap gap-2 mb-4">
               {HOT_TAGS.map(tag => (
-                <button key={tag} onClick={() => setSearch(tag)}
+                <button key={tag} onClick={() => { setSearch(tag); setDB(tag); }}
                   className="text-xs px-3 py-1 rounded-full text-[#D4A843]"
                   style={{ background: 'rgba(212,168,67,0.08)', border: '1px solid rgba(212,168,67,0.2)' }}>
                   {tag}
@@ -517,12 +508,12 @@ function ProfessorsPageInner() {
             placeholder="搜索教授、学校、研究方向…"
             className="flex-1 bg-transparent text-sm outline-none text-gray-900 dark:text-[#e8e4dc]"
           />
-          {search && <button onClick={() => setSearch('')} className="text-xs text-[#D4A843]">清除</button>}
+          {search && <button type="button" onClick={() => { setSearch(''); setDB(''); }} className="text-xs text-[#D4A843]">清除</button>}
           <VoiceInputButton
             onTranscript={(text) => setSearch(prev => prev + text)}
             size="sm"
           />
-          <button onClick={triggerSearch} className="size-8 rounded-lg flex items-center justify-center shrink-0 bg-[#D4A843]">
+          <button type="button" onClick={triggerSearch} className="size-8 rounded-lg flex items-center justify-center shrink-0 relative z-10 bg-[#D4A843] active:scale-90 transition-transform cursor-pointer">
             <Search className="size-4" style={{ color: '#080c10' }} />
           </button>
         </div>
@@ -533,7 +524,7 @@ function ProfessorsPageInner() {
       {!search && (
         <div className="flex flex-wrap px-4 pt-2 gap-2 lg:hidden">
           {HOT_TAGS.map(tag => (
-            <button key={tag} onClick={() => setSearch(tag)}
+            <button key={tag} onClick={() => { setSearch(tag); setDB(tag); }}
               className="text-xs px-3 py-1 rounded-full text-[#D4A843]"
               style={{ background: 'rgba(212,168,67,0.08)', border: '1px solid rgba(212,168,67,0.2)' }}>
               {tag}
@@ -588,7 +579,7 @@ function ProfessorsPageInner() {
               {search ? '试试换个关键词，或点击热门标签' : '尝试调整筛选条件'}
             </p>
             <div className="flex gap-2 mt-1">
-              {search && <button onClick={() => setSearch('')} className="text-xs px-4 py-2 rounded-full" style={{ background: '#D4A843', color: '#080c10' }}>清除搜索</button>}
+              {search && <button onClick={() => { setSearch(''); setDB(''); }} className="text-xs px-4 py-2 rounded-full" style={{ background: '#D4A843', color: '#080c10' }}>清除搜索</button>}
               {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); setUniversity(''); }} className="text-xs px-4 py-2 rounded-full bg-gray-100 dark:bg-[#111c28] text-gray-700 dark:text-[#e8e4dc]">清除筛选</button>}
             </div>
             <Link href="/koala/chat" className="mt-2 text-xs px-5 py-2 rounded-full no-underline" style={{ background: '#D4A843', color: '#080c10' }}>
