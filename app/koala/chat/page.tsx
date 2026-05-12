@@ -124,14 +124,14 @@ const MODES: {
 function ConfidenceBadgeInline({ level, count }: { level: ConfidenceLevel; count?: number }) {
   const map: Record<ConfidenceLevel, { icon: string; label: string; color: string }> = {
     high:    { icon: '🟢', label: count ? `高置信 · ${count} 篇论文` : '高置信', color: '#5a8060' },
-    medium:  { icon: '🟡', label: count ? `中置信 · ${count} 篇论文` : '中置信', color: '#c9a96e' },
+    medium:  { icon: '🟡', label: count ? `中置信 · ${count} 篇论文` : '中置信', color: '#D4A843' },
     low:     { icon: '🔴', label: '低置信', color: '#b06040' },
-    warning: { icon: '⚠️', label: '待验证', color: '#c9a96e' },
+    warning: { icon: '⚠️', label: '待验证', color: '#D4A843' },
     unknown: { icon: '⚪', label: '未知来源', color: '#6a7a7e' },
   };
   const cfg = map[level];
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ml-1" style={{ background: 'rgba(255,255,255,0.1)', color: cfg.color }}>
+    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ml-1 bg-black/10 dark:bg-white/10" style={{ color: cfg.color }}>
       {cfg.icon} {cfg.label}
     </span>
   );
@@ -139,24 +139,24 @@ function ConfidenceBadgeInline({ level, count }: { level: ConfidenceLevel; count
 
 function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
   const score = match.matchScore;
-  const color = score >= 75 ? '#5a8060' : score >= 50 ? '#c9a96e' : '#b06040';
+  const color = score >= 75 ? '#5a8060' : score >= 50 ? '#D4A843' : '#b06040';
   const hasStats = match.hIndex != null || match.paperCount != null || match.citationCount != null;
   return (
-    <div className="rounded-xl p-3 mt-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+    <div className="rounded-xl p-3 mt-2 bg-white/5 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
       <Link href={`/koala/professors/${match.professorId}`} style={{ textDecoration: 'none' }}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>🎓 {match.name}</div>
-            <div className="text-[11px] mt-0.5" style={{ color: '#8a8078' }}>{match.institution}</div>
-            {match.positionTitle && <div className="text-[10px]" style={{ color: '#6a6058' }}>{match.positionTitle}</div>}
+            <div className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">🎓 {match.name}</div>
+            <div className="text-[11px] mt-0.5 text-gray-500 dark:text-[#8a8078]">{match.institution}</div>
+            {match.positionTitle && <div className="text-[10px] text-gray-400 dark:text-[#6a6058]">{match.positionTitle}</div>}
           </div>
           <div className="flex-shrink-0 text-center">
             <div className="text-lg font-bold" style={{ color }}>{score}</div>
-            <div className="text-[10px]" style={{ color: '#6a6058' }}>匹配度</div>
+            <div className="text-[10px] text-gray-400 dark:text-[#6a6058]">匹配度</div>
           </div>
         </div>
         {hasStats && (
-          <div className="flex gap-3 mt-1.5 text-[10px]" style={{ color: '#8a8078' }}>
+          <div className="flex gap-3 mt-1.5 text-[10px] text-gray-500 dark:text-[#8a8078]">
             {match.hIndex != null && <span>H:{match.hIndex}</span>}
             {match.paperCount != null && <span>{match.paperCount}篇论文</span>}
             {match.citationCount != null && <span>{match.citationCount >= 1000 ? `${(match.citationCount / 1000).toFixed(1)}k` : match.citationCount}引用</span>}
@@ -165,29 +165,28 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
         {match.researchTags && match.researchTags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {match.researchTags.slice(0, 3).map(tag => (
-              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.08)', color: '#c9a96e' }}>{tag}</span>
+              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/5 dark:bg-white/[0.08] text-[#D4A843]">{tag}</span>
             ))}
           </div>
         )}
         {match.reason && (
-          <div className="text-[11px] mt-2 pt-2 leading-relaxed" style={{ color: '#a09888', borderTop: '1px solid rgba(255,255,255,0.08)' }}>{match.reason}</div>
+          <div className="text-[11px] mt-2 pt-2 leading-relaxed text-gray-500 dark:text-[#a09888] border-t border-gray-200 dark:border-white/[0.08]">{match.reason}</div>
         )}
         {match.opportunityLabel && (
           <div className="inline-block text-[10px] px-2 py-0.5 rounded-full mt-1" style={{ background: 'rgba(90,128,96,0.15)', color: '#5a8060' }}>{match.opportunityLabel}</div>
         )}
       </Link>
-      <div className="flex gap-2 mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-white/[0.08]">
         <Link
           href={`/koala/professors/${match.professorId}`}
-          className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg no-underline"
-          style={{ background: 'rgba(255,255,255,0.08)', color: '#e8e4dc' }}
+          className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg no-underline bg-gray-100 dark:bg-white/[0.08] text-gray-700 dark:text-[#e8e4dc]"
         >
           查看详情
         </Link>
         <Link
           href={`/koala/chat?action=outreach&prof=${match.professorId}&name=${encodeURIComponent(match.name)}`}
           className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg no-underline"
-          style={{ background: '#c9a96e', color: '#080c10' }}
+          style={{ background: '#D4A843', color: '#080c10' }}
         >
           ✉️ 写申请信
         </Link>
@@ -198,20 +197,20 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
 
 function ScoreCardBlock({ card }: { card: ScoreCard }) {
   return (
-    <div className="rounded-xl p-3 mt-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+    <div className="rounded-xl p-3 mt-2 bg-white/5 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>📊 申请潜力初评</span>
-        <span className="text-lg font-bold" style={{ color: '#c9a96e' }}>{card.totalScore}<span className="text-xs font-normal" style={{ color: '#6a6058' }}>/100</span></span>
+        <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">📊 申请潜力初评</span>
+        <span className="text-lg font-bold text-[#D4A843]">{card.totalScore}<span className="text-xs font-normal text-gray-400 dark:text-[#6a6058]">/100</span></span>
       </div>
       <div className="space-y-1.5">
         {card.dimensions.map(dim => (
           <div key={dim.name}>
             <div className="flex justify-between text-[11px] mb-0.5">
-              <span style={{ color: '#a09888' }}>{dim.name}</span>
-              <span style={{ color: '#c9a96e' }}>{dim.score}</span>
+              <span className="text-gray-500 dark:text-[#a09888]">{dim.name}</span>
+              <span className="text-[#D4A843]">{dim.score}</span>
             </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-              <div className="h-full rounded-full" style={{ width: `${dim.score}%`, background: '#c9a96e' }} />
+            <div className="h-1.5 rounded-full overflow-hidden bg-black/5 dark:bg-white/[0.08]">
+              <div className="h-full rounded-full" style={{ width: `${dim.score}%`, background: '#D4A843' }} />
             </div>
           </div>
         ))}
@@ -279,22 +278,22 @@ function FileUploadSheet({ onClose, onFile }: { onClose: () => void; onFile: (f:
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
-      <div className="w-full rounded-t-3xl p-6" style={{ background: '#0d1520', maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
-        <div className="text-sm font-semibold mb-4" style={{ color: '#e8e4dc' }}>上传文件</div>
+    <div className="fixed inset-0 z-50 flex items-end bg-black/50" onClick={onClose}>
+      <div className="w-full rounded-t-3xl p-6 bg-white dark:bg-[#0d1520]" style={{ maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
+        <div className="text-sm font-semibold mb-4 text-gray-900 dark:text-[#e8e4dc]">上传文件</div>
         <div className="space-y-2">
           {options.map(opt => (
-            <button key={opt.type} onClick={() => handleSelect(opt.type)} className="w-full flex items-center gap-3 rounded-2xl p-4 text-left" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <button key={opt.type} onClick={() => handleSelect(opt.type)} className="w-full flex items-center gap-3 rounded-2xl p-4 text-left bg-gray-50 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10">
               <span className="text-xl">{opt.icon}</span>
               <div>
-                <span className="text-sm font-medium" style={{ color: '#e8e4dc' }}>{opt.label}</span>
-                <span className="text-[11px] ml-2" style={{ color: '#8a8078' }}>({opt.desc})</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-[#e8e4dc]">{opt.label}</span>
+                <span className="text-[11px] ml-2 text-gray-500 dark:text-[#8a8078]">({opt.desc})</span>
               </div>
             </button>
           ))}
         </div>
         {selectedType === 'other' && (
-          <p className="text-[11px] mt-2 px-1" style={{ color: '#8a8078' }}>
+          <p className="text-[11px] mt-2 px-1 text-gray-500 dark:text-[#8a8078]">
             例如：证书、论文草稿、研究计划、推荐信等
           </p>
         )}
@@ -304,7 +303,7 @@ function FileUploadSheet({ onClose, onFile }: { onClose: () => void; onFile: (f:
           </div>
         )}
         <input ref={inputRef} type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" className="hidden" onChange={handleFileChange} />
-        <button className="w-full mt-4 py-3 rounded-2xl text-sm font-medium" style={{ background: 'rgba(255,255,255,0.06)', color: '#8a8078' }} onClick={onClose}>取消</button>
+        <button className="w-full mt-4 py-3 rounded-2xl text-sm font-medium bg-gray-100 dark:bg-white/[0.06] text-gray-500 dark:text-[#8a8078]" onClick={onClose}>取消</button>
       </div>
     </div>
   );
@@ -312,25 +311,25 @@ function FileUploadSheet({ onClose, onFile }: { onClose: () => void; onFile: (f:
 
 function CreditConfirmDialog({ remaining, onConfirm, onCancel }: { remaining: number; onConfirm: () => void; onCancel: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onCancel}>
-      <div className="w-full rounded-t-3xl p-6" style={{ background: '#0d1520', maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end bg-black/50" onClick={onCancel}>
+      <div className="w-full rounded-t-3xl p-6 bg-white dark:bg-[#0d1520]" style={{ maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2 mb-1">
-          <Sparkles className="size-4" style={{ color: '#c9a96e' }} />
-          <span className="text-sm font-bold" style={{ color: '#e8e4dc' }}>生成申请信</span>
+          <Sparkles className="size-4 text-[#D4A843]" />
+          <span className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">生成申请信</span>
         </div>
-        <p className="text-xs leading-relaxed mb-1" style={{ color: '#a09888' }}>本次生成将消耗 <strong>1 积分</strong>，剩余 {remaining} 积分。</p>
-        <p className="text-[11px]" style={{ color: '#8a8078' }}>月度额度优先扣除；单独购买的积分永久有效。</p>
+        <p className="text-xs leading-relaxed mb-1 text-gray-500 dark:text-[#a09888]">本次生成将消耗 <strong>1 积分</strong>，剩余 {remaining} 积分。</p>
+        <p className="text-[11px] text-gray-400 dark:text-[#8a8078]">月度额度优先扣除；单独购买的积分永久有效。</p>
         {remaining <= 0 && (
           <div className="mt-3 rounded-xl p-3 text-xs" style={{ background: 'rgba(176,96,64,0.15)', border: '1px solid rgba(176,96,64,0.3)', color: '#e08060' }}>
             积分不足！可前往「工具 → 定价」购买积分包，或升级订阅。
           </div>
         )}
         <div className="flex gap-2 mt-4">
-          <button className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ background: 'rgba(255,255,255,0.06)', color: '#8a8078', border: '1px solid rgba(255,255,255,0.1)' }} onClick={onCancel}>取消</button>
+          <button className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-gray-100 dark:bg-white/[0.06] text-gray-500 dark:text-[#8a8078] border border-gray-200 dark:border-white/10" onClick={onCancel}>取消</button>
           {remaining > 0 ? (
-            <button className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ background: '#c9a96e', color: '#080c10' }} onClick={onConfirm}>确认生成（−1 积分）</button>
+            <button className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ background: '#D4A843', color: '#080c10' }} onClick={onConfirm}>确认生成（−1 积分）</button>
           ) : (
-            <Link href="/koala/tools" className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-center no-underline" style={{ background: '#c9a96e', color: '#080c10' }}>去购买积分</Link>
+            <Link href="/koala/tools" className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-center no-underline" style={{ background: '#D4A843', color: '#080c10' }}>去购买积分</Link>
           )}
         </div>
       </div>
@@ -340,12 +339,12 @@ function CreditConfirmDialog({ remaining, onConfirm, onCancel }: { remaining: nu
 
 function ConsultationBanner() {
   return (
-    <div className="rounded-xl p-3 mt-2" style={{ background: 'rgba(201,169,110,0.1)', border: '1px solid rgba(201,169,110,0.2)' }}>
-      <div className="text-xs font-semibold mb-1" style={{ color: '#c9a96e' }}>💡 需要更深入的分析？</div>
-      <p className="text-[11px] leading-relaxed" style={{ color: '#a09888' }}>AI 评估有局限，真人顾问能帮你做更精准的项目匹配。</p>
+    <div className="rounded-xl p-3 mt-2" style={{ background: 'rgba(212,168,67,0.1)', border: '1px solid rgba(212,168,67,0.2)' }}>
+      <div className="text-xs font-semibold mb-1 text-[#D4A843]">💡 需要更深入的分析？</div>
+      <p className="text-[11px] leading-relaxed text-gray-500 dark:text-[#a09888]">AI 评估有局限，真人顾问能帮你做更精准的项目匹配。</p>
       <div className="flex gap-2 mt-2">
-        <a href="mailto:info@koalaphd.com" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline" style={{ background: '#c9a96e', color: '#080c10' }}>📧 联系顾问</a>
-        <a href="weixin://dl/chat?username=KoalaStudyAdvisor" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline" style={{ background: 'rgba(255,255,255,0.06)', color: '#c9a96e', border: '1px solid rgba(255,255,255,0.1)' }}>💬 微信咨询</a>
+        <a href="mailto:info@koalaphd.com" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline" style={{ background: '#D4A843', color: '#080c10' }}>📧 联系顾问</a>
+        <a href="weixin://dl/chat?username=KoalaStudyAdvisor" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline bg-gray-100 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 text-[#D4A843]">💬 微信咨询</a>
       </div>
     </div>
   );
@@ -361,16 +360,16 @@ function SettingsPanel({
   onClear: () => void; onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
-      <div className="w-full rounded-t-3xl p-6 space-y-5" style={{ background: '#080c10', maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end bg-black/50" onClick={onClose}>
+      <div className="w-full rounded-t-3xl p-6 space-y-5 bg-white dark:bg-[#080c10]" style={{ maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold" style={{ color: '#e8e4dc' }}>设置</span>
-          <button onClick={onClose} className="text-xs" style={{ color: '#8a8078' }}>关闭</button>
+          <span className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">设置</span>
+          <button onClick={onClose} className="text-xs text-gray-500 dark:text-[#8a8078]">关闭</button>
         </div>
 
         {/* Tone */}
         <div>
-          <div className="text-xs font-semibold mb-2" style={{ color: '#a09888' }}>AI 语气偏好</div>
+          <div className="text-xs font-semibold mb-2 text-gray-500 dark:text-[#a09888]">AI 语气偏好</div>
           <div className="grid grid-cols-3 gap-2">
             {([['casual', '轻松'], ['professional', '专业'], ['direct', '直接']] as [TonePref, string][]).map(([val, label]) => (
               <button
@@ -378,9 +377,9 @@ function SettingsPanel({
                 onClick={() => onTone(val)}
                 className="py-2 rounded-xl text-xs font-medium"
                 style={{
-                  background: tone === val ? 'rgba(201,169,110,0.15)' : 'rgba(255,255,255,0.06)',
-                  border: `1.5px solid ${tone === val ? '#c9a96e' : 'rgba(255,255,255,0.1)'}`,
-                  color: tone === val ? '#c9a96e' : '#8a8078',
+                  background: tone === val ? 'rgba(212,168,67,0.15)' : undefined,
+                  border: `1.5px solid ${tone === val ? '#D4A843' : 'rgba(128,128,128,0.2)'}`,
+                  color: tone === val ? '#D4A843' : undefined,
                 }}
               >
                 {label}
@@ -391,7 +390,7 @@ function SettingsPanel({
 
         {/* Language */}
         <div>
-          <div className="text-xs font-semibold mb-2" style={{ color: '#a09888' }}>语言偏好</div>
+          <div className="text-xs font-semibold mb-2 text-gray-500 dark:text-[#a09888]">语言偏好</div>
           <div className="grid grid-cols-3 gap-2">
             {([['zh', '中文'], ['en', 'English'], ['mixed', '中英混合']] as [LangPref, string][]).map(([val, label]) => (
               <button
@@ -399,9 +398,9 @@ function SettingsPanel({
                 onClick={() => onLang(val)}
                 className="py-2 rounded-xl text-xs font-medium"
                 style={{
-                  background: lang === val ? 'rgba(201,169,110,0.15)' : 'rgba(255,255,255,0.06)',
-                  border: `1.5px solid ${lang === val ? '#c9a96e' : 'rgba(255,255,255,0.1)'}`,
-                  color: lang === val ? '#c9a96e' : '#8a8078',
+                  background: lang === val ? 'rgba(212,168,67,0.15)' : undefined,
+                  border: `1.5px solid ${lang === val ? '#D4A843' : 'rgba(128,128,128,0.2)'}`,
+                  color: lang === val ? '#D4A843' : undefined,
                 }}
               >
                 {label}
@@ -422,8 +421,7 @@ function SettingsPanel({
           <Link
             href="/login"
             onClick={onClose}
-            className="block w-full py-2.5 rounded-xl text-sm font-medium text-center no-underline"
-            style={{ background: 'rgba(255,255,255,0.06)', color: '#8a8078', border: '1px solid rgba(255,255,255,0.1)' }}
+            className="block w-full py-2.5 rounded-xl text-sm font-medium text-center no-underline bg-gray-100 dark:bg-white/[0.06] text-gray-500 dark:text-[#8a8078] border border-gray-200 dark:border-white/10"
           >
             退出登录
           </Link>
@@ -527,8 +525,8 @@ async function clearRemoteHistory(userId: string, mode: string) {
 export default function ChatPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center" style={{ height: '100dvh', background: '#080c10' }}>
-        <p className="text-sm" style={{ color: '#8a8078' }}>加载中…</p>
+      <div className="flex items-center justify-center" style={{ height: '100dvh' }}>
+        <p className="text-sm text-gray-500 dark:text-[#8a8078]">加载中…</p>
       </div>
     }>
       <ChatPageInner />
@@ -858,7 +856,7 @@ function ChatPageInner() {
   const formatTime = (d: Date) => d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="flex flex-col" style={{ height: '100dvh', background: '#080c10', paddingBottom: 60 }}>
+    <div className="flex flex-col bg-white dark:bg-[#080c10]" style={{ height: '100dvh', paddingBottom: 60 }}>
 
       {/* Achievement toast */}
       {toastAchievement && (
@@ -870,30 +868,27 @@ function ChatPageInner() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ background: '#0d1520' }}>
+      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 bg-gray-50 dark:bg-[#0d1520] border-b border-gray-200 dark:border-white/10">
         <div className="flex items-center gap-2">
-          <div
-            className="size-9 rounded-full flex justify-center items-center flex-shrink-0"
-            style={{ background: '#c9a96e' }}
-          >
+          <div className="size-9 rounded-full flex justify-center items-center flex-shrink-0 bg-[#D4A843]">
             <PawPrint className="size-5" style={{ color: '#080c10' }} />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-base leading-6 tracking-wide" style={{ color: '#c9a96e' }}>
+            <span className="font-bold text-base leading-6 tracking-wide text-[#D4A843]">
               Koala PhD
             </span>
-            <span className="text-[10px]" style={{ color: 'rgba(201,169,110,0.7)' }}>
+            <span className="text-[10px] text-[#D4A843]/70">
               考拉学长 · 在线
             </span>
           </div>
         </div>
         <button onClick={() => setShowSettings(true)}>
-          <Settings className="size-5" style={{ color: '#c9a96e' }} />
+          <Settings className="size-5 text-[#D4A843]" />
         </button>
       </div>
 
       {/* Mode tabs — horizontally scrollable for 6 modes on mobile */}
-      <div className="flex px-2 items-stretch flex-shrink-0 overflow-x-auto scrollbar-hide" style={{ background: '#0d1520', WebkitOverflowScrolling: 'touch' }}>
+      <div className="flex px-2 items-stretch flex-shrink-0 overflow-x-auto scrollbar-hide bg-gray-50 dark:bg-[#0d1520]" style={{ WebkitOverflowScrolling: 'touch' }}>
         {MODES.map(m => {
           const active = mode === m.key;
           return (
@@ -903,18 +898,12 @@ function ChatPageInner() {
               className="flex pt-3 pb-2 flex-col items-center min-w-[80px] flex-shrink-0 flex-1 gap-2"
             >
               <span
-                className="text-xs sm:text-sm leading-5 whitespace-nowrap"
-                style={{
-                  color: active ? '#e8e4dc' : '#5a5550',
-                  fontWeight: active ? 700 : 400,
-                }}
+                style={{ fontWeight: active ? 700 : 400 }}
+                className={`text-xs sm:text-sm leading-5 whitespace-nowrap ${active ? 'text-gray-900 dark:text-[#e8e4dc]' : 'text-gray-400 dark:text-[#5a5550]'}`}
               >
                 {m.label}
               </span>
-              <div
-                className="rounded-full w-8 h-0.5"
-                style={{ background: active ? '#c9a96e' : 'transparent' }}
-              />
+              <div className={`rounded-full w-8 h-0.5 ${active ? 'bg-[#D4A843]' : 'bg-transparent'}`} />
             </button>
           );
         })}
@@ -923,9 +912,9 @@ function ChatPageInner() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-0.5">
         <div className="flex items-center gap-2 py-2 mb-1">
-          <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
-          <span className="text-[11px] flex-shrink-0" style={{ color: '#5a5550' }}>今天 {formatTime(messages[0]?.timestamp ?? new Date())}</span>
-          <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+          <div className="flex-1 h-px bg-gray-200 dark:bg-white/[0.08]" />
+          <span className="text-[11px] flex-shrink-0 text-gray-400 dark:text-[#5a5550]">今天 {formatTime(messages[0]?.timestamp ?? new Date())}</span>
+          <div className="flex-1 h-px bg-gray-200 dark:bg-white/[0.08]" />
         </div>
 
         {messages.map((msg, idx) => (
@@ -938,10 +927,10 @@ function ChatPageInner() {
               )}
               <div className="flex flex-col max-w-[80%]">
                 <div
-                  className="px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap"
+                  className={`px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? '' : 'bg-gray-100 dark:bg-white/[0.06] text-gray-700 dark:text-[#e8e4dc]'}`}
                   style={msg.role === 'user'
-                    ? { background: '#c9a96e', color: '#080c10', borderRadius: '1rem 0.25rem 1rem 1rem', boxShadow: '0 2px 8px rgba(201,169,110,0.20)' }
-                    : { background: 'rgba(255,255,255,0.06)', color: '#e8e4dc', borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }
+                    ? { background: '#D4A843', color: '#080c10', borderRadius: '1rem 0.25rem 1rem 1rem', boxShadow: '0 2px 8px rgba(212,168,67,0.20)' }
+                    : { borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }
                   }
                 >
                   {msg.content}
@@ -955,15 +944,15 @@ function ChatPageInner() {
                   <ProfessorMatchCard key={i} match={p} />
                 ))}
                 {msg.role === 'assistant' && msg.matchedProfessors && msg.matchedProfessors.length > 0 && (
-                  <p className="text-[11px] mt-1.5 ml-1" style={{ color: '#8a8078' }}>
+                  <p className="text-[11px] mt-1.5 ml-1 text-gray-400 dark:text-[#8a8078]">
                     不是你要找的教授？告诉我正确的教授名字和大学
                   </p>
                 )}
                 {msg.role === 'assistant' && msg.matchedProfessors && msg.matchedProfessors.length > 1 && (
                   <button
                     onClick={() => setBatchProfessors(msg.matchedProfessors!.map(p => ({ id: p.professorId, name: p.name, institution: p.institution, matchScore: p.matchScore })))}
-                    className="mt-2 w-full py-2 rounded-xl text-xs font-semibold"
-                    style={{ background: '#0d1520', color: '#c9a96e', border: '1px solid rgba(201,169,110,0.3)' }}
+                    className="mt-2 w-full py-2 rounded-xl text-xs font-semibold bg-gray-100 dark:bg-[#0d1520] text-[#D4A843]"
+                    style={{ border: '1px solid rgba(212,168,67,0.3)' }}
                   >
                     📨 批量生成申请信（{msg.matchedProfessors.length} 封）
                   </button>
@@ -1004,8 +993,7 @@ function ChatPageInner() {
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {msg.quickReplies.map(qr => (
                       <button key={qr} onClick={() => sendMessage(qr)} disabled={loading}
-                        className="text-xs px-3 py-1.5 rounded-full border"
-                        style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)', color: '#a09888' }}
+                        className="text-xs px-3 py-1.5 rounded-full border bg-gray-100 dark:bg-white/[0.06] border-gray-200 dark:border-white/[0.12] text-gray-500 dark:text-[#a09888]"
                       >
                         {qr}
                       </button>
@@ -1031,8 +1019,7 @@ function ChatPageInner() {
           <div className="flex flex-wrap gap-1.5 mt-1 ml-9">
             {currentMode.initialReplies.map(qr => (
               <button key={qr} onClick={() => sendMessage(qr)}
-                className="text-xs px-3 py-1.5 rounded-full border"
-                style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)', color: '#a09888' }}
+                className="text-xs px-3 py-1.5 rounded-full border bg-gray-100 dark:bg-white/[0.06] border-gray-200 dark:border-white/[0.12] text-gray-500 dark:text-[#a09888]"
               >
                 {qr}
               </button>
@@ -1063,7 +1050,7 @@ function ChatPageInner() {
             <div className="mt-1 mr-2 flex-shrink-0">
               <KoalaAvatar size={28} />
             </div>
-            <div className="px-3.5 py-2.5 text-sm" style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', color: '#8a8078' }}>
+            <div className="px-3.5 py-2.5 text-sm bg-gray-100 dark:bg-white/[0.06] text-gray-400 dark:text-[#8a8078]" style={{ borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
               {mode === 'research' ? (
                 <span className="animate-pulse">🔬 正在检索论文…</span>
               ) : (
@@ -1077,15 +1064,15 @@ function ChatPageInner() {
 
       {/* Profile guidance hint */}
       {profile && (profile.profile_completeness ?? 0) < 60 && (
-        <div className="flex-shrink-0 px-4 py-2" style={{ background: 'rgba(255,255,255,0.03)' }}>
+        <div className="flex-shrink-0 px-4 py-2 bg-black/[0.03] dark:bg-white/[0.03]">
           {(profile.profile_completeness ?? 0) < 30 ? (
             <Link href="/koala/my-profile" className="flex items-center justify-center gap-2 no-underline">
-              <span className="text-[11px] leading-relaxed" style={{ color: '#c9a96e' }}>
+              <span className="text-[11px] leading-relaxed text-[#D4A843]">
                 📝 完善个人资料（{profile.profile_completeness ?? 0}%），获得更精准的教授匹配和申请信
               </span>
             </Link>
           ) : (
-            <p className="text-[11px] leading-relaxed text-center" style={{ color: '#6a6058' }}>
+            <p className="text-[11px] leading-relaxed text-center text-gray-400 dark:text-[#6a6058]">
               💡 多跟我聊聊你的背景和想法，你说得越多，我帮你匹配的导师就越精准哦～
             </p>
           )}
@@ -1093,22 +1080,15 @@ function ChatPageInner() {
       )}
 
       {/* Input bar */}
-      <div
-        className="flex-shrink-0 border-t"
-        style={{ background: '#0d1520', borderColor: 'rgba(255,255,255,0.08)' }}
-      >
+      <div className="flex-shrink-0 border-t border-gray-200 dark:border-white/[0.08] bg-gray-50 dark:bg-[#0d1520]">
         <div className="flex p-4 items-center gap-2">
           <button
             onClick={() => setShowUpload(true)}
-            className="size-9 shrink-0 rounded-full flex justify-center items-center"
-            style={{ background: 'rgba(255,255,255,0.06)' }}
+            className="size-9 shrink-0 rounded-full flex justify-center items-center bg-gray-100 dark:bg-white/[0.06]"
           >
-            <Plus className="size-5" style={{ color: '#e8e4dc' }} />
+            <Plus className="size-5 text-gray-700 dark:text-[#e8e4dc]" />
           </button>
-          <div
-            className="rounded-full px-4 py-2.5 flex-1"
-            style={{ background: 'rgba(255,255,255,0.06)' }}
-          >
+          <div className="rounded-full px-4 py-2.5 flex-1 bg-gray-100 dark:bg-white/[0.06]">
             <textarea
               ref={textareaRef}
               rows={1}
@@ -1120,8 +1100,8 @@ function ChatPageInner() {
               }}
               onKeyDown={handleKeyDown}
               placeholder={currentMode.placeholder}
-              className="w-full resize-none text-sm outline-none bg-transparent leading-relaxed placeholder:text-[#5a5550]"
-              style={{ color: '#e8e4dc', maxHeight: 120 }}
+              className="w-full resize-none text-sm outline-none bg-transparent leading-relaxed placeholder:text-gray-400 dark:placeholder:text-[#5a5550] text-gray-900 dark:text-[#e8e4dc]"
+              style={{ maxHeight: 120 }}
             />
           </div>
           <VoiceInputButton
@@ -1131,13 +1111,12 @@ function ChatPageInner() {
           <button
             onClick={() => sendMessage()}
             disabled={!input.trim() || loading}
-            className="size-9 shrink-0 rounded-full flex justify-center items-center"
-            style={{ background: input.trim() && !loading ? '#c9a96e' : 'rgba(255,255,255,0.08)' }}
+            className={`size-9 shrink-0 rounded-full flex justify-center items-center ${input.trim() && !loading ? 'bg-[#D4A843]' : 'bg-gray-200 dark:bg-white/[0.08]'}`}
           >
             <Send className="size-4 fill-white text-white" />
           </button>
         </div>
-        <p className="text-center text-[10px] pb-2" style={{ color: '#5a5550' }}>
+        <p className="text-center text-[10px] pb-2 text-gray-400 dark:text-[#5a5550]">
           Koala 可能出错，重要决策请咨询人工顾问
         </p>
       </div>

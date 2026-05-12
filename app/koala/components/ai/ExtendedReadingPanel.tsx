@@ -25,28 +25,24 @@ export function ExtendedReadingPanel({
   if (!papers.length) return null;
 
   return (
-    <div
-      className="rounded-xl overflow-hidden mt-2"
-      style={{ border: '1px solid rgba(201,169,110,0.1)' }}
-    >
+    <div className="rounded-xl overflow-hidden mt-2 border border-gray-200 dark:border-white/10">
       <button
-        className="w-full flex items-center justify-between px-3 py-2.5"
-        style={{ background: 'rgba(201,169,110,0.06)' }}
+        className="w-full flex items-center justify-between px-3 py-2.5 bg-[#D4A843]/[0.06]"
         onClick={() => setExpanded(e => !e)}
       >
         <div className="flex items-center gap-2">
           <span className="text-sm">📚</span>
-          <span className="text-[11px] font-medium" style={{ color: '#c9a96e' }}>
+          <span className="text-[11px] font-medium text-[#D4A843]">
             延伸阅读 · 共检索到 {totalFound ?? papers.length} 篇论文
           </span>
         </div>
         <div className="flex items-center gap-2">
           {sources.length > 0 && (
-            <span className="text-[10px]" style={{ color: '#b09878' }}>
+            <span className="text-[10px] text-gray-500 dark:text-[#b09878]">
               {sources.join(' + ')}
             </span>
           )}
-          <span className="text-[11px]" style={{ color: '#c9a96e' }}>
+          <span className="text-[11px] text-[#D4A843]">
             {expanded ? '▲' : '▼'}
           </span>
         </div>
@@ -55,7 +51,7 @@ export function ExtendedReadingPanel({
       {expanded && (
         <div className="px-3 pb-3">
           {searchQueries.length > 0 && (
-            <div className="py-2 text-[10px]" style={{ color: '#b09878', borderBottom: '1px solid rgba(201,169,110,0.06)' }}>
+            <div className="py-2 text-[10px] text-gray-500 dark:text-[#b09878] border-b border-[#D4A843]/[0.06]">
               搜索关键词：{searchQueries.map(q => `"${q}"`).join(' · ')}
             </div>
           )}
@@ -69,14 +65,13 @@ export function ExtendedReadingPanel({
           {papers.length > 3 && (
             <button
               onClick={() => setShowAll(s => !s)}
-              className="w-full mt-2 py-2 rounded-xl text-[11px] font-medium"
-              style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e', border: '1px solid rgba(201,169,110,0.1)' }}
+              className="w-full mt-2 py-2 rounded-xl text-[11px] font-medium bg-[#D4A843]/[0.06] text-[#D4A843] border border-[#D4A843]/10"
             >
               {showAll ? '收起 ▲' : `查看全部 ${papers.length} 篇 ▼`}
             </button>
           )}
 
-          <p className="text-[10px] mt-2 leading-relaxed" style={{ color: '#b09878' }}>
+          <p className="text-[10px] mt-2 leading-relaxed text-gray-500 dark:text-[#b09878]">
             📡 数据实时获取 · Koala 不对论文内容的准确性负责，请自行验证。
             检索时间：{new Date().toLocaleTimeString('zh-CN')} AEST
           </p>

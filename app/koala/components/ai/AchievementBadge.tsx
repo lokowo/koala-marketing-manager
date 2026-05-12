@@ -48,10 +48,7 @@ export function AchievementBadge({ achievementKey, unlockedAt, mode = 'toast', o
 
   if (mode === 'toast') {
     return (
-      <div
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-2xl shadow-lg"
-        style={{ background: '#e8e4dc', color: '#fff', maxWidth: 300 }}
-      >
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-2xl shadow-lg bg-gray-100 dark:bg-[#e8e4dc] text-gray-900 dark:text-white max-w-[300px]">
         <span className="text-xl">{icon}</span>
         <div>
           <div className="text-[11px] opacity-70">成就解锁</div>
@@ -64,24 +61,18 @@ export function AchievementBadge({ achievementKey, unlockedAt, mode = 'toast', o
 
   if (mode === 'inline') {
     return (
-      <div
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
-        style={{ background: '#f5e8c4', color: '#c9a96e' }}
-      >
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f5e8c4] dark:bg-[#f5e8c4] text-[#D4A843]">
         {icon} {label}
       </div>
     );
   }
 
   return (
-    <div
-      className="flex flex-col items-center p-4 rounded-2xl text-center"
-      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)' }}
-    >
+    <div className="flex flex-col items-center p-4 rounded-2xl text-center bg-white/5 dark:bg-white/[0.04] border border-[#D4A843]/10">
       <div className="text-4xl mb-2">{icon}</div>
-      <div className="text-xs font-bold" style={{ color: '#e8e4dc' }}>{label}</div>
+      <div className="text-xs font-bold text-gray-900 dark:text-[#e8e4dc]">{label}</div>
       {unlockedAt && (
-        <div className="text-[10px] mt-1" style={{ color: '#b09878' }}>
+        <div className="text-[10px] mt-1 text-gray-500 dark:text-[#b09878]">
           {new Date(unlockedAt).toLocaleDateString('zh-CN')} 解锁
         </div>
       )}

@@ -191,11 +191,10 @@ export default function HomePage() {
   const displayPosts = blogPosts.length > 0 ? blogPosts : fallbackPosts;
 
   return (
-    <div style={{ background: '#080c10', minHeight: '100vh', paddingBottom: 100 }}>
+    <div className="bg-white dark:bg-[#080c10] min-h-screen pb-[100px]">
       {/* Header — mobile only; desktop uses TopNavBar */}
       <header
-        className="lg:hidden sticky top-0 z-50 px-4 pt-4 pb-3 flex justify-between items-center"
-        style={{ background: 'linear-gradient(135deg, #080c10 0%, #f5edd8 100%)', borderBottom: '1px solid #ebe3d0' }}
+        className="lg:hidden sticky top-0 z-50 px-4 pt-4 pb-3 flex justify-between items-center bg-white dark:bg-[#080c10] border-b border-gray-200 dark:border-[#ebe3d0]/20"
       >
         {/* Left: Logo + brand */}
         <Link href="/koala/home" className="flex items-center gap-2.5 no-underline">
@@ -210,12 +209,12 @@ export default function HomePage() {
               (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
             }}
           />
-          <span className="hidden size-8 rounded-lg flex items-center justify-center text-base" style={{ background: '#e8e4dc' }}>🐨</span>
+          <span className="hidden size-8 rounded-lg flex items-center justify-center text-base bg-[#e8e4dc]">🐨</span>
           <div className="flex flex-col">
-            <span className="text-sm font-bold tracking-tight leading-none" style={{ color: '#e8e4dc' }}>
+            <span className="text-sm font-bold tracking-tight leading-none text-gray-900 dark:text-[#e8e4dc]">
               Koala Study
             </span>
-            <span className="text-[10px] leading-tight mt-0.5" style={{ color: '#6a7a7e' }}>
+            <span className="text-[10px] leading-tight mt-0.5 text-gray-500 dark:text-[#6a7a7e]">
               你的澳洲学术内线
             </span>
           </div>
@@ -228,9 +227,9 @@ export default function HomePage() {
             className="relative size-9 flex justify-center items-center rounded-full transition-colors"
             style={{ background: showNotif ? 'rgba(201,169,110,0.06)' : 'transparent' }}
           >
-            <Bell className="size-[18px]" style={{ color: '#a8b8ac' }} />
+            <Bell className="size-[18px] text-gray-400 dark:text-[#a8b8ac]" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full text-[9px] font-bold" style={{ background: '#b06040', color: '#fff' }}>
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full text-[9px] font-bold bg-[#b06040] text-white">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
@@ -239,8 +238,7 @@ export default function HomePage() {
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(v => !v)}
-                className="size-9 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden"
-                style={{ background: '#c9a96e', color: '#080c10' }}
+                className="size-9 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden bg-[#D4A843] text-[#080c10]"
               >
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -249,23 +247,18 @@ export default function HomePage() {
                 )}
               </button>
               {showUserMenu && (
-                <div
-                  className="absolute right-0 top-11 w-48 rounded-xl py-2 z-50"
-                  style={{ background: '#111c28', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', border: '1px solid rgba(201,169,110,0.15)' }}
-                >
-                  <p className="px-4 py-1.5 text-[11px] truncate" style={{ color: '#6a7a7e' }}>{user.email}</p>
+                <div className="absolute right-0 top-11 w-48 rounded-xl py-2 z-50 bg-white dark:bg-[#111c28] shadow-lg dark:shadow-[0_8px_24px_rgba(0,0,0,0.4)] border border-gray-200 dark:border-[#c9a96e]/15">
+                  <p className="px-4 py-1.5 text-[11px] truncate text-gray-500 dark:text-[#6a7a7e]">{user.email}</p>
                   <Link
                     href="/koala/my-profile"
-                    className="block px-4 py-2 text-xs no-underline hover:bg-white/5"
-                    style={{ color: '#e8e4dc' }}
+                    className="block px-4 py-2 text-xs no-underline hover:bg-gray-100 dark:hover:bg-white/5 text-gray-700 dark:text-[#e8e4dc]"
                     onClick={() => setShowUserMenu(false)}
                   >
                     个人中心
                   </Link>
                   <button
                     onClick={() => { setShowUserMenu(false); signOut(); }}
-                    className="w-full text-left px-4 py-2 text-xs hover:bg-white/5"
-                    style={{ color: '#c9a96e' }}
+                    className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 dark:hover:bg-white/5 text-[#D4A843]"
                   >
                     退出登录
                   </button>
@@ -275,8 +268,7 @@ export default function HomePage() {
           ) : (
             <button
               onClick={() => showLogin()}
-              className="size-9 rounded-full flex items-center justify-center"
-              style={{ background: '#e8e4dc' }}
+              className="size-9 rounded-full flex items-center justify-center bg-[#e8e4dc] dark:bg-[#e8e4dc]"
             >
               <span className="text-xs font-medium text-white">登录</span>
             </button>
@@ -286,12 +278,9 @@ export default function HomePage() {
 
       {/* Notification dropdown */}
       {showNotif && (
-        <div
-          className="mx-4 mt-1 mb-2 rounded-2xl p-4"
-          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)', boxShadow: '0 8px 24px rgba(125,99,64,0.10)' }}
-        >
+        <div className="mx-4 mt-1 mb-2 rounded-2xl p-4 bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-[#c9a96e]/10 shadow-sm dark:shadow-[0_8px_24px_rgba(125,99,64,0.10)]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium" style={{ color: '#a8b8ac' }}>通知</span>
+            <span className="text-xs font-medium text-gray-500 dark:text-[#a8b8ac]">通知</span>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
                 <button
@@ -304,35 +293,34 @@ export default function HomePage() {
                     setUnreadCount(0);
                     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
                   }}
-                  className="text-[10px]"
-                  style={{ color: '#c9a96e' }}
+                  className="text-[10px] text-[#D4A843]"
                 >
                   全部已读
                 </button>
               )}
-              <button onClick={() => setShowNotif(false)} className="size-6 flex items-center justify-center rounded-full" style={{ background: 'rgba(201,169,110,0.06)' }}>
-                <X className="size-3" style={{ color: '#6a7a7e' }} />
+              <button onClick={() => setShowNotif(false)} className="size-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-[#c9a96e]/[0.06]">
+                <X className="size-3 text-gray-400 dark:text-[#6a7a7e]" />
               </button>
             </div>
           </div>
           {notifications.length === 0 ? (
             <div className="flex items-center gap-3 py-2">
-              <div className="size-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(201,169,110,0.06)' }}>
-                <Bell className="size-4" style={{ color: '#c9a96e' }} />
+              <div className="size-9 rounded-full flex items-center justify-center bg-gray-100 dark:bg-[#c9a96e]/[0.06]">
+                <Bell className="size-4 text-[#D4A843]" />
               </div>
               <div>
-                <p className="text-xs font-medium" style={{ color: '#a8b8ac' }}>暂无新消息</p>
-                <p className="text-[10px] mt-0.5" style={{ color: '#6a7a7e' }}>有新动态时会通知你</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-[#a8b8ac]">暂无新消息</p>
+                <p className="text-[10px] mt-0.5 text-gray-400 dark:text-[#6a7a7e]">有新动态时会通知你</p>
               </div>
             </div>
           ) : (
             <div className="space-y-2">
               {notifications.map(n => (
                 <div key={n.id} className="flex items-start gap-2 px-2 py-1.5 rounded-lg" style={{ background: n.read ? 'transparent' : 'rgba(201,169,110,0.04)' }}>
-                  {!n.read && <span className="mt-1.5 size-1.5 rounded-full flex-shrink-0" style={{ background: '#c9a96e' }} />}
+                  {!n.read && <span className="mt-1.5 size-1.5 rounded-full flex-shrink-0 bg-[#D4A843]" />}
                   <div className={n.read ? 'ml-3.5' : ''}>
-                    <p className="text-xs font-medium" style={{ color: '#e8e4dc' }}>{n.title}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color: '#6a7a7e' }}>{n.body}</p>
+                    <p className="text-xs font-medium text-gray-900 dark:text-[#e8e4dc]">{n.title}</p>
+                    <p className="text-[10px] mt-0.5 text-gray-400 dark:text-[#6a7a7e]">{n.body}</p>
                   </div>
                 </div>
               ))}
@@ -349,31 +337,30 @@ export default function HomePage() {
         {/* ── Hero ── */}
         <section>
           <div
-            className="rounded-2xl px-6 py-8 lg:p-10 relative overflow-hidden lg:flex lg:items-center lg:gap-12"
-            style={{ background: 'linear-gradient(135deg, #1a2a20 0%, #0d1a14 50%, #162028 100%)', border: '1px solid rgba(201,169,110,0.15)' }}
+            className="rounded-2xl px-6 py-8 lg:p-10 relative overflow-hidden lg:flex lg:items-center lg:gap-12 border border-[#c9a96e]/15"
+            style={{ background: 'linear-gradient(135deg, #1a2a20 0%, #0d1a14 50%, #162028 100%)' }}
           >
             {/* Decorative glow */}
             <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.08) 0%, transparent 70%)' }} />
             <div className="absolute right-8 bottom-0 w-40 h-40 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.06) 0%, transparent 70%)' }} />
 
             <div className="relative z-10 lg:flex-1">
-              <div className="text-xs font-medium mb-2" style={{ color: 'rgba(201,169,110,0.5)' }}>
+              <div className="text-xs font-medium mb-2 text-[#D4A843]/50">
                 AI 导师匹配 · 免费使用
               </div>
-              <h1 className="text-xl lg:text-3xl font-bold leading-tight mb-1.5" style={{ color: '#e8e4dc' }}>
+              <h1 className="text-xl lg:text-3xl font-bold leading-tight mb-1.5 text-[#e8e4dc]">
                 {profCount} 位澳洲导师<br />AI 帮你找最匹配的那个
               </h1>
-              <p className="text-xs lg:text-sm leading-relaxed mb-4" style={{ color: '#6a7a7e' }}>
+              <p className="text-xs lg:text-sm leading-relaxed mb-4 text-[#6a7a7e]">
                 告诉 Koala 你的背景和兴趣，30 秒内获得个性化导师推荐
               </p>
               <Link
                 href="/koala/chat"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm no-underline"
-                style={{ background: '#c9a96e', color: '#080c10' }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm no-underline bg-[#D4A843] text-[#080c10]"
               >
                 开始匹配 <ArrowRight className="size-4" />
               </Link>
-              <div className="mt-3 text-[11px]" style={{ color: 'rgba(201,169,110,0.4)' }}>
+              <div className="mt-3 text-[11px] text-[#D4A843]/40">
                 {matchCount > 0
                   ? `已帮助 ${displayMatchCount.toLocaleString()} 位同学匹配理想导师`
                   : '已帮助众多同学匹配理想导师'}
@@ -384,7 +371,7 @@ export default function HomePage() {
 
         {/* ── Three Steps ── */}
         <section>
-          <h2 className="font-bold text-base mb-3" style={{ color: '#e8e4dc' }}>三步搞定 PhD 申请</h2>
+          <h2 className="font-bold text-base mb-3 text-gray-900 dark:text-[#e8e4dc]">三步搞定 PhD 申请</h2>
           <div className="grid grid-cols-3 gap-2 lg:gap-4">
             {[
               { icon: '💬', step: '01', title: '聊背景', desc: '告诉 Koala 你的专业和兴趣' },
@@ -394,8 +381,7 @@ export default function HomePage() {
               <button
                 key={s.step}
                 onClick={() => handleStepClick(STEP_LINKS[i].href)}
-                className="rounded-2xl p-3 lg:p-5 flex flex-col gap-1.5 text-left w-full transition-all active:scale-95"
-                style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', cursor: 'pointer' }}
+                className="rounded-2xl p-3 lg:p-5 flex flex-col gap-1.5 text-left w-full transition-all active:scale-95 bg-gray-50 dark:bg-[#c9a96e]/[0.06] border border-gray-200 dark:border-[#c9a96e]/10 cursor-pointer"
                 onMouseEnter={e => {
                   (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
                   (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 16px rgba(125,99,64,0.15)';
@@ -406,9 +392,9 @@ export default function HomePage() {
                 }}
               >
                 <span className="text-xl">{s.icon}</span>
-                <div className="text-[10px] font-medium" style={{ color: '#c9a96e' }}>{s.step}</div>
-                <div className="text-xs font-bold" style={{ color: '#e8e4dc' }}>{s.title}</div>
-                <div className="text-[10px] leading-relaxed" style={{ color: '#6a7a7e' }}>{s.desc}</div>
+                <div className="text-[10px] font-medium text-[#D4A843]">{s.step}</div>
+                <div className="text-xs font-bold text-gray-900 dark:text-[#e8e4dc]">{s.title}</div>
+                <div className="text-[10px] leading-relaxed text-gray-500 dark:text-[#6a7a7e]">{s.desc}</div>
               </button>
             ))}
           </div>
@@ -417,15 +403,15 @@ export default function HomePage() {
         {/* ── Hot Professors ── */}
         <section>
           <div className="flex justify-between items-center mb-3">
-            <h2 className="font-bold text-base" style={{ color: '#e8e4dc' }}>🔥 热门导师推荐</h2>
-            <Link href="/koala/professors" className="text-xs font-semibold flex items-center gap-1 no-underline" style={{ color: '#c9a96e' }}>
+            <h2 className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">🔥 热门导师推荐</h2>
+            <Link href="/koala/professors" className="text-xs font-semibold flex items-center gap-1 no-underline text-[#D4A843]">
               查看全部 <ChevronRight className="size-3" />
             </Link>
           </div>
           <div className="flex -mx-4 px-4 pb-2 gap-3 overflow-x-auto lg:overflow-visible lg:mx-0 lg:px-0 lg:grid lg:grid-cols-3 lg:gap-4" style={{ scrollbarWidth: 'none' }}>
             {(professors.length > 0 ? professors : Array(4).fill(null)).map((p, i) => {
               if (!p) return (
-                <div key={i} className="shrink-0 w-44 lg:w-auto h-52 rounded-2xl animate-pulse" style={{ background: 'rgba(201,169,110,0.06)' }} />
+                <div key={i} className="shrink-0 w-44 lg:w-auto h-52 rounded-2xl animate-pulse bg-gray-100 dark:bg-[#c9a96e]/[0.06]" />
               );
               const badge = getUniBadge(p.university);
               const status = p.acceptingStudents === 'yes' ? { label: '招生中', bg: '#d1fae5', color: '#065f46' }
@@ -435,8 +421,7 @@ export default function HomePage() {
                 <Link
                   key={p.id}
                   href={`/koala/professors/${p.id}`}
-                  className="shrink-0 w-44 lg:w-auto rounded-2xl p-3.5 flex flex-col gap-2 no-underline"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.1)', boxShadow: '0 4px 16px rgba(196,160,80,0.10)' }}
+                  className="shrink-0 w-44 lg:w-auto rounded-2xl p-3.5 flex flex-col gap-2 no-underline bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-[#c9a96e]/10 shadow-sm dark:shadow-[0_4px_16px_rgba(196,160,80,0.10)]"
                 >
                   {/* Uni badge + status */}
                   <div className="flex items-center justify-between">
@@ -455,35 +440,29 @@ export default function HomePage() {
 
                   {/* Name & title */}
                   <div>
-                    <div className="text-xs font-bold leading-snug" style={{ color: '#e8e4dc' }}>{p.name}</div>
+                    <div className="text-xs font-bold leading-snug text-gray-900 dark:text-[#e8e4dc]">{p.name}</div>
                     {p.positionTitle && (
-                      <div className="text-[10px] mt-0.5" style={{ color: '#6a7a7e' }}>{p.positionTitle}</div>
+                      <div className="text-[10px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">{p.positionTitle}</div>
                     )}
                   </div>
 
                   {/* Research tag */}
                   {p.researchAreas?.[0] && (
-                    <div
-                      className="text-[10px] px-2 py-1 rounded-full leading-tight"
-                      style={{ background: 'rgba(201,169,110,0.06)', color: '#a8b8ac' }}
-                    >
+                    <div className="text-[10px] px-2 py-1 rounded-full leading-tight bg-gray-100 dark:bg-[#c9a96e]/[0.06] text-gray-500 dark:text-[#a8b8ac]">
                       {p.researchAreas[0].length > 30 ? p.researchAreas[0].slice(0, 28) + '…' : p.researchAreas[0]}
                     </div>
                   )}
 
                   {/* Stats */}
                   {(p.hIndex || p.paperCount) && (
-                    <div className="flex gap-2 text-[10px]" style={{ color: '#6a7a7e' }}>
+                    <div className="flex gap-2 text-[10px] text-gray-500 dark:text-[#6a7a7e]">
                       {p.hIndex && <span>H={p.hIndex}</span>}
                       {p.paperCount && <span>· {fmtNum(p.paperCount)} 篇</span>}
                     </div>
                   )}
 
                   {/* CTA */}
-                  <div
-                    className="mt-auto text-[10px] font-medium text-center py-1.5 rounded-full"
-                    style={{ background: 'rgba(201,169,110,0.06)', color: '#c9a96e' }}
-                  >
+                  <div className="mt-auto text-[10px] font-medium text-center py-1.5 rounded-full bg-gray-100 dark:bg-[#c9a96e]/[0.06] text-[#D4A843]">
                     查看详情 →
                   </div>
                 </Link>
@@ -494,17 +473,16 @@ export default function HomePage() {
 
         {/* ── Research Areas ── */}
         <section>
-          <h2 className="font-bold text-base mb-3" style={{ color: '#e8e4dc' }}>热门研究方向</h2>
+          <h2 className="font-bold text-base mb-3 text-gray-900 dark:text-[#e8e4dc]">热门研究方向</h2>
           <div className="grid grid-cols-4 lg:grid-cols-8 gap-2">
             {RESEARCH_AREAS.map(area => (
               <Link
                 key={area.value}
                 href={`/koala/professors?category=${area.value}`}
-                className="rounded-2xl p-2.5 flex flex-col items-center gap-1 no-underline"
-                style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}
+                className="rounded-2xl p-2.5 flex flex-col items-center gap-1 no-underline bg-gray-50 dark:bg-[#c9a96e]/[0.06] border border-gray-200 dark:border-[#c9a96e]/10"
               >
                 <span className="text-lg">{area.emoji}</span>
-                <span className="text-[10px] font-medium text-center leading-tight" style={{ color: '#a8b8ac' }}>
+                <span className="text-[10px] font-medium text-center leading-tight text-gray-500 dark:text-[#a8b8ac]">
                   {area.label}
                 </span>
               </Link>
@@ -515,8 +493,8 @@ export default function HomePage() {
         {/* ── Blog ── */}
         <section>
           <div className="flex justify-between items-center mb-3">
-            <h2 className="font-bold text-base" style={{ color: '#e8e4dc' }}>最新博客</h2>
-            <Link href="/koala/blog" className="text-xs font-semibold flex items-center gap-1 no-underline" style={{ color: '#c9a96e' }}>
+            <h2 className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">最新博客</h2>
+            <Link href="/koala/blog" className="text-xs font-semibold flex items-center gap-1 no-underline text-[#D4A843]">
               更多 <ChevronRight className="size-3" />
             </Link>
           </div>
@@ -525,17 +503,16 @@ export default function HomePage() {
               <Link
                 key={b.id}
                 href={`/koala/blog/${b.slug || b.id}`}
-                className="rounded-2xl p-4 flex flex-col gap-2 no-underline"
-                style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 4px 16px rgba(196,160,80,0.08)', border: '1px solid rgba(201,169,110,0.06)' }}
+                className="rounded-2xl p-4 flex flex-col gap-2 no-underline bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-[#c9a96e]/[0.06] shadow-sm dark:shadow-[0_4px_16px_rgba(196,160,80,0.08)]"
               >
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full text-white" style={{ background: '#c9a96e' }}>
+                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full text-white bg-[#D4A843]">
                     {b.tag}
                   </span>
-                  <span className="text-[10px]" style={{ color: '#b0b0b0' }}>{b.date}{b.viewCount ? ` · 👁 ${b.viewCount}` : ''}</span>
+                  <span className="text-[10px] text-gray-400 dark:text-[#b0b0b0]">{b.date}{b.viewCount ? ` · 👁 ${b.viewCount}` : ''}</span>
                 </div>
-                <h3 className="text-sm font-bold leading-snug" style={{ color: '#e8e4dc' }}>{b.title}</h3>
-                <p className="text-xs leading-relaxed" style={{ color: '#8a8a8a' }}>{b.excerpt}</p>
+                <h3 className="text-sm font-bold leading-snug text-gray-900 dark:text-[#e8e4dc]">{b.title}</h3>
+                <p className="text-xs leading-relaxed text-gray-500 dark:text-[#8a8a8a]">{b.excerpt}</p>
               </Link>
             ))}
           </div>
@@ -543,14 +520,13 @@ export default function HomePage() {
 
         {/* ── Bottom CTA ── */}
         <section>
-          <div className="rounded-3xl p-5 text-center" style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)' }}>
+          <div className="rounded-3xl p-5 text-center bg-gray-50 dark:bg-[#c9a96e]/[0.06] border border-gray-200 dark:border-[#c9a96e]/10">
             <div className="text-2xl mb-2">🐨</div>
-            <h3 className="text-sm font-bold mb-1" style={{ color: '#e8e4dc' }}>还在犹豫？先聊聊你的想法</h3>
-            <p className="text-xs mb-4" style={{ color: '#6a7a7e' }}>免费匹配导师，不满意随时退出</p>
+            <h3 className="text-sm font-bold mb-1 text-gray-900 dark:text-[#e8e4dc]">还在犹豫？先聊聊你的想法</h3>
+            <p className="text-xs mb-4 text-gray-500 dark:text-[#6a7a7e]">免费匹配导师，不满意随时退出</p>
             <Link
               href="/koala/chat"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm no-underline text-white"
-              style={{ background: '#c9a96e' }}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm no-underline text-white bg-[#D4A843]"
             >
               免费开始对话 <ArrowRight className="size-4" />
             </Link>

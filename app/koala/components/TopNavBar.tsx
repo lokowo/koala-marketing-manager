@@ -27,31 +27,19 @@ export default function TopNavBar() {
   }
 
   return (
-    <nav
-      className="hidden lg:flex fixed top-0 inset-x-0 z-50 items-center justify-between px-8"
-      style={{
-        backgroundColor: '#0a0e14',
-        borderBottom: '1px solid rgba(201,169,110,0.12)',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
-        height: 64,
-      }}
-    >
-      {/* Logo — always goes to homepage */}
-      <Link href="/koala/home" className="flex items-center gap-2" style={{ textDecoration: 'none' }}>
+    <nav className="hidden lg:flex fixed top-0 inset-x-0 z-50 items-center justify-between px-8 h-16 bg-white dark:bg-[#0a0e14] border-b border-gray-200 dark:border-[rgba(201,169,110,0.12)] shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
+      <Link href="/koala/home" className="flex items-center gap-2 no-underline">
         <span className="text-2xl">🐨</span>
-        <span className="font-bold text-base" style={{ color: '#c9a96e' }}>Koala PhD</span>
+        <span className="font-bold text-base text-[#D4A843]">Koala PhD</span>
       </Link>
 
-      {/* Nav links */}
       <div className="flex items-center gap-1">
-        {/* Theme toggle */}
         <button
           onClick={() => {
             const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
             setTheme(next);
           }}
-          className="flex items-center gap-1 px-3 py-2 rounded-full text-xs transition-colors mr-1"
-          style={{ color: '#6a7a7e' }}
+          className="flex items-center gap-1 px-3 py-2 rounded-full text-xs transition-colors mr-1 text-gray-500 dark:text-[#6a7a7e] hover:text-gray-700 dark:hover:text-[#9CA3AF]"
           title={`当前: ${themeLabels[theme]}`}
         >
           <span>{themeIcons[theme]}</span>
@@ -67,8 +55,7 @@ export default function TopNavBar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold mx-2"
-                style={{ background: '#c9a96e', color: '#080c10', textDecoration: 'none' }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold mx-2 no-underline bg-[#D4A843] text-white dark:text-[#080c10]"
               >
                 <Icon className="size-4" />
                 {item.label}
@@ -80,21 +67,16 @@ export default function TopNavBar() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm transition-colors relative"
-              style={{
-                color: active ? '#c9a96e' : '#6a7a7e',
-                fontWeight: active ? 700 : 400,
-                background: active ? 'rgba(201,169,110,0.1)' : 'transparent',
-                textDecoration: 'none',
-              }}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm transition-colors relative no-underline ${
+                active
+                  ? 'text-[#D4A843] font-bold bg-[#D4A843]/10'
+                  : 'text-gray-500 dark:text-[#6a7a7e] hover:text-gray-700 dark:hover:text-[#9CA3AF]'
+              }`}
             >
               <Icon className="size-4" />
               {item.label}
               {showDot && (
-                <span
-                  className="absolute top-1.5 right-1.5 size-2 rounded-full"
-                  style={{ background: '#5a8060' }}
-                />
+                <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-green-600" />
               )}
             </Link>
           );

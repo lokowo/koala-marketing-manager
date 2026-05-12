@@ -66,11 +66,10 @@ export function SendTutorial() {
           <button
             key={i}
             onClick={() => setActiveClient(i)}
-            className="flex-shrink-0 text-[11px] px-3 py-1.5 rounded-full border transition-colors"
+            className={`flex-shrink-0 text-[11px] px-3 py-1.5 rounded-full border transition-colors ${activeClient === i ? 'text-[#D4A843]' : 'text-gray-500 dark:text-[#6a7a7e]'}`}
             style={{
-              background: activeClient === i ? '#f5e8c4' : 'rgba(201,169,110,0.06)',
-              borderColor: activeClient === i ? '#c9a96e' : 'rgba(201,169,110,0.1)',
-              color: activeClient === i ? '#c9a96e' : '#6a7a7e',
+              background: activeClient === i ? '#f5e8c4' : 'rgba(212,168,67,0.06)',
+              borderColor: activeClient === i ? '#D4A843' : 'rgba(212,168,67,0.1)',
             }}
           >
             {t.icon} {t.client}
@@ -78,18 +77,21 @@ export function SendTutorial() {
         ))}
       </div>
 
-      <div className="rounded-xl p-3" style={{ background: 'rgba(201,169,110,0.06)' }}>
+      <div className="rounded-xl p-3 bg-[#D4A843]/[0.06]">
         {TUTORIALS[activeClient].steps.map((step, i) => (
-          <div key={i} className={`text-[11px] leading-relaxed ${step === '' ? 'mt-2' : ''}`} style={{ color: step.startsWith('💡') ? '#c9a96e' : '#a8b8ac' }}>
-            {step || '\u00A0'}
+          <div
+            key={i}
+            className={`text-[11px] leading-relaxed ${step === '' ? 'mt-2' : ''} ${step.startsWith('💡') ? 'text-[#D4A843]' : 'text-gray-700 dark:text-[#a8b8ac]'}`}
+          >
+            {step || ' '}
           </div>
         ))}
       </div>
 
       <div className="space-y-1.5">
-        <div className="text-[10px] font-semibold" style={{ color: '#c9a96e' }}>发送小贴士</div>
+        <div className="text-[10px] font-semibold text-[#D4A843]">发送小贴士</div>
         {TIPS.map((tip, i) => (
-          <div key={i} className="text-[11px] leading-relaxed" style={{ color: '#a8b8ac' }}>{tip}</div>
+          <div key={i} className="text-[11px] leading-relaxed text-gray-700 dark:text-[#a8b8ac]">{tip}</div>
         ))}
       </div>
     </div>

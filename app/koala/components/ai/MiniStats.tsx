@@ -16,9 +16,9 @@ export function MiniStats({
   compact = false,
 }: MiniStatsProps) {
   const items = [
-    { label: '积分', value: creditsRemaining, icon: '⭐', color: '#c9a96e' },
+    { label: '积分', value: creditsRemaining, icon: '⭐', color: '#D4A843' },
     { label: '匹配', value: professorsMatched, icon: '🎯', color: '#5a8060' },
-    { label: '已发', value: emailsSent, icon: '✉️', color: '#c9a96e' },
+    { label: '已发', value: emailsSent, icon: '✉️', color: '#D4A843' },
     ...(readinessScore !== undefined ? [{ label: '评分', value: readinessScore, icon: '📊', color: '#b06040' }] : []),
   ];
 
@@ -40,12 +40,11 @@ export function MiniStats({
       {items.map(item => (
         <div
           key={item.label}
-          className="flex flex-col items-center rounded-xl py-2"
-          style={{ background: 'rgba(201,169,110,0.06)' }}
+          className="flex flex-col items-center rounded-xl py-2 bg-[#D4A843]/[0.06]"
         >
           <span className="text-base">{item.icon}</span>
           <span className="text-sm font-bold" style={{ color: item.color }}>{item.value}</span>
-          <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{item.label}</span>
+          <span className="text-[10px] text-gray-500 dark:text-[#6a7a7e]">{item.label}</span>
         </div>
       ))}
     </div>

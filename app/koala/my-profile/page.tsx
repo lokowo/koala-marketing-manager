@@ -133,10 +133,10 @@ function ArcProgress({ pct, size = 56 }: { pct: number; size?: number }) {
   const offset = circumference - (pct / 100) * circumference;
   return (
     <svg width={size} height={size} className="rotate-[-90deg]">
-      <circle cx={cx} cy={cy} r={r} stroke="rgba(201,169,110,0.1)" strokeWidth="5" fill="none" />
+      <circle cx={cx} cy={cy} r={r} stroke="rgba(212,168,67,0.1)" strokeWidth="5" fill="none" />
       <circle
         cx={cx} cy={cy} r={r}
-        stroke={pct >= 80 ? '#5a8060' : pct >= 50 ? '#c9a96e' : '#b06040'}
+        stroke={pct >= 80 ? '#5a8060' : pct >= 50 ? '#D4A843' : '#b06040'}
         strokeWidth="5" fill="none"
         strokeDasharray={circumference}
         strokeDashoffset={offset}
@@ -149,15 +149,15 @@ function ArcProgress({ pct, size = 56 }: { pct: number; size?: number }) {
 
 // ─── Plan badge ──────────────────────────────
 const PLAN_CONFIG = {
-  free:    { label: '免费版', bg: 'rgba(201,169,110,0.1)', color: '#c9a96e' },
-  starter: { label: 'Starter', bg: '#d4e8d8', color: '#3a6040' },
-  pro:     { label: 'Pro ✦', bg: '#f4e4b8', color: '#8a6030' },
-  elite:   { label: 'Elite ✦✦', bg: '#f8d8d0', color: '#8a3020' },
+  free:    { label: '免费版', className: 'bg-[#D4A843]/10 text-[#D4A843]' },
+  starter: { label: 'Starter', className: 'bg-green-100 dark:bg-[#d4e8d8] text-green-700 dark:text-[#3a6040]' },
+  pro:     { label: 'Pro ✦', className: 'bg-amber-100 dark:bg-[#f4e4b8] text-amber-700 dark:text-[#8a6030]' },
+  elite:   { label: 'Elite ✦✦', className: 'bg-red-100 dark:bg-[#f8d8d0] text-red-700 dark:text-[#8a3020]' },
 };
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   draft:    { label: '草稿', color: '#6a7a7e' },
-  copied:   { label: '已复制', color: '#c9a96e' },
+  copied:   { label: '已复制', color: '#D4A843' },
   sent:     { label: '已发送', color: '#5a8060' },
   replied:  { label: '已回复 🎉', color: '#3a7050' },
   no_reply: { label: '未回复', color: '#b06040' },
@@ -287,6 +287,10 @@ interface CreditTransaction {
   description: string;
   created_at: string;
 }
+
+// Shared input class for form fields
+const INPUT_CLS = 'w-full px-2.5 py-1.5 rounded-lg text-xs outline-none bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-[#D4A843]/[0.08] text-gray-900 dark:text-[#e8e4dc]';
+const SELECT_CLS = INPUT_CLS;
 
 // ─────────────────────────────────────────────
 // Main page
@@ -456,18 +460,17 @@ export default function MyProfilePage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh] px-6 text-center">
         <div className="text-5xl mb-4">🐨</div>
-        <h1 className="text-lg font-bold mb-2" style={{ color: '#e8e4dc' }}>登录后查看个人中心</h1>
-        <p className="text-sm mb-6 leading-relaxed" style={{ color: '#6a7a7e' }}>
+        <h1 className="text-lg font-bold mb-2 text-gray-900 dark:text-[#e8e4dc]">登录后查看个人中心</h1>
+        <p className="text-sm mb-6 leading-relaxed text-gray-500 dark:text-[#6a7a7e]">
           保存你的背景信息，收藏心仪教授，<br />查看申请信历史
         </p>
         <button
           onClick={() => showLogin()}
-          className="w-full max-w-xs py-3 rounded-full text-sm font-semibold text-white mb-3"
-          style={{ background: '#c9a96e' }}
+          className="w-full max-w-xs py-3 rounded-full text-sm font-semibold text-white mb-3 bg-[#D4A843]"
         >
           登录 / 注册
         </button>
-        <Link href="/koala/home" className="text-xs" style={{ color: '#6a7a7e' }}>
+        <Link href="/koala/home" className="text-xs text-gray-500 dark:text-[#6a7a7e]">
           先逛逛 →
         </Link>
       </div>
@@ -477,13 +480,14 @@ export default function MyProfilePage() {
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
-        <div className="animate-pulse text-sm" style={{ color: '#6a7a7e' }}>加载中…</div>
+        <div className="animate-pulse text-sm text-gray-500 dark:text-[#6a7a7e]">加载中…</div>
       </div>
     );
   }
 
   const pct = profile ? calcCompleteness(profile, education.length, work.length, documents.length) : 0;
-  const plan = PLAN_CONFIG[profile?.plan_type ?? 'free'];
+  const planKey = (profile?.plan_type ?? 'free') as keyof typeof PLAN_CONFIG;
+  const plan = PLAN_CONFIG[planKey] ?? PLAN_CONFIG.free;
   const displayName = profile?.display_name || user?.email?.split('@')[0] || '用户';
   const initials = displayName.slice(0, 1).toUpperCase();
 
@@ -709,9 +713,6 @@ export default function MyProfilePage() {
     router.push('/koala/home');
   }
 
-  const CARD = { background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.08)' } as const;
-  const DIVIDER = '1px solid rgba(201,169,110,0.08)';
-
   const otherInfoRows = [
     { label: '目标方向', value: profile?.target_field },
     { label: '目标学校', value: (profile?.target_universities ?? []).join(', ') || null },
@@ -720,54 +721,53 @@ export default function MyProfilePage() {
     { label: '论文发表', value: profile?.has_publications ? (profile.publication_details || '有') : null },
   ];
 
+  // Shared card + divider classes
+  const CARD_CLS = 'bg-white dark:bg-[#D4A843]/[0.06] border border-gray-200 dark:border-[#D4A843]/[0.08] shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]';
+  const DIVIDER_CLS = 'border-gray-200 dark:border-[#D4A843]/[0.08]';
+
   // ── Education form inline component ───────
   function renderEduForm() {
     return (
-      <div className="px-4 py-3 space-y-2" style={{ borderTop: DIVIDER }}>
+      <div className={`px-4 py-3 space-y-2 border-t ${DIVIDER_CLS}`}>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>学校 *</label>
+            <label className="block text-[10px] mb-0.5 text-gray-500 dark:text-[#6a7a7e]">学校 *</label>
             <input type="text" placeholder="例：浙江大学" value={eduForm.school}
               onChange={e => setEduForm(p => ({ ...p, school: e.target.value }))}
-              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+              className={INPUT_CLS}
             />
           </div>
           <div>
-            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>专业</label>
+            <label className="block text-[10px] mb-0.5 text-gray-500 dark:text-[#6a7a7e]">专业</label>
             <input type="text" placeholder="例：计算机科学" value={eduForm.major}
               onChange={e => setEduForm(p => ({ ...p, major: e.target.value }))}
-              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+              className={INPUT_CLS}
             />
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div>
-            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>学历</label>
+            <label className="block text-[10px] mb-0.5 text-gray-500 dark:text-[#6a7a7e]">学历</label>
             <select value={eduForm.degree}
               onChange={e => setEduForm(p => ({ ...p, degree: e.target.value }))}
-              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+              className={SELECT_CLS}
             >
               <option value="">请选择</option>
               {DEGREE_OPTIONS.map(v => <option key={v} value={v}>{v}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>GPA</label>
+            <label className="block text-[10px] mb-0.5 text-gray-500 dark:text-[#6a7a7e]">GPA</label>
             <input type="text" placeholder="3.8" value={eduForm.gpa}
               onChange={e => setEduForm(p => ({ ...p, gpa: e.target.value }))}
-              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+              className={INPUT_CLS}
             />
           </div>
           <div>
-            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>满分</label>
+            <label className="block text-[10px] mb-0.5 text-gray-500 dark:text-[#6a7a7e]">满分</label>
             <select value={eduForm.gpa_scale}
               onChange={e => setEduForm(p => ({ ...p, gpa_scale: e.target.value }))}
-              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+              className={SELECT_CLS}
             >
               <option value="">—</option>
               {['4.0', '5.0', '7.0', '100'].map(v => <option key={v} value={v}>{v}</option>)}
@@ -776,50 +776,45 @@ export default function MyProfilePage() {
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>开始</label>
+            <label className="block text-[10px] mb-0.5 text-gray-500 dark:text-[#6a7a7e]">开始</label>
             <input type="text" placeholder="2020-09" value={eduForm.start_date}
               onChange={e => setEduForm(p => ({ ...p, start_date: e.target.value }))}
-              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+              className={INPUT_CLS}
             />
           </div>
           <div>
-            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>
+            <label className="block text-[10px] mb-0.5 text-gray-500 dark:text-[#6a7a7e]">
               结束
               <label className="ml-2 inline-flex items-center gap-1 cursor-pointer">
                 <input type="checkbox" checked={eduForm.is_current}
                   onChange={e => setEduForm(p => ({ ...p, is_current: e.target.checked, end_date: e.target.checked ? '' : p.end_date }))}
                   className="rounded"
                 />
-                <span className="text-[10px]" style={{ color: '#a8b8ac' }}>至今</span>
+                <span className="text-[10px] text-gray-500 dark:text-[#a8b8ac]">至今</span>
               </label>
             </label>
             <input type="text" placeholder="2024-06" value={eduForm.end_date}
               disabled={eduForm.is_current}
               onChange={e => setEduForm(p => ({ ...p, end_date: e.target.value }))}
-              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: eduForm.is_current ? '#4a5a5e' : '#e8e4dc' }}
+              className={`${INPUT_CLS} ${eduForm.is_current ? 'opacity-40' : ''}`}
             />
           </div>
         </div>
         <div>
-          <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>备注</label>
+          <label className="block text-[10px] mb-0.5 text-gray-500 dark:text-[#6a7a7e]">备注</label>
           <input type="text" placeholder="相关课程、荣誉等" value={eduForm.description}
             onChange={e => setEduForm(p => ({ ...p, description: e.target.value }))}
-            className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+            className={INPUT_CLS}
           />
         </div>
         <div className="flex gap-2 pt-1">
           <button onClick={saveEducation} disabled={eduSaving || !eduForm.school.trim()}
-            className="text-[11px] px-3 py-1 rounded-lg font-semibold text-white"
-            style={{ background: eduSaving ? '#d8c8a8' : '#c9a96e' }}
+            className="text-[11px] px-3 py-1 rounded-lg font-semibold text-white bg-[#D4A843] disabled:opacity-50"
           >
             {eduSaving ? '保存中…' : '保存'}
           </button>
           <button onClick={() => setEduEditing(null)}
-            className="text-[11px] px-3 py-1 rounded-lg"
-            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+            className="text-[11px] px-3 py-1 rounded-lg bg-[#D4A843]/10 text-[#D4A843]"
           >
             取消
           </button>
@@ -831,71 +826,64 @@ export default function MyProfilePage() {
   // ── Work form inline component ────────────
   function renderWorkForm() {
     return (
-      <div className="px-4 py-3 space-y-2" style={{ borderTop: DIVIDER }}>
+      <div className={`px-4 py-3 space-y-2 border-t ${DIVIDER_CLS}`}>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>公司/机构 *</label>
+            <label className="block text-[10px] mb-0.5 text-gray-500 dark:text-[#6a7a7e]">公司/机构 *</label>
             <input type="text" placeholder="例：字节跳动" value={workForm.company}
               onChange={e => setWorkForm(p => ({ ...p, company: e.target.value }))}
-              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+              className={INPUT_CLS}
             />
           </div>
           <div>
-            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>职位</label>
+            <label className="block text-[10px] mb-0.5 text-gray-500 dark:text-[#6a7a7e]">职位</label>
             <input type="text" placeholder="例：研究实习生" value={workForm.position}
               onChange={e => setWorkForm(p => ({ ...p, position: e.target.value }))}
-              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+              className={INPUT_CLS}
             />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>开始</label>
+            <label className="block text-[10px] mb-0.5 text-gray-500 dark:text-[#6a7a7e]">开始</label>
             <input type="text" placeholder="2023-06" value={workForm.start_date}
               onChange={e => setWorkForm(p => ({ ...p, start_date: e.target.value }))}
-              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+              className={INPUT_CLS}
             />
           </div>
           <div>
-            <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>
+            <label className="block text-[10px] mb-0.5 text-gray-500 dark:text-[#6a7a7e]">
               结束
               <label className="ml-2 inline-flex items-center gap-1 cursor-pointer">
                 <input type="checkbox" checked={workForm.is_current}
                   onChange={e => setWorkForm(p => ({ ...p, is_current: e.target.checked, end_date: e.target.checked ? '' : p.end_date }))}
                   className="rounded"
                 />
-                <span className="text-[10px]" style={{ color: '#a8b8ac' }}>至今</span>
+                <span className="text-[10px] text-gray-500 dark:text-[#a8b8ac]">至今</span>
               </label>
             </label>
             <input type="text" placeholder="2024-01" value={workForm.end_date}
               disabled={workForm.is_current}
               onChange={e => setWorkForm(p => ({ ...p, end_date: e.target.value }))}
-              className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: workForm.is_current ? '#4a5a5e' : '#e8e4dc' }}
+              className={`${INPUT_CLS} ${workForm.is_current ? 'opacity-40' : ''}`}
             />
           </div>
         </div>
         <div>
-          <label className="block text-[10px] mb-0.5" style={{ color: '#6a7a7e' }}>工作描述</label>
+          <label className="block text-[10px] mb-0.5 text-gray-500 dark:text-[#6a7a7e]">工作描述</label>
           <input type="text" placeholder="简述职责、成就…" value={workForm.description}
             onChange={e => setWorkForm(p => ({ ...p, description: e.target.value }))}
-            className="w-full px-2.5 py-1.5 rounded-lg text-xs outline-none"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+            className={INPUT_CLS}
           />
         </div>
         <div className="flex gap-2 pt-1">
           <button onClick={saveWork} disabled={workSaving || !workForm.company.trim()}
-            className="text-[11px] px-3 py-1 rounded-lg font-semibold text-white"
-            style={{ background: workSaving ? '#d8c8a8' : '#c9a96e' }}
+            className="text-[11px] px-3 py-1 rounded-lg font-semibold text-white bg-[#D4A843] disabled:opacity-50"
           >
             {workSaving ? '保存中…' : '保存'}
           </button>
           <button onClick={() => setWorkEditing(null)}
-            className="text-[11px] px-3 py-1 rounded-lg"
-            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+            className="text-[11px] px-3 py-1 rounded-lg bg-[#D4A843]/10 text-[#D4A843]"
           >
             取消
           </button>
@@ -905,19 +893,19 @@ export default function MyProfilePage() {
   }
 
   return (
-    <div className="pb-6 lg:pb-12" style={{ background: '#080c10' }}>
+    <div className="pb-6 lg:pb-12 bg-gray-50 dark:bg-[#080c10]">
       <div className="max-w-5xl mx-auto">
 
       {/* ── Profile Header ──────────────────── */}
       <div className="mx-4 lg:mx-0 pt-4 pb-3">
-        <div className="rounded-xl p-5" style={CARD}>
+        <div className={`rounded-xl p-5 ${CARD_CLS}`}>
           <div className="flex items-start gap-3">
             {/* Avatar */}
             <div className="relative cursor-pointer group flex-shrink-0" onClick={() => !avatarUploading && avatarFileRef.current?.click()}>
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt="" className="rounded-full object-cover" style={{ width: 56, height: 56 }} />
               ) : (
-                <div className="rounded-full flex items-center justify-center text-xl font-bold" style={{ width: 56, height: 56, background: '#c9a96e', color: '#080c10' }}>
+                <div className="rounded-full flex items-center justify-center text-xl font-bold bg-[#D4A843] text-[#080c10]" style={{ width: 56, height: 56 }}>
                   {initials}
                 </div>
               )}
@@ -934,12 +922,10 @@ export default function MyProfilePage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <h1 className="text-sm font-semibold truncate" style={{ color: '#e8e4dc' }}>
+                  <h1 className="text-sm font-semibold truncate text-gray-900 dark:text-[#e8e4dc]">
                     {displayName}
                   </h1>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0"
-                    style={{ background: plan.bg, color: plan.color }}
-                  >
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${plan.className}`}>
                     {plan.label}
                   </span>
                 </div>
@@ -947,7 +933,7 @@ export default function MyProfilePage() {
                   <div className="relative" style={{ width: 36, height: 36 }}>
                     <ArcProgress pct={pct} size={36} />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[9px] font-bold" style={{ color: '#e8e4dc' }}>{pct}%</span>
+                      <span className="text-[9px] font-bold text-gray-900 dark:text-[#e8e4dc]">{pct}%</span>
                     </div>
                   </div>
                   <button
@@ -955,30 +941,29 @@ export default function MyProfilePage() {
                       setOtherEditing(true);
                       setOtherData(profile ? profileToOther(profile) : profileToOther({} as UserProfile));
                     }}
-                    className="text-[11px] px-2.5 py-1 rounded-lg"
-                    style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                    className="text-[11px] px-2.5 py-1 rounded-lg bg-[#D4A843]/10 text-[#D4A843]"
                   >
                     编辑
                   </button>
                 </div>
               </div>
-              <p className="text-xs truncate mt-0.5" style={{ color: '#6a7a7e' }}>{user?.email}</p>
+              <p className="text-xs truncate mt-0.5 text-gray-500 dark:text-[#6a7a7e]">{user?.email}</p>
               {userRole === 'super_admin' && (
-                <Link href="/dashboard/koala/admin-overview" className="text-[10px] no-underline mt-0.5 inline-block" style={{ color: '#c9a96e' }}>
+                <Link href="/dashboard/koala/admin-overview" className="text-[10px] no-underline mt-0.5 inline-block text-[#D4A843]">
                   ⚙️ 超级管理后台 →
                 </Link>
               )}
               {userRole === 'admin' && (
-                <Link href="/dashboard/koala" className="text-[10px] no-underline mt-0.5 inline-block" style={{ color: '#c9a96e' }}>
+                <Link href="/dashboard/koala" className="text-[10px] no-underline mt-0.5 inline-block text-[#D4A843]">
                   🔧 管理后台 →
                 </Link>
               )}
               {userRole === 'sales' && (
-                <Link href="/dashboard/sales" className="text-[10px] no-underline mt-0.5 inline-block" style={{ color: '#c9a96e' }}>
+                <Link href="/dashboard/sales" className="text-[10px] no-underline mt-0.5 inline-block text-[#D4A843]">
                   📊 销售后台 →
                 </Link>
               )}
-              <div className="flex items-center gap-2 mt-1 text-[10px]" style={{ color: '#6a7a7e' }}>
+              <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500 dark:text-[#6a7a7e]">
                 <span>{education.length} 段教育</span>
                 <span>·</span>
                 <span>{work.length} 段工作</span>
@@ -989,7 +974,7 @@ export default function MyProfilePage() {
           </div>
           {/* Avatar toast */}
           {avatarMsg && (
-            <p className="text-[11px] mt-2 text-center" style={{ color: avatarMsg.includes('已更新') ? '#5a8060' : '#b06040' }}>
+            <p className={`text-[11px] mt-2 text-center ${avatarMsg.includes('已更新') ? 'text-[#5a8060]' : 'text-[#b06040]'}`}>
               {avatarMsg.includes('已更新') ? '✅' : '❌'} {avatarMsg}
             </p>
           )}
@@ -998,23 +983,23 @@ export default function MyProfilePage() {
 
       {/* ── Credits card ────────────────────── */}
       <div className="mx-4 lg:mx-0 pb-3">
-        <div className="rounded-xl p-4" style={CARD}>
+        <div className={`rounded-xl p-4 ${CARD_CLS}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-2xl font-bold" style={{ color: '#c9a96e' }}>
+              <span className="text-2xl font-bold text-[#D4A843]">
                 💎 {creditBalance ?? profile?.credits_remaining ?? 0}
               </span>
-              <span className="text-xs" style={{ color: '#6a7a7e' }}>积分</span>
+              <span className="text-xs text-gray-500 dark:text-[#6a7a7e]">积分</span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleCheckin}
                 disabled={todayClaimed || checkinLoading}
-                className="text-[11px] px-3 py-1.5 rounded-lg font-medium"
-                style={todayClaimed
-                  ? { background: 'rgba(90,128,96,0.12)', color: '#5a8060' }
-                  : { background: '#c9a96e', color: '#080c10' }
-                }
+                className={`text-[11px] px-3 py-1.5 rounded-lg font-medium ${
+                  todayClaimed
+                    ? 'bg-green-50 dark:bg-[rgba(90,128,96,0.12)] text-green-600 dark:text-[#5a8060]'
+                    : 'bg-[#D4A843] text-[#080c10]'
+                }`}
               >
                 {checkinLoading ? '…' : todayClaimed ? '✅ 已签到' : '每日签到 +2'}
               </button>
@@ -1023,22 +1008,22 @@ export default function MyProfilePage() {
           <div className="flex items-center gap-3 mt-2">
             <button
               onClick={() => setShowCreditRules(!showCreditRules)}
-              className="text-[10px]" style={{ color: '#6a7a7e', background: 'transparent' }}
+              className="text-[10px] text-gray-500 dark:text-[#6a7a7e] bg-transparent"
             >
               📋 积分规则 {showCreditRules ? '▲' : '▼'}
             </button>
             <button
               onClick={() => setShowCreditsDetail(!showCreditsDetail)}
-              className="text-[10px]" style={{ color: '#c9a96e', background: 'transparent' }}
+              className="text-[10px] text-[#D4A843] bg-transparent"
             >
               查看积分明细 →
             </button>
           </div>
           {showCreditRules && (
-            <div className="mt-2 p-3 rounded-lg text-[10px] leading-relaxed" style={{ background: 'rgba(0,0,0,0.2)', color: '#6a7a7e' }}>
-              <p className="font-semibold mb-1" style={{ color: '#a8b8ac' }}>消耗积分</p>
+            <div className="mt-2 p-3 rounded-lg text-[10px] leading-relaxed bg-black/10 dark:bg-black/20 text-gray-500 dark:text-[#6a7a7e]">
+              <p className="font-semibold mb-1 text-gray-600 dark:text-[#a8b8ac]">消耗积分</p>
               <p>生成套磁信 5 · 教授匹配 2 · AI 对话 1 · 选校规划 3 · 文书润色 5 · 简历解析 免费</p>
-              <p className="font-semibold mt-2 mb-1" style={{ color: '#a8b8ac' }}>获取积分</p>
+              <p className="font-semibold mt-2 mb-1 text-gray-600 dark:text-[#a8b8ac]">获取积分</p>
               <p>每日签到 +2 · 完善资料80% +20 · 上传简历 +10 · 邀请好友 +15/人 · 收藏教授 +5 · 首封套磁信 +10</p>
             </div>
           )}
@@ -1047,18 +1032,18 @@ export default function MyProfilePage() {
 
       {/* ── Invite card ──────────────────────── */}
       {referralCode && (
-        <div className="mx-4 lg:mx-0 mb-3 rounded-xl p-4" style={CARD}>
+        <div className={`mx-4 lg:mx-0 mb-3 rounded-xl p-4 ${CARD_CLS}`}>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>📨 邀请好友，各得 15 积分</span>
+            <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">📨 邀请好友，各得 15 积分</span>
             {referralStats.invited >= 3 && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(90,128,96,0.12)', color: '#5a8060' }}>🎉 已满</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 dark:bg-[rgba(90,128,96,0.12)] text-green-600 dark:text-[#5a8060]">🎉 已满</span>
             )}
           </div>
-          <p className="text-[10px] mb-3" style={{ color: '#6a7a7e' }}>每个邀请码最多邀请 3 位好友</p>
+          <p className="text-[10px] mb-3 text-gray-500 dark:text-[#6a7a7e]">每个邀请码最多邀请 3 位好友</p>
 
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-[11px]" style={{ color: '#a8b8ac' }}>你的邀请码：</span>
-            <span className="text-sm font-bold tracking-wider" style={{ color: '#c9a96e', fontFamily: 'monospace' }}>{referralCode}</span>
+            <span className="text-[11px] text-gray-500 dark:text-[#a8b8ac]">你的邀请码：</span>
+            <span className="text-sm font-bold tracking-wider text-[#D4A843] font-mono">{referralCode}</span>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(referralCode);
@@ -1066,8 +1051,7 @@ export default function MyProfilePage() {
                 setTimeout(() => setReferralCopied(false), 2000);
               }}
               disabled={referralStats.invited >= 3}
-              className="text-[10px] px-2 py-0.5 rounded"
-              style={{ background: 'rgba(201,169,110,0.1)', color: referralStats.invited >= 3 ? '#4a5a5e' : '#c9a96e' }}
+              className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843] disabled:opacity-40"
             >
               {referralCopied ? '✅ 已复制' : '复制码'}
             </button>
@@ -1078,8 +1062,7 @@ export default function MyProfilePage() {
             onChange={e => setInviteText(e.target.value)}
             rows={5}
             disabled={referralStats.invited >= 3}
-            className="w-full px-3 py-2 rounded-lg text-xs outline-none resize-none mb-3"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc', lineHeight: 1.6 }}
+            className={`w-full px-3 py-2 rounded-lg text-xs outline-none resize-none mb-3 ${INPUT_CLS} leading-relaxed`}
           />
 
           <div className="flex gap-2 mb-3">
@@ -1090,11 +1073,11 @@ export default function MyProfilePage() {
                 setTimeout(() => setInviteCopied(false), 2500);
               }}
               disabled={referralStats.invited >= 3}
-              className="flex-1 text-[11px] py-2 rounded-lg font-medium"
-              style={referralStats.invited >= 3
-                ? { background: 'rgba(201,169,110,0.06)', color: '#4a5a5e' }
-                : { background: '#c9a96e', color: '#080c10' }
-              }
+              className={`flex-1 text-[11px] py-2 rounded-lg font-medium ${
+                referralStats.invited >= 3
+                  ? 'bg-gray-100 dark:bg-[#D4A843]/[0.06] text-gray-300 dark:text-[#4a5a5e]'
+                  : 'bg-[#D4A843] text-[#080c10]'
+              }`}
             >
               {inviteCopied ? '✅ 已复制，去分享给朋友吧！' : '一键复制邀请文案'}
             </button>
@@ -1106,16 +1089,15 @@ export default function MyProfilePage() {
                 setTimeout(() => setInviteCopied(false), 2500);
               }}
               disabled={referralStats.invited >= 3}
-              className="flex-1 text-[11px] py-2 rounded-lg font-medium"
-              style={{ background: 'rgba(90,128,96,0.12)', color: referralStats.invited >= 3 ? '#4a5a5e' : '#5a8060' }}
+              className="flex-1 text-[11px] py-2 rounded-lg font-medium bg-green-50 dark:bg-[rgba(90,128,96,0.12)] text-green-600 dark:text-[#5a8060] disabled:opacity-40"
             >
               {inviteCopied ? '✅ 已复制' : '分享到微信'}
             </button>
           </div>
 
-          <div className="flex items-center justify-between text-[10px]" style={{ color: '#6a7a7e' }}>
+          <div className="flex items-center justify-between text-[10px] text-gray-500 dark:text-[#6a7a7e]">
             <span>已邀请 {referralStats.invited}/{referralStats.maxInvites} 人 · 获得 {referralStats.earned} 积分</span>
-            {referralStats.invited >= 3 && <span style={{ color: '#5a8060' }}>🎉 邀请名额已用完</span>}
+            {referralStats.invited >= 3 && <span className="text-green-600 dark:text-[#5a8060]">🎉 邀请名额已用完</span>}
           </div>
         </div>
       )}
@@ -1126,33 +1108,32 @@ export default function MyProfilePage() {
         <div className="lg:w-[380px] lg:flex-shrink-0">
 
           {/* ── Education history ─────────────── */}
-          <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
-            <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
-              <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
-                🎓 教育经历 <span className="font-normal" style={{ color: '#6a7a7e' }}>({education.length})</span>
+          <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>
+            <div className={`flex items-center justify-between px-4 py-2.5 border-b ${DIVIDER_CLS}`}>
+              <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">
+                🎓 教育经历 <span className="font-normal text-gray-500 dark:text-[#6a7a7e]">({education.length})</span>
               </span>
               <button
                 onClick={() => { setEduEditing('new'); setEduForm(emptyEdu); }}
-                className="text-[10px] px-2 py-0.5 rounded"
-                style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
               >
                 + 添加
               </button>
             </div>
 
             {dataLoading ? (
-              <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
+              <div className="px-4 py-4 text-xs text-center text-gray-500 dark:text-[#6a7a7e]">加载中…</div>
             ) : education.length === 0 && eduEditing !== 'new' ? (
               <div className="px-4 py-4 text-center">
-                <p className="text-xs" style={{ color: '#6a7a7e' }}>还没有教育经历</p>
+                <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">还没有教育经历</p>
                 <button onClick={() => { setEduEditing('new'); setEduForm(emptyEdu); }}
-                  className="text-xs mt-1 font-medium" style={{ color: '#c9a96e', background: 'transparent' }}
+                  className="text-xs mt-1 font-medium text-[#D4A843] bg-transparent"
                 >
                   添加第一段教育经历 →
                 </button>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
+              <div className={`divide-y ${DIVIDER_CLS}`}>
                 {education.map(edu => (
                   eduEditing === edu.id ? (
                     <div key={edu.id}>{renderEduForm()}</div>
@@ -1161,15 +1142,15 @@ export default function MyProfilePage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>{edu.school}</span>
+                            <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">{edu.school}</span>
                             {edu.degree && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(201,169,110,0.08)', color: '#a89878' }}>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/[0.08] text-gray-500 dark:text-[#a89878]">
                                 {edu.degree}
                               </span>
                             )}
                           </div>
-                          {edu.major && <p className="text-[11px] mt-0.5" style={{ color: '#6a7a7e' }}>{edu.major}</p>}
-                          <div className="flex items-center gap-2 mt-0.5 text-[10px]" style={{ color: '#5a6a6e' }}>
+                          {edu.major && <p className="text-[11px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">{edu.major}</p>}
+                          <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400 dark:text-[#5a6a6e]">
                             {(edu.start_date || edu.end_date) && (
                               <span>{edu.start_date ?? '?'} – {edu.is_current ? '至今' : (edu.end_date ?? '?')}</span>
                             )}
@@ -1179,15 +1160,13 @@ export default function MyProfilePage() {
                         <div className="flex gap-1 flex-shrink-0">
                           <button
                             onClick={() => { setEduEditing(edu.id); setEduForm(eduToForm(edu)); }}
-                            className="text-[10px] px-2 py-0.5 rounded"
-                            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                            className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
                           >
                             编辑
                           </button>
                           <button
                             onClick={() => deleteEducation(edu.id)}
-                            className="text-[10px] px-2 py-0.5 rounded"
-                            style={{ background: 'rgba(176,96,64,0.12)', color: '#b06040' }}
+                            className="text-[10px] px-2 py-0.5 rounded bg-red-50 dark:bg-[rgba(176,96,64,0.12)] text-red-500 dark:text-[#b06040]"
                           >
                             删除
                           </button>
@@ -1203,33 +1182,32 @@ export default function MyProfilePage() {
           </div>
 
           {/* ── Work history ─────────────────── */}
-          <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
-            <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
-              <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
-                💼 工作/实习经历 <span className="font-normal" style={{ color: '#6a7a7e' }}>({work.length})</span>
+          <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>
+            <div className={`flex items-center justify-between px-4 py-2.5 border-b ${DIVIDER_CLS}`}>
+              <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">
+                💼 工作/实习经历 <span className="font-normal text-gray-500 dark:text-[#6a7a7e]">({work.length})</span>
               </span>
               <button
                 onClick={() => { setWorkEditing('new'); setWorkForm(emptyWork); }}
-                className="text-[10px] px-2 py-0.5 rounded"
-                style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
               >
                 + 添加
               </button>
             </div>
 
             {dataLoading ? (
-              <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
+              <div className="px-4 py-4 text-xs text-center text-gray-500 dark:text-[#6a7a7e]">加载中…</div>
             ) : work.length === 0 && workEditing !== 'new' ? (
               <div className="px-4 py-4 text-center">
-                <p className="text-xs" style={{ color: '#6a7a7e' }}>还没有工作/实习经历</p>
+                <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">还没有工作/实习经历</p>
                 <button onClick={() => { setWorkEditing('new'); setWorkForm(emptyWork); }}
-                  className="text-xs mt-1 font-medium" style={{ color: '#c9a96e', background: 'transparent' }}
+                  className="text-xs mt-1 font-medium text-[#D4A843] bg-transparent"
                 >
                   添加第一段经历 →
                 </button>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
+              <div className={`divide-y ${DIVIDER_CLS}`}>
                 {work.map(w => (
                   workEditing === w.id ? (
                     <div key={w.id}>{renderWorkForm()}</div>
@@ -1238,11 +1216,11 @@ export default function MyProfilePage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>{w.company}</span>
+                            <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">{w.company}</span>
                           </div>
-                          {w.position && <p className="text-[11px] mt-0.5" style={{ color: '#6a7a7e' }}>{w.position}</p>}
+                          {w.position && <p className="text-[11px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">{w.position}</p>}
                           {(w.start_date || w.end_date) && (
-                            <p className="text-[10px] mt-0.5" style={{ color: '#5a6a6e' }}>
+                            <p className="text-[10px] mt-0.5 text-gray-400 dark:text-[#5a6a6e]">
                               {w.start_date ?? '?'} – {w.is_current ? '至今' : (w.end_date ?? '?')}
                             </p>
                           )}
@@ -1250,15 +1228,13 @@ export default function MyProfilePage() {
                         <div className="flex gap-1 flex-shrink-0">
                           <button
                             onClick={() => { setWorkEditing(w.id); setWorkForm(workToForm(w)); }}
-                            className="text-[10px] px-2 py-0.5 rounded"
-                            style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                            className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
                           >
                             编辑
                           </button>
                           <button
                             onClick={() => deleteWork(w.id)}
-                            className="text-[10px] px-2 py-0.5 rounded"
-                            style={{ background: 'rgba(176,96,64,0.12)', color: '#b06040' }}
+                            className="text-[10px] px-2 py-0.5 rounded bg-red-50 dark:bg-[rgba(176,96,64,0.12)] text-red-500 dark:text-[#b06040]"
                           >
                             删除
                           </button>
@@ -1274,16 +1250,15 @@ export default function MyProfilePage() {
           </div>
 
           {/* ── Documents / File management ──── */}
-          <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
-            <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
-              <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
-                📄 文件管理 <span className="font-normal" style={{ color: '#6a7a7e' }}>({documents.length})</span>
+          <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>
+            <div className={`flex items-center justify-between px-4 py-2.5 border-b ${DIVIDER_CLS}`}>
+              <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">
+                📄 文件管理 <span className="font-normal text-gray-500 dark:text-[#6a7a7e]">({documents.length})</span>
               </span>
               <button
                 onClick={() => !docUploading && docFileRef.current?.click()}
                 disabled={docUploading}
-                className="text-[10px] px-2 py-0.5 rounded flex items-center gap-1"
-                style={{ background: docUploading ? 'rgba(201,169,110,0.2)' : 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                className={`text-[10px] px-2 py-0.5 rounded flex items-center gap-1 text-[#D4A843] ${docUploading ? 'bg-[#D4A843]/20' : 'bg-[#D4A843]/10'}`}
               >
                 {docUploading && <span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />}
                 {docUploading ? '上传中…' : '+ 上传文件'}
@@ -1294,30 +1269,29 @@ export default function MyProfilePage() {
             </div>
 
             {docMsg && (
-              <div className="px-4 py-2 text-xs text-center" style={{ color: docMsg.includes('成功') ? '#5a8060' : '#b06040', background: docMsg.includes('成功') ? 'rgba(90,128,96,0.08)' : 'rgba(176,96,64,0.08)' }}>
+              <div className={`px-4 py-2 text-xs text-center ${docMsg.includes('成功') ? 'text-[#5a8060] bg-green-50 dark:bg-[rgba(90,128,96,0.08)]' : 'text-[#b06040] bg-red-50 dark:bg-[rgba(176,96,64,0.08)]'}`}>
                 {docMsg.includes('成功') ? '✅' : '❌'} {docMsg}
               </div>
             )}
 
             {dataLoading ? (
-              <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
+              <div className="px-4 py-4 text-xs text-center text-gray-500 dark:text-[#6a7a7e]">加载中…</div>
             ) : documents.length === 0 ? (
               <div className="px-4 py-4 text-center">
-                <p className="text-xs" style={{ color: '#6a7a7e' }}>上传简历、成绩单或学历证明</p>
-                <p className="text-[10px] mt-1" style={{ color: '#5a6a6e' }}>支持 PDF、图片（PNG/JPG）、Word 文档</p>
+                <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">上传简历、成绩单或学历证明</p>
+                <p className="text-[10px] mt-1 text-gray-400 dark:text-[#5a6a6e]">支持 PDF、图片（PNG/JPG）、Word 文档</p>
                 <button
                   onClick={() => !docUploading && docFileRef.current?.click()}
-                  className="mt-2 text-xs font-medium"
-                  style={{ color: '#c9a96e', background: 'transparent' }}
+                  className="mt-2 text-xs font-medium text-[#D4A843] bg-transparent"
                 >
                   📎 上传第一份文件 →
                 </button>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
+              <div className={`divide-y ${DIVIDER_CLS}`}>
                 {documents.map(doc => {
                   const parseColor = doc.parse_status === 'done' ? '#5a8060'
-                    : doc.parse_status === 'parsing' ? '#c9a96e'
+                    : doc.parse_status === 'parsing' ? '#D4A843'
                     : doc.parse_status === 'failed' ? '#b06040'
                     : '#6a7a7e';
                   const parseLabel = doc.parse_status === 'done' ? '已解析'
@@ -1335,12 +1309,11 @@ export default function MyProfilePage() {
                           <div className="flex-1 min-w-0">
                             {doc.file_url ? (
                               <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-                                className="text-xs font-medium truncate block hover:underline"
-                                style={{ color: '#c9a96e' }}>{doc.file_name}</a>
+                                className="text-xs font-medium truncate block hover:underline text-[#D4A843]">{doc.file_name}</a>
                             ) : (
-                              <p className="text-xs font-medium truncate" style={{ color: '#e8e4dc' }}>{doc.file_name}</p>
+                              <p className="text-xs font-medium truncate text-gray-900 dark:text-[#e8e4dc]">{doc.file_name}</p>
                             )}
-                            <div className="flex items-center gap-2 mt-0.5 text-[10px]" style={{ color: '#5a6a6e' }}>
+                            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400 dark:text-[#5a6a6e]">
                               <span>{formatFileSize(doc.file_size)}</span>
                               <span>·</span>
                               <span style={{ color: parseColor }}>{parseLabel}</span>
@@ -1353,31 +1326,28 @@ export default function MyProfilePage() {
                           {(doc.parse_status === 'pending' || doc.parse_status === 'failed') && (
                             <button
                               onClick={() => parseDocument(doc.id)}
-                              className="text-[10px] px-2 py-0.5 rounded font-medium text-white"
-                              style={{ background: '#c9a96e' }}
+                              className="text-[10px] px-2 py-0.5 rounded font-medium text-white bg-[#D4A843]"
                             >
                               AI解析
                             </button>
                           )}
                           {doc.file_url && (
                             <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-                              className="text-[10px] px-2 py-0.5 rounded"
-                              style={{ background: 'rgba(201,169,110,0.08)', color: '#c9a96e' }}
+                              className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/[0.08] text-[#D4A843]"
                             >
                               查看
                             </a>
                           )}
                           <button
                             onClick={() => { if (confirm('确定删除此文件？')) deleteDocument(doc.id); }}
-                            className="text-[10px] px-2 py-0.5 rounded"
-                            style={{ background: 'rgba(176,96,64,0.12)', color: '#b06040' }}
+                            className="text-[10px] px-2 py-0.5 rounded bg-red-50 dark:bg-[rgba(176,96,64,0.12)] text-red-500 dark:text-[#b06040]"
                           >
                             删除
                           </button>
                         </div>
                       </div>
                       {doc.parse_status === 'failed' && doc.parse_error && (
-                        <p className="text-[10px] mt-1" style={{ color: '#b06040' }}>{doc.parse_error}</p>
+                        <p className="text-[10px] mt-1 text-[#b06040]">{doc.parse_error}</p>
                       )}
                     </div>
                   );
@@ -1387,21 +1357,19 @@ export default function MyProfilePage() {
           </div>
 
           {/* ── Other info — collapsible ──────── */}
-          <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
+          <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>
             {otherEditing && otherData ? (
               <>
-                <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
-                  <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>📋 编辑其他信息</span>
+                <div className={`flex items-center justify-between px-4 py-2.5 border-b ${DIVIDER_CLS}`}>
+                  <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">📋 编辑其他信息</span>
                   <div className="flex gap-2">
                     <button onClick={saveOtherInfo} disabled={otherSaving}
-                      className="text-[11px] px-3 py-1 rounded-lg font-semibold text-white"
-                      style={{ background: otherSaving ? '#d8c8a8' : '#c9a96e' }}
+                      className="text-[11px] px-3 py-1 rounded-lg font-semibold text-white bg-[#D4A843] disabled:opacity-50"
                     >
                       {otherSaving ? '保存中…' : '保存'}
                     </button>
                     <button onClick={() => setOtherEditing(false)}
-                      className="text-[11px] px-3 py-1 rounded-lg"
-                      style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                      className="text-[11px] px-3 py-1 rounded-lg bg-[#D4A843]/10 text-[#D4A843]"
                     >
                       取消
                     </button>
@@ -1417,13 +1385,12 @@ export default function MyProfilePage() {
                     { key: 'publication_details' as const, label: '论文详情', placeholder: '发表过的论文名称/期刊…' },
                   ].map(({ key, label, placeholder }) => (
                     <div key={key}>
-                      <label className="block text-[11px] mb-1" style={{ color: '#6a7a7e' }}>{label}</label>
+                      <label className="block text-[11px] mb-1 text-gray-500 dark:text-[#6a7a7e]">{label}</label>
                       <div className="flex items-center gap-1.5">
                         <input type="text" placeholder={placeholder}
                           value={otherData[key] as string}
                           onChange={e => setOtherData(prev => prev ? { ...prev, [key]: e.target.value } : prev)}
-                          className="flex-1 px-3 py-2 rounded-lg text-xs outline-none"
-                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+                          className={`flex-1 px-3 py-2 rounded-lg text-xs outline-none ${INPUT_CLS}`}
                         />
                         {(key === 'research_description' || key === 'publication_details' || key === 'target_field') && (
                           <VoiceInputButton
@@ -1435,14 +1402,14 @@ export default function MyProfilePage() {
                     </div>
                   ))}
                   <div className="flex gap-4">
-                    <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: '#a8b8ac' }}>
+                    <label className="flex items-center gap-2 text-xs cursor-pointer text-gray-500 dark:text-[#a8b8ac]">
                       <input type="checkbox" checked={otherData.has_research_experience}
                         onChange={e => setOtherData(prev => prev ? { ...prev, has_research_experience: e.target.checked } : prev)}
                         className="rounded"
                       />
                       有科研经历
                     </label>
-                    <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: '#a8b8ac' }}>
+                    <label className="flex items-center gap-2 text-xs cursor-pointer text-gray-500 dark:text-[#a8b8ac]">
                       <input type="checkbox" checked={otherData.has_publications}
                         onChange={e => setOtherData(prev => prev ? { ...prev, has_publications: e.target.checked } : prev)}
                         className="rounded"
@@ -1456,11 +1423,10 @@ export default function MyProfilePage() {
               <>
                 <button
                   onClick={() => setShowOther(!showOther)}
-                  className="w-full flex items-center justify-between px-4 py-2.5"
-                  style={{ background: 'transparent' }}
+                  className="w-full flex items-center justify-between px-4 py-2.5 bg-transparent"
                 >
-                  <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
-                    📋 其他信息 <span className="font-normal" style={{ color: '#6a7a7e' }}>{otherInfoRows.filter(r => r.value).length}/{otherInfoRows.length} 已填</span>
+                  <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">
+                    📋 其他信息 <span className="font-normal text-gray-500 dark:text-[#6a7a7e]">{otherInfoRows.filter(r => r.value).length}/{otherInfoRows.length} 已填</span>
                   </span>
                   <div className="flex items-center gap-2">
                     <button
@@ -1469,23 +1435,21 @@ export default function MyProfilePage() {
                         setOtherEditing(true);
                         setOtherData(profile ? profileToOther(profile) : profileToOther({} as UserProfile));
                       }}
-                      className="text-[10px] px-2 py-0.5 rounded"
-                      style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                      className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
                     >
                       编辑
                     </button>
-                    <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{showOther ? '▲' : '▼'}</span>
+                    <span className="text-[10px] text-gray-500 dark:text-[#6a7a7e]">{showOther ? '▲' : '▼'}</span>
                   </div>
                 </button>
                 {showOther && (
-                  <div style={{ borderTop: DIVIDER }}>
+                  <div className={`border-t ${DIVIDER_CLS}`}>
                     {otherInfoRows.map(({ label, value }, i) => (
                       <div key={label}
-                        className="flex items-center px-4"
-                        style={{ height: 36, background: i % 2 === 1 ? 'rgba(201,169,110,0.03)' : 'transparent' }}
+                        className={`flex items-center px-4 h-9 ${i % 2 === 1 ? 'bg-[#D4A843]/[0.03]' : ''}`}
                       >
-                        <span className="text-[11px] w-20 flex-shrink-0" style={{ color: '#6a7a7e' }}>{label}</span>
-                        <span className="flex-1 text-xs truncate" style={{ color: value ? '#e8e4dc' : '#4a5a5e' }}>
+                        <span className="text-[11px] w-20 flex-shrink-0 text-gray-500 dark:text-[#6a7a7e]">{label}</span>
+                        <span className={`flex-1 text-xs truncate ${value ? 'text-gray-900 dark:text-[#e8e4dc]' : 'text-gray-300 dark:text-[#4a5a5e]'}`}>
                           {value || '—'}
                         </span>
                       </div>
@@ -1502,45 +1466,44 @@ export default function MyProfilePage() {
         <div className="flex-1 min-w-0">
 
           {/* Saved professors */}
-          <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
-            <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
-              <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
-                🔖 我的收藏 <span className="font-normal" style={{ color: '#6a7a7e' }}>({saved.length})</span>
+          <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>
+            <div className={`flex items-center justify-between px-4 py-2.5 border-b ${DIVIDER_CLS}`}>
+              <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">
+                🔖 我的收藏 <span className="font-normal text-gray-500 dark:text-[#6a7a7e]">({saved.length})</span>
               </span>
-              <Link href="/koala/professors" className="text-[11px] no-underline" style={{ color: '#c9a96e' }}>
+              <Link href="/koala/professors" className="text-[11px] no-underline text-[#D4A843]">
                 找更多 →
               </Link>
             </div>
             {dataLoading ? (
-              <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
+              <div className="px-4 py-4 text-xs text-center text-gray-500 dark:text-[#6a7a7e]">加载中…</div>
             ) : saved.length === 0 ? (
               <div className="px-4 py-4 text-center">
-                <p className="text-xs" style={{ color: '#6a7a7e' }}>还没有收藏教授</p>
-                <Link href="/koala/professors" className="text-xs mt-1 inline-block no-underline font-medium" style={{ color: '#c9a96e' }}>
+                <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">还没有收藏教授</p>
+                <Link href="/koala/professors" className="text-xs mt-1 inline-block no-underline font-medium text-[#D4A843]">
                   去浏览教授库 →
                 </Link>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
+              <div className={`divide-y ${DIVIDER_CLS}`}>
                 {saved.map(entry => {
                   const prof = entry.professors;
                   if (!prof) return null;
                   return (
                     <div key={entry.id} className="px-4 py-2.5 flex items-start gap-3">
                       <Link href={`/koala/professors/${prof.id}`} className="flex-1 no-underline min-w-0">
-                        <p className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>{prof.name}</p>
-                        <p className="text-[11px]" style={{ color: '#6a7a7e' }}>
+                        <p className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">{prof.name}</p>
+                        <p className="text-[11px] text-gray-500 dark:text-[#6a7a7e]">
                           {prof.position_title ?? ''} · {prof.university}
                         </p>
                         {prof.research_areas.length > 0 && (
-                          <p className="text-[10px] mt-0.5 truncate" style={{ color: '#a89878' }}>
+                          <p className="text-[10px] mt-0.5 truncate text-gray-400 dark:text-[#a89878]">
                             {prof.research_areas.slice(0, 2).join(' · ')}
                           </p>
                         )}
                       </Link>
                       <button onClick={() => unsaveProfessor(entry.professor_id)}
-                        className="text-[10px] px-2 py-1 rounded-lg flex-shrink-0"
-                        style={{ background: 'rgba(176,96,64,0.12)', color: '#b06040' }}
+                        className="text-[10px] px-2 py-1 rounded-lg flex-shrink-0 bg-red-50 dark:bg-[rgba(176,96,64,0.12)] text-red-500 dark:text-[#b06040]"
                       >
                         取消
                       </button>
@@ -1552,36 +1515,36 @@ export default function MyProfilePage() {
           </div>
 
           {/* Outreach history */}
-          <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
-            <div className="px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
-              <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
-                ✉️ 申请信记录 <span className="font-normal" style={{ color: '#6a7a7e' }}>({emails.length})</span>
+          <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>
+            <div className={`px-4 py-2.5 border-b ${DIVIDER_CLS}`}>
+              <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">
+                ✉️ 申请信记录 <span className="font-normal text-gray-500 dark:text-[#6a7a7e]">({emails.length})</span>
               </span>
             </div>
             {dataLoading ? (
-              <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
+              <div className="px-4 py-4 text-xs text-center text-gray-500 dark:text-[#6a7a7e]">加载中…</div>
             ) : emails.length === 0 ? (
               <div className="px-4 py-4 text-center">
-                <p className="text-xs" style={{ color: '#6a7a7e' }}>还没有生成过申请信</p>
-                <Link href="/koala/chat" className="text-xs mt-1 inline-block no-underline font-medium" style={{ color: '#c9a96e' }}>
+                <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">还没有生成过申请信</p>
+                <Link href="/koala/chat" className="text-xs mt-1 inline-block no-underline font-medium text-[#D4A843]">
                   去生成第一封 →
                 </Link>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
+              <div className={`divide-y ${DIVIDER_CLS}`}>
                 {emails.map(email => {
                   const st = STATUS_LABEL[email.status] ?? { label: email.status, color: '#6a7a7e' };
                   return (
                     <div key={email.id} className="px-4 py-2.5">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate" style={{ color: '#e8e4dc' }}>
+                          <p className="text-xs font-medium truncate text-gray-900 dark:text-[#e8e4dc]">
                             {email.professors?.name ?? '未知教授'}
                           </p>
-                          <p className="text-[11px] truncate mt-0.5" style={{ color: '#6a7a7e' }}>
+                          <p className="text-[11px] truncate mt-0.5 text-gray-500 dark:text-[#6a7a7e]">
                             {email.subject_line}
                           </p>
-                          <p className="text-[10px] mt-0.5" style={{ color: '#a89878' }}>
+                          <p className="text-[10px] mt-0.5 text-gray-400 dark:text-[#a89878]">
                             {new Date(email.created_at).toLocaleDateString('zh-CN')} · {email.purpose}
                           </p>
                         </div>
@@ -1600,22 +1563,22 @@ export default function MyProfilePage() {
 
           {/* Credits transaction history */}
           {showCreditsDetail && (
-            <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
-              <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
-                <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>
+            <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>
+              <div className={`flex items-center justify-between px-4 py-2.5 border-b ${DIVIDER_CLS}`}>
+                <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">
                   💰 积分明细
                 </span>
                 <button
                   onClick={() => setShowCreditsDetail(false)}
-                  className="text-[10px]" style={{ color: '#6a7a7e', background: 'transparent' }}
+                  className="text-[10px] text-gray-500 dark:text-[#6a7a7e] bg-transparent"
                 >
                   收起 ▲
                 </button>
               </div>
               {creditTxs.length === 0 ? (
-                <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>暂无积分记录</div>
+                <div className="px-4 py-4 text-xs text-center text-gray-500 dark:text-[#6a7a7e]">暂无积分记录</div>
               ) : (
-                <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
+                <div className={`divide-y ${DIVIDER_CLS}`}>
                   {creditTxs.map(tx => {
                     const d = new Date(tx.created_at);
                     const now = new Date();
@@ -1627,11 +1590,11 @@ export default function MyProfilePage() {
                     return (
                       <div key={tx.id} className="px-4 py-2 flex items-center justify-between">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[10px] flex-shrink-0" style={{ color: '#6a7a7e' }}>{timeStr}</span>
-                          <span className="text-[10px]" style={{ color: '#4a5a5e' }}>·</span>
-                          <span className="text-[11px] truncate" style={{ color: '#a8b8ac' }}>{tx.description}</span>
+                          <span className="text-[10px] flex-shrink-0 text-gray-500 dark:text-[#6a7a7e]">{timeStr}</span>
+                          <span className="text-[10px] text-gray-300 dark:text-[#4a5a5e]">·</span>
+                          <span className="text-[11px] truncate text-gray-500 dark:text-[#a8b8ac]">{tx.description}</span>
                         </div>
-                        <span className="text-xs font-semibold flex-shrink-0 ml-2" style={{ color: isPositive ? '#5a8060' : '#b06040' }}>
+                        <span className={`text-xs font-semibold flex-shrink-0 ml-2 ${isPositive ? 'text-[#5a8060]' : 'text-[#b06040]'}`}>
                           {isPositive ? '+' : ''}{tx.amount}
                         </span>
                       </div>
@@ -1643,44 +1606,44 @@ export default function MyProfilePage() {
           )}
 
           {/* AI Chat history */}
-          <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
-            <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
+          <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>
+            <div className={`flex items-center justify-between px-4 py-2.5 border-b ${DIVIDER_CLS}`}>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>🤖 对话</span>
+                <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">🤖 对话</span>
                 {Object.entries(chatStats).map(([mode, count]) => {
                   const ml = MODE_LABELS[mode];
                   return (
-                    <span key={mode} className="text-[10px] px-1.5 py-0.5 rounded" title={ml?.label ?? mode} style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}>
+                    <span key={mode} className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]" title={ml?.label ?? mode}>
                       {ml?.emoji ?? '💬'}{count}
                     </span>
                   );
                 })}
               </div>
-              <Link href="/koala/chat" className="text-[11px] no-underline" style={{ color: '#c9a96e' }}>
+              <Link href="/koala/chat" className="text-[11px] no-underline text-[#D4A843]">
                 新对话 →
               </Link>
             </div>
             {dataLoading ? (
-              <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
+              <div className="px-4 py-4 text-xs text-center text-gray-500 dark:text-[#6a7a7e]">加载中…</div>
             ) : conversations.length === 0 ? (
               <div className="px-4 py-4 text-center">
-                <p className="text-xs" style={{ color: '#6a7a7e' }}>还没有对话记录</p>
-                <Link href="/koala/chat" className="text-xs mt-1 inline-block no-underline font-medium" style={{ color: '#c9a96e' }}>
+                <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">还没有对话记录</p>
+                <Link href="/koala/chat" className="text-xs mt-1 inline-block no-underline font-medium text-[#D4A843]">
                   开始第一次对话 →
                 </Link>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
+              <div className={`divide-y ${DIVIDER_CLS}`}>
                 {conversations.map(conv => {
                   const ml = MODE_LABELS[conv.mode];
                   return (
-                    <Link key={conv.id} href={`/koala/chat?mode=${conv.mode}`} className="flex items-center gap-3 px-4 no-underline hover:bg-white/[0.02]" style={{ height: 40 }}>
+                    <Link key={conv.id} href={`/koala/chat?mode=${conv.mode}`} className="flex items-center gap-3 px-4 no-underline hover:bg-black/[0.02] dark:hover:bg-white/[0.02]" style={{ height: 40 }}>
                       <span className="text-sm">{ml?.emoji ?? '💬'}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-medium" style={{ color: '#e8e4dc' }}>{ml?.label ?? conv.mode}</p>
+                        <p className="text-[11px] font-medium text-gray-900 dark:text-[#e8e4dc]">{ml?.label ?? conv.mode}</p>
                       </div>
-                      <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{conv.messageCount}条 · {timeAgo(conv.created_at)}</span>
-                      <span className="text-[10px]" style={{ color: '#4a5a5e' }}>→</span>
+                      <span className="text-[10px] text-gray-500 dark:text-[#6a7a7e]">{conv.messageCount}条 · {timeAgo(conv.created_at)}</span>
+                      <span className="text-[10px] text-gray-300 dark:text-[#4a5a5e]">→</span>
                     </Link>
                   );
                 })}
@@ -1689,35 +1652,34 @@ export default function MyProfilePage() {
           </div>
 
           {/* Recommended professors */}
-          <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
-            <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: DIVIDER }}>
-              <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>⭐ 为你推荐</span>
+          <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>
+            <div className={`flex items-center justify-between px-4 py-2.5 border-b ${DIVIDER_CLS}`}>
+              <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">⭐ 为你推荐</span>
               <button onClick={loadRecommended} disabled={recLoading}
-                className="text-[10px] px-2 py-0.5 rounded"
-                style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}
+                className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
               >
                 {recLoading ? '…' : '🔄 换一批'}
               </button>
             </div>
             {dataLoading ? (
-              <div className="px-4 py-4 text-xs text-center" style={{ color: '#6a7a7e' }}>加载中…</div>
+              <div className="px-4 py-4 text-xs text-center text-gray-500 dark:text-[#6a7a7e]">加载中…</div>
             ) : recommended.length === 0 ? (
               <div className="px-4 py-4 text-center">
-                <p className="text-xs" style={{ color: '#6a7a7e' }}>完善个人背景后获得个性化推荐</p>
+                <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">完善个人背景后获得个性化推荐</p>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)' }}>
+              <div className={`divide-y ${DIVIDER_CLS}`}>
                 {recommended.slice(0, 4).map(prof => (
                   <div key={prof.id} className="px-4 py-2.5 flex items-center gap-3">
                     <Link href={`/koala/professors/${prof.id}`} className="flex-1 no-underline min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold truncate" style={{ color: '#e8e4dc' }}>{prof.name}</span>
-                        <span className="text-[10px] flex-shrink-0" style={{ color: '#6a7a7e' }}>{prof.university}</span>
+                        <span className="text-xs font-semibold truncate text-gray-900 dark:text-[#e8e4dc]">{prof.name}</span>
+                        <span className="text-[10px] flex-shrink-0 text-gray-500 dark:text-[#6a7a7e]">{prof.university}</span>
                       </div>
                       {prof.research_areas.length > 0 && (
                         <div className="flex gap-1 mt-0.5">
                           {prof.research_areas.slice(0, 2).map(tag => (
-                            <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(201,169,110,0.08)', color: '#a89878' }}>
+                            <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-[#D4A843]/[0.08] text-gray-400 dark:text-[#a89878]">
                               {tag}
                             </span>
                           ))}
@@ -1725,10 +1687,10 @@ export default function MyProfilePage() {
                       )}
                     </Link>
                     <div className="flex gap-1.5 flex-shrink-0">
-                      <Link href={`/koala/professors/${prof.id}`} className="text-[10px] px-2 py-1 rounded no-underline" style={{ background: 'rgba(201,169,110,0.1)', color: '#c9a96e' }}>
+                      <Link href={`/koala/professors/${prof.id}`} className="text-[10px] px-2 py-1 rounded no-underline bg-[#D4A843]/10 text-[#D4A843]">
                         详情
                       </Link>
-                      <Link href={`/koala/chat?professor=${prof.id}`} className="text-[10px] px-2 py-1 rounded no-underline font-medium text-white" style={{ background: '#c9a96e' }}>
+                      <Link href={`/koala/chat?professor=${prof.id}`} className="text-[10px] px-2 py-1 rounded no-underline font-medium text-white bg-[#D4A843]">
                         套磁
                       </Link>
                     </div>
@@ -1741,31 +1703,28 @@ export default function MyProfilePage() {
           {/* CTA */}
           <div className="mx-4 lg:mx-0 mb-3">
             <Link href="/koala/chat"
-              className="block w-full py-3 rounded-xl text-center text-sm font-semibold text-white no-underline"
-              style={{ background: '#c9a96e' }}
+              className="block w-full py-3 rounded-xl text-center text-sm font-semibold text-white no-underline bg-[#D4A843]"
             >
               🐨 用我的背景匹配教授
             </Link>
           </div>
 
           {/* Settings */}
-          <div className="mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden" style={CARD}>
+          <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>
             <button onClick={() => setShowSettings(!showSettings)}
-              className="w-full flex items-center justify-between px-4 py-2.5"
-              style={{ background: 'transparent' }}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-transparent"
             >
-              <span className="text-xs font-semibold" style={{ color: '#e8e4dc' }}>⚙️ 设置</span>
-              <span className="text-[10px]" style={{ color: '#6a7a7e' }}>{showSettings ? '▲' : '▼'}</span>
+              <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">⚙️ 设置</span>
+              <span className="text-[10px] text-gray-500 dark:text-[#6a7a7e]">{showSettings ? '▲' : '▼'}</span>
             </button>
             {showSettings && (
-              <div className="divide-y" style={{ borderColor: 'rgba(201,169,110,0.05)', borderTop: DIVIDER }}>
+              <div className={`divide-y border-t ${DIVIDER_CLS}`}>
                 <div>
                   <button
-                    className="w-full flex items-center px-4 py-2.5 text-xs text-left"
-                    style={{ color: '#a8b8ac', background: 'transparent' }}
+                    className="w-full flex items-center px-4 py-2.5 text-xs text-left text-gray-500 dark:text-[#a8b8ac] bg-transparent"
                     onClick={() => { setShowPasswordForm(!showPasswordForm); setPwError(''); setPwToast(''); }}
                   >
-                    🔒 修改密码 <span className="ml-auto text-[10px]" style={{ color: '#6a7a7e' }}>{showPasswordForm ? '▲' : '▼'}</span>
+                    🔒 修改密码 <span className="ml-auto text-[10px] text-gray-400 dark:text-[#6a7a7e]">{showPasswordForm ? '▲' : '▼'}</span>
                   </button>
                   {showPasswordForm && (
                     <div className="px-4 pb-3 space-y-2">
@@ -1774,31 +1733,27 @@ export default function MyProfilePage() {
                         placeholder="当前密码"
                         value={pwCurrent}
                         onChange={e => setPwCurrent(e.target.value)}
-                        className="w-full rounded-lg px-3 py-2 text-xs focus:outline-none"
-                        style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+                        className={`${INPUT_CLS} rounded-lg py-2 text-xs`}
                       />
                       <input
                         type="password"
                         placeholder="新密码（至少8位，包含字母和数字）"
                         value={pwNew}
                         onChange={e => setPwNew(e.target.value)}
-                        className="w-full rounded-lg px-3 py-2 text-xs focus:outline-none"
-                        style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+                        className={`${INPUT_CLS} rounded-lg py-2 text-xs`}
                       />
                       <input
                         type="password"
                         placeholder="确认新密码"
                         value={pwConfirm}
                         onChange={e => setPwConfirm(e.target.value)}
-                        className="w-full rounded-lg px-3 py-2 text-xs focus:outline-none"
-                        style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+                        className={`${INPUT_CLS} rounded-lg py-2 text-xs`}
                       />
-                      {pwError && <p className="text-[11px] px-1" style={{ color: '#b06040' }}>{pwError}</p>}
-                      {pwToast && <p className="text-[11px] px-1" style={{ color: '#5a8060' }}>{pwToast}</p>}
+                      {pwError && <p className="text-[11px] px-1 text-[#b06040]">{pwError}</p>}
+                      {pwToast && <p className="text-[11px] px-1 text-[#5a8060]">{pwToast}</p>}
                       <button
                         disabled={pwLoading}
-                        className="w-full py-2 rounded-lg text-xs font-medium disabled:opacity-50"
-                        style={{ background: '#c9a96e', color: '#080c10' }}
+                        className="w-full py-2 rounded-lg text-xs font-medium disabled:opacity-50 bg-[#D4A843] text-[#080c10]"
                         onClick={async () => {
                           setPwError('');
                           setPwToast('');
@@ -1826,25 +1781,23 @@ export default function MyProfilePage() {
                     </div>
                   )}
                 </div>
-                <Link href="/koala/tools" className="flex items-center px-4 py-2.5 text-xs no-underline" style={{ color: '#a8b8ac' }}>
+                <Link href="/koala/tools" className="flex items-center px-4 py-2.5 text-xs no-underline text-gray-500 dark:text-[#a8b8ac]">
                   🔧 更多工具
                 </Link>
                 {profile?.role && ['admin', 'sales', 'super_admin'].includes(profile.role) && (
                   <Link
                     href={profile.role === 'sales' ? '/dashboard/sales' : '/dashboard/koala'}
-                    className="flex items-center justify-between px-4 py-2.5 text-xs no-underline"
-                    style={{ color: '#c9a96e' }}
+                    className="flex items-center justify-between px-4 py-2.5 text-xs no-underline text-[#D4A843]"
                   >
                     <span>🖥️ 进入后台管理</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(201,169,110,0.12)', color: '#c9a96e' }}>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/12 text-[#D4A843]">
                       {profile.role === 'super_admin' ? 'Super Admin' : profile.role === 'admin' ? 'Admin' : 'Sales'}
                     </span>
                   </Link>
                 )}
                 {userRole !== 'super_admin' && (
                   <button
-                    className="w-full flex items-center px-4 py-2.5 text-xs text-left"
-                    style={{ color: '#a8b8ac', background: 'transparent' }}
+                    className="w-full flex items-center px-4 py-2.5 text-xs text-left text-gray-500 dark:text-[#a8b8ac] bg-transparent"
                     onClick={() => {
                       if (userRole === 'admin') setRoleApplyRole('sales');
                       else setRoleApplyRole('admin');
@@ -1855,8 +1808,7 @@ export default function MyProfilePage() {
                   </button>
                 )}
                 <button
-                  className="w-full flex items-center px-4 py-2.5 text-xs text-left"
-                  style={{ color: '#b06040', background: 'transparent' }}
+                  className="w-full flex items-center px-4 py-2.5 text-xs text-left text-red-500 dark:text-[#b06040] bg-transparent"
                   onClick={handleSignOut}
                 >
                   🚪 退出登录
@@ -1871,8 +1823,8 @@ export default function MyProfilePage() {
       {/* Role Application Modal */}
       {showRoleApply && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setShowRoleApply(false)}>
-          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.15)' }} onClick={e => e.stopPropagation()}>
-            <h3 className="text-sm font-bold mb-4" style={{ color: '#e8e4dc' }}>申请角色</h3>
+          <div className="w-full max-w-sm rounded-2xl p-6 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[#D4A843]/15" onClick={e => e.stopPropagation()}>
+            <h3 className="text-sm font-bold mb-4 text-gray-900 dark:text-[#e8e4dc]">申请角色</h3>
                 <div className="flex gap-2 mb-3">
                   {(['admin', 'sales'] as const).map(r => {
                     const isCurrentRole = userRole === r || userRole === 'super_admin';
@@ -1882,8 +1834,7 @@ export default function MyProfilePage() {
                         <button
                           key={r}
                           disabled
-                          className="flex-1 py-2 rounded-lg text-xs font-medium opacity-60 cursor-not-allowed"
-                          style={{ background: 'rgba(255,255,255,0.04)', color: '#6a7a7e', border: '1px solid rgba(255,255,255,0.06)' }}
+                          className="flex-1 py-2 rounded-lg text-xs font-medium opacity-60 cursor-not-allowed bg-gray-50 dark:bg-white/[0.04] text-gray-400 dark:text-[#6a7a7e] border border-gray-200 dark:border-white/[0.06]"
                         >
                           ✅ 当前角色：{label}
                         </button>
@@ -1893,8 +1844,11 @@ export default function MyProfilePage() {
                       <button
                         key={r}
                         onClick={() => setRoleApplyRole(r)}
-                        className="flex-1 py-2 rounded-lg text-xs font-medium transition"
-                        style={{ background: roleApplyRole === r ? 'rgba(201,169,110,0.15)' : 'transparent', color: roleApplyRole === r ? '#c9a96e' : '#6a7a7e', border: `1px solid ${roleApplyRole === r ? 'rgba(201,169,110,0.3)' : 'rgba(201,169,110,0.08)'}` }}
+                        className={`flex-1 py-2 rounded-lg text-xs font-medium transition border ${
+                          roleApplyRole === r
+                            ? 'bg-[#D4A843]/15 text-[#D4A843] border-[#D4A843]/30'
+                            : 'bg-transparent text-gray-500 dark:text-[#6a7a7e] border-gray-200 dark:border-[#D4A843]/[0.08]'
+                        }`}
                       >
                         {label}
                       </button>
@@ -1906,19 +1860,17 @@ export default function MyProfilePage() {
                   placeholder="联系电话（选填）"
                   value={roleApplyPhone}
                   onChange={e => setRoleApplyPhone(e.target.value)}
-                  className="w-full rounded-lg px-3 py-2 text-xs mb-3 focus:outline-none"
-                  style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+                  className={`w-full rounded-lg px-3 py-2 text-xs mb-3 focus:outline-none ${INPUT_CLS}`}
                 />
                 <textarea
                   placeholder="申请理由（至少10字）"
                   value={roleApplyReason}
                   onChange={e => setRoleApplyReason(e.target.value)}
                   rows={3}
-                  className="w-full rounded-lg px-3 py-2 text-xs mb-3 focus:outline-none resize-none"
-                  style={{ background: 'rgba(201,169,110,0.06)', border: '1px solid rgba(201,169,110,0.1)', color: '#e8e4dc' }}
+                  className={`w-full rounded-lg px-3 py-2 text-xs mb-3 focus:outline-none resize-none ${INPUT_CLS}`}
                 />
                 <div className="flex gap-2">
-                  <button onClick={() => setShowRoleApply(false)} className="flex-1 py-2 rounded-lg text-xs" style={{ color: '#6a7a7e', border: '1px solid rgba(201,169,110,0.1)' }}>取消</button>
+                  <button onClick={() => setShowRoleApply(false)} className="flex-1 py-2 rounded-lg text-xs text-gray-500 dark:text-[#6a7a7e] border border-gray-200 dark:border-[#D4A843]/10 bg-transparent">取消</button>
                   <button
                     disabled={roleApplyLoading || roleApplyReason.length < 10}
                     onClick={async () => {
@@ -1946,8 +1898,7 @@ export default function MyProfilePage() {
                       }
                       setRoleApplyLoading(false);
                     }}
-                    className="flex-1 py-2 rounded-lg text-xs font-medium disabled:opacity-50"
-                    style={{ background: '#c9a96e', color: '#080c10' }}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium disabled:opacity-50 bg-[#D4A843] text-[#080c10]"
                   >
                     {roleApplyLoading ? '提交中…' : '提交申请'}
                   </button>
@@ -1957,15 +1908,18 @@ export default function MyProfilePage() {
       )}
 
       {/* Disclaimer */}
-      <p className="text-center mt-4 mb-2 px-4" style={{ fontSize: 9, color: '#6a7a7e' }}>
+      <p className="text-center mt-4 mb-2 px-4 text-[9px] text-gray-400 dark:text-[#6a7a7e]">
         你的个人信息仅用于 AI 推荐优化，不会与第三方共享。
       </p>
 
       {/* Role application toast */}
       {roleToast && (
         <div
-          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-xl text-xs font-medium shadow-lg animate-fade-in"
-          style={{ background: roleToast.ok ? '#1a2e1a' : '#2e1a1a', color: roleToast.ok ? '#7ddf7d' : '#df7d7d', border: `1px solid ${roleToast.ok ? 'rgba(90,128,96,0.3)' : 'rgba(176,96,64,0.3)'}` }}
+          className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-xl text-xs font-medium shadow-lg animate-fade-in border cursor-pointer ${
+            roleToast.ok
+              ? 'bg-green-950 dark:bg-[#1a2e1a] text-green-400 dark:text-[#7ddf7d] border-green-800 dark:border-[rgba(90,128,96,0.3)]'
+              : 'bg-red-950 dark:bg-[#2e1a1a] text-red-400 dark:text-[#df7d7d] border-red-800 dark:border-[rgba(176,96,64,0.3)]'
+          }`}
           onClick={() => setRoleToast(null)}
         >
           {roleToast.msg}

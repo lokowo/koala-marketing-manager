@@ -14,14 +14,15 @@ const CONFIG: Record<ConfidenceLevel, {
   icon: string;
   label: string;
   defaultDesc: string;
-  bg: string;
+  lightBg: string;
+  darkBg: string;
   color: string;
 }> = {
-  high:    { icon: '🟢', label: '高置信', defaultDesc: '基于 3+ 篇论文的共识性结论', bg: '#f0f8f2', color: '#5a8060' },
-  medium:  { icon: '🟡', label: '中置信', defaultDesc: '基于 1-2 篇论文，或领域一般性认知', bg: '#fff8e8', color: '#c9a96e' },
-  low:     { icon: '🔴', label: '低置信', defaultDesc: '推理性回答，无直接论文支持', bg: '#fff0f0', color: '#b06040' },
-  warning: { icon: '⚠️', label: '待验证', defaultDesc: '来自一般知识，未找到可引用来源，请自行验证', bg: '#fff8e8', color: '#c9a96e' },
-  unknown: { icon: '⚪', label: '未知', defaultDesc: '知识库中暂无相关数据', bg: 'rgba(201,169,110,0.06)', color: '#6a7a7e' },
+  high:    { icon: '🟢', label: '高置信', defaultDesc: '基于 3+ 篇论文的共识性结论', lightBg: '#f0f8f2', darkBg: '#f0f8f2', color: '#5a8060' },
+  medium:  { icon: '🟡', label: '中置信', defaultDesc: '基于 1-2 篇论文，或领域一般性认知', lightBg: '#fff8e8', darkBg: '#fff8e8', color: '#D4A843' },
+  low:     { icon: '🔴', label: '低置信', defaultDesc: '推理性回答，无直接论文支持', lightBg: '#fff0f0', darkBg: '#fff0f0', color: '#b06040' },
+  warning: { icon: '⚠️', label: '待验证', defaultDesc: '来自一般知识，未找到可引用来源，请自行验证', lightBg: '#fff8e8', darkBg: '#fff8e8', color: '#D4A843' },
+  unknown: { icon: '⚪', label: '未知', defaultDesc: '知识库中暂无相关数据', lightBg: 'rgba(212,168,67,0.06)', darkBg: 'rgba(212,168,67,0.06)', color: '#6a7a7e' },
 };
 
 export function ConfidenceBadge({ level, sourceCount, description, inline = false }: ConfidenceBadgeProps) {
@@ -33,16 +34,13 @@ export function ConfidenceBadge({ level, sourceCount, description, inline = fals
     return (
       <span
         className="relative inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ml-1 cursor-help"
-        style={{ background: cfg.bg, color: cfg.color }}
+        style={{ background: cfg.lightBg, color: cfg.color }}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
       >
         {cfg.icon} {cfg.label}
         {showTooltip && (
-          <span
-            className="absolute bottom-full left-0 mb-1 px-2 py-1 rounded-lg text-[10px] whitespace-nowrap z-10 shadow-md"
-            style={{ background: '#e8e4dc', color: '#fff', minWidth: 160 }}
-          >
+          <span className="absolute bottom-full left-0 mb-1 px-2 py-1 rounded-lg text-[10px] whitespace-nowrap z-10 shadow-md bg-gray-100 dark:bg-[#e8e4dc] text-gray-700 dark:text-white min-w-[160px]">
             {desc}
           </span>
         )}
@@ -53,7 +51,7 @@ export function ConfidenceBadge({ level, sourceCount, description, inline = fals
   return (
     <div
       className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 cursor-help"
-      style={{ background: cfg.bg, border: `1px solid ${cfg.color}30` }}
+      style={{ background: cfg.lightBg, border: `1px solid ${cfg.color}30` }}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >

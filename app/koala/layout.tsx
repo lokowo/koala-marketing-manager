@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
-import BottomTabBar from './components/BottomTabBar';
-import TopNavBar from './components/TopNavBar';
-import { AuthProvider } from './components/AuthContext';
+import KoalaShell from './components/KoalaShell';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://koalaphd.com'),
@@ -40,19 +38,5 @@ export const metadata: Metadata = {
 };
 
 export default function KoalaLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthProvider>
-      <div style={{ backgroundColor: '#080c10', minHeight: '100svh', color: '#e8e4dc' }}>
-        <TopNavBar />
-        <div className="relative mx-auto max-w-[480px] lg:max-w-6xl">
-          <div className="lg:pt-16 pb-[88px] lg:pb-8">
-            {children}
-          </div>
-        </div>
-        <div className="lg:hidden">
-          <BottomTabBar />
-        </div>
-      </div>
-    </AuthProvider>
-  );
+  return <KoalaShell>{children}</KoalaShell>;
 }

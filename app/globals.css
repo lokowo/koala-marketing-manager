@@ -16,8 +16,8 @@
 
 /* Class-based dark mode (not system preference) */
 html.dark {
-  --background: #0f172a;
-  --foreground: #e2e8f0;
+  --background: #080c10;
+  --foreground: #e8e4dc;
 }
 
 body {
@@ -27,97 +27,6 @@ body {
 }
 
 /* ── Admin Dashboard Dark Mode Overrides ── */
-
-/* Cards, panels, modals */
-.dark .bg-white {
-  background-color: #1e293b !important;
-  color: #e2e8f0;
-}
-
-/* Borders */
-.dark .border-slate-200,
-.dark .border-slate-100 {
-  border-color: #334155 !important;
-}
-
-/* Text overrides for readability */
-.dark .text-slate-900 { color: #f1f5f9 !important; }
-.dark .text-slate-800 { color: #e2e8f0 !important; }
-.dark .text-slate-700 { color: #cbd5e1 !important; }
-.dark .text-slate-600 { color: #94a3b8 !important; }
-.dark .text-slate-500 { color: #64748b !important; }
-
-/* Inputs & form controls */
-.dark input,
-.dark textarea,
-.dark select {
-  background-color: #0f172a !important;
-  color: #e2e8f0 !important;
-  border-color: #475569 !important;
-}
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: #64748b !important;
-}
-.dark input:focus,
-.dark textarea:focus,
-.dark select:focus {
-  border-color: #f59e0b !important;
-}
-
-/* Table header */
-.dark .bg-slate-50 {
-  background-color: #1e293b !important;
-}
-.dark tr:hover .hover\:bg-slate-50 {
-  background-color: #334155 !important;
-}
-
-/* Badges & chips */
-.dark .bg-slate-100 {
-  background-color: #334155 !important;
-}
-.dark .bg-amber-100 {
-  background-color: rgba(245, 158, 11, 0.15) !important;
-}
-.dark .bg-green-100 {
-  background-color: rgba(34, 197, 94, 0.15) !important;
-}
-.dark .bg-blue-100 {
-  background-color: rgba(59, 130, 246, 0.15) !important;
-}
-.dark .bg-red-100 {
-  background-color: rgba(239, 68, 68, 0.15) !important;
-}
-
-/* Rounded panels with shadow */
-.dark .shadow {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
-}
-
-/* Dividers */
-.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #334155 !important;
-}
-.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #334155 !important;
-}
-
-/* Blog editor specific */
-.dark .bg-amber-50\/50,
-.dark .bg-amber-50 {
-  background-color: rgba(245, 158, 11, 0.08) !important;
-}
-
-/* Scrollbar for dark mode */
-.dark ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.dark ::-webkit-scrollbar-track {
-  background: #1e293b;
-}
-.dark ::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-radius: 3px;
-}
+/* Scoped to admin dashboard only — not applied to frontend /koala/ pages */
+/* The admin dashboard removes .dark from html, so these only apply when
+   the admin explicitly opts into dark mode (currently disabled for admin) */

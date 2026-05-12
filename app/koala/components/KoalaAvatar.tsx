@@ -22,10 +22,10 @@ export function KoalaAvatar({ size = 32, className }: KoalaAvatarProps) {
       <circle cx="20" cy="20" r="20" fill="url(#koalaBg)" />
       {/* Left ear */}
       <circle cx="9" cy="10" r="7.5" fill="#3a4a4e" />
-      <circle cx="9" cy="10" r="4.5" fill="rgba(201,169,110,0.3)" />
+      <circle cx="9" cy="10" r="4.5" fill="rgba(212,168,67,0.3)" />
       {/* Right ear */}
       <circle cx="31" cy="10" r="7.5" fill="#3a4a4e" />
-      <circle cx="31" cy="10" r="4.5" fill="rgba(201,169,110,0.3)" />
+      <circle cx="31" cy="10" r="4.5" fill="rgba(212,168,67,0.3)" />
       {/* Face */}
       <circle cx="20" cy="22" r="12" fill="#f0e8d4" />
       {/* Left eye */}
@@ -55,13 +55,8 @@ export function UserAvatar({ name, size = 28, avatarUrl }: UserAvatarProps) {
       <img
         src={avatarUrl}
         alt={name || 'User'}
-        style={{
-          width: size,
-          height: size,
-          borderRadius: '50%',
-          objectFit: 'cover',
-          flexShrink: 0,
-        }}
+        style={{ width: size, height: size, objectFit: 'cover' }}
+        className="rounded-full flex-shrink-0"
       />
     );
   }
@@ -72,20 +67,8 @@ export function UserAvatar({ name, size = 28, avatarUrl }: UserAvatarProps) {
   const fontSize = size * 0.38;
   return (
     <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        background: '#c9a96e',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-        fontSize,
-        fontWeight: 700,
-        color: '#080c10',
-        letterSpacing: '0.02em',
-      }}
+      style={{ width: size, height: size, fontSize, flexShrink: 0 }}
+      className="rounded-full bg-[#D4A843] flex items-center justify-center font-bold text-[#080c10] tracking-[0.02em]"
     >
       {initials}
     </div>
