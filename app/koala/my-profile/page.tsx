@@ -1841,13 +1841,19 @@ export default function MyProfilePage() {
                     </span>
                   </Link>
                 )}
-                <button
-                  className="w-full flex items-center px-4 py-2.5 text-xs text-left"
-                  style={{ color: '#a8b8ac', background: 'transparent' }}
-                  onClick={() => setShowRoleApply(true)}
-                >
-                  👔 申请角色（管理员/销售）
-                </button>
+                {userRole !== 'super_admin' && (
+                  <button
+                    className="w-full flex items-center px-4 py-2.5 text-xs text-left"
+                    style={{ color: '#a8b8ac', background: 'transparent' }}
+                    onClick={() => {
+                      if (userRole === 'admin') setRoleApplyRole('sales');
+                      else setRoleApplyRole('admin');
+                      setShowRoleApply(true);
+                    }}
+                  >
+                    👔 申请角色（管理员/销售）
+                  </button>
+                )}
                 <button
                   className="w-full flex items-center px-4 py-2.5 text-xs text-left"
                   style={{ color: '#b06040', background: 'transparent' }}
@@ -1868,16 +1874,32 @@ export default function MyProfilePage() {
           <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: '#111c28', border: '1px solid rgba(201,169,110,0.15)' }} onClick={e => e.stopPropagation()}>
             <h3 className="text-sm font-bold mb-4" style={{ color: '#e8e4dc' }}>申请角色</h3>
                 <div className="flex gap-2 mb-3">
-                  {(['admin', 'sales'] as const).map(r => (
-                    <button
-                      key={r}
-                      onClick={() => setRoleApplyRole(r)}
-                      className="flex-1 py-2 rounded-lg text-xs font-medium transition"
-                      style={{ background: roleApplyRole === r ? 'rgba(201,169,110,0.15)' : 'transparent', color: roleApplyRole === r ? '#c9a96e' : '#6a7a7e', border: `1px solid ${roleApplyRole === r ? 'rgba(201,169,110,0.3)' : 'rgba(201,169,110,0.08)'}` }}
-                    >
-                      {r === 'admin' ? '管理员' : '销售'}
-                    </button>
-                  ))}
+                  {(['admin', 'sales'] as const).map(r => {
+                    const isCurrentRole = userRole === r || userRole === 'super_admin';
+                    const label = r === 'admin' ? '管理员' : '销售';
+                    if (isCurrentRole) {
+                      return (
+                        <button
+                          key={r}
+                          disabled
+                          className="flex-1 py-2 rounded-lg text-xs font-medium opacity-60 cursor-not-allowed"
+                          style={{ background: 'rgba(255,255,255,0.04)', color: '#6a7a7e', border: '1px solid rgba(255,255,255,0.06)' }}
+                        >
+                          ✅ 当前角色：{label}
+                        </button>
+                      );
+                    }
+                    return (
+                      <button
+                        key={r}
+                        onClick={() => setRoleApplyRole(r)}
+                        className="flex-1 py-2 rounded-lg text-xs font-medium transition"
+                        style={{ background: roleApplyRole === r ? 'rgba(201,169,110,0.15)' : 'transparent', color: roleApplyRole === r ? '#c9a96e' : '#6a7a7e', border: `1px solid ${roleApplyRole === r ? 'rgba(201,169,110,0.3)' : 'rgba(201,169,110,0.08)'}` }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
                 <input
                   type="tel"
