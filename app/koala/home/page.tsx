@@ -101,9 +101,9 @@ const RESEARCH_AREAS = [
 ];
 
 const STEP_LINKS = [
-  { href: '/koala/chat?mode=path',     label: '聊背景' },
-  { href: '/koala/chat?mode=research', label: 'AI匹配' },
-  { href: '/koala/chat?mode=write',    label: '写申请信' },
+  { href: '/koala/chat?mode=path', label: '聊背景' },
+  { href: '/koala/discover',       label: 'AI匹配' },
+  { href: '/koala/chat?mode=write', label: '写申请信' },
 ];
 
 export default function HomePage() {
@@ -370,31 +370,40 @@ export default function HomePage() {
 
         {/* ── Three Steps ── */}
         <section>
-          <h2 className="font-bold text-base mb-3 text-gray-900 dark:text-[#e8e4dc]">三步搞定 PhD 申请</h2>
-          <div className="grid grid-cols-3 gap-2 lg:gap-4">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-[10px] font-semibold tracking-widest uppercase px-2.5 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] border border-amber-200 dark:border-[#D4A843]/20">How it works</span>
+            <h2 className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">三步搞定 PhD 申请</h2>
+          </div>
+          <div className="flex flex-col lg:flex-row items-stretch gap-3 lg:gap-0">
             {[
-              { icon: '💬', step: '01', title: '聊背景', desc: '告诉 Koala 你的专业和兴趣' },
-              { icon: '🎯', step: '02', title: 'AI 匹配', desc: `从 ${profCount} 位教授中精准推荐` },
-              { icon: '✉️', step: '03', title: '写申请信', desc: '针对每位教授定制专业邮件' },
+              { icon: '💬', step: '01', title: '聊背景', desc: '告诉 Koala 你的专业和兴趣', extra: '⏱ 约2分钟', primary: true },
+              { icon: '🎯', step: '02', title: 'AI 匹配', desc: `从 ${profCount} 位教授中精准推荐`, extra: '⚡ 30秒出结果', primary: false },
+              { icon: '✉️', step: '03', title: '写申请信', desc: '针对每位教授定制专业邮件', extra: '📧 支持批量生成', primary: false },
             ].map((s, i) => (
-              <button
-                key={s.step}
-                onClick={() => handleStepClick(STEP_LINKS[i].href)}
-                className="rounded-2xl p-3 lg:p-5 flex flex-col gap-1.5 text-left w-full transition-all active:scale-95 bg-gray-50 dark:bg-[#c9a96e]/[0.06] border border-gray-200 dark:border-[#c9a96e]/10 cursor-pointer"
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 16px rgba(125,99,64,0.15)';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.transform = '';
-                  (e.currentTarget as HTMLElement).style.boxShadow = '';
-                }}
-              >
-                <span className="text-xl">{s.icon}</span>
-                <div className="text-[10px] font-medium text-amber-600 dark:text-[#D4A843]">{s.step}</div>
-                <div className="text-xs font-bold text-gray-900 dark:text-[#e8e4dc]">{s.title}</div>
-                <div className="text-[10px] leading-relaxed text-gray-500 dark:text-[#6a7a7e]">{s.desc}</div>
-              </button>
+              <div key={s.step} className="flex items-center lg:flex-1">
+                <button
+                  onClick={() => handleStepClick(STEP_LINKS[i].href)}
+                  className={`rounded-2xl p-4 lg:p-5 flex flex-col gap-2 text-left w-full transition-all duration-200 active:scale-[0.98] cursor-pointer ${
+                    s.primary
+                      ? 'text-white border border-transparent shadow-md dark:border-[#D4A843]/30'
+                      : 'bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-[#c9a96e]/10 hover:-translate-y-1 hover:shadow-lg'
+                  }`}
+                  style={s.primary ? { background: 'linear-gradient(135deg, #1A1A2E 0%, #2D2D4A 100%)' } : undefined}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{s.icon}</span>
+                    <span className={`text-[10px] font-bold tracking-wide ${s.primary ? 'text-white/50' : 'text-amber-600 dark:text-[#D4A843]'}`}>STEP {s.step}</span>
+                  </div>
+                  <div className={`text-sm font-bold ${s.primary ? 'text-white' : 'text-gray-900 dark:text-[#e8e4dc]'}`}>{s.title}</div>
+                  <div className={`text-[11px] leading-relaxed ${s.primary ? 'text-white/60' : 'text-gray-500 dark:text-[#6a7a7e]'}`}>{s.desc}</div>
+                  <div className={`text-[10px] mt-1 ${s.primary ? 'text-white/40' : 'text-gray-400 dark:text-[#6a7a7e]'}`}>{s.extra}</div>
+                </button>
+                {i < 2 && (
+                  <div className="hidden lg:flex items-center justify-center w-8 shrink-0 text-gray-300 dark:text-[#6a7a7e]">
+                    <ArrowRight className="size-4" />
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </section>
