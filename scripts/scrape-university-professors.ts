@@ -84,13 +84,13 @@ async function scrapeFaculty(university: string, faculty: string): Promise<Scrap
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
       messages: [{
         role: 'user',
-        content: `Search for all academic staff (professors, associate professors, senior lecturers, lecturers) in the ${faculty} department at ${university}, Australia.
+        content: `Search for all academic staff (professors, associate professors) in the ${faculty} department at ${university}, Australia.
 
-Find the official staff/people page for this department and list ALL faculty members you can find.
+Find the official staff/people page for this department and list faculty members you can find.
 
 Return ONLY a JSON array of professors. Each entry should have:
 - name: full name in English
-- position: their exact title (Professor, Associate Professor, Senior Lecturer, Lecturer)
+- position: their exact title (Professor, Associate Professor)
 - email: if publicly available
 - researchAreas: array of 2-3 research interests
 - profileUrl: their official university staff page URL
@@ -98,9 +98,9 @@ Return ONLY a JSON array of professors. Each entry should have:
 Format: [{"name":"...","position":"...","email":"...","researchAreas":["..."],"profileUrl":"..."}]
 
 IMPORTANT:
+- Return at most 20 professors per response. Only include professors and associate professors, not lecturers.
 - Only include people who are currently listed on the university website
 - Only include academic/research staff, not admin staff
-- Include as many as you can find
 - Return ONLY the JSON array, nothing else`
       }],
     });
@@ -118,7 +118,20 @@ IMPORTANT:
       return [];
     }
 
-    const professors = JSON.parse(jsonMatch[0]) as ScrapedProfessor[];
+    let professors: ScrapedProfessor[];
+    try {
+      let jsonStr = jsonMatch[0];
+      jsonStr = jsonStr.replace(/,\s*\]/g, ']');
+      if (!jsonStr.trim().endsWith(']')) {
+        const lastComplete = jsonStr.lastIndexOf('}');
+        if (lastComplete > 0) jsonStr = jsonStr.substring(0, lastComplete + 1) + ']';
+      }
+      professors = JSON.parse(jsonStr) as ScrapedProfessor[];
+    } catch {
+      console.log('    ⚠️ JSON parse failed, trying line-by-line extraction');
+      const entries = fullText.match(/\{[^{}]*"name"\s*:\s*"[^"]+(?:"[^{}]*)\}/g) || [];
+      professors = entries.map(e => { try { return JSON.parse(e) as ScrapedProfessor; } catch { return null; } }).filter((x): x is ScrapedProfessor => x !== null);
+    }
     console.log(`    ✅ Found ${professors.length} staff members`);
     return professors.map(p => ({ ...p, faculty }));
   } catch (e) {
