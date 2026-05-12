@@ -1043,15 +1043,23 @@ export async function completeResponse(
     await db.from('survey_answers').insert(rows);
   }
 
-  // Increment response_count on the share link (NOT register_count on sales_qrcodes — that's for registrations only)
+  // Increment response_count on the share link and sync to sales_qrcodes
   if (respInfo?.share_link_id) {
     const { data: link } = await db.from('survey_share_links')
-      .select('response_count').eq('id', respInfo.share_link_id).single();
+      .select('response_count, short_code').eq('id', respInfo.share_link_id).single();
     if (link) {
       const newCount = (link.response_count || 0) + 1;
       await db.from('survey_share_links')
         .update({ response_count: newCount })
         .eq('id', respInfo.share_link_id);
+
+      if (link.short_code) {
+        try {
+          await db.from('sales_qrcodes')
+            .update({ register_count: newCount })
+            .eq('code', link.short_code);
+        } catch { /* non-critical */ }
+      }
     }
   }
 
