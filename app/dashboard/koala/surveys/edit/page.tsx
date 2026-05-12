@@ -77,7 +77,7 @@ function EditContent() {
 
   const fetchSurvey = useCallback(async () => {
     if (!surveyId) return;
-    const res = await fetch(`/api/surveys/${surveyId}`);
+    const res = await fetch(`/api/surveys/${surveyId}?_t=${Date.now()}`);
     if (!res.ok) { router.push('/dashboard/koala/surveys'); return; }
     const data = await res.json();
     setSurvey(data);
@@ -143,7 +143,7 @@ function EditContent() {
 
   async function syncSurveyJson() {
     if (!surveyId) return;
-    const res = await fetch(`/api/surveys/${surveyId}`);
+    const res = await fetch(`/api/surveys/${surveyId}?_t=${Date.now()}`);
     if (!res.ok) return;
     const freshSurvey = await res.json();
     const qs = freshSurvey.questions || [];
@@ -182,11 +182,17 @@ function EditContent() {
 
   async function handleDeleteQuestion(qId: string) {
     if (!confirm('确定删除这个问题？')) return;
-    await fetch('/api/surveys/questions', {
+    // Optimistically remove from UI immediately
+    setSurvey(prev => prev ? { ...prev, questions: (prev.questions || []).filter(q => q.id !== qId) } : prev);
+    const res = await fetch('/api/surveys/questions', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: qId }),
     });
+    if (!res.ok) {
+      await fetchSurvey();
+      return;
+    }
     await fetchSurvey();
     syncSurveyJson();
   }
