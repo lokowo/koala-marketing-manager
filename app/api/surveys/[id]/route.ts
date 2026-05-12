@@ -43,6 +43,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const current = await getSurvey(id);
     if (!current) return Response.json({ error: 'Not found' }, { status: 404 });
 
+    // Sales cannot edit other people's drafts
+    if (role === 'sales' && current.status === 'draft' && current.created_by !== user.id) {
+      return Response.json({ error: '不能修改别人的草稿问卷' }, { status: 403 });
+    }
+
     // End/close: only creator or super_admin
     if (body.status === 'closed' || body.status === 'ended') {
       if (role !== 'super_admin' && current.created_by !== user.id) {

@@ -959,6 +959,45 @@ export async function saveProgress(
   }
 }
 
+function calculateValueScore(
+  answers: Record<string, unknown>,
+  questions: { id: string; required?: boolean; type: string }[],
+): number {
+  let score = 40;
+
+  const requiredFilled = questions
+    .filter(q => q.required)
+    .every(q => {
+      const v = answers[q.id];
+      return v !== undefined && v !== null && v !== '';
+    });
+  if (requiredFilled) score += 10;
+
+  const vals = Object.entries(answers).reduce((acc, [k, v]) => {
+    acc[k] = typeof v === 'object' && v !== null && 'value' in (v as Record<string, unknown>)
+      ? (v as Record<string, unknown>).value
+      : v;
+    return acc;
+  }, {} as Record<string, unknown>);
+
+  const country = vals.__target_country || vals.target_country;
+  if (country && String(country).length > 0) score += 10;
+
+  const stage = String(vals.__apply_stage || vals.apply_stage || '');
+  if (['applying', '1year', '已在申请', '计划1年内'].includes(stage)) score += 15;
+
+  const budget = String(vals.__budget || vals.budget || '');
+  if (['5000-10000', '10000+'].includes(budget)) score += 10;
+
+  const nps = Number(vals.__nps || vals.nps);
+  if (!isNaN(nps) && nps >= 8) score += 5;
+
+  const email = String(vals.__contact_email || '');
+  if (!email || !email.includes('@')) score -= 20;
+
+  return Math.max(0, Math.min(100, score));
+}
+
 export async function completeResponse(
   responseId: string,
   answers: Record<string, unknown>,
@@ -970,6 +1009,22 @@ export async function completeResponse(
   const contactWechat = metadata?.contact_wechat as string | undefined;
   const durationSeconds = metadata?.duration_seconds as number | undefined;
 
+  // Fetch response info for survey_id and sales_user_id
+  const { data: respInfo } = await db.from('survey_responses')
+    .select('survey_id, sales_user_id, share_link_id')
+    .eq('id', responseId).single();
+
+  // Fetch questions for value_score calculation
+  let valueScore: number | null = null;
+  if (respInfo?.survey_id) {
+    const { data: questions } = await db.from('survey_questions')
+      .select('id, required, type')
+      .eq('survey_id', respInfo.survey_id);
+    if (questions) {
+      valueScore = calculateValueScore(answers, questions);
+    }
+  }
+
   const { error: updateErr } = await db.from('survey_responses')
     .update({
       status: 'completed',
@@ -979,6 +1034,7 @@ export async function completeResponse(
       respondent_email: contactEmail || null,
       respondent_wechat: contactWechat || null,
       time_spent_seconds: durationSeconds || null,
+      ...(valueScore !== null ? { value_score: valueScore } : {}),
     })
     .eq('id', responseId);
   if (updateErr) throw new Error(`Failed to complete response: ${updateErr.message}`);
@@ -997,23 +1053,40 @@ export async function completeResponse(
   }
 
   // Increment response_count on the share link
-  const { data: resp } = await db.from('survey_responses')
-    .select('share_link_id').eq('id', responseId).single();
-  if (resp?.share_link_id) {
+  if (respInfo?.share_link_id) {
     const { data: link } = await db.from('survey_share_links')
-      .select('response_count, short_code').eq('id', resp.share_link_id).single();
+      .select('response_count, short_code').eq('id', respInfo.share_link_id).single();
     if (link) {
       const newCount = (link.response_count || 0) + 1;
       await db.from('survey_share_links')
         .update({ response_count: newCount })
-        .eq('id', resp.share_link_id);
+        .eq('id', respInfo.share_link_id);
 
-      // Sync to sales_qrcodes (survey responses map to register_count)
       if (link.short_code) {
         await db.from('sales_qrcodes')
           .update({ register_count: newCount })
           .eq('code', link.short_code);
       }
+    }
+  }
+
+  // Notify the sales user who owns this response
+  if (respInfo?.sales_user_id) {
+    try {
+      const { notifyUser } = await import('../notifications');
+      const { data: surveyRow } = await db.from('surveys')
+        .select('title_zh').eq('id', respInfo.survey_id).single();
+      const title = surveyRow?.title_zh || '问卷';
+      const name = contactName || contactEmail || '匿名';
+      await notifyUser(
+        respInfo.sales_user_id,
+        '收到新的问卷回复',
+        `${name} 提交了问卷「${title}」${valueScore !== null ? `，价值评分 ${valueScore}` : ''}`,
+        'info',
+        `/dashboard/koala/surveys/${respInfo.survey_id}/responses`,
+      );
+    } catch {
+      // notification failure should not block response
     }
   }
 
@@ -1112,6 +1185,20 @@ export async function registerFromSurvey(
       notes: `通过调研问卷《${surveyTitle}》注册`,
     });
     if (custErr) throw new Error(`Failed to create sales customer record: ${custErr.message}`);
+
+    // Notify the sales user about the new registration
+    try {
+      const { notifyUser } = await import('../notifications');
+      await notifyUser(
+        respForSurvey.sales_user_id,
+        '调研者已注册',
+        `${fullName || email} 通过问卷「${surveyTitle}」注册了账号`,
+        'info',
+        `/dashboard/sales/customer/${newUserId}`,
+      );
+    } catch {
+      // notification failure should not block registration
+    }
   }
 
   // g. Return result

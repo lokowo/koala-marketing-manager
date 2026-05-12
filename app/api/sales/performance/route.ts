@@ -104,19 +104,34 @@ export async function GET() {
         .sort((a, b) => b.registers - a.registers);
     }
 
-    // AI insight (simple rule-based for now, avoids Claude API call latency)
+    // AI insight via Claude Haiku
     let aiInsight = '';
     if (myScans > 0) {
-      const myRate = parseFloat(myConversionRate);
-      const teamRate = parseFloat(teamAvgConversion);
-      if (myRate > teamRate + 3) {
-        const bestChannel = [...socialItems, ...surveyItems]
-          .sort((a: { register_count: number }, b: { register_count: number }) => (b.register_count || 0) - (a.register_count || 0))[0];
-        aiInsight = `你的转化率(${myConversionRate}%)高于团队平均(${teamAvgConversion}%)。${bestChannel?.label ? `「${bestChannel.label}」渠道表现最佳，建议继续加大投入。` : '继续保持！'}`;
-      } else if (myRate < teamRate - 3) {
-        aiInsight = `你的转化率(${myConversionRate}%)低于团队平均(${teamAvgConversion}%)。建议优化推广话术或尝试新渠道。`;
-      } else {
-        aiInsight = `你的转化率(${myConversionRate}%)与团队平均(${teamAvgConversion}%)持平。${myScans < 20 ? '建议增加推广频次扩大样本。' : '表现稳定，继续保持！'}`;
+      const bestChannel = [...socialItems, ...surveyItems]
+        .sort((a: { register_count: number }, b: { register_count: number }) => (b.register_count || 0) - (a.register_count || 0))[0];
+      const prompt = `你是销售业绩分析师。根据以下数据给出1-2句简短的分析建议（中文）：
+我的扫码：${myScans}，注册：${myRegisters}，转化率：${myConversionRate}%
+团队平均扫码：${teamTotalScans > 0 ? Math.round(teamTotalScans / teamMap.size) : 0}，注册：${teamTotalRegisters > 0 ? Math.round(teamTotalRegisters / teamMap.size) : 0}，转化率：${teamAvgConversion}%
+我的最佳渠道：${bestChannel?.label || '无'}
+只返回建议文字，不要其他内容。`;
+      try {
+        const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': process.env.ANTHROPIC_API_KEY!,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 150,
+            messages: [{ role: 'user', content: prompt }],
+          }),
+        });
+        const aiResult = await aiRes.json();
+        aiInsight = aiResult.content?.[0]?.text || '';
+      } catch {
+        aiInsight = `你的转化率(${myConversionRate}%)${parseFloat(myConversionRate) > parseFloat(teamAvgConversion) ? '高于' : '低于'}团队平均(${teamAvgConversion}%)。`;
       }
     }
 

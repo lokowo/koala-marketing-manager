@@ -20,6 +20,35 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(parseInt(sp.get('limit') ?? '50', 10), 200);
     const page = Math.max(parseInt(sp.get('page') ?? '1', 10), 1);
     const stage = sp.get('stage');
+    const qrCode = sp.get('qr_code');
+
+    // If filtering by QR code, find customer_user_ids linked to that code
+    let qrCustomerIds: string[] | null = null;
+    if (qrCode) {
+      const ids = new Set<string>();
+
+      // Survey QR codes: sales_qrcodes → survey_share_links → survey_responses.registered_user_id
+      const { data: shareLink } = await db.from('survey_share_links')
+        .select('id').eq('short_code', qrCode).single();
+      if (shareLink) {
+        const { data: responses } = await db.from('survey_responses')
+          .select('registered_user_id')
+          .eq('share_link_id', shareLink.id)
+          .not('registered_user_id', 'is', null);
+        for (const r of responses ?? []) {
+          if (r.registered_user_id) ids.add(r.registered_user_id);
+        }
+      }
+
+      // Fallback / social QR codes: check notes field for matching code
+      const { data: noteMatches } = await db.from('sales_customers')
+        .select('customer_user_id')
+        .eq('sales_user_id', user.id)
+        .ilike('notes', `%${qrCode}%`);
+      for (const m of noteMatches ?? []) ids.add(m.customer_user_id);
+
+      qrCustomerIds = [...ids];
+    }
 
     let query = db
       .from('sales_customers')
@@ -29,6 +58,12 @@ export async function GET(req: NextRequest) {
       .range((page - 1) * limit, page * limit - 1);
 
     if (stage) query = query.eq('stage', stage);
+    if (qrCustomerIds !== null) {
+      if (qrCustomerIds.length === 0) {
+        return Response.json({ data: [], total: 0, page, limit });
+      }
+      query = query.in('customer_user_id', qrCustomerIds);
+    }
 
     const { data, count, error } = await query;
     if (error) throw error;

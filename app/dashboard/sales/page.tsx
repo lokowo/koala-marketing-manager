@@ -160,9 +160,29 @@ export default function SalesDashboard() {
   const maxFunnel = Math.max(...FUNNEL_STAGES.map(s => funnel?.funnel[s] ?? 0), 1);
   const isAdmin = role === 'admin' || role === 'super_admin';
 
+  const [viewingCustomersFor, setViewingCustomersFor] = useState<string | null>(null);
+  const [qrCustomers, setQrCustomers] = useState<Customer[]>([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+
+  async function viewCustomersForCode(code: string) {
+    if (viewingCustomersFor === code) { setViewingCustomersFor(null); return; }
+    setViewingCustomersFor(code);
+    setLoadingCustomers(true);
+    try {
+      const res = await fetch(`/api/sales/customers?qr_code=${encodeURIComponent(code)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setQrCustomers(data.data ?? []);
+      }
+    } catch { /* ignore */ }
+    setLoadingCustomers(false);
+  }
+
   // Group QR codes
   const surveyQrcodes = qrcodes.filter(q => q.channel === 'survey');
   const socialQrcodes = qrcodes.filter(q => q.channel !== 'survey');
+  const surveySubtotal = { scans: surveyQrcodes.reduce((s, q) => s + q.scan_count, 0), registers: surveyQrcodes.reduce((s, q) => s + q.register_count, 0) };
+  const socialSubtotal = { scans: socialQrcodes.reduce((s, q) => s + q.scan_count, 0), registers: socialQrcodes.reduce((s, q) => s + q.register_count, 0) };
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] text-[#111827]">
@@ -472,13 +492,17 @@ export default function SalesDashboard() {
                 {/* Survey group */}
                 {surveyQrcodes.length > 0 && (
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-semibold text-[#374151]">📋 调研问卷</span>
-                      <span className="text-[10px] text-[#6B7280]">{surveyQrcodes.length} 个</span>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-[#374151]">📋 调研问卷</span>
+                        <span className="text-[10px] text-[#6B7280]">{surveyQrcodes.length} 个</span>
+                      </div>
+                      <span className="text-[10px] text-[#6B7280]">扫码 {surveySubtotal.scans} / 注册 {surveySubtotal.registers}</span>
                     </div>
                     <div className="space-y-2">
                       {surveyQrcodes.map(qr => (
-                        <QRCodeRow key={qr.id} qr={qr} getQrImageUrl={getQrImageUrl} onDownload={downloadQR} onShare={shareQR} />
+                        <QRCodeRow key={qr.id} qr={qr} getQrImageUrl={getQrImageUrl} onDownload={downloadQR} onShare={shareQR}
+                          onViewCustomers={viewCustomersForCode} viewingCode={viewingCustomersFor} qrCustomers={qrCustomers} loadingCustomers={loadingCustomers} />
                       ))}
                     </div>
                   </div>
@@ -487,13 +511,17 @@ export default function SalesDashboard() {
                 {/* Social group */}
                 {socialQrcodes.length > 0 && (
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-semibold text-[#374151]">📱 社交媒体</span>
-                      <span className="text-[10px] text-[#6B7280]">{socialQrcodes.length} 个</span>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-[#374151]">📱 社交媒体</span>
+                        <span className="text-[10px] text-[#6B7280]">{socialQrcodes.length} 个</span>
+                      </div>
+                      <span className="text-[10px] text-[#6B7280]">扫码 {socialSubtotal.scans} / 注册 {socialSubtotal.registers}</span>
                     </div>
                     <div className="space-y-2">
                       {socialQrcodes.map(qr => (
-                        <QRCodeRow key={qr.id} qr={qr} getQrImageUrl={getQrImageUrl} onDownload={downloadQR} onShare={shareQR} />
+                        <QRCodeRow key={qr.id} qr={qr} getQrImageUrl={getQrImageUrl} onDownload={downloadQR} onShare={shareQR}
+                          onViewCustomers={viewCustomersForCode} viewingCode={viewingCustomersFor} qrCustomers={qrCustomers} loadingCustomers={loadingCustomers} />
                       ))}
                     </div>
                   </div>
@@ -633,12 +661,17 @@ export default function SalesDashboard() {
   );
 }
 
-function QRCodeRow({ qr, getQrImageUrl, onDownload, onShare }: {
+function QRCodeRow({ qr, getQrImageUrl, onDownload, onShare, onViewCustomers, viewingCode, qrCustomers, loadingCustomers }: {
   qr: QRCode;
   getQrImageUrl: (code: string) => string;
   onDownload: (code: string) => void;
   onShare: (code: string, label: string | null) => void;
+  onViewCustomers?: (code: string) => void;
+  viewingCode?: string | null;
+  qrCustomers?: Customer[];
+  loadingCustomers?: boolean;
 }) {
+  const isViewing = viewingCode === qr.code;
   return (
     <div className="rounded-lg p-3 bg-[#F9FAFB] border border-[#E5E7EB]">
       <div className="flex items-start gap-3">
@@ -677,9 +710,40 @@ function QRCodeRow({ qr, getQrImageUrl, onDownload, onShare }: {
             >
               分享
             </button>
+            {onViewCustomers && qr.register_count > 0 && (
+              <button
+                onClick={() => onViewCustomers(qr.code)}
+                className={`text-[10px] px-2 py-0.5 rounded ${isViewing ? 'bg-[#D4A843] text-white' : 'bg-[#D4A843]/10 text-[#D4A843]'}`}
+              >
+                {isViewing ? '收起' : '查看客户'}
+              </button>
+            )}
           </div>
         </div>
       </div>
+      {isViewing && (
+        <div className="mt-2 pt-2 border-t border-[#E5E7EB]">
+          {loadingCustomers ? (
+            <p className="text-[10px] text-[#6B7280] text-center py-2">加载中…</p>
+          ) : (qrCustomers && qrCustomers.length > 0) ? (
+            <div className="space-y-1">
+              {qrCustomers.map(c => (
+                <div key={c.id} className="flex items-center justify-between px-2 py-1.5 rounded bg-white text-[10px]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="size-5 rounded-full flex items-center justify-center text-[8px] font-bold bg-[#D4A843] text-white flex-shrink-0">
+                      {(c.user_profiles?.display_name || c.user_profiles?.email || '?')[0].toUpperCase()}
+                    </div>
+                    <span className="truncate text-[#111827]">{c.user_profiles?.display_name || c.user_profiles?.email || '未知'}</span>
+                  </div>
+                  <span className="text-[#6B7280] flex-shrink-0 ml-2">{new Date(c.created_at).toLocaleDateString('zh-CN')}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[10px] text-[#9CA3AF] text-center py-2">暂无通过此码注册的客户</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
