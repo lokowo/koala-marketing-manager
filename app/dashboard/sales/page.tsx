@@ -72,6 +72,9 @@ export default function SalesDashboard() {
   const [newLabel, setNewLabel] = useState('');
   const [newChannel, setNewChannel] = useState('wechat');
   const [showQrCreate, setShowQrCreate] = useState(false);
+  const [viewingCustomersFor, setViewingCustomersFor] = useState<string | null>(null);
+  const [qrCustomers, setQrCustomers] = useState<Customer[]>([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -159,10 +162,6 @@ export default function SalesDashboard() {
 
   const maxFunnel = Math.max(...FUNNEL_STAGES.map(s => funnel?.funnel[s] ?? 0), 1);
   const isAdmin = role === 'admin' || role === 'super_admin';
-
-  const [viewingCustomersFor, setViewingCustomersFor] = useState<string | null>(null);
-  const [qrCustomers, setQrCustomers] = useState<Customer[]>([]);
-  const [loadingCustomers, setLoadingCustomers] = useState(false);
 
   async function viewCustomersForCode(code: string) {
     if (viewingCustomersFor === code) { setViewingCustomersFor(null); return; }
