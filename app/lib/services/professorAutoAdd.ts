@@ -183,7 +183,7 @@ export async function saveCandidateToDb(candidate: ProfessorCandidate): Promise<
       email: candidate.email || null,
       profile_url: candidate.profileUrl || null,
       google_scholar_url: candidate.googleScholarUrl || null,
-      verification_status: candidate.source === 'claude_web_search' ? 'Verified' : 'Pending',
+      verification_status: 'Verified',
       data_sources: [candidate.source],
     })
     .select()
