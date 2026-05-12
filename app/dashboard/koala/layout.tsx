@@ -37,9 +37,13 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
       const res = await fetch('/api/admin/me');
       if (res.ok) {
         const { role } = await res.json();
-        if (role === 'sales' && pathname === '/dashboard/koala') {
-          router.replace('/dashboard/sales');
-          return;
+        if (role === 'sales') {
+          const salesAllowed = ['/dashboard/koala/surveys', '/dashboard/koala/my-logs', '/dashboard/koala/marketing-tools'];
+          const allowed = salesAllowed.some(p => pathname.startsWith(p));
+          if (!allowed) {
+            router.replace('/dashboard/sales');
+            return;
+          }
         }
         setRole(role);
       }

@@ -149,9 +149,11 @@ export default function PublicSurveyPage({ params }: { params: Promise<{ code: s
 
   return (
     <div className="min-h-screen bg-[#080C10] flex flex-col">
-      <header className="border-b border-white/5 px-4 py-3 flex items-center gap-3">
-        <span className="text-xl">🐨</span>
-        <span className="text-sm font-medium text-white/80">Koala PhD</span>
+      <header className="border-b border-white/5 px-4 py-3">
+        <a href="https://koalaphd.com" className="flex items-center gap-3 no-underline w-fit">
+          <span className="text-xl">🐨</span>
+          <span className="text-sm font-medium text-white/80">Koala PhD</span>
+        </a>
       </header>
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6">
@@ -267,6 +269,16 @@ function ThankYouPage({ contactInfo, registeredUserId, shareCode, responseId, on
           你的反馈对我们非常重要，我们会认真阅读每一份回复。
         </p>
 
+        {!registerSuccess && !contactInfo?.email && (
+          <a
+            href="https://koalaphd.com"
+            className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-[#080C10] no-underline"
+            style={{ backgroundColor: '#D4A843' }}
+          >
+            进入 Koala PhD
+          </a>
+        )}
+
         {!registerSuccess && contactInfo?.email && (
           <div className="bg-[#D4A843]/5 border border-[#D4A843]/20 rounded-xl p-4 space-y-3 text-left">
             {!showRegister ? (
@@ -326,7 +338,7 @@ function ThankYouPage({ contactInfo, registeredUserId, shareCode, responseId, on
               className="inline-block mt-3 px-4 py-2 rounded-lg text-sm font-medium text-[#080C10] no-underline"
               style={{ backgroundColor: '#D4A843' }}
             >
-              进入 Koala PhD 平台
+              进入 Koala PhD
             </a>
           </div>
         )}

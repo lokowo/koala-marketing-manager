@@ -1,5 +1,9 @@
 import { NextRequest } from 'next/server';
-import { resolveShareCode, startResponse } from '../../../../../lib/services/surveyService';
+import { startResponse } from '../../../../../lib/services/surveyService';
+import { supabaseAdmin } from '../../../../../lib/supabase/server';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabaseAdmin as any;
 
 export async function POST(
   req: NextRequest,
@@ -10,19 +14,27 @@ export async function POST(
     const body = await req.json();
     const { device_fingerprint } = body;
 
-    const result = await resolveShareCode(code);
-    if (!result) {
+    // Look up share link without incrementing scan_count (GET already did that)
+    const { data: link } = await db.from('survey_share_links')
+      .select('id, survey_id, sales_user_id')
+      .eq('short_code', code)
+      .single();
+    if (!link) {
       return Response.json({ error: '链接不存在或已失效' }, { status: 404 });
     }
 
-    const { survey, salesUserId, shareLinkId } = result;
+    const { data: survey } = await db.from('surveys')
+      .select('id, status, settings, ended_at')
+      .eq('id', link.survey_id)
+      .single();
+    if (!survey) {
+      return Response.json({ error: '问卷不存在' }, { status: 404 });
+    }
 
-    // Validate survey is active
     if (survey.status !== 'active') {
       return Response.json({ error: '问卷不可用' }, { status: 400 });
     }
 
-    // Check if survey has ended by date
     const settings = (survey.settings || {}) as Record<string, unknown>;
     const endAt = settings.auto_end_date || survey.ended_at;
     if (endAt && new Date(endAt as string) < new Date()) {
@@ -31,8 +43,8 @@ export async function POST(
 
     const row = await startResponse(
       survey.id,
-      salesUserId,
-      shareLinkId,
+      link.sales_user_id,
+      link.id,
       device_fingerprint,
     );
 

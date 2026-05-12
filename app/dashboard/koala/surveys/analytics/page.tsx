@@ -32,6 +32,7 @@ function AnalyticsContent() {
 
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,14 +40,18 @@ function AnalyticsContent() {
     Promise.all([
       fetch(`/api/surveys/${surveyId}`).then(r => r.json()),
       fetch(`/api/surveys/analytics?survey_id=${surveyId}`).then(r => r.json()),
-    ]).then(([s, a]) => {
+      fetch('/api/admin/me').then(r => r.ok ? r.json() : null),
+    ]).then(([s, a, me]) => {
       setSurvey(s);
       setAnalytics(a);
+      if (me?.role) setRole(me.role);
     }).finally(() => setLoading(false));
   }, [surveyId]);
 
   if (loading) return <div className="text-center py-20 text-slate-400 text-sm">加载分析数据...</div>;
   if (!survey || !analytics) return <div className="text-center py-20 text-slate-500">问卷不存在</div>;
+
+  const canSeeResponses = role === 'super_admin' || role === 'sales';
 
   return (
     <div className="space-y-5">
@@ -55,12 +60,14 @@ function AnalyticsContent() {
           <Link href="/dashboard/koala/surveys" className="text-slate-400 hover:text-slate-600 text-sm no-underline">&larr; 返回</Link>
           <h1 className="text-lg font-bold text-slate-800">{survey.title} — 数据分析</h1>
         </div>
-        <Link
-          href={`/dashboard/koala/surveys/responses?id=${surveyId}`}
-          className="px-4 py-2 rounded-lg text-sm text-slate-600 border border-slate-200 hover:bg-slate-50 no-underline"
-        >
-          查看回复明细
-        </Link>
+        {canSeeResponses && (
+          <Link
+            href={`/dashboard/koala/surveys/responses?id=${surveyId}`}
+            className="px-4 py-2 rounded-lg text-sm text-slate-600 border border-slate-200 hover:bg-slate-50 no-underline"
+          >
+            查看回复明细
+          </Link>
+        )}
       </div>
 
       <AnalyticsCharts data={analytics} brandColor={survey.brand_color} />

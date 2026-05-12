@@ -146,15 +146,6 @@ export async function createSurvey(data: {
   const { data: row, error } = await db.from('surveys').insert(insertData).select().single();
   if (error) throw new Error(`Failed to create survey: ${error.message}`);
 
-  // Auto-create a share link so the survey has a share_code
-  const shareCode = generateShareCode();
-  await db.from('survey_share_links').insert({
-    survey_id: row.id,
-    sales_user_id: data.created_by,
-    short_code: shareCode,
-  }).select().single();
-
-  row._share_code = shareCode;
   return mapSurveyRow(row);
 }
 
@@ -1052,21 +1043,15 @@ export async function completeResponse(
     await db.from('survey_answers').insert(rows);
   }
 
-  // Increment response_count on the share link
+  // Increment response_count on the share link (NOT register_count on sales_qrcodes — that's for registrations only)
   if (respInfo?.share_link_id) {
     const { data: link } = await db.from('survey_share_links')
-      .select('response_count, short_code').eq('id', respInfo.share_link_id).single();
+      .select('response_count').eq('id', respInfo.share_link_id).single();
     if (link) {
       const newCount = (link.response_count || 0) + 1;
       await db.from('survey_share_links')
         .update({ response_count: newCount })
         .eq('id', respInfo.share_link_id);
-
-      if (link.short_code) {
-        await db.from('sales_qrcodes')
-          .update({ register_count: newCount })
-          .eq('code', link.short_code);
-      }
     }
   }
 

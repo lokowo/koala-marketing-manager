@@ -1,6 +1,21 @@
 import { NextRequest } from 'next/server';
 import { getServerUser, getUserRole } from '../../../lib/auth';
 import { listResponses, getResponseById, deleteResponse } from '../../../lib/services/surveyService';
+import { supabaseAdmin } from '../../../lib/supabase/server';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabaseAdmin as any;
+
+function stripPii(response: Record<string, unknown>): Record<string, unknown> {
+  const cleaned = { ...response };
+  if (cleaned.metadata && typeof cleaned.metadata === 'object') {
+    const { respondent_name, respondent_email, respondent_phone, respondent_wechat, ...rest } =
+      cleaned.metadata as Record<string, unknown>;
+    void respondent_name; void respondent_email; void respondent_phone; void respondent_wechat;
+    cleaned.metadata = rest;
+  }
+  return cleaned;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,8 +29,26 @@ export async function GET(req: NextRequest) {
     const responseId = searchParams.get('id');
 
     if (responseId) {
+      if (role === 'sales') {
+        const { data: resp } = await db.from('survey_responses')
+          .select('share_link_id').eq('id', responseId).single();
+        if (resp?.share_link_id) {
+          const { data: link } = await db.from('survey_share_links')
+            .select('sales_user_id').eq('id', resp.share_link_id).single();
+          if (!link || link.sales_user_id !== user.id) {
+            return Response.json({ error: 'Forbidden' }, { status: 403 });
+          }
+        } else {
+          return Response.json({ error: 'Forbidden' }, { status: 403 });
+        }
+      }
+
       const response = await getResponseById(responseId);
       if (!response) return Response.json({ error: 'Not found' }, { status: 404 });
+
+      if (role === 'admin') {
+        return Response.json(stripPii(response as unknown as Record<string, unknown>));
+      }
       return Response.json(response);
     }
 
@@ -29,6 +62,14 @@ export async function GET(req: NextRequest) {
       limit,
       sales_user_id: role === 'sales' ? user.id : undefined,
     });
+
+    if (role === 'admin') {
+      return Response.json({
+        ...result,
+        responses: result.responses.map(r => stripPii(r as unknown as Record<string, unknown>)),
+      });
+    }
+
     return Response.json(result);
   } catch (error) {
     console.error('[responses GET]', error);
