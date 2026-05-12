@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getServerUser, getUserRole } from '../../lib/auth';
-import { createSurvey, listSurveys, deleteSurvey } from '../../lib/services/surveyService';
+import { createSurvey, listSurveys, deleteSurvey, getSurvey } from '../../lib/services/surveyService';
 import { logWork } from '../../lib/worklog';
 import { notifyAdmins } from '../../lib/notifications';
 
@@ -59,25 +59,42 @@ export async function DELETE(req: NextRequest) {
     const user = await getServerUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     const role = await getUserRole(user.id);
-    if (role !== 'super_admin') {
-      return Response.json({ error: 'Only super admins can delete surveys' }, { status: 403 });
+    if (!role || !['super_admin', 'admin', 'sales'].includes(role)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { id } = await req.json();
     if (!id) return Response.json({ error: 'id required' }, { status: 400 });
 
+    // Fetch the survey to check ownership and status
+    const survey = await getSurvey(id);
+    if (!survey) return Response.json({ error: 'Not found' }, { status: 404 });
+
+    // Super admin can delete any draft
+    // Others can only delete their own drafts
+    if (role !== 'super_admin' && survey.created_by !== user.id) {
+      return Response.json({ error: '只能删除自己创建的问卷' }, { status: 403 });
+    }
+
+    if (survey.status !== 'draft') {
+      return Response.json({ error: '只有草稿状态的问卷可以删除，已发布的问卷请使用「结束」功能' }, { status: 400 });
+    }
+
     await deleteSurvey(id);
 
     await logWork({
       userId: user.id,
-      role: 'admin',
+      role: role === 'super_admin' ? 'admin' : role as 'admin' | 'sales',
       action: '删除问卷',
       actionCategory: 'survey',
       targetType: 'survey',
       targetId: id,
+      targetName: survey.title,
     });
 
-    await notifyAdmins('问卷已删除', `超级管理员删除了问卷 #${id}`, 'warning');
+    if (role === 'super_admin') {
+      await notifyAdmins('问卷已删除', `超级管理员删除了问卷「${survey.title}」`, 'warning');
+    }
 
     return Response.json({ success: true });
   } catch (error) {

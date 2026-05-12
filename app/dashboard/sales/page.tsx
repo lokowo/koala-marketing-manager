@@ -13,6 +13,19 @@ interface WorkLog { id: string; action: string; target_type: string; target_id: 
 interface EngagementEntry { userId: string; displayName: string; email: string; totalScore: number; level: 'high' | 'medium' | 'low' | 'dormant'; breakdown: { chatActivity: number; professorEngagement: number; profileCompleteness: number; outreachActivity: number; recency: number }; stats: { conversationCount: number; savedProfessors: number; emailsGenerated: number; profilePct: number; daysSinceLastActive: number; registeredDaysAgo: number } }
 interface EngagementSummary { high: number; medium: number; low: number; dormant: number; total: number; avgScore: number }
 
+interface PerfData {
+  my_stats: { total_scans: number; total_registers: number; conversion_rate: string };
+  my_by_category: {
+    survey: { scans: number; registers: number; items: { code: string; label: string; scans: number; registers: number }[] };
+    social: { scans: number; registers: number; items: { code: string; channel: string; label: string; scans: number; registers: number }[] };
+  };
+  team_stats: { total_scans: number; total_registers: number; avg_conversion_rate: string; total_sales: number };
+  my_rank: { scan_rank: number | null; register_rank: number | null; conversion_rank: number | null; total_sales: number };
+  sales_leaderboard?: { name: string; scans: number; registers: number; conversion: string }[];
+  channel_breakdown?: { channel: string; scans: number; registers: number }[];
+  ai_insight: string;
+}
+
 const STAGE_LABELS: Record<string, { label: string; color: string }> = {
   lead: { label: '线索', color: '#6B7280' },
   contacted: { label: '已联系', color: '#D4A843' },
@@ -34,6 +47,16 @@ const ACTION_LABELS: Record<string, string> = {
   share_qrcode: '分享二维码',
 };
 
+const CH_LABELS: Record<string, string> = {
+  wechat: '📱 微信',
+  xiaohongshu: '📕 小红书',
+  linkedin: '💼 LinkedIn',
+  offline: '🏫 线下',
+  douyin: '🎵 抖音',
+  survey: '📋 调研',
+  other: '🔗 其他',
+};
+
 export default function SalesDashboard() {
   const router = useRouter();
   const [qrcodes, setQrcodes] = useState<QRCode[]>([]);
@@ -43,6 +66,7 @@ export default function SalesDashboard() {
   const [logs, setLogs] = useState<WorkLog[]>([]);
   const [engagement, setEngagement] = useState<EngagementEntry[]>([]);
   const [engSummary, setEngSummary] = useState<EngagementSummary | null>(null);
+  const [perf, setPerf] = useState<PerfData | null>(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string | null>(null);
   const [newLabel, setNewLabel] = useState('');
@@ -63,13 +87,14 @@ export default function SalesDashboard() {
 
   async function loadData() {
     setLoading(true);
-    const [qr, cust, fn, kpiRes, logsRes, engRes] = await Promise.all([
+    const [qr, cust, fn, kpiRes, logsRes, engRes, perfRes] = await Promise.all([
       fetch('/api/sales/qrcode').then(r => r.json()),
       fetch('/api/sales/customers').then(r => r.json()),
       fetch('/api/sales/funnel').then(r => r.json()),
       fetch('/api/sales/my-kpi').then(r => r.ok ? r.json() : null),
       fetch('/api/sales/my-logs?limit=10').then(r => r.ok ? r.json() : { data: [] }),
       fetch('/api/sales/customer-engagement').then(r => r.ok ? r.json() : { data: [], summary: null }),
+      fetch('/api/sales/performance').then(r => r.ok ? r.json() : null),
     ]);
     setQrcodes(qr.data ?? []);
     setCustomers(cust.data ?? []);
@@ -78,6 +103,7 @@ export default function SalesDashboard() {
     setLogs(logsRes.data ?? []);
     setEngagement(engRes.data ?? []);
     setEngSummary(engRes.summary ?? null);
+    setPerf(perfRes);
     setLoading(false);
   }
 
@@ -132,6 +158,11 @@ export default function SalesDashboard() {
   }
 
   const maxFunnel = Math.max(...FUNNEL_STAGES.map(s => funnel?.funnel[s] ?? 0), 1);
+  const isAdmin = role === 'admin' || role === 'super_admin';
+
+  // Group QR codes
+  const surveyQrcodes = qrcodes.filter(q => q.channel === 'survey');
+  const socialQrcodes = qrcodes.filter(q => q.channel !== 'survey');
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] text-[#111827]">
@@ -139,7 +170,7 @@ export default function SalesDashboard() {
       <div className="bg-white border-b border-[#E5E7EB] px-4 sm:px-6 py-3 flex items-center justify-between">
         <h1 className="text-base font-bold text-[#111827]">Sales Dashboard</h1>
         <div className="flex items-center gap-2">
-          {(role === 'admin' || role === 'super_admin') && (
+          {isAdmin && (
             <Link href="/dashboard/koala" className="px-3 py-1.5 rounded-lg text-xs text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] no-underline transition">
               管理后台 →
             </Link>
@@ -176,6 +207,144 @@ export default function SalesDashboard() {
             <div className="text-[10px] text-[#6B7280] mt-0.5">我的工作日志</div>
           </Link>
         </div>
+
+        {/* ── Performance Analytics Panel ── */}
+        {perf && (
+          <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
+            <h2 className="text-sm font-semibold mb-4 text-[#374151]">
+              📊 {isAdmin ? '推广总览' : '我的推广业绩'}
+            </h2>
+
+            {/* Top stat cards */}
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              {[
+                { label: '总扫码', value: isAdmin ? perf.team_stats.total_scans : perf.my_stats.total_scans, rank: perf.my_rank.scan_rank },
+                { label: '总注册', value: isAdmin ? perf.team_stats.total_registers : perf.my_stats.total_registers, rank: perf.my_rank.register_rank },
+                { label: '转化率', value: `${isAdmin ? perf.team_stats.avg_conversion_rate : perf.my_stats.conversion_rate}%`, rank: perf.my_rank.conversion_rank },
+              ].map(item => (
+                <div key={item.label} className="rounded-xl p-3 text-center bg-[#F9FAFB] border border-[#E5E7EB]">
+                  <div className="text-xl font-bold text-[#D4A843]">{item.value}</div>
+                  <div className="text-[10px] text-[#6B7280]">{item.label}</div>
+                  {!isAdmin && item.rank && perf.my_rank.total_sales > 1 && (
+                    <div className="text-[10px] mt-1 text-[#6B7280]">
+                      团队排名 <span className="font-bold text-[#374151]">#{item.rank}</span>/{perf.my_rank.total_sales}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Admin: Sales leaderboard */}
+            {isAdmin && perf.sales_leaderboard && perf.sales_leaderboard.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold text-[#6B7280] mb-2">── Sales 排名 ──</h3>
+                <div className="space-y-1.5">
+                  {perf.sales_leaderboard.map((s, i) => (
+                    <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#F9FAFB]">
+                      <span className="text-xs font-bold w-6 text-[#D4A843]">#{i + 1}</span>
+                      <span className="text-xs font-medium flex-1 text-[#111827]">{s.name}</span>
+                      <span className="text-[10px] text-[#6B7280]">扫码{s.scans}</span>
+                      <span className="text-[10px] text-[#6B7280]">注册{s.registers}</span>
+                      <span className="text-[10px] font-medium text-[#D4A843]">{s.conversion}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Admin: Channel breakdown */}
+            {isAdmin && perf.channel_breakdown && perf.channel_breakdown.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold text-[#6B7280] mb-2">── 按渠道 ──</h3>
+                <div className="space-y-1">
+                  {perf.channel_breakdown.map(ch => (
+                    <div key={ch.channel} className="flex items-center gap-3 px-3 py-1.5 text-xs">
+                      <span className="w-24 text-[#374151]">{CH_LABELS[ch.channel] || ch.channel}</span>
+                      <span className="text-[#6B7280]">扫码 {ch.scans}</span>
+                      <span className="text-[#6B7280]">注册 {ch.registers}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sales: By category breakdown */}
+            {!isAdmin && (
+              <>
+                {/* Survey category */}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h3 className="text-xs font-semibold text-[#374151]">📋 调研工具</h3>
+                    <span className="text-[10px] text-[#6B7280]">注册 {perf.my_by_category.survey.registers}</span>
+                  </div>
+                  {perf.my_by_category.survey.items.length > 0 ? (
+                    <div className="space-y-1">
+                      {perf.my_by_category.survey.items.map(item => (
+                        <div key={item.code} className="flex items-center gap-3 px-3 py-1.5 rounded bg-[#F9FAFB] text-xs">
+                          <span className="flex-1 text-[#374151] truncate">{item.label || item.code}</span>
+                          <span className="text-[#6B7280]">扫码{item.scans}</span>
+                          <span className="text-[#6B7280]">注册{item.registers}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-[#9CA3AF] px-3">暂无调研推广</p>
+                  )}
+                </div>
+
+                {/* Social category */}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h3 className="text-xs font-semibold text-[#374151]">📱 社交媒体推广</h3>
+                    <span className="text-[10px] text-[#6B7280]">注册 {perf.my_by_category.social.registers}</span>
+                  </div>
+                  {perf.my_by_category.social.items.length > 0 ? (
+                    <div className="space-y-1">
+                      {perf.my_by_category.social.items.map(item => (
+                        <div key={item.code} className="flex items-center gap-3 px-3 py-1.5 rounded bg-[#F9FAFB] text-xs">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/10 text-[#374151]">{CH_LABELS[item.channel] || item.channel}</span>
+                          <span className="flex-1 text-[#374151] truncate">{item.label}</span>
+                          <span className="text-[#6B7280]">扫码{item.scans}</span>
+                          <span className="text-[#6B7280]">注册{item.registers}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-[#9CA3AF] px-3">暂无社交媒体推广</p>
+                  )}
+                </div>
+
+                {/* Team comparison */}
+                {perf.my_rank.total_sales > 1 && (
+                  <div className="rounded-lg p-3 bg-[#F9FAFB] border border-[#E5E7EB] mb-3">
+                    <h3 className="text-xs font-semibold text-[#6B7280] mb-1.5">── 团队对比 ──</h3>
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div className="text-[#6B7280]">
+                        全团队总扫码：<span className="font-medium text-[#374151]">{perf.team_stats.total_scans}</span>
+                        {perf.team_stats.total_scans > 0 && (
+                          <span className="ml-1">我占比 {((perf.my_stats.total_scans / perf.team_stats.total_scans) * 100).toFixed(1)}%</span>
+                        )}
+                      </div>
+                      <div className="text-[#6B7280]">
+                        全团队总注册：<span className="font-medium text-[#374151]">{perf.team_stats.total_registers}</span>
+                        {perf.team_stats.total_registers > 0 && (
+                          <span className="ml-1">我占比 {((perf.my_stats.total_registers / perf.team_stats.total_registers) * 100).toFixed(1)}%</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* AI Insight */}
+            {perf.ai_insight && !isAdmin && (
+              <div className="rounded-lg p-3 bg-[#FFFBEB] border border-[#D4A843]/20">
+                <p className="text-xs text-[#92400E]">💡 {perf.ai_insight}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* KPI Progress */}
         {kpi && (
@@ -251,7 +420,7 @@ export default function SalesDashboard() {
             </div>
           )}
 
-          {/* QR Codes */}
+          {/* QR Codes — Grouped */}
           <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-[#374151]">推广码</h2>
@@ -299,50 +468,36 @@ export default function SalesDashboard() {
             )}
 
             {qrcodes.length > 0 ? (
-              <div className="space-y-3">
-                {qrcodes.map(qr => {
-                  const chLabel: Record<string, string> = { wechat: '📱 微信', xiaohongshu: '📕 小红书', linkedin: '💼 LinkedIn', offline: '🏫 线下', douyin: '🎵 抖音', survey: '📋 调研', other: '🔗 其他' };
-                  return (
-                    <div key={qr.id} className="rounded-lg p-3 bg-[#F9FAFB] border border-[#E5E7EB]">
-                      <div className="flex items-start gap-3">
-                        <img
-                          src={getQrImageUrl(qr.code)}
-                          alt={`QR: ${qr.label || qr.code}`}
-                          width={100}
-                          height={100}
-                          className="rounded border border-[#E5E7EB] bg-white flex-shrink-0"
-                        />
-                        <div className="flex-1 min-w-0 space-y-1.5">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/10 text-[#374151]">
-                              {chLabel[qr.channel] || qr.channel}
-                            </span>
-                            {qr.label && <span className="text-xs font-medium text-[#111827]">{qr.label}</span>}
-                          </div>
-                          <div className="text-[10px] font-mono text-[#D4A843]">{qr.code}</div>
-                          <div className="flex items-center gap-3 text-[10px] text-[#6B7280]">
-                            <span>👁 {qr.scan_count} 扫描</span>
-                            <span>📥 {qr.register_count} 注册</span>
-                          </div>
-                          <div className="flex gap-2 pt-1">
-                            <button
-                              onClick={() => downloadQR(qr.code)}
-                              className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
-                            >
-                              下载大图
-                            </button>
-                            <button
-                              onClick={() => shareQR(qr.code, qr.label)}
-                              className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
-                            >
-                              分享链接
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+              <div className="space-y-4">
+                {/* Survey group */}
+                {surveyQrcodes.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-semibold text-[#374151]">📋 调研问卷</span>
+                      <span className="text-[10px] text-[#6B7280]">{surveyQrcodes.length} 个</span>
                     </div>
-                  );
-                })}
+                    <div className="space-y-2">
+                      {surveyQrcodes.map(qr => (
+                        <QRCodeRow key={qr.id} qr={qr} getQrImageUrl={getQrImageUrl} onDownload={downloadQR} onShare={shareQR} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Social group */}
+                {socialQrcodes.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-semibold text-[#374151]">📱 社交媒体</span>
+                      <span className="text-[10px] text-[#6B7280]">{socialQrcodes.length} 个</span>
+                    </div>
+                    <div className="space-y-2">
+                      {socialQrcodes.map(qr => (
+                        <QRCodeRow key={qr.id} qr={qr} getQrImageUrl={getQrImageUrl} onDownload={downloadQR} onShare={shareQR} />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-xs py-4 text-center text-[#6B7280]">暂无推广码，点击上方「新建」创建</p>
@@ -357,11 +512,11 @@ export default function SalesDashboard() {
             {engSummary && (
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
                 {[
-                  { label: '平均分', value: engSummary.avgScore, icon: '📈', color: '#D4A843' },
-                  { label: '🔥 高活跃', value: engSummary.high, icon: '', color: '#10B981' },
-                  { label: '🟡 中等', value: engSummary.medium, icon: '', color: '#D4A843' },
-                  { label: '🔵 低活跃', value: engSummary.low, icon: '', color: '#3B82F6' },
-                  { label: '⚪ 沉默', value: engSummary.dormant, icon: '', color: '#6B7280' },
+                  { label: '平均分', value: engSummary.avgScore, color: '#D4A843' },
+                  { label: '🔥 高活跃', value: engSummary.high, color: '#10B981' },
+                  { label: '🟡 中等', value: engSummary.medium, color: '#D4A843' },
+                  { label: '🔵 低活跃', value: engSummary.low, color: '#3B82F6' },
+                  { label: '⚪ 沉默', value: engSummary.dormant, color: '#6B7280' },
                 ].map(item => (
                   <div key={item.label} className="rounded-lg px-3 py-2 text-center bg-[#F9FAFB] border border-[#E5E7EB]">
                     <div className="text-lg font-bold" style={{ color: item.color }}>{item.value}</div>
@@ -473,6 +628,57 @@ export default function SalesDashboard() {
           )}
         </div>
       </div>
+      </div>
+    </div>
+  );
+}
+
+function QRCodeRow({ qr, getQrImageUrl, onDownload, onShare }: {
+  qr: QRCode;
+  getQrImageUrl: (code: string) => string;
+  onDownload: (code: string) => void;
+  onShare: (code: string, label: string | null) => void;
+}) {
+  return (
+    <div className="rounded-lg p-3 bg-[#F9FAFB] border border-[#E5E7EB]">
+      <div className="flex items-start gap-3">
+        <img
+          src={getQrImageUrl(qr.code)}
+          alt={`QR: ${qr.label || qr.code}`}
+          width={80}
+          height={80}
+          className="rounded border border-[#E5E7EB] bg-white flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/10 text-[#374151]">
+              {CH_LABELS[qr.channel] || qr.channel}
+            </span>
+            {qr.label && <span className="text-xs font-medium text-[#111827]">{qr.label}</span>}
+          </div>
+          <div className="text-[10px] font-mono text-[#D4A843]">{qr.code}</div>
+          <div className="flex items-center gap-3 text-[10px] text-[#6B7280]">
+            <span>👁 {qr.scan_count} 扫码</span>
+            <span>📥 {qr.register_count} 注册</span>
+            {qr.scan_count > 0 && (
+              <span className="text-[#D4A843]">{((qr.register_count / qr.scan_count) * 100).toFixed(0)}%</span>
+            )}
+          </div>
+          <div className="flex gap-2 pt-0.5">
+            <button
+              onClick={() => onDownload(qr.code)}
+              className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
+            >
+              下载
+            </button>
+            <button
+              onClick={() => onShare(qr.code, qr.label)}
+              className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
+            >
+              分享
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
