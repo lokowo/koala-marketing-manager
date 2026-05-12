@@ -109,7 +109,7 @@ export default function BlogPage() {
             />
             <button
               onClick={doSearch}
-              className="px-3 py-1 rounded-lg text-xs font-medium flex-shrink-0 bg-[#D4A843] text-[#080c10]"
+              className="px-3 py-1 rounded-lg text-xs font-medium flex-shrink-0 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
             >
               搜索
             </button>
@@ -129,7 +129,7 @@ export default function BlogPage() {
                       onClick={() => { setActiveCategory(cat.key); setPage(1); }}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                         active
-                          ? 'bg-[#D4A843] text-[#080c10]'
+                          ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'
                           : 'bg-gray-100 dark:bg-[#D4A843]/[0.06] text-gray-500 dark:text-[#a8b8ac]'
                       }`}
                     >
@@ -146,7 +146,7 @@ export default function BlogPage() {
                   onClick={() => { setSortBy(key); setPage(1); }}
                   className={`px-2.5 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
                     sortBy === key
-                      ? 'bg-[#D4A843] text-[#080c10]'
+                      ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'
                       : 'bg-transparent text-gray-500 dark:text-[#6a7a7e] border border-gray-200 dark:border-[#D4A843]/15'
                   }`}
                 >
@@ -207,11 +207,11 @@ export default function BlogPage() {
                 <div className="p-3.5">
                   {/* Category + source */}
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-[#D4A843]/[0.06] text-[#D4A843]">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-[#D4A843]/[0.06] text-amber-700 dark:text-[#D4A843]">
                       {CATEGORY_LABELS[post.category] || post.category}
                     </span>
                     {post.is_pinned && (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-[#D4A843]/15 text-[#D4A843]">
+                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-[#D4A843]/15 text-amber-700 dark:text-[#D4A843]">
                         📌 置顶
                       </span>
                     )}
@@ -259,7 +259,7 @@ export default function BlogPage() {
               className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors border ${
                 page <= 1
                   ? 'text-gray-300 dark:text-[#4a5a5e] border-gray-100 dark:border-[#D4A843]/[0.08] cursor-not-allowed'
-                  : 'text-[#D4A843] border-[#D4A843]/20'
+                  : 'text-[#1A1A2E] dark:text-[#D4A843] border-[#1A1A2E]/20 dark:border-[#D4A843]/20'
               }`}
             >
               ← 上一页
@@ -273,7 +273,7 @@ export default function BlogPage() {
               className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors border ${
                 page >= totalPages
                   ? 'text-gray-300 dark:text-[#4a5a5e] border-gray-100 dark:border-[#D4A843]/[0.08] cursor-not-allowed'
-                  : 'text-[#D4A843] border-[#D4A843]/20'
+                  : 'text-[#1A1A2E] dark:text-[#D4A843] border-[#1A1A2E]/20 dark:border-[#D4A843]/20'
               }`}
             >
               下一页 →
@@ -292,7 +292,7 @@ export default function BlogPage() {
             </div>
             <Link
               href="/koala/chat"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm no-underline flex-shrink-0 bg-[#D4A843] text-[#080c10]"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm no-underline flex-shrink-0 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
             >
               开始对话 <ArrowRight className="size-4" />
             </Link>

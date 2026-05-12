@@ -351,8 +351,8 @@ function ProfessorsPageInner() {
 
       {/* Mobile Header — hidden on desktop */}
       <div className="flex lg:hidden px-4 pt-4 pb-2 justify-between items-center">
-        <Link href="/koala/discover" className="size-10 rounded-full flex justify-center items-center" style={{ background: 'rgba(212,168,67,0.1)' }}>
-          <ChevronLeft className="size-5 text-[#D4A843]" />
+        <Link href="/koala/discover" className="size-10 rounded-full flex justify-center items-center bg-amber-50 dark:bg-[#D4A843]/10">
+          <ChevronLeft className="size-5 text-amber-600 dark:text-[#D4A843]" />
         </Link>
         <div className="flex flex-col items-center">
           <h1 className="font-bold text-lg leading-7 text-gray-900 dark:text-[#e8e4dc]">教授库</h1>
@@ -364,10 +364,9 @@ function ProfessorsPageInner() {
         </div>
         <button
           onClick={() => setFilterOpen(true)}
-          className="size-10 rounded-full flex justify-center items-center relative"
-          style={{ background: activeFilters ? '#D4A843' : 'rgba(212,168,67,0.1)' }}
+          className={`size-10 rounded-full flex justify-center items-center relative ${activeFilters ? 'bg-[#1A1A2E] dark:bg-[#D4A843]' : 'bg-amber-50 dark:bg-[#D4A843]/10'}`}
         >
-          <SlidersHorizontal className="size-5" style={{ color: activeFilters ? '#080c10' : '#D4A843' }} />
+          <SlidersHorizontal className={`size-5 ${activeFilters ? 'text-white dark:text-[#080c10]' : 'text-amber-600 dark:text-[#D4A843]'}`} />
           {activeFilters > 0 && (
             <span className="absolute -top-0.5 -right-0.5 size-4 rounded-full text-[10px] font-bold flex items-center justify-center"
               style={{ background: '#cc4444', color: '#fff' }}>
@@ -397,13 +396,13 @@ function ProfessorsPageInner() {
               placeholder="搜索教授、学校、研究方向…"
               className="flex-1 bg-transparent text-sm outline-none text-gray-900 dark:text-[#e8e4dc]"
             />
-            {search && <button type="button" onClick={() => { setSearch(''); setDB(''); }} className="text-xs text-[#D4A843]">清除</button>}
+            {search && <button type="button" onClick={() => { setSearch(''); setDB(''); }} className="text-xs text-[#1A1A2E] dark:text-[#D4A843]">清除</button>}
             <VoiceInputButton
               onTranscript={(text) => setSearch(prev => prev + text)}
               size="sm"
             />
-            <button type="button" onClick={triggerSearch} className="size-7 rounded-lg flex items-center justify-center shrink-0 relative z-10 bg-[#D4A843] active:scale-90 transition-transform cursor-pointer">
-              <Search className="size-3.5" style={{ color: '#080c10' }} />
+            <button type="button" onClick={triggerSearch} className="size-7 rounded-lg flex items-center justify-center shrink-0 relative z-10 bg-[#1A1A2E] dark:bg-[#D4A843] active:scale-90 transition-transform cursor-pointer">
+              <Search className="size-3.5 text-white dark:text-[#080c10]" />
             </button>
           </div>
 
@@ -412,8 +411,7 @@ function ProfessorsPageInner() {
             <div className="flex flex-wrap gap-2 mb-4">
               {HOT_TAGS.map(tag => (
                 <button key={tag} onClick={() => { setSearch(tag); setDB(tag); }}
-                  className="text-xs px-3 py-1 rounded-full text-[#D4A843]"
-                  style={{ background: 'rgba(212,168,67,0.08)', border: '1px solid rgba(212,168,67,0.2)' }}>
+                  className="text-xs px-3 py-1 rounded-full text-amber-700 dark:text-[#D4A843] bg-amber-50 dark:bg-[#D4A843]/10 border border-amber-300 dark:border-[rgba(212,168,67,0.2)]">
                   {tag}
                 </button>
               ))}
@@ -428,10 +426,7 @@ function ProfessorsPageInner() {
               const active = category === cat.value;
               return (
                 <button key={cat.value} onClick={() => setCategory(cat.value)}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs transition-colors"
-                  style={active
-                    ? { background: '#D4A843', color: '#080c10', fontWeight: 700 }
-                    : {}}>
+                  className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors ${active ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] font-bold' : ''}`}>
                   <span className={active ? '' : 'text-gray-700 dark:text-[#e8e4dc]'}>{cat.label}</span>
                   {count !== null && (
                     <span className="text-[10px]" style={{ opacity: active ? 0.85 : 0.5 }}>
@@ -465,8 +460,7 @@ function ProfessorsPageInner() {
             <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 dark:text-[#a8b8ac] border-b border-gray-200 dark:border-[rgba(212,168,67,0.12)]">招生状态</div>
             {[['', '全部'], ['yes', '🟢 招生中']].map(([v, label]) => (
               <button key={v} onClick={() => setAccepting(v)}
-                className="w-full text-left px-3 py-2 text-xs transition-colors"
-                style={accepting === v ? { background: '#D4A843', color: '#080c10', fontWeight: 600 } : {}}>
+                className={`w-full text-left px-3 py-2 text-xs transition-colors ${accepting === v ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] font-semibold' : ''}`}>
                 <span className={accepting === v ? '' : 'text-gray-700 dark:text-[#e8e4dc]'}>{label}</span>
               </button>
             ))}
@@ -476,8 +470,7 @@ function ProfessorsPageInner() {
             <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 dark:text-[#a8b8ac] border-b border-gray-200 dark:border-[rgba(212,168,67,0.12)]">H指数</div>
             {[[0, '全部'], [10, 'H ≥ 10'], [20, 'H ≥ 20'], [40, 'H ≥ 40'], [80, 'H ≥ 80']].map(([v, label]) => (
               <button key={v} onClick={() => setHIndexMin(Number(v))}
-                className="w-full text-left px-3 py-2 text-xs transition-colors"
-                style={hIndexMin === Number(v) ? { background: '#D4A843', color: '#080c10', fontWeight: 600 } : {}}>
+                className={`w-full text-left px-3 py-2 text-xs transition-colors ${hIndexMin === Number(v) ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] font-semibold' : ''}`}>
                 <span className={hIndexMin === Number(v) ? '' : 'text-gray-700 dark:text-[#e8e4dc]'}>{label}</span>
               </button>
             ))}
@@ -487,8 +480,7 @@ function ProfessorsPageInner() {
             <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 dark:text-[#a8b8ac] border-b border-gray-200 dark:border-[rgba(212,168,67,0.12)]">排序</div>
             {[['opportunity_score','⭐ 推荐度'],['h_index','📈 H指数'],['paper_count','📄 论文数'],['citation_count','📊 引用数']].map(([v, label]) => (
               <button key={v} onClick={() => setSortBy(v)}
-                className="w-full text-left px-3 py-2 text-xs transition-colors"
-                style={sortBy === v ? { background: '#D4A843', color: '#080c10', fontWeight: 600 } : {}}>
+                className={`w-full text-left px-3 py-2 text-xs transition-colors ${sortBy === v ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] font-semibold' : ''}`}>
                 <span className={sortBy === v ? '' : 'text-gray-700 dark:text-[#e8e4dc]'}>{label}</span>
               </button>
             ))}
@@ -508,13 +500,13 @@ function ProfessorsPageInner() {
             placeholder="搜索教授、学校、研究方向…"
             className="flex-1 bg-transparent text-sm outline-none text-gray-900 dark:text-[#e8e4dc]"
           />
-          {search && <button type="button" onClick={() => { setSearch(''); setDB(''); }} className="text-xs text-[#D4A843]">清除</button>}
+          {search && <button type="button" onClick={() => { setSearch(''); setDB(''); }} className="text-xs text-[#1A1A2E] dark:text-[#D4A843]">清除</button>}
           <VoiceInputButton
             onTranscript={(text) => setSearch(prev => prev + text)}
             size="sm"
           />
-          <button type="button" onClick={triggerSearch} className="size-8 rounded-lg flex items-center justify-center shrink-0 relative z-10 bg-[#D4A843] active:scale-90 transition-transform cursor-pointer">
-            <Search className="size-4" style={{ color: '#080c10' }} />
+          <button type="button" onClick={triggerSearch} className="size-8 rounded-lg flex items-center justify-center shrink-0 relative z-10 bg-[#1A1A2E] dark:bg-[#D4A843] active:scale-90 transition-transform cursor-pointer">
+            <Search className="size-4 text-white dark:text-[#080c10]" />
           </button>
         </div>
         {!search && <p className="text-xs mt-2 px-1 text-gray-500 dark:text-[#6a7a7e]">输入你的研究方向，找到最匹配的导师</p>}
@@ -525,8 +517,7 @@ function ProfessorsPageInner() {
         <div className="flex flex-wrap px-4 pt-2 gap-2 lg:hidden">
           {HOT_TAGS.map(tag => (
             <button key={tag} onClick={() => { setSearch(tag); setDB(tag); }}
-              className="text-xs px-3 py-1 rounded-full text-[#D4A843]"
-              style={{ background: 'rgba(212,168,67,0.08)', border: '1px solid rgba(212,168,67,0.2)' }}>
+              className="text-xs px-3 py-1 rounded-full text-amber-700 dark:text-[#D4A843] bg-amber-50 dark:bg-[#D4A843]/10 border border-amber-300 dark:border-[rgba(212,168,67,0.2)]">
               {tag}
             </button>
           ))}
@@ -540,8 +531,7 @@ function ProfessorsPageInner() {
           const active = category === cat.value;
           return (
             <button key={cat.value} onClick={() => setCategory(cat.value)}
-              className={`whitespace-nowrap text-xs px-3 py-2 rounded-full transition-colors flex items-center gap-1 ${active ? '' : 'bg-gray-100 dark:bg-[#111c28] text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.15)]'}`}
-              style={active ? { background: '#D4A843', color: '#080c10', fontWeight: 700 } : {}}>
+              className={`whitespace-nowrap text-xs px-3 py-2 rounded-full transition-colors flex items-center gap-1 ${active ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] font-bold' : 'bg-gray-100 dark:bg-[#111c28] text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.15)]'}`}>
               {cat.label}
               {count !== null && (
                 <span className="text-[10px]" style={{ opacity: active ? 0.85 : 0.5 }}>
@@ -559,7 +549,7 @@ function ProfessorsPageInner() {
           <span className="text-xs text-gray-500 dark:text-[#6a7a7e]">排序：
             {{ h_index: 'H指数', paper_count: '论文数', citation_count: '引用数', updated_at: '最近更新' }[sortBy] ?? sortBy}
           </span>
-          <button onClick={() => setSortBy('opportunity_score')} className="text-xs underline text-[#D4A843]">重置</button>
+          <button onClick={() => setSortBy('opportunity_score')} className="text-xs underline text-[#1A1A2E] dark:text-[#D4A843]">重置</button>
         </div>
       )}
 
@@ -579,10 +569,10 @@ function ProfessorsPageInner() {
               {search ? '试试换个关键词，或点击热门标签' : '尝试调整筛选条件'}
             </p>
             <div className="flex gap-2 mt-1">
-              {search && <button onClick={() => { setSearch(''); setDB(''); }} className="text-xs px-4 py-2 rounded-full" style={{ background: '#D4A843', color: '#080c10' }}>清除搜索</button>}
+              {search && <button onClick={() => { setSearch(''); setDB(''); }} className="text-xs px-4 py-2 rounded-full bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">清除搜索</button>}
               {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); setUniversity(''); }} className="text-xs px-4 py-2 rounded-full bg-gray-100 dark:bg-[#111c28] text-gray-700 dark:text-[#e8e4dc]">清除筛选</button>}
             </div>
-            <Link href="/koala/chat" className="mt-2 text-xs px-5 py-2 rounded-full no-underline" style={{ background: '#D4A843', color: '#080c10' }}>
+            <Link href="/koala/chat" className="mt-2 text-xs px-5 py-2 rounded-full no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
               让 Koala AI 帮我匹配 →
             </Link>
           </div>
@@ -596,8 +586,8 @@ function ProfessorsPageInner() {
         <div className="px-4 pt-2 pb-4 lg:px-0">
           <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
             <div className="px-4 py-3 flex items-center gap-2 border-b border-gray-100 dark:border-[rgba(212,168,67,0.08)]">
-              <span className="text-sm font-semibold text-[#D4A843]">全网搜索结果</span>
-              {searching && <Loader2 className="size-4 animate-spin text-[#D4A843]" />}
+              <span className="text-sm font-semibold text-gray-900 dark:text-[#D4A843]">全网搜索结果</span>
+              {searching && <Loader2 className="size-4 animate-spin text-amber-600 dark:text-[#D4A843]" />}
             </div>
             {searching && candidates.length === 0 && (
               <div className="px-4 py-6 text-center">
@@ -645,15 +635,14 @@ function ProfessorsPageInner() {
                         {c.researchAreas.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {c.researchAreas.slice(0, 4).map(area => (
-                              <span key={area} className="rounded-full text-[10px] px-2 py-0.5 text-[#D4A843]"
-                                style={{ border: '1px solid rgba(212,168,67,0.25)' }}>
+                              <span key={area} className="rounded-full text-[10px] px-2 py-0.5 text-amber-700 dark:text-[#D4A843] border border-amber-300 dark:border-[rgba(212,168,67,0.25)]">
                                 {area}
                               </span>
                             ))}
                           </div>
                         )}
                         <div className="flex gap-3 mt-1.5 text-xs text-gray-500 dark:text-[#6a7a7e]">
-                          {c.hIndex != null && <span className="text-[#D4A843] font-semibold">H:{c.hIndex}</span>}
+                          {c.hIndex != null && <span className="text-amber-700 dark:text-[#D4A843] font-semibold">H:{c.hIndex}</span>}
                           {c.paperCount != null && <span>{c.paperCount}篇</span>}
                           {c.citationCount != null && <span>{fmtCitations(c.citationCount)}引</span>}
                         </div>
@@ -662,10 +651,10 @@ function ProfessorsPageInner() {
                         <button
                           onClick={() => !added && !adding && handleAddCandidate(c)}
                           disabled={added || adding}
-                          className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70"
+                          className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70 ${added ? '' : 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'}`}
                           style={added
                             ? { background: 'rgba(34,197,94,0.15)', color: '#22c55e' }
-                            : { background: '#D4A843', color: '#080c10' }}
+                            : {}}
                         >
                           {added ? <><Check className="size-3" /> 已添加</> : adding ? <><Loader2 className="size-3 animate-spin" /> 添加中</> : <><Plus className="size-3" /> 录入并查看详情</>}
                         </button>
@@ -753,12 +742,12 @@ function ProfessorsPageInner() {
                           {c.researchAreas.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1.5">
                               {c.researchAreas.slice(0, 4).map(area => (
-                                <span key={area} className="rounded-full text-[10px] px-2 py-0.5 text-[#D4A843]" style={{ border: '1px solid rgba(212,168,67,0.25)' }}>{area}</span>
+                                <span key={area} className="rounded-full text-[10px] px-2 py-0.5 text-amber-700 dark:text-[#D4A843] border border-amber-300 dark:border-[rgba(212,168,67,0.25)]">{area}</span>
                               ))}
                             </div>
                           )}
                           <div className="flex gap-3 mt-1.5 text-xs text-gray-500 dark:text-[#6a7a7e]">
-                            {c.hIndex != null && <span className="text-[#D4A843] font-semibold">H:{c.hIndex}</span>}
+                            {c.hIndex != null && <span className="text-amber-700 dark:text-[#D4A843] font-semibold">H:{c.hIndex}</span>}
                             {c.paperCount != null && <span>{c.paperCount}篇</span>}
                             {c.citationCount != null && <span>{fmtCitations(c.citationCount)}引</span>}
                           </div>
@@ -803,7 +792,7 @@ function ProfessorsPageInner() {
 
       {loadingMore && (
         <div className="flex justify-center py-4">
-          <Loader2 className="size-5 animate-spin text-[#D4A843]" />
+          <Loader2 className="size-5 animate-spin text-amber-600 dark:text-[#D4A843]" />
         </div>
       )}
 
@@ -813,13 +802,13 @@ function ProfessorsPageInner() {
             已加载全部 {professors.length.toLocaleString()} 位导师
           </p>
           <Link href="/koala/chat"
-            className="mx-auto block text-center text-sm font-medium py-3 px-6 rounded-2xl no-underline"
-            style={{ background: '#D4A843', color: '#080c10', maxWidth: 280 }}>
+            className="mx-auto block text-center text-sm font-medium py-3 px-6 rounded-2xl no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
+            style={{ maxWidth: 280 }}>
             没找到理想导师？让 Koala AI 精准匹配 →
           </Link>
           <div className="mt-4 px-2 py-3 rounded-xl text-[11px] leading-relaxed bg-gray-50 dark:bg-[#111c28] text-gray-500 dark:text-[#6a7a7e] border border-gray-200 dark:border-[rgba(212,168,67,0.12)]">
             以上数据来自大学官网、Google Scholar 及公开数据库，仅供参考。经费与招生状态可能与实际情况存在差异，请直接联系导师核实。如发现信息有误，欢迎反馈至{' '}
-            <a href="mailto:info@koalaphd.com" className="text-[#D4A843]">info@koalaphd.com</a>
+            <a href="mailto:info@koalaphd.com" className="text-[#1A1A2E] dark:text-[#D4A843]">info@koalaphd.com</a>
           </div>
         </div>
       )}
@@ -899,8 +888,7 @@ function ProfessorsPageInner() {
             </button>
             <button
               onClick={() => setFilterOpen(false)}
-              className="flex-2 flex-grow-[2] py-3 rounded-2xl text-sm font-bold"
-              style={{ background: '#D4A843', color: '#080c10' }}>
+              className="flex-2 flex-grow-[2] py-3 rounded-2xl text-sm font-bold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
               应用筛选
             </button>
           </div>
@@ -958,12 +946,11 @@ function ProfCard({ p }: { p: Professor }) {
           </span>
         )}
         {p.opportunityScore != null && p.opportunityScore >= 70 && (
-          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full text-[#D4A843]"
-            style={{ background: 'rgba(212,168,67,0.1)' }}>
+          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full text-amber-700 dark:text-[#D4A843] bg-amber-50 dark:bg-[#D4A843]/10">
             ⭐ 推荐
           </span>
         )}
-        <Bookmark className="size-4 ml-auto shrink-0 text-[#D4A843]" />
+        <Bookmark className="size-4 ml-auto shrink-0 text-amber-600 dark:text-[#D4A843]" />
       </div>
 
       {/* Main info */}
@@ -993,7 +980,7 @@ function ProfCard({ p }: { p: Professor }) {
       {hasStats && (
         <div className="flex gap-3 px-4 pb-3 text-xs text-gray-500 dark:text-[#6a7a7e]">
           {p.hIndex != null && (
-            <span className="flex items-center gap-1 font-semibold text-[#D4A843]">
+            <span className="flex items-center gap-1 font-semibold text-amber-700 dark:text-[#D4A843]">
               <TrendingUp className="size-3" />
               H:{p.hIndex}
             </span>
@@ -1018,8 +1005,7 @@ function ProfCard({ p }: { p: Professor }) {
         <div className="flex flex-wrap gap-1 px-4 pb-2">
           <span className="text-[10px] text-gray-500 dark:text-[#6a7a7e]">适合背景：</span>
           {p.suitableStudentBackgrounds.slice(0, 3).map(bg => (
-            <span key={bg} className="text-[10px] px-1.5 py-0.5 rounded-full text-gray-500 dark:text-[#a8b8ac]"
-              style={{ background: 'rgba(212,168,67,0.08)' }}>
+            <span key={bg} className="text-[10px] px-1.5 py-0.5 rounded-full text-gray-500 dark:text-[#a8b8ac] bg-amber-50 dark:bg-[rgba(212,168,67,0.08)]">
               {bg}
             </span>
           ))}
@@ -1030,8 +1016,7 @@ function ProfCard({ p }: { p: Professor }) {
       {(p.researchAreas ?? []).length > 0 && (
         <div className="flex flex-wrap gap-1 px-4 pb-3">
           {p.researchAreas.slice(0, 3).map(area => (
-            <span key={area} className="rounded-full text-[10px] px-2 py-0.5 text-[#D4A843]"
-              style={{ border: '1px solid rgba(212,168,67,0.25)' }}>
+            <span key={area} className="rounded-full text-[10px] px-2 py-0.5 text-amber-700 dark:text-[#D4A843] border border-amber-300 dark:border-[rgba(212,168,67,0.25)]">
               {area}
             </span>
           ))}
@@ -1041,13 +1026,11 @@ function ProfCard({ p }: { p: Professor }) {
       {/* CTAs */}
       <div className="flex gap-2 px-4 pb-4">
         <Link href={`/koala/professors/${p.id}`}
-          className="flex-1 text-center text-xs font-semibold py-2 rounded-xl no-underline text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.2)]"
-          style={{ background: 'rgba(212,168,67,0.1)' }}>
+          className="flex-1 text-center text-xs font-semibold py-2 rounded-xl no-underline text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.2)] bg-amber-50 dark:bg-[#D4A843]/10">
           查看详情
         </Link>
         <Link href={`/koala/chat?action=outreach&prof=${p.id}&name=${encodeURIComponent(p.name)}`}
-          className="flex-1 text-center text-xs font-semibold py-2 rounded-xl no-underline flex items-center justify-center gap-1"
-          style={{ background: '#D4A843', color: '#080c10' }}>
+          className="flex-1 text-center text-xs font-semibold py-2 rounded-xl no-underline flex items-center justify-center gap-1 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
           <MessageSquarePlus className="size-3" />
           申请信
         </Link>
@@ -1070,8 +1053,7 @@ function FilterSection({ label, children }: { label: string; children: React.Rea
 function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick}
-      className={`text-xs px-3 py-1.5 rounded-full transition-colors ${active ? '' : 'bg-gray-100 dark:bg-[#111c28] text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.15)]'}`}
-      style={active ? { background: '#D4A843', color: '#080c10', fontWeight: 600 } : {}}>
+      className={`text-xs px-3 py-1.5 rounded-full transition-colors ${active ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] font-semibold' : 'bg-gray-100 dark:bg-[#111c28] text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.15)]'}`}>
       {label}
     </button>
   );

@@ -191,10 +191,10 @@ export default function HomePage() {
   const displayPosts = blogPosts.length > 0 ? blogPosts : fallbackPosts;
 
   return (
-    <div className="bg-white dark:bg-[#080c10] min-h-screen pb-[100px]">
+    <div className="bg-[#F8FAFC] dark:bg-[#080c10] min-h-screen pb-[100px]">
       {/* Header — mobile only; desktop uses TopNavBar */}
       <header
-        className="lg:hidden sticky top-0 z-50 px-4 pt-4 pb-3 flex justify-between items-center bg-white dark:bg-[#080c10] border-b border-gray-200 dark:border-[#ebe3d0]/20"
+        className="lg:hidden sticky top-0 z-50 px-4 pt-4 pb-3 flex justify-between items-center bg-white dark:bg-[#080c10] border-b border-gray-200 dark:border-[#ebe3d0]/20 shadow-sm dark:shadow-none"
       >
         {/* Left: Logo + brand */}
         <Link href="/koala/home" className="flex items-center gap-2.5 no-underline">
@@ -238,7 +238,7 @@ export default function HomePage() {
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(v => !v)}
-                className="size-9 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden bg-[#D4A843] text-[#080c10]"
+                className="size-9 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
               >
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -258,7 +258,7 @@ export default function HomePage() {
                   </Link>
                   <button
                     onClick={() => { setShowUserMenu(false); signOut(); }}
-                    className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 dark:hover:bg-white/5 text-[#D4A843]"
+                    className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 dark:hover:bg-white/5 text-red-500 dark:text-[#D4A843]"
                   >
                     退出登录
                   </button>
@@ -293,7 +293,7 @@ export default function HomePage() {
                     setUnreadCount(0);
                     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
                   }}
-                  className="text-[10px] text-[#D4A843]"
+                  className="text-[10px] text-amber-700 dark:text-[#D4A843]"
                 >
                   全部已读
                 </button>
@@ -306,7 +306,7 @@ export default function HomePage() {
           {notifications.length === 0 ? (
             <div className="flex items-center gap-3 py-2">
               <div className="size-9 rounded-full flex items-center justify-center bg-gray-100 dark:bg-[#c9a96e]/[0.06]">
-                <Bell className="size-4 text-[#D4A843]" />
+                <Bell className="size-4 text-amber-600 dark:text-[#D4A843]" />
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 dark:text-[#a8b8ac]">暂无新消息</p>
@@ -317,7 +317,7 @@ export default function HomePage() {
             <div className="space-y-2">
               {notifications.map(n => (
                 <div key={n.id} className="flex items-start gap-2 px-2 py-1.5 rounded-lg" style={{ background: n.read ? 'transparent' : 'rgba(201,169,110,0.04)' }}>
-                  {!n.read && <span className="mt-1.5 size-1.5 rounded-full flex-shrink-0 bg-[#D4A843]" />}
+                  {!n.read && <span className="mt-1.5 size-1.5 rounded-full flex-shrink-0 bg-amber-500 dark:bg-[#D4A843]" />}
                   <div className={n.read ? 'ml-3.5' : ''}>
                     <p className="text-xs font-medium text-gray-900 dark:text-[#e8e4dc]">{n.title}</p>
                     <p className="text-[10px] mt-0.5 text-gray-400 dark:text-[#6a7a7e]">{n.body}</p>
@@ -337,30 +337,29 @@ export default function HomePage() {
         {/* ── Hero ── */}
         <section>
           <div
-            className="rounded-2xl px-6 py-8 lg:p-10 relative overflow-hidden lg:flex lg:items-center lg:gap-12 border border-[#c9a96e]/15"
-            style={{ background: 'linear-gradient(135deg, #1a2a20 0%, #0d1a14 50%, #162028 100%)' }}
+            className="rounded-2xl px-6 py-8 lg:p-10 relative overflow-hidden lg:flex lg:items-center lg:gap-12 border border-amber-200/30 dark:border-[#c9a96e]/15 bg-gradient-to-br from-[#F8F6F1] to-[#EDE8DC] dark:from-[#1a2a20] dark:via-[#0d1a14] dark:to-[#162028]"
           >
             {/* Decorative glow */}
-            <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.08) 0%, transparent 70%)' }} />
-            <div className="absolute right-8 bottom-0 w-40 h-40 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.06) 0%, transparent 70%)' }} />
+            <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.06) 0%, transparent 70%)' }} />
+            <div className="absolute right-8 bottom-0 w-40 h-40 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.04) 0%, transparent 70%)' }} />
 
             <div className="relative z-10 lg:flex-1">
-              <div className="text-xs font-medium mb-2 text-[#D4A843]/50">
+              <div className="inline-flex items-center text-xs font-medium mb-2 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-transparent text-amber-700 dark:text-[#D4A843]/50 border border-amber-200 dark:border-transparent">
                 AI 导师匹配 · 免费使用
               </div>
-              <h1 className="text-xl lg:text-3xl font-bold leading-tight mb-1.5 text-[#e8e4dc]">
+              <h1 className="text-xl lg:text-3xl font-bold leading-tight mb-1.5 text-[#1A1A2E] dark:text-[#e8e4dc]">
                 {profCount} 位澳洲导师<br />AI 帮你找最匹配的那个
               </h1>
-              <p className="text-xs lg:text-sm leading-relaxed mb-4 text-[#6a7a7e]">
+              <p className="text-xs lg:text-sm leading-relaxed mb-4 text-gray-500 dark:text-[#6a7a7e]">
                 告诉 Koala 你的背景和兴趣，30 秒内获得个性化导师推荐
               </p>
               <Link
                 href="/koala/chat"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm no-underline bg-[#D4A843] text-[#080c10]"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
               >
                 开始匹配 <ArrowRight className="size-4" />
               </Link>
-              <div className="mt-3 text-[11px] text-[#D4A843]/40">
+              <div className="mt-3 text-[11px] text-amber-700 dark:text-[#D4A843]/40">
                 {matchCount > 0
                   ? `已帮助 ${displayMatchCount.toLocaleString()} 位同学匹配理想导师`
                   : '已帮助众多同学匹配理想导师'}
@@ -392,7 +391,7 @@ export default function HomePage() {
                 }}
               >
                 <span className="text-xl">{s.icon}</span>
-                <div className="text-[10px] font-medium text-[#D4A843]">{s.step}</div>
+                <div className="text-[10px] font-medium text-amber-600 dark:text-[#D4A843]">{s.step}</div>
                 <div className="text-xs font-bold text-gray-900 dark:text-[#e8e4dc]">{s.title}</div>
                 <div className="text-[10px] leading-relaxed text-gray-500 dark:text-[#6a7a7e]">{s.desc}</div>
               </button>
@@ -404,7 +403,7 @@ export default function HomePage() {
         <section>
           <div className="flex justify-between items-center mb-3">
             <h2 className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">🔥 热门导师推荐</h2>
-            <Link href="/koala/professors" className="text-xs font-semibold flex items-center gap-1 no-underline text-[#D4A843]">
+            <Link href="/koala/professors" className="text-xs font-semibold flex items-center gap-1 no-underline text-[#1A1A2E] dark:text-[#D4A843]">
               查看全部 <ChevronRight className="size-3" />
             </Link>
           </div>
@@ -462,7 +461,7 @@ export default function HomePage() {
                   )}
 
                   {/* CTA */}
-                  <div className="mt-auto text-[10px] font-medium text-center py-1.5 rounded-full bg-gray-100 dark:bg-[#c9a96e]/[0.06] text-[#D4A843]">
+                  <div className="mt-auto text-[10px] font-medium text-center py-1.5 rounded-full bg-gray-100 dark:bg-[#c9a96e]/[0.06] text-[#1A1A2E] dark:text-[#D4A843]">
                     查看详情 →
                   </div>
                 </Link>
@@ -494,7 +493,7 @@ export default function HomePage() {
         <section>
           <div className="flex justify-between items-center mb-3">
             <h2 className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">最新博客</h2>
-            <Link href="/koala/blog" className="text-xs font-semibold flex items-center gap-1 no-underline text-[#D4A843]">
+            <Link href="/koala/blog" className="text-xs font-semibold flex items-center gap-1 no-underline text-[#1A1A2E] dark:text-[#D4A843]">
               更多 <ChevronRight className="size-3" />
             </Link>
           </div>
@@ -506,7 +505,7 @@ export default function HomePage() {
                 className="rounded-2xl p-4 flex flex-col gap-2 no-underline bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-[#c9a96e]/[0.06] shadow-sm dark:shadow-[0_4px_16px_rgba(196,160,80,0.08)]"
               >
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full text-white bg-[#D4A843]">
+                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843] text-amber-700 dark:text-white border border-amber-200 dark:border-transparent">
                     {b.tag}
                   </span>
                   <span className="text-[10px] text-gray-400 dark:text-[#b0b0b0]">{b.date}{b.viewCount ? ` · 👁 ${b.viewCount}` : ''}</span>
@@ -526,7 +525,7 @@ export default function HomePage() {
             <p className="text-xs mb-4 text-gray-500 dark:text-[#6a7a7e]">免费匹配导师，不满意随时退出</p>
             <Link
               href="/koala/chat"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm no-underline text-white bg-[#D4A843]"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
             >
               免费开始对话 <ArrowRight className="size-4" />
             </Link>

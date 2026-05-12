@@ -142,7 +142,7 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
   const color = score >= 75 ? '#5a8060' : score >= 50 ? '#D4A843' : '#b06040';
   const hasStats = match.hIndex != null || match.paperCount != null || match.citationCount != null;
   return (
-    <div className="rounded-xl p-3 mt-2 bg-white/5 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
+    <div className="rounded-xl p-3 mt-2 bg-gray-50 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
       <Link href={`/koala/professors/${match.professorId}`} style={{ textDecoration: 'none' }}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -165,7 +165,7 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
         {match.researchTags && match.researchTags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {match.researchTags.slice(0, 3).map(tag => (
-              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/5 dark:bg-white/[0.08] text-[#D4A843]">{tag}</span>
+              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-white/[0.08] text-amber-700 dark:text-[#D4A843]">{tag}</span>
             ))}
           </div>
         )}
@@ -185,8 +185,7 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
         </Link>
         <Link
           href={`/koala/chat?action=outreach&prof=${match.professorId}&name=${encodeURIComponent(match.name)}`}
-          className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg no-underline"
-          style={{ background: '#D4A843', color: '#080c10' }}
+          className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
         >
           ✉️ 写申请信
         </Link>
@@ -197,19 +196,19 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
 
 function ScoreCardBlock({ card }: { card: ScoreCard }) {
   return (
-    <div className="rounded-xl p-3 mt-2 bg-white/5 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
+    <div className="rounded-xl p-3 mt-2 bg-gray-50 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">📊 申请潜力初评</span>
-        <span className="text-lg font-bold text-[#D4A843]">{card.totalScore}<span className="text-xs font-normal text-gray-400 dark:text-[#6a6058]">/100</span></span>
+        <span className="text-lg font-bold text-amber-600 dark:text-[#D4A843]">{card.totalScore}<span className="text-xs font-normal text-gray-400 dark:text-[#6a6058]">/100</span></span>
       </div>
       <div className="space-y-1.5">
         {card.dimensions.map(dim => (
           <div key={dim.name}>
             <div className="flex justify-between text-[11px] mb-0.5">
               <span className="text-gray-500 dark:text-[#a09888]">{dim.name}</span>
-              <span className="text-[#D4A843]">{dim.score}</span>
+              <span className="text-amber-600 dark:text-[#D4A843]">{dim.score}</span>
             </div>
-            <div className="h-1.5 rounded-full overflow-hidden bg-black/5 dark:bg-white/[0.08]">
+            <div className="h-1.5 rounded-full overflow-hidden bg-gray-100 dark:bg-white/[0.08]">
               <div className="h-full rounded-full" style={{ width: `${dim.score}%`, background: '#D4A843' }} />
             </div>
           </div>
@@ -314,7 +313,7 @@ function CreditConfirmDialog({ remaining, onConfirm, onCancel }: { remaining: nu
     <div className="fixed inset-0 z-50 flex items-end bg-black/50" onClick={onCancel}>
       <div className="w-full rounded-t-3xl p-6 bg-white dark:bg-[#0d1520]" style={{ maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2 mb-1">
-          <Sparkles className="size-4 text-[#D4A843]" />
+          <Sparkles className="size-4 text-amber-600 dark:text-[#D4A843]" />
           <span className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">生成申请信</span>
         </div>
         <p className="text-xs leading-relaxed mb-1 text-gray-500 dark:text-[#a09888]">本次生成将消耗 <strong>1 积分</strong>，剩余 {remaining} 积分。</p>
@@ -327,9 +326,9 @@ function CreditConfirmDialog({ remaining, onConfirm, onCancel }: { remaining: nu
         <div className="flex gap-2 mt-4">
           <button className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-gray-100 dark:bg-white/[0.06] text-gray-500 dark:text-[#8a8078] border border-gray-200 dark:border-white/10" onClick={onCancel}>取消</button>
           {remaining > 0 ? (
-            <button className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ background: '#D4A843', color: '#080c10' }} onClick={onConfirm}>确认生成（−1 积分）</button>
+            <button className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]" onClick={onConfirm}>确认生成（−1 积分）</button>
           ) : (
-            <Link href="/koala/tools" className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-center no-underline" style={{ background: '#D4A843', color: '#080c10' }}>去购买积分</Link>
+            <Link href="/koala/tools" className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-center no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">去购买积分</Link>
           )}
         </div>
       </div>
@@ -339,12 +338,12 @@ function CreditConfirmDialog({ remaining, onConfirm, onCancel }: { remaining: nu
 
 function ConsultationBanner() {
   return (
-    <div className="rounded-xl p-3 mt-2" style={{ background: 'rgba(212,168,67,0.1)', border: '1px solid rgba(212,168,67,0.2)' }}>
-      <div className="text-xs font-semibold mb-1 text-[#D4A843]">💡 需要更深入的分析？</div>
+    <div className="rounded-xl p-3 mt-2 bg-amber-50 dark:bg-[#D4A843]/10 border border-amber-200 dark:border-[#D4A843]/20">
+      <div className="text-xs font-semibold mb-1 text-amber-700 dark:text-[#D4A843]">💡 需要更深入的分析？</div>
       <p className="text-[11px] leading-relaxed text-gray-500 dark:text-[#a09888]">AI 评估有局限，真人顾问能帮你做更精准的项目匹配。</p>
       <div className="flex gap-2 mt-2">
-        <a href="mailto:info@koalaphd.com" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline" style={{ background: '#D4A843', color: '#080c10' }}>📧 联系顾问</a>
-        <a href="weixin://dl/chat?username=KoalaStudyAdvisor" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline bg-gray-100 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 text-[#D4A843]">💬 微信咨询</a>
+        <a href="mailto:info@koalaphd.com" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">📧 联系顾问</a>
+        <a href="weixin://dl/chat?username=KoalaStudyAdvisor" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline bg-gray-100 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 text-amber-700 dark:text-[#D4A843]">💬 微信咨询</a>
       </div>
     </div>
   );
@@ -375,12 +374,7 @@ function SettingsPanel({
               <button
                 key={val}
                 onClick={() => onTone(val)}
-                className="py-2 rounded-xl text-xs font-medium"
-                style={{
-                  background: tone === val ? 'rgba(212,168,67,0.15)' : undefined,
-                  border: `1.5px solid ${tone === val ? '#D4A843' : 'rgba(128,128,128,0.2)'}`,
-                  color: tone === val ? '#D4A843' : undefined,
-                }}
+                className={`py-2 rounded-xl text-xs font-medium border-[1.5px] ${tone === val ? 'bg-amber-50 dark:bg-[#D4A843]/15 border-amber-500 dark:border-[#D4A843] text-amber-700 dark:text-[#D4A843]' : 'border-gray-200 dark:border-gray-500/20 text-gray-500 dark:text-gray-400'}`}
               >
                 {label}
               </button>
@@ -396,12 +390,7 @@ function SettingsPanel({
               <button
                 key={val}
                 onClick={() => onLang(val)}
-                className="py-2 rounded-xl text-xs font-medium"
-                style={{
-                  background: lang === val ? 'rgba(212,168,67,0.15)' : undefined,
-                  border: `1.5px solid ${lang === val ? '#D4A843' : 'rgba(128,128,128,0.2)'}`,
-                  color: lang === val ? '#D4A843' : undefined,
-                }}
+                className={`py-2 rounded-xl text-xs font-medium border-[1.5px] ${lang === val ? 'bg-amber-50 dark:bg-[#D4A843]/15 border-amber-500 dark:border-[#D4A843] text-amber-700 dark:text-[#D4A843]' : 'border-gray-200 dark:border-gray-500/20 text-gray-500 dark:text-gray-400'}`}
               >
                 {label}
               </button>
@@ -870,20 +859,20 @@ function ChatPageInner() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 bg-gray-50 dark:bg-[#0d1520] border-b border-gray-200 dark:border-white/10">
         <div className="flex items-center gap-2">
-          <div className="size-9 rounded-full flex justify-center items-center flex-shrink-0 bg-[#D4A843]">
-            <PawPrint className="size-5" style={{ color: '#080c10' }} />
+          <div className="size-9 rounded-full flex justify-center items-center flex-shrink-0 bg-[#1A1A2E] dark:bg-[#D4A843]">
+            <PawPrint className="size-5 text-white dark:text-[#080c10]" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-base leading-6 tracking-wide text-[#D4A843]">
+            <span className="font-bold text-base leading-6 tracking-wide text-[#1A1A2E] dark:text-[#D4A843]">
               Koala PhD
             </span>
-            <span className="text-[10px] text-[#D4A843]/70">
+            <span className="text-[10px] text-amber-600 dark:text-[#D4A843]/70">
               考拉学长 · 在线
             </span>
           </div>
         </div>
         <button onClick={() => setShowSettings(true)}>
-          <Settings className="size-5 text-[#D4A843]" />
+          <Settings className="size-5 text-gray-500 dark:text-[#D4A843]" />
         </button>
       </div>
 
@@ -903,7 +892,7 @@ function ChatPageInner() {
               >
                 {m.label}
               </span>
-              <div className={`rounded-full w-8 h-0.5 ${active ? 'bg-[#D4A843]' : 'bg-transparent'}`} />
+              <div className={`rounded-full w-8 h-0.5 ${active ? 'bg-[#1A1A2E] dark:bg-[#D4A843]' : 'bg-transparent'}`} />
             </button>
           );
         })}
@@ -927,9 +916,9 @@ function ChatPageInner() {
               )}
               <div className="flex flex-col max-w-[80%]">
                 <div
-                  className={`px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? '' : 'bg-gray-100 dark:bg-white/[0.06] text-gray-700 dark:text-[#e8e4dc]'}`}
+                  className={`px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]' : 'bg-gray-100 dark:bg-white/[0.06] text-gray-700 dark:text-[#e8e4dc]'}`}
                   style={msg.role === 'user'
-                    ? { background: '#D4A843', color: '#080c10', borderRadius: '1rem 0.25rem 1rem 1rem', boxShadow: '0 2px 8px rgba(212,168,67,0.20)' }
+                    ? { borderRadius: '1rem 0.25rem 1rem 1rem', boxShadow: '0 2px 8px rgba(212,168,67,0.20)' }
                     : { borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }
                   }
                 >
@@ -951,8 +940,7 @@ function ChatPageInner() {
                 {msg.role === 'assistant' && msg.matchedProfessors && msg.matchedProfessors.length > 1 && (
                   <button
                     onClick={() => setBatchProfessors(msg.matchedProfessors!.map(p => ({ id: p.professorId, name: p.name, institution: p.institution, matchScore: p.matchScore })))}
-                    className="mt-2 w-full py-2 rounded-xl text-xs font-semibold bg-gray-100 dark:bg-[#0d1520] text-[#D4A843]"
-                    style={{ border: '1px solid rgba(212,168,67,0.3)' }}
+                    className="mt-2 w-full py-2 rounded-xl text-xs font-semibold bg-gray-100 dark:bg-[#0d1520] text-[#1A1A2E] dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/30"
                   >
                     📨 批量生成申请信（{msg.matchedProfessors.length} 封）
                   </button>
@@ -1067,7 +1055,7 @@ function ChatPageInner() {
         <div className="flex-shrink-0 px-4 py-2 bg-black/[0.03] dark:bg-white/[0.03]">
           {(profile.profile_completeness ?? 0) < 30 ? (
             <Link href="/koala/my-profile" className="flex items-center justify-center gap-2 no-underline">
-              <span className="text-[11px] leading-relaxed text-[#D4A843]">
+              <span className="text-[11px] leading-relaxed text-amber-700 dark:text-[#D4A843]">
                 📝 完善个人资料（{profile.profile_completeness ?? 0}%），获得更精准的教授匹配和申请信
               </span>
             </Link>
@@ -1111,7 +1099,7 @@ function ChatPageInner() {
           <button
             onClick={() => sendMessage()}
             disabled={!input.trim() || loading}
-            className={`size-9 shrink-0 rounded-full flex justify-center items-center ${input.trim() && !loading ? 'bg-[#D4A843]' : 'bg-gray-200 dark:bg-white/[0.08]'}`}
+            className={`size-9 shrink-0 rounded-full flex justify-center items-center ${input.trim() && !loading ? 'bg-[#1A1A2E] dark:bg-[#D4A843]' : 'bg-gray-200 dark:bg-white/[0.08]'}`}
           >
             <Send className="size-4 fill-white text-white" />
           </button>

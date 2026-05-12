@@ -149,7 +149,7 @@ function ArcProgress({ pct, size = 56 }: { pct: number; size?: number }) {
 
 // ─── Plan badge ──────────────────────────────
 const PLAN_CONFIG = {
-  free:    { label: '免费版', className: 'bg-[#D4A843]/10 text-[#D4A843]' },
+  free:    { label: '免费版', className: 'bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]' },
   starter: { label: 'Starter', className: 'bg-green-100 dark:bg-[#d4e8d8] text-green-700 dark:text-[#3a6040]' },
   pro:     { label: 'Pro ✦', className: 'bg-amber-100 dark:bg-[#f4e4b8] text-amber-700 dark:text-[#8a6030]' },
   elite:   { label: 'Elite ✦✦', className: 'bg-red-100 dark:bg-[#f8d8d0] text-red-700 dark:text-[#8a3020]' },
@@ -466,7 +466,7 @@ export default function MyProfilePage() {
         </p>
         <button
           onClick={() => showLogin()}
-          className="w-full max-w-xs py-3 rounded-full text-sm font-semibold text-white mb-3 bg-[#D4A843]"
+          className="w-full max-w-xs py-3 rounded-full text-sm font-semibold mb-3 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
         >
           登录 / 注册
         </button>
@@ -809,12 +809,12 @@ export default function MyProfilePage() {
         </div>
         <div className="flex gap-2 pt-1">
           <button onClick={saveEducation} disabled={eduSaving || !eduForm.school.trim()}
-            className="text-[11px] px-3 py-1 rounded-lg font-semibold text-white bg-[#D4A843] disabled:opacity-50"
+            className="text-[11px] px-3 py-1 rounded-lg font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] disabled:opacity-50"
           >
             {eduSaving ? '保存中…' : '保存'}
           </button>
           <button onClick={() => setEduEditing(null)}
-            className="text-[11px] px-3 py-1 rounded-lg bg-[#D4A843]/10 text-[#D4A843]"
+            className="text-[11px] px-3 py-1 rounded-lg bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]"
           >
             取消
           </button>
@@ -878,12 +878,12 @@ export default function MyProfilePage() {
         </div>
         <div className="flex gap-2 pt-1">
           <button onClick={saveWork} disabled={workSaving || !workForm.company.trim()}
-            className="text-[11px] px-3 py-1 rounded-lg font-semibold text-white bg-[#D4A843] disabled:opacity-50"
+            className="text-[11px] px-3 py-1 rounded-lg font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] disabled:opacity-50"
           >
             {workSaving ? '保存中…' : '保存'}
           </button>
           <button onClick={() => setWorkEditing(null)}
-            className="text-[11px] px-3 py-1 rounded-lg bg-[#D4A843]/10 text-[#D4A843]"
+            className="text-[11px] px-3 py-1 rounded-lg bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]"
           >
             取消
           </button>
@@ -905,7 +905,7 @@ export default function MyProfilePage() {
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt="" className="rounded-full object-cover" style={{ width: 56, height: 56 }} />
               ) : (
-                <div className="rounded-full flex items-center justify-center text-xl font-bold bg-[#D4A843] text-[#080c10]" style={{ width: 56, height: 56 }}>
+                <div className="rounded-full flex items-center justify-center text-xl font-bold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]" style={{ width: 56, height: 56 }}>
                   {initials}
                 </div>
               )}
@@ -941,7 +941,7 @@ export default function MyProfilePage() {
                       setOtherEditing(true);
                       setOtherData(profile ? profileToOther(profile) : profileToOther({} as UserProfile));
                     }}
-                    className="text-[11px] px-2.5 py-1 rounded-lg bg-[#D4A843]/10 text-[#D4A843]"
+                    className="text-[11px] px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]"
                   >
                     编辑
                   </button>
@@ -949,17 +949,17 @@ export default function MyProfilePage() {
               </div>
               <p className="text-xs truncate mt-0.5 text-gray-500 dark:text-[#6a7a7e]">{user?.email}</p>
               {userRole === 'super_admin' && (
-                <Link href="/dashboard/koala/admin-overview" className="text-[10px] no-underline mt-0.5 inline-block text-[#D4A843]">
+                <Link href="/dashboard/koala/admin-overview" className="text-[10px] no-underline mt-0.5 inline-block text-[#1A1A2E] dark:text-[#D4A843]">
                   ⚙️ 超级管理后台 →
                 </Link>
               )}
               {userRole === 'admin' && (
-                <Link href="/dashboard/koala" className="text-[10px] no-underline mt-0.5 inline-block text-[#D4A843]">
+                <Link href="/dashboard/koala" className="text-[10px] no-underline mt-0.5 inline-block text-[#1A1A2E] dark:text-[#D4A843]">
                   🔧 管理后台 →
                 </Link>
               )}
               {userRole === 'sales' && (
-                <Link href="/dashboard/sales" className="text-[10px] no-underline mt-0.5 inline-block text-[#D4A843]">
+                <Link href="/dashboard/sales" className="text-[10px] no-underline mt-0.5 inline-block text-[#1A1A2E] dark:text-[#D4A843]">
                   📊 销售后台 →
                 </Link>
               )}
@@ -986,7 +986,7 @@ export default function MyProfilePage() {
         <div className={`rounded-xl p-4 ${CARD_CLS}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-2xl font-bold text-[#D4A843]">
+              <span className="text-2xl font-bold text-amber-600 dark:text-[#D4A843]">
                 💎 {creditBalance ?? profile?.credits_remaining ?? 0}
               </span>
               <span className="text-xs text-gray-500 dark:text-[#6a7a7e]">积分</span>
@@ -998,7 +998,7 @@ export default function MyProfilePage() {
                 className={`text-[11px] px-3 py-1.5 rounded-lg font-medium ${
                   todayClaimed
                     ? 'bg-green-50 dark:bg-[rgba(90,128,96,0.12)] text-green-600 dark:text-[#5a8060]'
-                    : 'bg-[#D4A843] text-[#080c10]'
+                    : 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'
                 }`}
               >
                 {checkinLoading ? '…' : todayClaimed ? '✅ 已签到' : '每日签到 +2'}
@@ -1014,7 +1014,7 @@ export default function MyProfilePage() {
             </button>
             <button
               onClick={() => setShowCreditsDetail(!showCreditsDetail)}
-              className="text-[10px] text-[#D4A843] bg-transparent"
+              className="text-[10px] text-[#1A1A2E] dark:text-[#D4A843] bg-transparent"
             >
               查看积分明细 →
             </button>
@@ -1043,7 +1043,7 @@ export default function MyProfilePage() {
 
           <div className="flex items-center gap-2 mb-3">
             <span className="text-[11px] text-gray-500 dark:text-[#a8b8ac]">你的邀请码：</span>
-            <span className="text-sm font-bold tracking-wider text-[#D4A843] font-mono">{referralCode}</span>
+            <span className="text-sm font-bold tracking-wider text-amber-600 dark:text-[#D4A843] font-mono">{referralCode}</span>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(referralCode);
@@ -1051,7 +1051,7 @@ export default function MyProfilePage() {
                 setTimeout(() => setReferralCopied(false), 2000);
               }}
               disabled={referralStats.invited >= 3}
-              className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843] disabled:opacity-40"
+              className="text-[10px] px-2 py-0.5 rounded bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] disabled:opacity-40"
             >
               {referralCopied ? '✅ 已复制' : '复制码'}
             </button>
@@ -1076,7 +1076,7 @@ export default function MyProfilePage() {
               className={`flex-1 text-[11px] py-2 rounded-lg font-medium ${
                 referralStats.invited >= 3
                   ? 'bg-gray-100 dark:bg-[#D4A843]/[0.06] text-gray-300 dark:text-[#4a5a5e]'
-                  : 'bg-[#D4A843] text-[#080c10]'
+                  : 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'
               }`}
             >
               {inviteCopied ? '✅ 已复制，去分享给朋友吧！' : '一键复制邀请文案'}
@@ -1115,7 +1115,7 @@ export default function MyProfilePage() {
               </span>
               <button
                 onClick={() => { setEduEditing('new'); setEduForm(emptyEdu); }}
-                className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
+                className="text-[10px] px-2 py-0.5 rounded bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]"
               >
                 + 添加
               </button>
@@ -1127,7 +1127,7 @@ export default function MyProfilePage() {
               <div className="px-4 py-4 text-center">
                 <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">还没有教育经历</p>
                 <button onClick={() => { setEduEditing('new'); setEduForm(emptyEdu); }}
-                  className="text-xs mt-1 font-medium text-[#D4A843] bg-transparent"
+                  className="text-xs mt-1 font-medium text-[#1A1A2E] dark:text-[#D4A843] bg-transparent"
                 >
                   添加第一段教育经历 →
                 </button>
@@ -1144,7 +1144,7 @@ export default function MyProfilePage() {
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">{edu.school}</span>
                             {edu.degree && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/[0.08] text-gray-500 dark:text-[#a89878]">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-[#D4A843]/[0.08] text-gray-500 dark:text-[#a89878]">
                                 {edu.degree}
                               </span>
                             )}
@@ -1160,7 +1160,7 @@ export default function MyProfilePage() {
                         <div className="flex gap-1 flex-shrink-0">
                           <button
                             onClick={() => { setEduEditing(edu.id); setEduForm(eduToForm(edu)); }}
-                            className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
+                            className="text-[10px] px-2 py-0.5 rounded bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]"
                           >
                             编辑
                           </button>
@@ -1189,7 +1189,7 @@ export default function MyProfilePage() {
               </span>
               <button
                 onClick={() => { setWorkEditing('new'); setWorkForm(emptyWork); }}
-                className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
+                className="text-[10px] px-2 py-0.5 rounded bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]"
               >
                 + 添加
               </button>
@@ -1201,7 +1201,7 @@ export default function MyProfilePage() {
               <div className="px-4 py-4 text-center">
                 <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">还没有工作/实习经历</p>
                 <button onClick={() => { setWorkEditing('new'); setWorkForm(emptyWork); }}
-                  className="text-xs mt-1 font-medium text-[#D4A843] bg-transparent"
+                  className="text-xs mt-1 font-medium text-[#1A1A2E] dark:text-[#D4A843] bg-transparent"
                 >
                   添加第一段经历 →
                 </button>
@@ -1228,7 +1228,7 @@ export default function MyProfilePage() {
                         <div className="flex gap-1 flex-shrink-0">
                           <button
                             onClick={() => { setWorkEditing(w.id); setWorkForm(workToForm(w)); }}
-                            className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
+                            className="text-[10px] px-2 py-0.5 rounded bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]"
                           >
                             编辑
                           </button>
@@ -1258,7 +1258,7 @@ export default function MyProfilePage() {
               <button
                 onClick={() => !docUploading && docFileRef.current?.click()}
                 disabled={docUploading}
-                className={`text-[10px] px-2 py-0.5 rounded flex items-center gap-1 text-[#D4A843] ${docUploading ? 'bg-[#D4A843]/20' : 'bg-[#D4A843]/10'}`}
+                className={`text-[10px] px-2 py-0.5 rounded flex items-center gap-1 text-amber-700 dark:text-[#D4A843] ${docUploading ? 'bg-amber-50 dark:bg-[#D4A843]/20' : 'bg-amber-50 dark:bg-[#D4A843]/10'}`}
               >
                 {docUploading && <span className="inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />}
                 {docUploading ? '上传中…' : '+ 上传文件'}
@@ -1282,7 +1282,7 @@ export default function MyProfilePage() {
                 <p className="text-[10px] mt-1 text-gray-400 dark:text-[#5a6a6e]">支持 PDF、图片（PNG/JPG）、Word 文档</p>
                 <button
                   onClick={() => !docUploading && docFileRef.current?.click()}
-                  className="mt-2 text-xs font-medium text-[#D4A843] bg-transparent"
+                  className="mt-2 text-xs font-medium text-[#1A1A2E] dark:text-[#D4A843] bg-transparent"
                 >
                   📎 上传第一份文件 →
                 </button>
@@ -1309,7 +1309,7 @@ export default function MyProfilePage() {
                           <div className="flex-1 min-w-0">
                             {doc.file_url ? (
                               <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-                                className="text-xs font-medium truncate block hover:underline text-[#D4A843]">{doc.file_name}</a>
+                                className="text-xs font-medium truncate block hover:underline text-[#1A1A2E] dark:text-[#D4A843]">{doc.file_name}</a>
                             ) : (
                               <p className="text-xs font-medium truncate text-gray-900 dark:text-[#e8e4dc]">{doc.file_name}</p>
                             )}
@@ -1326,14 +1326,14 @@ export default function MyProfilePage() {
                           {(doc.parse_status === 'pending' || doc.parse_status === 'failed') && (
                             <button
                               onClick={() => parseDocument(doc.id)}
-                              className="text-[10px] px-2 py-0.5 rounded font-medium text-white bg-[#D4A843]"
+                              className="text-[10px] px-2 py-0.5 rounded font-medium bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
                             >
                               AI解析
                             </button>
                           )}
                           {doc.file_url && (
                             <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-                              className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/[0.08] text-[#D4A843]"
+                              className="text-[10px] px-2 py-0.5 rounded bg-amber-50 dark:bg-[#D4A843]/[0.08] text-amber-700 dark:text-[#D4A843]"
                             >
                               查看
                             </a>
@@ -1364,12 +1364,12 @@ export default function MyProfilePage() {
                   <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">📋 编辑其他信息</span>
                   <div className="flex gap-2">
                     <button onClick={saveOtherInfo} disabled={otherSaving}
-                      className="text-[11px] px-3 py-1 rounded-lg font-semibold text-white bg-[#D4A843] disabled:opacity-50"
+                      className="text-[11px] px-3 py-1 rounded-lg font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] disabled:opacity-50"
                     >
                       {otherSaving ? '保存中…' : '保存'}
                     </button>
                     <button onClick={() => setOtherEditing(false)}
-                      className="text-[11px] px-3 py-1 rounded-lg bg-[#D4A843]/10 text-[#D4A843]"
+                      className="text-[11px] px-3 py-1 rounded-lg bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]"
                     >
                       取消
                     </button>
@@ -1435,7 +1435,7 @@ export default function MyProfilePage() {
                         setOtherEditing(true);
                         setOtherData(profile ? profileToOther(profile) : profileToOther({} as UserProfile));
                       }}
-                      className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
+                      className="text-[10px] px-2 py-0.5 rounded bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]"
                     >
                       编辑
                     </button>
@@ -1446,7 +1446,7 @@ export default function MyProfilePage() {
                   <div className={`border-t ${DIVIDER_CLS}`}>
                     {otherInfoRows.map(({ label, value }, i) => (
                       <div key={label}
-                        className={`flex items-center px-4 h-9 ${i % 2 === 1 ? 'bg-[#D4A843]/[0.03]' : ''}`}
+                        className={`flex items-center px-4 h-9 ${i % 2 === 1 ? 'bg-gray-50 dark:bg-[#D4A843]/[0.03]' : ''}`}
                       >
                         <span className="text-[11px] w-20 flex-shrink-0 text-gray-500 dark:text-[#6a7a7e]">{label}</span>
                         <span className={`flex-1 text-xs truncate ${value ? 'text-gray-900 dark:text-[#e8e4dc]' : 'text-gray-300 dark:text-[#4a5a5e]'}`}>
@@ -1471,7 +1471,7 @@ export default function MyProfilePage() {
               <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">
                 🔖 我的收藏 <span className="font-normal text-gray-500 dark:text-[#6a7a7e]">({saved.length})</span>
               </span>
-              <Link href="/koala/professors" className="text-[11px] no-underline text-[#D4A843]">
+              <Link href="/koala/professors" className="text-[11px] no-underline text-[#1A1A2E] dark:text-[#D4A843]">
                 找更多 →
               </Link>
             </div>
@@ -1480,7 +1480,7 @@ export default function MyProfilePage() {
             ) : saved.length === 0 ? (
               <div className="px-4 py-4 text-center">
                 <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">还没有收藏教授</p>
-                <Link href="/koala/professors" className="text-xs mt-1 inline-block no-underline font-medium text-[#D4A843]">
+                <Link href="/koala/professors" className="text-xs mt-1 inline-block no-underline font-medium text-[#1A1A2E] dark:text-[#D4A843]">
                   去浏览教授库 →
                 </Link>
               </div>
@@ -1526,7 +1526,7 @@ export default function MyProfilePage() {
             ) : emails.length === 0 ? (
               <div className="px-4 py-4 text-center">
                 <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">还没有生成过申请信</p>
-                <Link href="/koala/chat" className="text-xs mt-1 inline-block no-underline font-medium text-[#D4A843]">
+                <Link href="/koala/chat" className="text-xs mt-1 inline-block no-underline font-medium text-[#1A1A2E] dark:text-[#D4A843]">
                   去生成第一封 →
                 </Link>
               </div>
@@ -1613,13 +1613,13 @@ export default function MyProfilePage() {
                 {Object.entries(chatStats).map(([mode, count]) => {
                   const ml = MODE_LABELS[mode];
                   return (
-                    <span key={mode} className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]" title={ml?.label ?? mode}>
+                    <span key={mode} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]" title={ml?.label ?? mode}>
                       {ml?.emoji ?? '💬'}{count}
                     </span>
                   );
                 })}
               </div>
-              <Link href="/koala/chat" className="text-[11px] no-underline text-[#D4A843]">
+              <Link href="/koala/chat" className="text-[11px] no-underline text-[#1A1A2E] dark:text-[#D4A843]">
                 新对话 →
               </Link>
             </div>
@@ -1628,7 +1628,7 @@ export default function MyProfilePage() {
             ) : conversations.length === 0 ? (
               <div className="px-4 py-4 text-center">
                 <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">还没有对话记录</p>
-                <Link href="/koala/chat" className="text-xs mt-1 inline-block no-underline font-medium text-[#D4A843]">
+                <Link href="/koala/chat" className="text-xs mt-1 inline-block no-underline font-medium text-[#1A1A2E] dark:text-[#D4A843]">
                   开始第一次对话 →
                 </Link>
               </div>
@@ -1656,7 +1656,7 @@ export default function MyProfilePage() {
             <div className={`flex items-center justify-between px-4 py-2.5 border-b ${DIVIDER_CLS}`}>
               <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">⭐ 为你推荐</span>
               <button onClick={loadRecommended} disabled={recLoading}
-                className="text-[10px] px-2 py-0.5 rounded bg-[#D4A843]/10 text-[#D4A843]"
+                className="text-[10px] px-2 py-0.5 rounded bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]"
               >
                 {recLoading ? '…' : '🔄 换一批'}
               </button>
@@ -1679,7 +1679,7 @@ export default function MyProfilePage() {
                       {prof.research_areas.length > 0 && (
                         <div className="flex gap-1 mt-0.5">
                           {prof.research_areas.slice(0, 2).map(tag => (
-                            <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-[#D4A843]/[0.08] text-gray-400 dark:text-[#a89878]">
+                            <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-[#D4A843]/[0.08] text-gray-400 dark:text-[#a89878]">
                               {tag}
                             </span>
                           ))}
@@ -1687,10 +1687,10 @@ export default function MyProfilePage() {
                       )}
                     </Link>
                     <div className="flex gap-1.5 flex-shrink-0">
-                      <Link href={`/koala/professors/${prof.id}`} className="text-[10px] px-2 py-1 rounded no-underline bg-[#D4A843]/10 text-[#D4A843]">
+                      <Link href={`/koala/professors/${prof.id}`} className="text-[10px] px-2 py-1 rounded no-underline bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]">
                         详情
                       </Link>
-                      <Link href={`/koala/chat?professor=${prof.id}`} className="text-[10px] px-2 py-1 rounded no-underline font-medium text-white bg-[#D4A843]">
+                      <Link href={`/koala/chat?professor=${prof.id}`} className="text-[10px] px-2 py-1 rounded no-underline font-medium bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
                         套磁
                       </Link>
                     </div>
@@ -1703,7 +1703,7 @@ export default function MyProfilePage() {
           {/* CTA */}
           <div className="mx-4 lg:mx-0 mb-3">
             <Link href="/koala/chat"
-              className="block w-full py-3 rounded-xl text-center text-sm font-semibold text-white no-underline bg-[#D4A843]"
+              className="block w-full py-3 rounded-xl text-center text-sm font-semibold no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
             >
               🐨 用我的背景匹配教授
             </Link>
@@ -1753,7 +1753,7 @@ export default function MyProfilePage() {
                       {pwToast && <p className="text-[11px] px-1 text-[#5a8060]">{pwToast}</p>}
                       <button
                         disabled={pwLoading}
-                        className="w-full py-2 rounded-lg text-xs font-medium disabled:opacity-50 bg-[#D4A843] text-[#080c10]"
+                        className="w-full py-2 rounded-lg text-xs font-medium disabled:opacity-50 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
                         onClick={async () => {
                           setPwError('');
                           setPwToast('');
@@ -1787,10 +1787,10 @@ export default function MyProfilePage() {
                 {profile?.role && ['admin', 'sales', 'super_admin'].includes(profile.role) && (
                   <Link
                     href={profile.role === 'sales' ? '/dashboard/sales' : '/dashboard/koala'}
-                    className="flex items-center justify-between px-4 py-2.5 text-xs no-underline text-[#D4A843]"
+                    className="flex items-center justify-between px-4 py-2.5 text-xs no-underline text-[#1A1A2E] dark:text-[#D4A843]"
                   >
                     <span>🖥️ 进入后台管理</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4A843]/12 text-[#D4A843]">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-[#D4A843]/12 text-amber-700 dark:text-[#D4A843]">
                       {profile.role === 'super_admin' ? 'Super Admin' : profile.role === 'admin' ? 'Admin' : 'Sales'}
                     </span>
                   </Link>
@@ -1846,7 +1846,7 @@ export default function MyProfilePage() {
                         onClick={() => setRoleApplyRole(r)}
                         className={`flex-1 py-2 rounded-lg text-xs font-medium transition border ${
                           roleApplyRole === r
-                            ? 'bg-[#D4A843]/15 text-[#D4A843] border-[#D4A843]/30'
+                            ? 'bg-amber-50 dark:bg-[#D4A843]/15 text-amber-700 dark:text-[#D4A843] border-amber-300 dark:border-[#D4A843]/30'
                             : 'bg-transparent text-gray-500 dark:text-[#6a7a7e] border-gray-200 dark:border-[#D4A843]/[0.08]'
                         }`}
                       >
@@ -1898,7 +1898,7 @@ export default function MyProfilePage() {
                       }
                       setRoleApplyLoading(false);
                     }}
-                    className="flex-1 py-2 rounded-lg text-xs font-medium disabled:opacity-50 bg-[#D4A843] text-[#080c10]"
+                    className="flex-1 py-2 rounded-lg text-xs font-medium disabled:opacity-50 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
                   >
                     {roleApplyLoading ? '提交中…' : '提交申请'}
                   </button>

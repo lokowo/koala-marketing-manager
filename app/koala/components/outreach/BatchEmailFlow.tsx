@@ -199,15 +199,10 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
               <button
                 key={p.id}
                 onClick={() => toggleProf(p.id)}
-                className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors"
-                style={{
-                  background: selected.has(p.id) ? '#f5e8c4' : undefined,
-                  border: `1.5px solid ${selected.has(p.id) ? '#D4A843' : 'rgba(212,168,67,0.1)'}`,
-                }}
+                className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors border-[1.5px] ${selected.has(p.id) ? 'bg-[#f5e8c4] border-amber-400 dark:border-[#D4A843]' : 'border-amber-200/50 dark:border-[rgba(212,168,67,0.1)]'}`}
               >
                 <div
-                  className="size-4 rounded flex-shrink-0 flex items-center justify-center"
-                  style={{ background: selected.has(p.id) ? '#D4A843' : 'rgba(212,168,67,0.1)' }}
+                  className={`size-4 rounded flex-shrink-0 flex items-center justify-center ${selected.has(p.id) ? 'bg-[#1A1A2E] dark:bg-[#D4A843]' : 'bg-amber-100/50 dark:bg-[rgba(212,168,67,0.1)]'}`}
                 >
                   {selected.has(p.id) && <span className="text-white text-[10px]">✓</span>}
                 </div>
@@ -216,7 +211,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
                   {p.institution && <div className="text-[10px] truncate text-gray-500 dark:text-[#6a7a7e]">{p.institution}</div>}
                 </div>
                 {p.matchScore !== undefined && (
-                  <div className="text-[10px] font-bold flex-shrink-0 text-[#D4A843]">{p.matchScore}%</div>
+                  <div className="text-[10px] font-bold flex-shrink-0 text-amber-600 dark:text-[#D4A843]">{p.matchScore}%</div>
                 )}
               </button>
             ))}
@@ -228,7 +223,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
             </div>
           )}
 
-          <div className="rounded-xl px-3 py-2.5 text-[11px] bg-[#f5e8c4] border border-[#e8d098] text-[#D4A843]">
+          <div className="rounded-xl px-3 py-2.5 text-[11px] bg-[#f5e8c4] border border-[#e8d098] text-amber-700 dark:text-[#D4A843]">
             共选 {count} 位教授，将消耗 <strong>{count} 积分</strong>
           </div>
 
@@ -236,7 +231,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
             {onClose && (
               <button
                 onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-[#D4A843]/[0.06] text-gray-500 dark:text-[#6a7a7e] border border-gray-300 dark:border-[#d8c8a8]"
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-amber-50 dark:bg-[#D4A843]/[0.06] text-gray-500 dark:text-[#6a7a7e] border border-gray-300 dark:border-[#d8c8a8]"
               >
                 取消
               </button>
@@ -244,8 +239,8 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
             <button
               onClick={startGeneration}
               disabled={!count}
-              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity"
-              style={{ background: count ? '#D4A843' : '#d8c8a8', opacity: count ? 1 : 0.6 }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-opacity ${count ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]' : 'opacity-60 text-white'}`}
+              style={count ? undefined : { background: '#d8c8a8' }}
             >
               开始生成 {count} 封申请信
             </button>
@@ -265,13 +260,13 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
           <div className="text-[11px] text-gray-700/60 dark:text-white/60 mt-0.5">{progressMsg}</div>
         </div>
         <div className="p-4 space-y-3">
-          <div className="h-2 rounded-full overflow-hidden bg-[#D4A843]/[0.06]">
+          <div className="h-2 rounded-full overflow-hidden bg-amber-50 dark:bg-[#D4A843]/[0.06]">
             <div
-              className="h-full rounded-full transition-all duration-500 bg-[#D4A843]"
+              className="h-full rounded-full transition-all duration-500 bg-[#1A1A2E] dark:bg-[#D4A843]"
               style={{ width: `${pct}%` }}
             />
           </div>
-          <div className="text-center text-sm font-semibold text-[#D4A843]">{pct}%</div>
+          <div className="text-center text-sm font-semibold text-amber-600 dark:text-[#D4A843]">{pct}%</div>
 
           {results.length > 0 && (
             <div className="space-y-1.5 max-h-32 overflow-y-auto">
@@ -287,7 +282,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
 
           <button
             onClick={stopGeneration}
-            className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#D4A843]/[0.06] text-[#b06040] border border-gray-200 dark:border-[#e8d8c8]"
+            className="w-full py-2.5 rounded-xl text-sm font-medium bg-amber-50 dark:bg-[#D4A843]/[0.06] text-[#b06040] border border-gray-200 dark:border-[#e8d8c8]"
           >
             停止生成
           </button>
@@ -314,13 +309,13 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
           <button
             onClick={exportDocx}
             disabled={!successful.length || exporting}
-            className="shrink-0 text-[11px] font-semibold px-3 py-2 rounded-xl text-white bg-[#D4A843] transition-opacity"
+            className="shrink-0 text-[11px] font-semibold px-3 py-2 rounded-xl text-white dark:text-[#080c10] bg-[#1A1A2E] dark:bg-[#D4A843] transition-opacity"
             style={{ opacity: exporting ? 0.6 : 1 }}
           >
             {exporting ? '导出中…' : '📥 下载申请信合集'}
           </button>
         </div>
-        <div className="mt-2 rounded-lg px-2.5 py-2 text-[11px] bg-white/10 dark:bg-white/[0.08] text-gray-700 dark:text-[#e8e4dc]">
+        <div className="mt-2 rounded-lg px-2.5 py-2 text-[11px] bg-gray-50 dark:bg-white/[0.08] text-gray-700 dark:text-[#e8e4dc]">
           📋 申请信已生成！请下载后自行逐封发送。建议每封间隔1-2天。
         </div>
       </div>
@@ -356,7 +351,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
         <button
           onClick={exportDocx}
           disabled={exporting}
-          className="w-full py-3 rounded-2xl text-sm font-semibold text-white bg-[#D4A843]"
+          className="w-full py-3 rounded-2xl text-sm font-semibold text-white dark:text-[#080c10] bg-[#1A1A2E] dark:bg-[#D4A843]"
           style={{ opacity: exporting ? 0.6 : 1 }}
         >
           {exporting ? '正在导出…' : `📥 下载申请信合集（${successful.length} 封）`}

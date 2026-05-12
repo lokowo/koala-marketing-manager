@@ -104,7 +104,7 @@ function ResultCard({ score, answers }: { score: number; answers: Record<string,
 
   const colorMap = {
     strong:   { text: 'text-green-600 dark:text-[#5a8060]', bar: 'bg-green-600 dark:bg-[#5a8060]', border: 'border-green-500 dark:border-[#5a8060]', bg: 'bg-green-50 dark:bg-green-900/20' },
-    moderate: { text: 'text-[#D4A843]',                     bar: 'bg-[#D4A843]',                    border: 'border-[#D4A843]',                    bg: 'bg-[#D4A843]/5 dark:bg-[#D4A843]/10' },
+    moderate: { text: 'text-amber-600 dark:text-[#D4A843]',  bar: 'bg-[#D4A843]',                    border: 'border-amber-400 dark:border-[#D4A843]',  bg: 'bg-amber-50 dark:bg-[#D4A843]/10' },
     weak:     { text: 'text-red-600 dark:text-[#b06040]',   bar: 'bg-red-500 dark:bg-[#b06040]',    border: 'border-red-500 dark:border-[#b06040]', bg: 'bg-red-50 dark:bg-red-900/20' },
   }[level];
 
@@ -122,7 +122,7 @@ function ResultCard({ score, answers }: { score: number; answers: Record<string,
       </div>
 
       <div className="space-y-2">
-        <div className="text-xs font-semibold text-[#D4A843]">✅ 条件分析</div>
+        <div className="text-xs font-semibold text-amber-700 dark:text-[#D4A843]">✅ 条件分析</div>
         {[
           { label: '英语成绩', ok: hasEnglish, note: hasEnglish ? '达到基本要求' : '建议先备考 IELTS（目标 6.5+）' },
           { label: '资金证明', ok: hasFinance, note: hasFinance ? '资金条件充足' : '建议准备至少 1 年学费 + 生活费证明（约 AUD 65,000）' },
@@ -139,14 +139,14 @@ function ResultCard({ score, answers }: { score: number; answers: Record<string,
       </div>
 
       {/* Disclaimer */}
-      <div className="rounded-xl p-3 space-y-1.5 bg-[#D4A843]/5 dark:bg-[#D4A843]/6 border border-[#D4A843]/10">
-        <div className="text-[10px] font-semibold text-[#D4A843]">⚖️ 重要声明</div>
+      <div className="rounded-xl p-3 space-y-1.5 bg-amber-50 dark:bg-[#D4A843]/6 border border-amber-200/50 dark:border-[#D4A843]/10">
+        <div className="text-[10px] font-semibold text-amber-700 dark:text-[#D4A843]">⚖️ 重要声明</div>
         <p className="text-[11px] leading-relaxed text-gray-500 dark:text-[#a8b8ac]">
           本评估由 AI 基于公开政策信息生成，<strong>不构成移民法律建议</strong>。签证审核结果取决于申请人的完整材料和澳洲移民局的个案判断。
         </p>
         <p className="text-[11px] leading-relaxed text-gray-500 dark:text-[#a8b8ac]">
           如需专业移民建议，请联系 Koala PhD：
-          <a href="mailto:info@koalaphd.com" className="font-medium text-[#D4A843]"> info@koalaphd.com</a>
+          <a href="mailto:info@koalaphd.com" className="font-medium text-amber-700 dark:text-[#D4A843]"> info@koalaphd.com</a>
         </p>
         <p className="text-[10px] text-gray-400 dark:text-[#b09878]">
           参考法规：Migration Act 1958 (Cth) · Student Visa (Class TU) Regulations
@@ -156,13 +156,13 @@ function ResultCard({ score, answers }: { score: number; answers: Record<string,
       <div className="flex gap-2">
         <Link
           href="/koala/chat"
-          className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-center no-underline bg-[#D4A843] text-[#080c10]"
+          className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-center no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
         >
           🐨 和考拉学长聊签证规划
         </Link>
         <Link
           href="/koala/tools"
-          className="flex-1 py-2.5 rounded-xl text-xs font-medium text-center no-underline bg-[#D4A843]/5 dark:bg-[#D4A843]/6 text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20"
+          className="flex-1 py-2.5 rounded-xl text-xs font-medium text-center no-underline bg-gray-100 dark:bg-[#D4A843]/6 text-gray-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20"
         >
           返回工具
         </Link>
@@ -202,7 +202,7 @@ export default function NIVPage() {
       {/* Header */}
       <div className="px-4 pt-4 pb-3 flex-shrink-0 border-b border-gray-200 dark:border-[#D4A843]/15">
         <div className="flex items-center gap-2 mb-1">
-          <Link href="/koala/tools" className="text-[13px] text-[#D4A843]">← 工具</Link>
+          <Link href="/koala/tools" className="text-[13px] text-[#1A1A2E] dark:text-[#D4A843]">← 工具</Link>
         </div>
         <h1 className="text-base font-bold text-gray-900 dark:text-[#e8e4dc]">签证准备自测</h1>
         <p className="text-[11px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">
@@ -219,7 +219,7 @@ export default function NIVPage() {
                 <span>第 {currentStep + 1} 步，共 {totalSteps} 步</span>
                 <span>{step.title}</span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden bg-[#D4A843]/10">
+              <div className="h-1.5 rounded-full overflow-hidden bg-amber-100 dark:bg-[#D4A843]/10">
                 <div
                   className="h-full rounded-full transition-all duration-500 bg-[#D4A843]"
                   style={{ width: `${progress + (100 / totalSteps)}%` }}
@@ -240,8 +240,8 @@ export default function NIVPage() {
                       className={[
                         'w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all border-[1.5px]',
                         selected
-                          ? 'bg-[#D4A843]/10 dark:bg-[#D4A843]/15 border-[#D4A843]'
-                          : 'bg-[#D4A843]/3 dark:bg-[#D4A843]/5 border-[#D4A843]/10',
+                          ? 'bg-amber-50 dark:bg-[#D4A843]/15 border-[#D4A843]'
+                          : 'bg-amber-50/50 dark:bg-[#D4A843]/5 border-amber-200/50 dark:border-[#D4A843]/10',
                       ].join(' ')}
                     >
                       <span
@@ -259,7 +259,7 @@ export default function NIVPage() {
               </div>
 
               {step.reference && (
-                <div className="mt-3 pt-3 border-t border-[#D4A843]/6">
+                <div className="mt-3 pt-3 border-t border-amber-200/30 dark:border-[#D4A843]/6">
                   <span className="text-[10px] text-gray-400 dark:text-[#b09878]">参考：</span>
                   {step.referenceUrl ? (
                     <a

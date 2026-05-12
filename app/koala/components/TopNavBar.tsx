@@ -30,7 +30,7 @@ export default function TopNavBar() {
     <nav className="hidden lg:flex fixed top-0 inset-x-0 z-50 items-center justify-between px-8 h-16 bg-white dark:bg-[#0a0e14] border-b border-gray-200 dark:border-[rgba(201,169,110,0.12)] shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
       <Link href="/koala/home" className="flex items-center gap-2 no-underline">
         <span className="text-2xl">🐨</span>
-        <span className="font-bold text-base text-[#D4A843]">Koala PhD</span>
+        <span className="font-bold text-base text-[#1A1A2E] dark:text-[#D4A843]">Koala PhD</span>
       </Link>
 
       <div className="flex items-center gap-1">
@@ -55,7 +55,7 @@ export default function TopNavBar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold mx-2 no-underline bg-[#D4A843] text-white dark:text-[#080c10]"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold mx-2 no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
               >
                 <Icon className="size-4" />
                 {item.label}
@@ -69,7 +69,7 @@ export default function TopNavBar() {
               href={item.href}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm transition-colors relative no-underline ${
                 active
-                  ? 'text-[#D4A843] font-bold bg-[#D4A843]/10'
+                  ? 'text-[#1A1A2E] dark:text-[#D4A843] font-bold bg-gray-100 dark:bg-[#D4A843]/10'
                   : 'text-gray-500 dark:text-[#6a7a7e] hover:text-gray-700 dark:hover:text-[#9CA3AF]'
               }`}
             >

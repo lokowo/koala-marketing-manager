@@ -78,7 +78,7 @@ export default function PricingPage() {
       {/* Header */}
       <div className="px-4 pt-4 pb-3 sticky top-0 z-10 bg-gray-50 dark:bg-[#080c10] border-b border-gray-200 dark:border-[#D4A843]/20">
         <div className="flex items-center gap-2 mb-1">
-          <Link href="/koala/tools" className="text-[13px] text-[#D4A843]">← 工具</Link>
+          <Link href="/koala/tools" className="text-[13px] text-[#1A1A2E] dark:text-[#D4A843]">← 工具</Link>
         </div>
         <h1 className="text-base font-bold text-gray-900 dark:text-[#e8e4dc]">定价与积分</h1>
         <p className="text-[11px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">免费开始，按需升级</p>
@@ -86,8 +86,8 @@ export default function PricingPage() {
 
       <div className="px-4 py-4 space-y-6 max-w-lg mx-auto">
         {/* Free tier */}
-        <div className="rounded-2xl overflow-hidden border-2 border-[#D4A843]/10">
-          <div className="p-4 bg-[#D4A843]/5 dark:bg-[#D4A843]/6">
+        <div className="rounded-2xl overflow-hidden border-2 border-amber-200/50 dark:border-[#D4A843]/10">
+          <div className="p-4 bg-amber-50 dark:bg-[#D4A843]/6">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">免费版</div>
@@ -104,7 +104,7 @@ export default function PricingPage() {
                 {f.ok
                   ? <Check className="size-4 flex-shrink-0 text-green-600 dark:text-[#5a8060]" />
                   : <X className="size-4 flex-shrink-0 text-gray-400 dark:text-[#d0b898]" />}
-                <span className={`text-xs ${f.ok ? 'text-gray-700 dark:text-[#28201a]' : 'text-gray-400 dark:text-[#b09878]'}`}>{f.text}</span>
+                <span className={`text-xs ${f.ok ? 'text-gray-700 dark:text-[#e8e4dc]' : 'text-gray-400 dark:text-[#b09878]'}`}>{f.text}</span>
               </div>
             ))}
           </div>
@@ -121,23 +121,23 @@ export default function PricingPage() {
                 className={[
                   'rounded-2xl p-3.5',
                   pack.highlight
-                    ? 'bg-[#D4A843]/10 dark:bg-[#D4A843]/15 border-2 border-[#D4A843]'
-                    : 'bg-white dark:bg-white/5 border border-[#D4A843]/10',
+                    ? 'bg-amber-50 dark:bg-[#D4A843]/15 border-2 border-[#D4A843]'
+                    : 'bg-white dark:bg-white/5 border border-amber-200/50 dark:border-[#D4A843]/10',
                 ].join(' ')}
               >
                 {pack.highlight && (
-                  <div className="text-[9px] font-bold px-1.5 py-0.5 rounded-full mb-1.5 inline-block bg-[#D4A843] text-[#080c10]">最划算</div>
+                  <div className="text-[9px] font-bold px-1.5 py-0.5 rounded-full mb-1.5 inline-block bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">最划算</div>
                 )}
                 <div className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">{pack.label}</div>
                 <div className="text-xs mt-0.5 text-gray-500 dark:text-[#6a7a7e]">{pack.credits} 积分</div>
                 <div className="text-lg font-bold mt-1 text-gray-900 dark:text-[#e8e4dc]">AUD {pack.price.toFixed(2)}</div>
-                <div className="text-[10px] mt-0.5 text-[#D4A843]">{pack.unit}</div>
+                <div className="text-[10px] mt-0.5 text-amber-600 dark:text-[#D4A843]">{pack.unit}</div>
                 <button
                   className={[
                     'w-full mt-3 py-2 rounded-xl text-xs font-semibold',
                     pack.highlight
-                      ? 'bg-[#D4A843] text-white border-0'
-                      : 'bg-[#D4A843]/5 dark:bg-[#D4A843]/6 text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20',
+                      ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] border-0'
+                      : 'bg-amber-50 dark:bg-[#D4A843]/6 text-amber-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20',
                   ].join(' ')}
                 >
                   购买
@@ -159,18 +159,18 @@ export default function PricingPage() {
                   'rounded-2xl overflow-hidden',
                   tier.highlight
                     ? 'border-2 border-[#D4A843]'
-                    : 'border border-[#D4A843]/10',
+                    : 'border border-amber-200/50 dark:border-[#D4A843]/10',
                 ].join(' ')}
               >
                 {tier.highlight && (
-                  <div className="py-1.5 text-center text-xs font-bold text-[#080c10] bg-[#D4A843]">
+                  <div className="py-1.5 text-center text-xs font-bold text-white dark:text-[#080c10] bg-[#1A1A2E] dark:bg-[#D4A843]">
                     🌟 最受欢迎
                   </div>
                 )}
-                <div className={`p-4 ${tier.highlight ? 'bg-[#D4A843]/5 dark:bg-[#D4A843]/8' : 'bg-white dark:bg-white/5'}`}>
+                <div className={`p-4 ${tier.highlight ? 'bg-amber-50 dark:bg-[#D4A843]/8' : 'bg-white dark:bg-white/5'}`}>
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <div className="text-sm font-bold text-[#D4A843]">{tier.label}</div>
+                      <div className="text-sm font-bold text-amber-600 dark:text-[#D4A843]">{tier.label}</div>
                       <div className="text-[11px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">每月 {tier.monthlyCredits} 积分</div>
                     </div>
                     <div className="text-right">
@@ -181,8 +181,8 @@ export default function PricingPage() {
                   <div className="space-y-1.5 mb-4">
                     {tier.features.map((f, i) => (
                       <div key={i} className="flex items-start gap-2">
-                        <Check className="size-3.5 flex-shrink-0 mt-0.5 text-[#D4A843]" />
-                        <span className="text-xs text-gray-700 dark:text-[#28201a]">{f}</span>
+                        <Check className="size-3.5 flex-shrink-0 mt-0.5 text-amber-600 dark:text-[#D4A843]" />
+                        <span className="text-xs text-gray-700 dark:text-[#e8e4dc]">{f}</span>
                       </div>
                     ))}
                   </div>
@@ -190,8 +190,8 @@ export default function PricingPage() {
                     className={[
                       'w-full py-2.5 rounded-xl text-sm font-semibold',
                       tier.highlight
-                        ? 'bg-[#D4A843] text-white border-0'
-                        : 'bg-[#D4A843]/5 dark:bg-[#D4A843]/6 text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20',
+                        ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] border-0'
+                        : 'bg-amber-50 dark:bg-[#D4A843]/6 text-amber-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20',
                     ].join(' ')}
                   >
                     开始 {tier.label} 订阅
@@ -203,14 +203,14 @@ export default function PricingPage() {
         </div>
 
         {/* FAQ */}
-        <div className="rounded-2xl p-4 bg-[#D4A843]/5 dark:bg-[#D4A843]/6 border border-[#D4A843]/10">
+        <div className="rounded-2xl p-4 bg-amber-50 dark:bg-[#D4A843]/6 border border-amber-200/50 dark:border-[#D4A843]/10">
           <h2 className="text-xs font-bold mb-3 text-gray-900 dark:text-[#e8e4dc]">常见问题</h2>
           {[
             { q: '积分会过期吗？', a: '单独购买的积分永久有效，不过期。订阅积分在订阅有效期内可用。' },
             { q: '如何取消订阅？', a: '随时可以取消，取消后当前订阅期仍然有效，下个周期不再扣款。' },
             { q: '积分不够用了怎么办？', a: '随时可以单独购买积分包，无需升级订阅。' },
           ].map((item, i) => (
-            <div key={i} className={i > 0 ? 'mt-3 pt-3 border-t border-[#D4A843]/10' : ''}>
+            <div key={i} className={i > 0 ? 'mt-3 pt-3 border-t border-amber-200/50 dark:border-[#D4A843]/10' : ''}>
               <div className="text-xs font-semibold mb-1 text-gray-900 dark:text-[#e8e4dc]">{item.q}</div>
               <div className="text-[11px] leading-relaxed text-gray-500 dark:text-[#a8b8ac]">{item.a}</div>
             </div>

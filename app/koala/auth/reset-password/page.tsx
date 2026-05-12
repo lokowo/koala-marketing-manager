@@ -90,7 +90,7 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-full font-semibold text-sm disabled:opacity-50 transition bg-[#D4A843] text-[#080c10]"
+            className="w-full py-3 rounded-full font-semibold text-sm disabled:opacity-50 transition bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
           >
             {loading ? '处理中…' : '重置密码'}
           </button>

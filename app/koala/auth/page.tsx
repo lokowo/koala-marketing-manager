@@ -251,7 +251,7 @@ function AuthPageInner() {
             <button
               type="submit"
               disabled={loading || code.length !== 6}
-              className="w-full mt-4 py-3 rounded-full font-semibold text-sm disabled:opacity-50 transition bg-[#D4A843] text-[#080c10]"
+              className="w-full mt-4 py-3 rounded-full font-semibold text-sm disabled:opacity-50 transition bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
             >
               {loading ? '验证中…' : '确认验证'}
             </button>
@@ -369,7 +369,7 @@ function AuthPageInner() {
 
           {mode === 'login' && (
             <div className="text-right mb-4">
-              <Link href="/koala/auth/forgot-password" className="text-xs no-underline text-[#D4A843]">
+              <Link href="/koala/auth/forgot-password" className="text-xs no-underline text-[#1A1A2E] dark:text-[#D4A843]">
                 忘记密码？
               </Link>
             </div>
@@ -380,7 +380,7 @@ function AuthPageInner() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-full font-semibold text-sm disabled:opacity-50 transition bg-[#D4A843] text-[#080c10]"
+            className="w-full py-3 rounded-full font-semibold text-sm disabled:opacity-50 transition bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
           >
             {loading ? '处理中…' : mode === 'register' ? '注册并验证邮箱' : '登录'}
           </button>

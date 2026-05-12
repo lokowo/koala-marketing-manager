@@ -66,22 +66,18 @@ export function SendTutorial() {
           <button
             key={i}
             onClick={() => setActiveClient(i)}
-            className={`flex-shrink-0 text-[11px] px-3 py-1.5 rounded-full border transition-colors ${activeClient === i ? 'text-[#D4A843]' : 'text-gray-500 dark:text-[#6a7a7e]'}`}
-            style={{
-              background: activeClient === i ? '#f5e8c4' : 'rgba(212,168,67,0.06)',
-              borderColor: activeClient === i ? '#D4A843' : 'rgba(212,168,67,0.1)',
-            }}
+            className={`flex-shrink-0 text-[11px] px-3 py-1.5 rounded-full border transition-colors ${activeClient === i ? 'text-amber-700 dark:text-[#D4A843] bg-[#f5e8c4] border-amber-400 dark:border-[#D4A843]' : 'text-gray-500 dark:text-[#6a7a7e] bg-amber-50 dark:bg-[rgba(212,168,67,0.06)] border-amber-200/50 dark:border-[rgba(212,168,67,0.1)]'}`}
           >
             {t.icon} {t.client}
           </button>
         ))}
       </div>
 
-      <div className="rounded-xl p-3 bg-[#D4A843]/[0.06]">
+      <div className="rounded-xl p-3 bg-amber-50 dark:bg-[#D4A843]/[0.06]">
         {TUTORIALS[activeClient].steps.map((step, i) => (
           <div
             key={i}
-            className={`text-[11px] leading-relaxed ${step === '' ? 'mt-2' : ''} ${step.startsWith('💡') ? 'text-[#D4A843]' : 'text-gray-700 dark:text-[#a8b8ac]'}`}
+            className={`text-[11px] leading-relaxed ${step === '' ? 'mt-2' : ''} ${step.startsWith('💡') ? 'text-amber-600 dark:text-[#D4A843]' : 'text-gray-700 dark:text-[#a8b8ac]'}`}
           >
             {step || ' '}
           </div>
@@ -89,7 +85,7 @@ export function SendTutorial() {
       </div>
 
       <div className="space-y-1.5">
-        <div className="text-[10px] font-semibold text-[#D4A843]">发送小贴士</div>
+        <div className="text-[10px] font-semibold text-amber-600 dark:text-[#D4A843]">发送小贴士</div>
         {TIPS.map((tip, i) => (
           <div key={i} className="text-[11px] leading-relaxed text-gray-700 dark:text-[#a8b8ac]">{tip}</div>
         ))}

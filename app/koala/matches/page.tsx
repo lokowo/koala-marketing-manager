@@ -73,7 +73,7 @@ function uniInitials(name: string): string {
 
 const STATUS_LABELS: Record<string, { label: string; twBg: string; twText: string }> = {
   draft:    { label: '草稿',   twBg: 'bg-white/5 dark:bg-white/5',           twText: 'text-gray-500 dark:text-[#8a9a9e]' },
-  copied:   { label: '已复制', twBg: 'bg-[#D4A843]/10',                      twText: 'text-[#D4A843]' },
+  copied:   { label: '已复制', twBg: 'bg-amber-50 dark:bg-[#D4A843]/10',     twText: 'text-amber-700 dark:text-[#D4A843]' },
   sent:     { label: '已发送', twBg: 'bg-green-500/10',                      twText: 'text-green-600 dark:text-[#5aa064]' },
   replied:  { label: '已回复', twBg: 'bg-blue-400/10',                       twText: 'text-blue-600 dark:text-[#5aa0c8]' },
   no_reply: { label: '未回复', twBg: 'bg-red-500/10',                        twText: 'text-red-600 dark:text-[#b4503c]' },
@@ -141,7 +141,7 @@ function SavedProfessorCard({ entry, onDelete }: { entry: SavedEntry; onDelete: 
           {prof.research_areas.slice(0, 4).map(tag => (
             <span
               key={tag}
-              className="text-[10px] px-2 py-0.5 rounded-full bg-[#D4A843]/10 text-[#D4A843]"
+              className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]"
             >
               {tag}
             </span>
@@ -170,7 +170,7 @@ function SavedProfessorCard({ entry, onDelete }: { entry: SavedEntry; onDelete: 
         </Link>
         <Link
           href={`/koala/chat?action=outreach&prof=${prof.id}&name=${encodeURIComponent(prof.name)}`}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold no-underline bg-[#D4A843]/10 text-[#D4A843] border border-[#D4A843]/25"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold no-underline bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] border border-amber-200 dark:border-[#D4A843]/25"
         >
           <Pen className="size-3" /> 写申请信
         </Link>
@@ -238,7 +238,7 @@ function LoginPrompt() {
       <p className="text-xs mb-6 text-gray-500 dark:text-[#6a7a7e]">收藏的教授、发送的申请信都在这里</p>
       <Link
         href="/koala/auth"
-        className="px-6 py-2.5 rounded-2xl text-sm font-semibold no-underline bg-[#D4A843]/10 text-[#D4A843] border border-[#D4A843]/30"
+        className="px-6 py-2.5 rounded-2xl text-sm font-semibold no-underline bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] border border-amber-200 dark:border-[#D4A843]/30"
       >
         登录 / 注册
       </Link>
@@ -323,7 +323,7 @@ export default function MatchesPage() {
               className={[
                 'flex items-center gap-1.5 px-3 py-2 rounded-full text-xs whitespace-nowrap flex-shrink-0 transition-colors border',
                 active
-                  ? 'bg-[#D4A843]/10 text-[#D4A843] border-[#D4A843]/30'
+                  ? 'bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] border-amber-200 dark:border-[#D4A843]/30'
                   : 'bg-white dark:bg-white/5 text-gray-500 dark:text-[#6a7a7e] border-gray-200 dark:border-white/10',
               ].join(' ')}
             >
@@ -334,7 +334,7 @@ export default function MatchesPage() {
                   className={[
                     'ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold leading-none',
                     active
-                      ? 'bg-[#D4A843]/25 text-[#D4A843]'
+                      ? 'bg-amber-100 dark:bg-[#D4A843]/25 text-amber-700 dark:text-[#D4A843]'
                       : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-[#8a9a9e]',
                   ].join(' ')}
                 >

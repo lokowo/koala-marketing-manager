@@ -91,7 +91,7 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
       <div className="px-4 py-16 text-center bg-white dark:bg-[#080c10] min-h-screen">
         <div className="text-4xl mb-3">🤔</div>
         <p className="text-sm text-gray-500 dark:text-[#6a7a7e]">找不到这位教授</p>
-        <Link href="/koala/professors" className="text-xs mt-4 inline-block text-[#D4A843]">
+        <Link href="/koala/professors" className="text-xs mt-4 inline-block text-[#1A1A2E] dark:text-[#D4A843]">
           ← 返回列表
         </Link>
       </div>
@@ -113,19 +113,14 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
       <div className="px-4 lg:px-0 pt-4 flex items-center justify-between">
         <button
           onClick={() => router.back()}
-          className="text-xs flex items-center gap-1 text-[#D4A843]"
+          className="text-xs flex items-center gap-1 text-[#1A1A2E] dark:text-[#D4A843]"
         >
           ← 返回
         </button>
         <button
           onClick={toggleBookmark}
           disabled={savingBookmark}
-          className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full"
-          style={{
-            background: saved ? '#D4A843' : 'rgba(212,168,67,0.1)',
-            color: saved ? '#080c10' : '#D4A843',
-            border: `1px solid ${saved ? '#D4A843' : 'rgba(212,168,67,0.25)'}`,
-          }}
+          className={`text-xs flex items-center gap-1 px-3 py-1.5 rounded-full ${saved ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] border border-[#1A1A2E] dark:border-[#D4A843]' : 'bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] border border-amber-300 dark:border-[rgba(212,168,67,0.25)]'}`}
         >
           {saved ? '🔖 已收藏' : '🔖 收藏'}
         </button>
@@ -138,13 +133,13 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
       {/* Profile Card */}
       <div className="mx-4 lg:mx-0 mt-3 rounded-3xl p-5 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl flex-shrink-0" style={{ background: 'rgba(212,168,67,0.1)' }}>
+          <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl flex-shrink-0 bg-amber-50 dark:bg-[rgba(212,168,67,0.1)]">
             👨‍🔬
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold text-gray-900 dark:text-[#e8e4dc]">{professor.name}</h1>
             {professor.positionTitle && (
-              <div className="text-xs mt-0.5 text-[#D4A843]">{professor.positionTitle}</div>
+              <div className="text-xs mt-0.5 text-amber-700 dark:text-[#D4A843]">{professor.positionTitle}</div>
             )}
             <div className="text-xs mt-1 text-gray-500 dark:text-[#a8b8ac]">
               {professor.university}
@@ -157,7 +152,7 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
                 </span>
               )}
               {professor.acceptingStudents === 'yes' && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full text-[#D4A843]" style={{ background: 'rgba(212,168,67,0.1)' }}>
+                <span className="text-[10px] px-2 py-0.5 rounded-full text-amber-700 dark:text-[#D4A843] bg-amber-50 dark:bg-[#D4A843]/10">
                   招收学生
                 </span>
               )}
@@ -174,7 +169,7 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
             {score > 70 ? '强' : score >= 40 ? '中' : '弱'}
           </span>
         </div>
-        <div className="w-full rounded-full h-1.5 mb-2" style={{ background: 'rgba(212,168,67,0.1)' }}>
+        <div className="w-full rounded-full h-1.5 mb-2 bg-amber-50 dark:bg-[rgba(212,168,67,0.1)]">
           <div
             className="rounded-full h-1.5 transition-all"
             style={{ width: `${score}%`, background: opportunityColor }}
@@ -191,8 +186,7 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
             {professor.researchAreas.map(area => (
               <span
                 key={area}
-                className="text-xs px-2.5 py-1 rounded-full text-[#D4A843]"
-                style={{ background: 'rgba(212,168,67,0.1)', border: '1px solid rgba(212,168,67,0.2)' }}
+                className="text-xs px-2.5 py-1 rounded-full text-amber-700 dark:text-[#D4A843] bg-amber-50 dark:bg-[#D4A843]/10 border border-amber-300 dark:border-[rgba(212,168,67,0.2)]"
               >
                 {area}
               </span>
@@ -223,19 +217,19 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
           <div className="grid grid-cols-3 gap-2 text-center">
             {professor.hIndex !== undefined && (
               <div>
-                <div className="text-lg font-bold text-[#D4A843]">{professor.hIndex}</div>
+                <div className="text-lg font-bold text-gray-900 dark:text-[#D4A843]">{professor.hIndex}</div>
                 <div className="text-[10px] text-gray-500 dark:text-[#6a7a7e]">H-Index</div>
               </div>
             )}
             {professor.paperCount !== undefined && (
               <div>
-                <div className="text-lg font-bold text-[#D4A843]">{professor.paperCount}</div>
+                <div className="text-lg font-bold text-gray-900 dark:text-[#D4A843]">{professor.paperCount}</div>
                 <div className="text-[10px] text-gray-500 dark:text-[#6a7a7e]">论文</div>
               </div>
             )}
             {professor.citationCount !== undefined && (
               <div>
-                <div className="text-lg font-bold text-[#D4A843]">{professor.citationCount}</div>
+                <div className="text-lg font-bold text-gray-900 dark:text-[#D4A843]">{professor.citationCount}</div>
                 <div className="text-[10px] text-gray-500 dark:text-[#6a7a7e]">引用</div>
               </div>
             )}
@@ -252,17 +246,17 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
           <h2 className="text-xs font-semibold mb-2 text-gray-900 dark:text-[#e8e4dc]">联系方式</h2>
           <div className="space-y-2">
             {professor.email && (
-              <a href={`mailto:${professor.email}`} className="flex items-center gap-2 text-xs text-[#D4A843]">
+              <a href={`mailto:${professor.email}`} className="flex items-center gap-2 text-xs text-[#1A1A2E] dark:text-[#D4A843]">
                 <span>📧</span><span>{professor.email}</span>
               </a>
             )}
             {professor.profileUrl && (
-              <a href={professor.profileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-[#D4A843]">
+              <a href={professor.profileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-[#1A1A2E] dark:text-[#D4A843]">
                 <span>🔗</span><span>大学主页</span>
               </a>
             )}
             {professor.googleScholarUrl && (
-              <a href={professor.googleScholarUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-[#D4A843]">
+              <a href={professor.googleScholarUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-[#1A1A2E] dark:text-[#D4A843]">
                 <span>📚</span><span>Google Scholar</span>
               </a>
             )}
@@ -283,10 +277,10 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
                   href={p.doi_url ?? p.ss_url ?? undefined}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`text-xs font-medium leading-snug block mb-1 no-underline ${p.doi_url || p.ss_url ? 'text-[#D4A843]' : 'text-gray-700 dark:text-[#e8e4dc]'}`}
+                  className={`text-xs font-medium leading-snug block mb-1 no-underline ${p.doi_url || p.ss_url ? 'text-[#1A1A2E] dark:text-[#D4A843]' : 'text-gray-700 dark:text-[#e8e4dc]'}`}
                 >
                   {p.title}
-                  {(p.doi_url || p.ss_url) && <span className="ml-1 text-[#D4A843]">↗</span>}
+                  {(p.doi_url || p.ss_url) && <span className="ml-1 text-[#1A1A2E] dark:text-[#D4A843]">↗</span>}
                 </a>
                 <div className="flex gap-2 text-[10px] text-gray-500 dark:text-[#6a7a7e]">
                   {p.year && <span>{p.year}</span>}
@@ -308,24 +302,22 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
       <div className="mx-4 lg:mx-0 mt-4 space-y-2">
         <Link
           href={`/koala/chat?action=research&prof=${id}&name=${encodeURIComponent(professor.name)}`}
-          className="block w-full py-3 rounded-full text-center text-sm font-semibold"
-          style={{ background: '#D4A843', color: '#080c10' }}
+          className="block w-full py-3 rounded-full text-center text-sm font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
         >
           🐨 问 Koala 关于这位教授
         </Link>
         {user ? (
           <Link
             href={`/koala/chat?action=outreach&prof=${id}&name=${encodeURIComponent(professor.name)}`}
-            className="block w-full py-3 rounded-full text-center text-sm font-semibold border text-[#D4A843]"
-            style={{ borderColor: 'rgba(212,168,67,0.3)' }}
+            className="block w-full py-3 rounded-full text-center text-sm font-semibold border text-[#1A1A2E] dark:text-[#D4A843] border-gray-300 dark:border-[rgba(212,168,67,0.3)]"
           >
             ✍️ 生成申请信 (AUD 1)
           </Link>
         ) : (
           <button
             onClick={() => showLogin()}
-            className="block w-full py-3 rounded-full text-center text-sm font-semibold border text-[#D4A843]"
-            style={{ borderColor: 'rgba(212,168,67,0.3)', width: '100%' }}
+            className="block w-full py-3 rounded-full text-center text-sm font-semibold border text-[#1A1A2E] dark:text-[#D4A843] border-gray-300 dark:border-[rgba(212,168,67,0.3)]"
+            style={{ width: '100%' }}
           >
             ✍️ 生成申请信（登录后使用）
           </button>

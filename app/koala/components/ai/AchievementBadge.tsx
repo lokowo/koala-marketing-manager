@@ -61,14 +61,14 @@ export function AchievementBadge({ achievementKey, unlockedAt, mode = 'toast', o
 
   if (mode === 'inline') {
     return (
-      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f5e8c4] dark:bg-[#f5e8c4] text-[#D4A843]">
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f5e8c4] dark:bg-[#f5e8c4] text-amber-700 dark:text-[#D4A843]">
         {icon} {label}
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center p-4 rounded-2xl text-center bg-white/5 dark:bg-white/[0.04] border border-[#D4A843]/10">
+    <div className="flex flex-col items-center p-4 rounded-2xl text-center bg-gray-50 dark:bg-white/[0.04] border border-amber-200/50 dark:border-[#D4A843]/10">
       <div className="text-4xl mb-2">{icon}</div>
       <div className="text-xs font-bold text-gray-900 dark:text-[#e8e4dc]">{label}</div>
       {unlockedAt && (

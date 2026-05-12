@@ -68,7 +68,7 @@ export function UserAvatar({ name, size = 28, avatarUrl }: UserAvatarProps) {
   return (
     <div
       style={{ width: size, height: size, fontSize, flexShrink: 0 }}
-      className="rounded-full bg-[#D4A843] flex items-center justify-center font-bold text-[#080c10] tracking-[0.02em]"
+      className="rounded-full bg-[#1A1A2E] dark:bg-[#D4A843] flex items-center justify-center font-bold text-white dark:text-[#080c10] tracking-[0.02em]"
     >
       {initials}
     </div>

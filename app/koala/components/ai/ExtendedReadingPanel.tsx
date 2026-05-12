@@ -27,12 +27,12 @@ export function ExtendedReadingPanel({
   return (
     <div className="rounded-xl overflow-hidden mt-2 border border-gray-200 dark:border-white/10">
       <button
-        className="w-full flex items-center justify-between px-3 py-2.5 bg-[#D4A843]/[0.06]"
+        className="w-full flex items-center justify-between px-3 py-2.5 bg-amber-50 dark:bg-[#D4A843]/[0.06]"
         onClick={() => setExpanded(e => !e)}
       >
         <div className="flex items-center gap-2">
           <span className="text-sm">📚</span>
-          <span className="text-[11px] font-medium text-[#D4A843]">
+          <span className="text-[11px] font-medium text-amber-600 dark:text-[#D4A843]">
             延伸阅读 · 共检索到 {totalFound ?? papers.length} 篇论文
           </span>
         </div>
@@ -42,7 +42,7 @@ export function ExtendedReadingPanel({
               {sources.join(' + ')}
             </span>
           )}
-          <span className="text-[11px] text-[#D4A843]">
+          <span className="text-[11px] text-amber-600 dark:text-[#D4A843]">
             {expanded ? '▲' : '▼'}
           </span>
         </div>
@@ -51,7 +51,7 @@ export function ExtendedReadingPanel({
       {expanded && (
         <div className="px-3 pb-3">
           {searchQueries.length > 0 && (
-            <div className="py-2 text-[10px] text-gray-500 dark:text-[#b09878] border-b border-[#D4A843]/[0.06]">
+            <div className="py-2 text-[10px] text-gray-500 dark:text-[#b09878] border-b border-amber-200/50 dark:border-[#D4A843]/[0.06]">
               搜索关键词：{searchQueries.map(q => `"${q}"`).join(' · ')}
             </div>
           )}
@@ -65,7 +65,7 @@ export function ExtendedReadingPanel({
           {papers.length > 3 && (
             <button
               onClick={() => setShowAll(s => !s)}
-              className="w-full mt-2 py-2 rounded-xl text-[11px] font-medium bg-[#D4A843]/[0.06] text-[#D4A843] border border-[#D4A843]/10"
+              className="w-full mt-2 py-2 rounded-xl text-[11px] font-medium bg-amber-50 dark:bg-[#D4A843]/[0.06] text-amber-600 dark:text-[#D4A843] border border-amber-200/50 dark:border-[#D4A843]/10"
             >
               {showAll ? '收起 ▲' : `查看全部 ${papers.length} 篇 ▼`}
             </button>

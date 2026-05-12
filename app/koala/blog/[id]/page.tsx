@@ -149,7 +149,7 @@ export default function BlogDetailPage() {
     return (
       <div className="bg-white dark:bg-[#080c10] min-h-screen flex flex-col items-center justify-center gap-3">
         <p className="text-sm text-gray-500 dark:text-[#6a7a7e]">文章不存在</p>
-        <Link href="/koala/blog" className="text-sm text-[#D4A843]">← 返回博客</Link>
+        <Link href="/koala/blog" className="text-sm text-[#1A1A2E] dark:text-[#D4A843]">← 返回博客</Link>
       </div>
     );
   }
@@ -172,7 +172,7 @@ export default function BlogDetailPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Toast */}
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-medium bg-[#D4A843] text-[#080c10]">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-medium bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
           {toast}
         </div>
       )}
@@ -187,7 +187,7 @@ export default function BlogDetailPage() {
 
         {/* 2. Meta info */}
         <div className="mt-5 flex items-center gap-2 flex-wrap">
-          <span className="text-xs px-3 py-1 rounded-full bg-[#D4A843]/[0.06] text-[#D4A843]">
+          <span className="text-xs px-3 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843]/[0.06] text-amber-700 dark:text-[#D4A843]">
             {CATEGORY_LABELS[post.category] || post.category}
           </span>
           <span className="text-xs text-gray-500 dark:text-[#6a7a7e]">
@@ -227,7 +227,7 @@ export default function BlogDetailPage() {
             </span>
             <button
               onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
-              className="text-sm text-[#D4A843] cursor-pointer bg-transparent border-none"
+              className="text-sm text-[#1A1A2E] dark:text-[#D4A843] cursor-pointer bg-transparent border-none"
             >
               {lang === 'zh' ? '切换英文' : '切换中文'}
             </button>
@@ -293,11 +293,11 @@ export default function BlogDetailPage() {
         {/* 9. CTA */}
         <div className="mt-8 rounded-xl px-6 py-8 text-center bg-gradient-to-br from-green-50 to-green-100 dark:from-[#1a2a20] dark:to-[#0d1a14] border border-green-200 dark:border-[#D4A843]/20">
           <div className="text-3xl mb-3">🐨</div>
-          <h3 className="text-base font-semibold mb-1 text-[#D4A843]">找到适合你的澳洲博导</h3>
+          <h3 className="text-base font-semibold mb-1 text-gray-900 dark:text-[#D4A843]">找到适合你的澳洲博导</h3>
           <p className="text-xs mb-4 text-gray-500 dark:text-[#6a7a7e]">AI 智能匹配 4,200+ 位教授，免费开始</p>
           <Link
             href="/koala/chat"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm no-underline bg-[#D4A843] text-[#080c10]"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
           >
             开始匹配 →
           </Link>
@@ -319,7 +319,7 @@ export default function BlogDetailPage() {
                     style={{ height: 140, ...(rp.cover_image_url ? { background: `url(${rp.cover_image_url}) center/cover` } : {}) }}
                   />
                   <div className="p-3">
-                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#D4A843]/[0.08] text-[#D4A843]">
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-[#D4A843]/[0.08] text-amber-700 dark:text-[#D4A843]">
                       {CATEGORY_LABELS[rp.category] || rp.category}
                     </span>
                     <p className="text-sm font-medium leading-snug mt-2 line-clamp-2 text-gray-900 dark:text-[#e8e4dc]">
@@ -348,9 +348,9 @@ export default function BlogDetailPage() {
         .blog-content p { font-size: 15px; line-height: 1.85; margin-bottom: 16px; }
         .blog-content ul, .blog-content ol { margin-left: 20px; }
         .blog-content li { margin-bottom: 8px; }
-        .blog-content a { color: #D4A843; text-decoration: underline; }
+        .blog-content a { color: #1A1A2E; text-decoration: underline; }
         .blog-content img { width: 100%; border-radius: 8px; margin: 16px 0; }
-        .blog-content code { background: rgba(212,168,67,0.08); color: #D4A843; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+        .blog-content code { background: rgba(212,168,67,0.08); color: #1A1A2E; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
         .blog-content pre { border-radius: 8px; padding: 16px; overflow-x: auto; margin: 16px 0; }
         .blog-content pre code { background: none; padding: 0; }
         .blog-content blockquote { border-left: 3px solid #D4A843; padding-left: 16px; margin: 16px 0; }
@@ -368,15 +368,20 @@ export default function BlogDetailPage() {
           .blog-content pre { background: rgba(0,0,0,0.3); }
           .blog-content pre code { color: #a8b8ac; }
           .blog-content blockquote { color: #a8b8ac; }
+          .blog-content a { color: #D4A843; }
+          .blog-content code { color: #D4A843; }
         }
         :is(.dark) .blog-content h2, :is(.dark) .blog-content h3, :is(.dark) .blog-content p, :is(.dark) .blog-content strong { color: #e8e4dc; }
         :is(.dark) .blog-content em, :is(.dark) .blog-content ul, :is(.dark) .blog-content ol { color: #e8e4dc; }
         :is(.dark) .blog-content pre { background: rgba(0,0,0,0.3); }
         :is(.dark) .blog-content pre code { color: #a8b8ac; }
         :is(.dark) .blog-content blockquote { color: #a8b8ac; }
+        :is(.dark) .blog-content a { color: #D4A843; }
+        :is(.dark) .blog-content code { color: #D4A843; }
         .share-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(212,168,67,0.15); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #6b7280; transition: color 0.2s; }
-        .share-btn:hover { color: #D4A843; }
+        .share-btn:hover { color: #1A1A2E; }
         :is(.dark) .share-btn { color: #a8b8ac; }
+        :is(.dark) .share-btn:hover { color: #D4A843; }
         .related-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
         .related-card { flex-shrink: 0; width: 260px; border-radius: 8px; overflow: hidden; background: #ffffff; border: 1px solid #e5e7eb; transition: border-color 0.2s; }
         .related-card:hover { border-color: rgba(212,168,67,0.3); }

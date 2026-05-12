@@ -41,22 +41,22 @@ function TierCard({
         'rounded-2xl overflow-hidden',
         isPopular
           ? 'border-2 border-[#D4A843]'
-          : 'border border-[#D4A843]/10',
+          : 'border border-amber-200/50 dark:border-[#D4A843]/10',
       ].join(' ')}
     >
       {/* Popular badge */}
       {isPopular && (
-        <div className="text-center text-xs font-semibold py-1.5 bg-[#D4A843] text-[#080c10]">
+        <div className="text-center text-xs font-semibold py-1.5 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
           🏆 最受欢迎
         </div>
       )}
 
-      <div className={`p-4 ${isPopular ? 'bg-[#D4A843]/5 dark:bg-[#D4A843]/8' : 'bg-white dark:bg-white/5'}`}>
+      <div className={`p-4 ${isPopular ? 'bg-amber-50/50 dark:bg-[#D4A843]/8' : 'bg-white dark:bg-white/5'}`}>
         {/* Header */}
         <div className="flex items-end justify-between mb-1">
           <div className="text-base font-bold text-gray-900 dark:text-[#e8e4dc]">{tier.label}</div>
           <div className="text-right">
-            <span className={`text-xl font-bold ${isPopular ? 'text-[#D4A843]' : 'text-gray-900 dark:text-[#e8e4dc]'}`}>
+            <span className={`text-xl font-bold ${isPopular ? 'text-amber-600 dark:text-[#D4A843]' : 'text-gray-900 dark:text-[#e8e4dc]'}`}>
               AUD {tier.price}
             </span>
             <span className="text-xs text-gray-500 dark:text-[#6a7a7e]">/月</span>
@@ -88,8 +88,8 @@ function TierCard({
           className={[
             'w-full mt-4 py-2.5 rounded-xl text-sm font-semibold transition-opacity active:opacity-70',
             isPopular
-              ? 'bg-[#D4A843] text-white border-0'
-              : 'bg-[#D4A843]/5 dark:bg-[#D4A843]/6 text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20',
+              ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] border-0'
+              : 'bg-gray-100 dark:bg-[#D4A843]/6 text-gray-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20',
           ].join(' ')}
         >
           立即订阅
@@ -148,7 +148,7 @@ export default function ToolsPage() {
       </div>
 
       {/* ── Value separator ── */}
-      <div className="mx-4 mt-5 rounded-2xl p-4 bg-[#D4A843]/5 dark:bg-[#D4A843]/6 border border-[#D4A843]/10">
+      <div className="mx-4 mt-5 rounded-2xl p-4 bg-amber-50 dark:bg-[#D4A843]/6 border border-amber-200/50 dark:border-[#D4A843]/10">
         <div className="text-xs font-semibold mb-1.5 text-gray-900 dark:text-[#e8e4dc]">想要更多？解锁完整功能</div>
         <div className="space-y-1 text-[11px] text-gray-500 dark:text-[#a8b8ac]">
           <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0 text-green-600 dark:text-[#5a8060]" />无限 AI 对话轮次</div>
@@ -180,7 +180,7 @@ export default function ToolsPage() {
           </div>
           <button
             onClick={() => setShowCredits(v => !v)}
-            className="text-xs px-3 py-1.5 rounded-full bg-[#D4A843]/5 dark:bg-[#D4A843]/6 text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20"
+            className="text-xs px-3 py-1.5 rounded-full bg-gray-100 dark:bg-[#D4A843]/6 text-gray-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20"
           >
             {showCredits ? '收起' : '查看套餐'}
           </button>
@@ -194,22 +194,22 @@ export default function ToolsPage() {
                 className={[
                   'rounded-xl p-3 flex flex-col gap-1',
                   pkg.highlight
-                    ? 'bg-[#D4A843]/10 dark:bg-[#D4A843]/12 border-[1.5px] border-[#D4A843]'
-                    : 'bg-white dark:bg-white/5 border border-[#D4A843]/10',
+                    ? 'bg-amber-50/50 dark:bg-[#D4A843]/12 border-[1.5px] border-[#D4A843]'
+                    : 'bg-white dark:bg-white/5 border border-amber-200/50 dark:border-[#D4A843]/10',
                 ].join(' ')}
               >
                 {pkg.highlight && (
                   <div className="flex items-center gap-1 mb-0.5">
-                    <Zap className="size-3 text-[#D4A843]" />
-                    <span className="text-[10px] font-medium text-[#D4A843]">最划算</span>
+                    <Zap className="size-3 text-amber-700 dark:text-[#D4A843]" />
+                    <span className="text-[10px] font-medium text-amber-700 dark:text-[#D4A843]">最划算</span>
                   </div>
                 )}
                 <div className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">{pkg.label}</div>
                 <div className="text-[11px] text-gray-500 dark:text-[#6a7a7e]">{pkg.desc}</div>
-                <div className="text-base font-bold mt-1 text-[#D4A843]">
+                <div className="text-base font-bold mt-1 text-amber-600 dark:text-[#D4A843]">
                   AUD {pkg.price}
                 </div>
-                <button className="mt-1 py-1.5 rounded-lg text-xs font-medium bg-[#D4A843]/5 dark:bg-[#D4A843]/6 text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20">
+                <button className="mt-1 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-[#D4A843]/6 text-gray-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20">
                   购买
                 </button>
               </div>
@@ -218,7 +218,7 @@ export default function ToolsPage() {
         )}
 
         {/* How credits work */}
-        <div className="mt-3 rounded-xl p-3.5 bg-[#D4A843]/5 dark:bg-[#D4A843]/6 border border-[#D4A843]/10">
+        <div className="mt-3 rounded-xl p-3.5 bg-amber-50 dark:bg-[#D4A843]/6 border border-amber-200/50 dark:border-[#D4A843]/10">
           <div className="text-xs font-semibold mb-2 text-gray-900 dark:text-[#e8e4dc]">积分使用说明</div>
           <div className="space-y-1.5 text-[11px] text-gray-500 dark:text-[#a8b8ac]">
             <div>• 生成 1 封申请信消耗 1 积分，确认弹窗后扣除</div>
@@ -232,7 +232,7 @@ export default function ToolsPage() {
 
       {/* Human consultation */}
       <div className="px-4 mt-4">
-        <div className="rounded-2xl p-4 bg-[#D4A843] text-[#080c10]">
+        <div className="rounded-2xl p-4 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
           <div className="text-sm font-semibold mb-1">📞 预约人工深度咨询</div>
           <div className="text-xs opacity-90 mb-2">AUD 999+ · 人工审核 + 完整申请策略规划</div>
           <div className="text-xs opacity-80">
@@ -244,7 +244,7 @@ export default function ToolsPage() {
 
       {/* Free tools reminder */}
       <div className="px-4 mt-4">
-        <div className="rounded-2xl p-3.5 bg-[#D4A843]/5 dark:bg-[#D4A843]/6 border border-[#D4A843]/10">
+        <div className="rounded-2xl p-3.5 bg-amber-50 dark:bg-[#D4A843]/6 border border-amber-200/50 dark:border-[#D4A843]/10">
           <div className="text-xs font-semibold mb-2 text-gray-900 dark:text-[#e8e4dc]">免费工具（无需订阅）</div>
           <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-[11px] text-gray-500 dark:text-[#a8b8ac]">
             {['GPA 换算', 'NIV 签证预评', 'ARC 项目浏览', '博客 & 指南', 'PhD 路径自评', '教授 Top 10 匹配'].map(t => (
@@ -256,7 +256,7 @@ export default function ToolsPage() {
           </div>
           <Link
             href="/koala/chat"
-            className="inline-block mt-3 text-xs px-3 py-1.5 rounded-full text-[#080c10] bg-[#D4A843] no-underline"
+            className="inline-block mt-3 text-xs px-3 py-1.5 rounded-full bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] no-underline"
           >
             免费开始 →
           </Link>

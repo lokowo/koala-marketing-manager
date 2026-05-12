@@ -99,7 +99,7 @@ export default function MyProgressPage() {
               <div className="text-[10px] text-gray-400 dark:text-[#b09878]">/ 100</div>
             </div>
           </div>
-          <div className="h-2.5 rounded-full overflow-hidden mb-4 bg-[#D4A843]/5 dark:bg-[#D4A843]/6">
+          <div className="h-2.5 rounded-full overflow-hidden mb-4 bg-amber-50 dark:bg-[#D4A843]/6">
             <div className="h-full rounded-full transition-all duration-700" style={{ width: `${score}%`, background: color }} />
           </div>
           <div className="space-y-2">
@@ -113,9 +113,9 @@ export default function MyProgressPage() {
               <div key={dim.name}>
                 <div className="flex justify-between text-[11px] mb-0.5">
                   <span className="text-gray-500 dark:text-[#a8b8ac]">{dim.name}</span>
-                  <span className="text-[#D4A843]">{dim.score}/20</span>
+                  <span className="text-amber-600 dark:text-[#D4A843]">{dim.score}/20</span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden bg-[#D4A843]/5 dark:bg-[#D4A843]/6">
+                <div className="h-1.5 rounded-full overflow-hidden bg-amber-50 dark:bg-[#D4A843]/6">
                   <div
                     className="h-full rounded-full bg-[#D4A843]"
                     style={{ width: `${(dim.score / 20) * 100}%` }}
@@ -155,16 +155,16 @@ export default function MyProgressPage() {
         <div className="rounded-2xl p-4 space-y-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-[#D4A843]/10">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">💳 积分与订阅</span>
-            <Link href="/koala/tools" className="text-[11px] no-underline text-[#D4A843]">管理 →</Link>
+            <Link href="/koala/tools" className="text-[11px] no-underline text-[#1A1A2E] dark:text-[#D4A843]">管理 →</Link>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-gray-500 dark:text-[#a8b8ac]">可用积分</span>
-            <span className="text-sm font-bold text-[#D4A843]">{data?.credits.balance ?? 0}</span>
+            <span className="text-sm font-bold text-amber-600 dark:text-[#D4A843]">{data?.credits.balance ?? 0}</span>
           </div>
           {data?.credits.subscriptionTier && (
             <div className="flex items-center justify-between">
               <span className="text-[11px] text-gray-500 dark:text-[#a8b8ac]">订阅套餐</span>
-              <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-[#D4A843]/10 text-[#D4A843]">
+              <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]">
                 {data.credits.subscriptionTier.toUpperCase()}
               </span>
             </div>
@@ -172,7 +172,7 @@ export default function MyProgressPage() {
           {!data?.credits.subscriptionTier && (
             <Link
               href="/koala/tools"
-              className="block text-center py-2 rounded-xl text-[11px] font-medium no-underline mt-1 bg-[#D4A843] text-[#080c10]"
+              className="block text-center py-2 rounded-xl text-[11px] font-medium no-underline mt-1 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
             >
               升级订阅，每月获得更多积分
             </Link>
@@ -196,12 +196,12 @@ export default function MyProgressPage() {
                   className={[
                     'flex flex-col items-center rounded-xl py-2.5 px-1 border',
                     unlocked
-                      ? 'bg-[#D4A843]/10 border-[#D4A843]/40'
-                      : 'bg-[#D4A843]/3 dark:bg-[#D4A843]/5 border-[#D4A843]/10 opacity-45',
+                      ? 'bg-amber-50 dark:bg-[#D4A843]/10 border-[#D4A843]/40'
+                      : 'bg-amber-50/50 dark:bg-[#D4A843]/5 border-amber-200/50 dark:border-[#D4A843]/10 opacity-45',
                   ].join(' ')}
                 >
                   <span className="text-xl">{ACHIEVEMENT_ICONS[key]}</span>
-                  <span className="text-[9px] text-center mt-1 leading-tight text-[#D4A843]">
+                  <span className="text-[9px] text-center mt-1 leading-tight text-amber-700 dark:text-[#D4A843]">
                     {ACHIEVEMENT_LABELS[key]}
                   </span>
                 </div>
@@ -229,7 +229,7 @@ export default function MyProgressPage() {
             ))}
             <Link
               href="/koala/chat"
-              className="block text-center py-2 rounded-xl text-[11px] font-medium no-underline mt-1 bg-[#D4A843]/5 dark:bg-[#D4A843]/6 text-[#D4A843]"
+              className="block text-center py-2 rounded-xl text-[11px] font-medium no-underline mt-1 bg-amber-50 dark:bg-[#D4A843]/6 text-amber-700 dark:text-[#D4A843]"
             >
               继续和考拉学长聊 →
             </Link>
@@ -246,7 +246,7 @@ export default function MyProgressPage() {
             <p className="text-xs mb-4 text-gray-500 dark:text-[#6a7a7e]">和考拉学长聊聊，AI 会自动帮你记录进度</p>
             <Link
               href="/koala/chat"
-              className="inline-block px-6 py-2.5 rounded-xl text-sm font-semibold no-underline bg-[#D4A843] text-[#080c10]"
+              className="inline-block px-6 py-2.5 rounded-xl text-sm font-semibold no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
             >
               开始路径评估
             </Link>

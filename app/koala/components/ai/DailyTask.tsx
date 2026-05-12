@@ -33,22 +33,18 @@ export function DailyTask({ tasks, streak = 0, onComplete }: DailyTaskProps) {
             </div>
           </div>
         </div>
-        <div className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-[#f5e8c4] text-[#D4A843]">
+        <div className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-[#f5e8c4] text-amber-700 dark:text-[#D4A843]">
           {completedCount === tasks.length ? '全部完成 🎉' : `还差 ${tasks.length - completedCount} 个`}
         </div>
       </button>
 
       {expanded && (
-        <div className="px-3 pb-3 space-y-2 border-t border-[#D4A843]/[0.06]">
+        <div className="px-3 pb-3 space-y-2 border-t border-amber-200/50 dark:border-[#D4A843]/[0.06]">
           {tasks.map(task => (
             <div key={task.id} className="flex items-center gap-2.5 pt-2">
               <button
                 onClick={() => !task.completed && onComplete?.(task.id)}
-                className="flex-shrink-0 size-5 rounded-full border-2 flex items-center justify-center transition-all"
-                style={{
-                  borderColor: task.completed ? '#D4A843' : '#d8c8a8',
-                  background: task.completed ? '#D4A843' : 'transparent',
-                }}
+                className={`flex-shrink-0 size-5 rounded-full border-2 flex items-center justify-center transition-all ${task.completed ? 'border-amber-500 dark:border-[#D4A843] bg-[#1A1A2E] dark:bg-[#D4A843]' : 'border-[#d8c8a8] bg-transparent'}`}
               >
                 {task.completed && <span className="text-[10px] text-white">✓</span>}
               </button>
@@ -58,7 +54,7 @@ export function DailyTask({ tasks, streak = 0, onComplete }: DailyTaskProps) {
                 {task.title}
               </span>
               {task.reward && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#D4A843]/[0.06] text-[#D4A843]">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-[#D4A843]/[0.06] text-amber-700 dark:text-[#D4A843]">
                   +{task.reward}
                 </span>
               )}
