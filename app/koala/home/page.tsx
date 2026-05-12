@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Bell, ChevronRight, X } from 'lucide-react';
+import BannerCarousel from '../../components/BannerCarousel';
 import type { Professor } from '../../lib/types';
 import { useAuth } from '../components/AuthContext';
 
@@ -341,6 +342,9 @@ export default function HomePage() {
       )}
 
       <main className="px-4 lg:px-0 pt-2 pb-4 flex flex-col gap-6 lg:gap-10">
+
+        {/* ── Banner Carousel ── */}
+        <BannerCarousel />
 
         {/* ── Hero ── */}
         <section>

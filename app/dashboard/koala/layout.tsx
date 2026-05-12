@@ -74,6 +74,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
         ],
       },
       { icon: '📝', label: '博客管理', href: '/dashboard/koala/blog' },
+      { icon: '🖼️', label: 'Banner 管理', href: '/dashboard/koala/banners' },
       {
         icon: '📣', label: '营销工具',
         href: '/dashboard/koala/marketing-tools',
