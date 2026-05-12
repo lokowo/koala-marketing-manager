@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Settings, Plus, Send, Sparkles, PawPrint } from 'lucide-react';
+import { Settings, Plus, Send, Sparkles, PawPrint, Mic, MicOff } from 'lucide-react';
+import VoiceInputButton from '../../components/VoiceInputButton';
 import Link from 'next/link';
 import { useAuth } from '../components/AuthContext';
 import type { AIMode } from '../../lib/constants';
@@ -1123,6 +1124,10 @@ function ChatPageInner() {
               style={{ color: '#e8e4dc', maxHeight: 120 }}
             />
           </div>
+          <VoiceInputButton
+            onTranscript={(text) => setInput(prev => prev + text)}
+            size="md"
+          />
           <button
             onClick={() => sendMessage()}
             disabled={!input.trim() || loading}

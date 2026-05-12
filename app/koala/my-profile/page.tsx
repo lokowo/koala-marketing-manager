@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth, type UserProfile } from '../components/AuthContext';
 import { supabase } from '../../lib/supabase/client';
 import { shareToWechat } from '../../lib/share';
+import VoiceInputButton from '../../components/VoiceInputButton';
 
 // ─── timeAgo helper ────────────────────────
 function timeAgo(dateStr: string): string {
@@ -1417,12 +1418,20 @@ export default function MyProfilePage() {
                   ].map(({ key, label, placeholder }) => (
                     <div key={key}>
                       <label className="block text-[11px] mb-1" style={{ color: '#6a7a7e' }}>{label}</label>
-                      <input type="text" placeholder={placeholder}
-                        value={otherData[key] as string}
-                        onChange={e => setOtherData(prev => prev ? { ...prev, [key]: e.target.value } : prev)}
-                        className="w-full px-3 py-2 rounded-lg text-xs outline-none"
-                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
-                      />
+                      <div className="flex items-center gap-1.5">
+                        <input type="text" placeholder={placeholder}
+                          value={otherData[key] as string}
+                          onChange={e => setOtherData(prev => prev ? { ...prev, [key]: e.target.value } : prev)}
+                          className="flex-1 px-3 py-2 rounded-lg text-xs outline-none"
+                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,169,110,0.08)', color: '#e8e4dc' }}
+                        />
+                        {(key === 'research_description' || key === 'publication_details' || key === 'target_field') && (
+                          <VoiceInputButton
+                            onTranscript={(text) => setOtherData(prev => prev ? { ...prev, [key]: ((prev[key] as string) || '') + text } : prev)}
+                            size="sm"
+                          />
+                        )}
+                      </div>
                     </div>
                   ))}
                   <div className="flex gap-4">

@@ -7,6 +7,7 @@ import {
   ChevronLeft, Search, SlidersHorizontal, Bookmark, Loader2,
   X, GraduationCap, BookOpen, TrendingUp, MessageSquarePlus, Plus, Check,
 } from 'lucide-react';
+import VoiceInputButton from '../../components/VoiceInputButton';
 import type { Professor } from '../../lib/types';
 
 interface SearchCandidate {
@@ -392,6 +393,10 @@ function ProfessorsPageInner() {
               className="flex-1 bg-transparent text-sm outline-none" style={{ color: '#e8e4dc' }}
             />
             {search && <button onClick={() => setSearch('')} className="text-xs" style={{ color: '#c9a96e' }}>清除</button>}
+            <VoiceInputButton
+              onTranscript={(text) => setSearch(prev => prev + text)}
+              size="sm"
+            />
             <button onClick={triggerSearch} className="size-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#c9a96e' }}>
               <Search className="size-3.5" style={{ color: '#080c10' }} />
             </button>
@@ -500,6 +505,10 @@ function ProfessorsPageInner() {
             className="flex-1 bg-transparent text-sm outline-none" style={{ color: '#e8e4dc' }}
           />
           {search && <button onClick={() => setSearch('')} className="text-xs" style={{ color: '#c9a96e' }}>清除</button>}
+          <VoiceInputButton
+            onTranscript={(text) => setSearch(prev => prev + text)}
+            size="sm"
+          />
           <button onClick={triggerSearch} className="size-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#c9a96e' }}>
             <Search className="size-4" style={{ color: '#080c10' }} />
           </button>
@@ -570,13 +579,20 @@ function ProfessorsPageInner() {
                 <button onClick={() => { setShowDeepSearch(false); setDeepCandidates([]); }} className="text-xs" style={{ color: '#6a7a7e' }}>收起</button>
               </div>
               <div className="px-4 py-3 space-y-2">
-                <input
-                  type="text" value={deepName} onChange={e => setDeepName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleDeepSearch(); }}
-                  placeholder="教授全名（英文）"
-                  className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-                  style={{ background: '#0d1520', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.15)' }}
-                />
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text" value={deepName} onChange={e => setDeepName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleDeepSearch(); }}
+                    placeholder="教授全名（英文）"
+                    className="flex-1 rounded-lg px-3 py-2 text-sm outline-none"
+                    style={{ background: '#0d1520', color: '#e8e4dc', border: '1px solid rgba(201,169,110,0.15)' }}
+                  />
+                  <VoiceInputButton
+                    onTranscript={(text) => setDeepName(prev => prev + text)}
+                    size="sm"
+                    lang="en-US"
+                  />
+                </div>
                 <input
                   type="text" value={deepUni} onChange={e => setDeepUni(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleDeepSearch(); }}
