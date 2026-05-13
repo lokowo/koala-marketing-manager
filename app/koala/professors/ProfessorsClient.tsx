@@ -640,7 +640,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                         {c.researchAreas.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {c.researchAreas.slice(0, 4).map(area => (
-                              <span key={area} className="rounded-full text-[10px] px-2 py-0.5 text-amber-700 dark:text-[#D4A843] border border-amber-300 dark:border-[rgba(212,168,67,0.25)]">
+                              <span key={area} className="rounded-md text-[10px] px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">
                                 {area}
                               </span>
                             ))}
@@ -747,7 +747,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                           {c.researchAreas.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1.5">
                               {c.researchAreas.slice(0, 4).map(area => (
-                                <span key={area} className="rounded-full text-[10px] px-2 py-0.5 text-amber-700 dark:text-[#D4A843] border border-amber-300 dark:border-[rgba(212,168,67,0.25)]">{area}</span>
+                                <span key={area} className="rounded-md text-[10px] px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">{area}</span>
                               ))}
                             </div>
                           )}
@@ -923,7 +923,8 @@ function ProfCard({ p }: { p: Professor }) {
   const isVerified = p.verificationStatus === 'Verified';
 
   return (
-    <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
+    <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#0F1419] border border-gray-100 dark:border-white/10 hover:shadow-lg hover:border-[#D4A843]/30 transition-all duration-300 hover:-translate-y-1 group relative">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4A843]/60 to-[#4ECDC4]/60 opacity-0 group-hover:opacity-100 transition-opacity" />
       {/* Top badges row */}
       <div className="flex items-center gap-2 px-4 pt-3 pb-2 flex-wrap">
         {isVerified && (
@@ -983,25 +984,29 @@ function ProfCard({ p }: { p: Professor }) {
 
       {/* Stats row */}
       {hasStats && (
-        <div className="flex gap-3 px-4 pb-3 text-xs text-gray-500 dark:text-[#6a7a7e]">
-          {p.hIndex != null && (
-            <span className="flex items-center gap-1 font-semibold text-amber-700 dark:text-[#D4A843]">
-              <TrendingUp className="size-3" />
-              H:{p.hIndex}
-            </span>
-          )}
-          {p.paperCount != null && (
-            <span className="flex items-center gap-1">
-              <BookOpen className="size-3" />
-              {p.paperCount}篇
-            </span>
-          )}
-          {p.citationCount != null && (
-            <span className="flex items-center gap-1">
-              <GraduationCap className="size-3" />
-              {fmtCitations(p.citationCount)}引
-            </span>
-          )}
+        <div className="grid grid-cols-2 divide-x divide-gray-200 dark:divide-white/10 px-4 pb-3 text-xs text-gray-500 dark:text-[#6a7a7e]">
+          <div className="flex items-center gap-2 pr-3">
+            {p.hIndex != null && (
+              <span className="flex items-center gap-1 font-semibold text-amber-700 dark:text-[#D4A843]">
+                <TrendingUp className="size-3" />
+                H:{p.hIndex}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 pl-3">
+            {p.paperCount != null && (
+              <span className="flex items-center gap-1">
+                <BookOpen className="size-3" />
+                {p.paperCount}篇
+              </span>
+            )}
+            {p.citationCount != null && (
+              <span className="flex items-center gap-1">
+                <GraduationCap className="size-3" />
+                {fmtCitations(p.citationCount)}引
+              </span>
+            )}
+          </div>
         </div>
       )}
 
@@ -1021,7 +1026,7 @@ function ProfCard({ p }: { p: Professor }) {
       {(p.researchAreas ?? []).length > 0 && (
         <div className="flex flex-wrap gap-1 px-4 pb-3">
           {p.researchAreas.slice(0, 3).map(area => (
-            <span key={area} className="rounded-full text-[10px] px-2 py-0.5 text-amber-700 dark:text-[#D4A843] border border-amber-300 dark:border-[rgba(212,168,67,0.25)]">
+            <span key={area} className="rounded-md text-[10px] px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">
               {area}
             </span>
           ))}
@@ -1031,7 +1036,7 @@ function ProfCard({ p }: { p: Professor }) {
       {/* CTAs */}
       <div className="flex gap-2 px-4 pb-4">
         <Link href={`/koala/professors/${p.id}`}
-          className="flex-1 text-center text-xs font-semibold py-2 rounded-xl no-underline text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.2)] bg-amber-50 dark:bg-[#D4A843]/10">
+          className="flex-1 text-center text-xs font-semibold py-2.5 rounded-xl no-underline text-[#1A1A2E] dark:text-[#D4A843] bg-gray-50 dark:bg-white/5 hover:bg-[#1A1A2E] hover:text-white dark:hover:bg-[#D4A843] dark:hover:text-[#080C10] transition-all">
           查看详情
         </Link>
         <Link href={`/koala/chat?action=outreach&prof=${p.id}&name=${encodeURIComponent(p.name)}`}

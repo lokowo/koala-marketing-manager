@@ -348,27 +348,35 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
           </div>
           <div className="flex flex-col lg:flex-row items-stretch gap-3 lg:gap-0">
             {[
-              { icon: '💬', step: '01', title: '聊背景', desc: '告诉 Koala 你的专业和兴趣', extra: '⏱ 约2分钟', primary: true },
-              { icon: '🎯', step: '02', title: 'AI 匹配', desc: `从 ${profCount} 位教授中精准推荐`, extra: '⚡ 30秒出结果', primary: false },
-              { icon: '✉️', step: '03', title: '写申请信', desc: '针对每位教授定制专业邮件', extra: '📧 支持批量生成', primary: false },
+              { icon: '💬', step: '01', title: '聊背景', desc: '告诉 Koala 你的专业和兴趣', extra: '⏱ 约2分钟', primary: true, iconBg: 'bg-[#D4A843]/15 dark:bg-[#D4A843]/20' },
+              { icon: '🎯', step: '02', title: 'AI 匹配', desc: `从 ${profCount} 位教授中精准推荐`, extra: '⚡ 30秒出结果', primary: false, iconBg: 'bg-[#4ECDC4]/15 dark:bg-[#4ECDC4]/20' },
+              { icon: '✉️', step: '03', title: '写申请信', desc: '针对每位教授定制专业邮件', extra: '📧 支持批量生成', primary: false, iconBg: 'bg-amber-100 dark:bg-amber-900/20' },
             ].map((s, i) => (
               <div key={s.step} className="flex items-center lg:flex-1">
                 <button
                   onClick={() => handleStepClick(STEP_LINKS[i].href)}
-                  className={`rounded-2xl p-4 lg:p-5 flex flex-col gap-2 text-left w-full transition-all duration-200 active:scale-[0.98] cursor-pointer ${
+                  className={`rounded-2xl p-4 lg:p-5 flex flex-col gap-2 text-left w-full transition-all duration-300 active:scale-[0.98] cursor-pointer relative overflow-hidden ${
                     s.primary
-                      ? 'text-white border border-transparent shadow-md dark:border-[#D4A843]/30'
-                      : 'bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-[#c9a96e]/10 hover:-translate-y-1 hover:shadow-lg'
+                      ? 'bg-gradient-to-br from-[#1A1A2E] to-[#2D2D4A] text-white shadow-lg hover:shadow-xl hover:-translate-y-1 border border-transparent dark:border-[#D4A843]/30'
+                      : 'bg-white dark:bg-[#0F1419] border border-gray-100 dark:border-white/10 hover:-translate-y-1 hover:shadow-lg group'
                   }`}
-                  style={s.primary ? { background: 'linear-gradient(135deg, #1A1A2E 0%, #2D2D4A 100%)' } : undefined}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{s.icon}</span>
+                  {s.primary && (
+                    <>
+                      <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#D4A843]/10 rounded-full" />
+                      <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-[#4ECDC4]/10 rounded-full" />
+                    </>
+                  )}
+                  {!s.primary && (
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#4ECDC4] to-[#D4A843] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
+                  <div className="flex items-center gap-2 relative">
+                    <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg ${s.iconBg}`}>{s.icon}</span>
                     <span className={`text-[10px] font-bold tracking-wide ${s.primary ? 'text-white/50' : 'text-amber-600 dark:text-[#D4A843]'}`}>STEP {s.step}</span>
                   </div>
-                  <div className={`text-sm font-bold ${s.primary ? 'text-white' : 'text-gray-900 dark:text-[#e8e4dc]'}`}>{s.title}</div>
-                  <div className={`text-[11px] leading-relaxed ${s.primary ? 'text-white/60' : 'text-gray-500 dark:text-[#6a7a7e]'}`}>{s.desc}</div>
-                  <div className={`text-[10px] mt-1 ${s.primary ? 'text-white/40' : 'text-gray-400 dark:text-[#6a7a7e]'}`}>{s.extra}</div>
+                  <div className={`text-sm font-bold relative ${s.primary ? 'text-white' : 'text-gray-900 dark:text-[#e8e4dc]'}`}>{s.title}</div>
+                  <div className={`text-[11px] leading-relaxed relative ${s.primary ? 'text-white/60' : 'text-gray-500 dark:text-[#6a7a7e]'}`}>{s.desc}</div>
+                  <div className={`text-[10px] mt-1 relative ${s.primary ? 'text-white/40' : 'text-gray-400 dark:text-[#6a7a7e]'}`}>{s.extra}</div>
                 </button>
                 {i < 2 && (
                   <div className="hidden lg:flex items-center justify-center w-8 shrink-0 text-gray-300 dark:text-[#6a7a7e]">
