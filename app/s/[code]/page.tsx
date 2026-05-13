@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, use } from 'react';
 import dynamic from 'next/dynamic';
 import { generateDeviceFingerprint } from '../../lib/services/deviceFingerprint';
+import { BRAND } from '../../lib/constants';
 import '../survey-dark-theme.css';
 
 const SurveyRenderer = dynamic(
@@ -19,7 +20,7 @@ interface SurveyData {
   share_link_id?: string;
 }
 
-type ErrorType = 'not_found' | 'ended' | 'already_filled' | 'network' | null;
+type ErrorType = 'not_found' | 'ended' | 'paused' | 'already_filled' | 'network' | null;
 
 export default function PublicSurveyPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
@@ -44,7 +45,7 @@ export default function PublicSurveyPage({ params }: { params: Promise<{ code: s
           const msg = data.error || '';
           if (res.status === 404) { setErrorType('not_found'); setErrorMsg(msg || '问卷不存在'); }
           else if (msg.includes('已结束')) { setErrorType('ended'); setErrorMsg(msg); }
-          else if (msg.includes('已暂停')) { setErrorType('ended'); setErrorMsg(msg); }
+          else if (msg.includes('已暂停')) { setErrorType('paused'); setErrorMsg(msg); }
           else { setErrorType('network'); setErrorMsg(msg || '加载失败'); }
           return;
         }
@@ -180,10 +181,11 @@ export default function PublicSurveyPage({ params }: { params: Promise<{ code: s
 }
 
 function ErrorPage({ type, message, onRetry }: { type: ErrorType; message: string; onRetry?: () => void }) {
-  const icons: Record<string, string> = { not_found: '🔍', ended: '📋', already_filled: '✅', network: '🔄' };
+  const icons: Record<string, string> = { not_found: '🔍', ended: '📋', paused: '⏸️', already_filled: '✅', network: '🔄' };
   const titles: Record<string, string> = {
     not_found: '问卷不存在',
     ended: '问卷已结束',
+    paused: '该问卷已暂停收集',
     already_filled: '您已参与过此问卷',
     network: '加载失败',
   };
@@ -203,7 +205,7 @@ function ErrorPage({ type, message, onRetry }: { type: ErrorType; message: strin
             重新加载
           </button>
         )}
-        <p className="text-xs text-gray-600 mt-6">如有疑问请联系 Koala Study Advisors</p>
+        <p className="text-xs text-gray-600 mt-6">如有疑问请联系 {BRAND.name}</p>
       </div>
     </div>
   );
@@ -344,7 +346,7 @@ function ThankYouPage({ contactInfo, registeredUserId, shareCode, responseId, on
         <div className="bg-white/5 rounded-xl p-4 space-y-2">
           <p className="text-sm font-medium text-white/80">想了解更多？</p>
           <p className="text-xs text-gray-500">
-            Koala Study Advisors — 澳洲领先的产学研科研机构
+            {BRAND.name} — 澳洲领先的产学研科研机构
           </p>
           <a
             href="/koala/home"
@@ -356,8 +358,8 @@ function ThankYouPage({ contactInfo, registeredUserId, shareCode, responseId, on
 
         <div className="pt-4 border-t border-white/5 space-y-2">
           <div className="flex items-center justify-center gap-4 text-xs text-gray-600">
-            <span>微信: MissKoalaAu</span>
-            <span>小红书: @dr.koalaau</span>
+            <span>微信: {BRAND.wechat}</span>
+            <span>小红书: {BRAND.xiaohongshu}</span>
           </div>
         </div>
       </div>

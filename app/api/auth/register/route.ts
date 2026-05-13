@@ -46,6 +46,7 @@ export async function POST(req: Request) {
       display_name: name || email.split('@')[0],
       email,
       referral_code: refCode,
+      credits_remaining: 30,
       data_consent: !!dataConsent,
       data_consent_at: dataConsent ? new Date().toISOString() : null,
       created_at: new Date().toISOString(),
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
     }
 
     // Auto-apply referral code credits
+    let creditApplied = false;
     if (referralCode) {
       try {
         const upperCode = referralCode.toUpperCase();
@@ -99,7 +101,7 @@ export async function POST(req: Request) {
               .select('credits_remaining')
               .eq('id', userData.user.id)
               .single();
-            const newMyBalance = (myProfile?.credits_remaining || 30) + 5;
+            const newMyBalance = (myProfile?.credits_remaining ?? 0) + 5;
             await db.from('user_profiles')
               .update({ credits_remaining: newMyBalance, referred_by: referrerProfile.id })
               .eq('id', userData.user.id);
@@ -122,10 +124,11 @@ export async function POST(req: Request) {
                 .update({ uses: (codeRecord.uses || 0) + 1 })
                 .eq('user_id', referrerProfile.id);
             }
+            creditApplied = true;
           }
         }
       } catch (refErr) {
-        console.error('[register] referral credit:', refErr);
+        console.error('[register] referral credit failed:', { referralCode, userId: userData.user.id, error: refErr });
       }
     }
 
@@ -165,7 +168,7 @@ export async function POST(req: Request) {
 
     notifyNewUserSignup({ email, source: salesCode ? `sales:${salesCode}` : referralCode ? `referral:${referralCode}` : undefined });
 
-    return Response.json({ success: true, message: '注册成功，验证码已发送' });
+    return Response.json({ success: true, message: '注册成功，验证码已发送', creditApplied });
   } catch (error) {
     console.error('[register]', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });

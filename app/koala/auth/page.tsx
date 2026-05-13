@@ -175,11 +175,15 @@ function AuthPageInner() {
     }
 
     if (referralInput) {
-      fetch('/api/user/referral/claim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: referralInput }),
-      }).catch(() => {});
+      try {
+        await fetch('/api/user/referral/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: referralInput }),
+        });
+      } catch {
+        console.error('[auth] referral claim failed');
+      }
     }
 
     if (salesCode) {

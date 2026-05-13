@@ -229,6 +229,12 @@ function SurveysContent() {
                         <td className="px-4 py-3 text-slate-400 text-xs">{new Date(s.created_at).toLocaleDateString('zh-CN')}</td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center gap-1 justify-end flex-wrap">
+                            <Link
+                              href={`/dashboard/sales/surveys/${s.id}/responses`}
+                              className="px-2 py-1 text-xs rounded hover:bg-amber-50 text-amber-600 no-underline font-medium"
+                            >
+                              回复
+                            </Link>
                             {(isOwner || (tab === 'plaza' && s.status === 'active')) && (
                               <Link
                                 href={`/dashboard/sales/surveys/${s.id}/edit`}
@@ -254,6 +260,16 @@ function SurveysContent() {
                               <span className="px-2 py-1 text-xs text-slate-300">请先发布</span>
                             )}
                             {isOwner && s.status === 'active' && (
+                              <button onClick={() => handleStatusChange(s.id, 'paused')} className="px-2 py-1 text-xs rounded hover:bg-amber-50 text-amber-600">
+                                暂停
+                              </button>
+                            )}
+                            {isOwner && s.status === 'paused' && (
+                              <button onClick={() => handleStatusChange(s.id, 'active')} className="px-2 py-1 text-xs rounded hover:bg-green-50 text-green-600">
+                                恢复
+                              </button>
+                            )}
+                            {isOwner && (s.status === 'active' || s.status === 'paused') && (
                               <button onClick={() => { if (confirm('确定要结束这份问卷吗？结束后将无法继续收集回复。')) handleStatusChange(s.id, 'closed'); }} className="px-2 py-1 text-xs rounded hover:bg-red-50 text-red-500">
                                 结束
                               </button>

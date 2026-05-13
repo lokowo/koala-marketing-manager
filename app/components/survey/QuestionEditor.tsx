@@ -17,6 +17,7 @@ interface QuestionEditorProps {
   question?: QuestionData;
   index: number;
   onSave: (data: Omit<QuestionData, 'id'>) => void;
+  onChange?: (data: Omit<QuestionData, 'id'>) => void;
   onDelete?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -37,7 +38,7 @@ const QUESTION_TYPES: { value: string; label: string; icon: string }[] = [
   { value: 'date', label: '日期', icon: '📅' },
 ];
 
-export default function QuestionEditor({ question, index, onSave, onDelete, onMoveUp, onMoveDown }: QuestionEditorProps) {
+export default function QuestionEditor({ question, index, onSave, onChange, onDelete, onMoveUp, onMoveDown }: QuestionEditorProps) {
   const [type, setType] = useState<QuestionType>(question?.type || 'single_choice');
   const [title, setTitle] = useState(question?.title || '');
   const [description, setDescription] = useState(question?.description || '');
@@ -47,6 +48,20 @@ export default function QuestionEditor({ question, index, onSave, onDelete, onMo
   const [expanded, setExpanded] = useState(!question?.id);
 
   const needsOptions = ['single_choice', 'multiple_choice', 'dropdown'].includes(type);
+
+  function emitChange(overrides?: Partial<{ type: QuestionType; title: string; description: string; options: string[]; required: boolean; config: Record<string, unknown> }>) {
+    if (!onChange) return;
+    const t = overrides?.type ?? type;
+    const needsOpts = ['single_choice', 'multiple_choice', 'dropdown'].includes(t);
+    onChange({
+      type: t,
+      title: (overrides?.title ?? title).trim(),
+      description: (overrides?.description ?? description).trim() || undefined,
+      options: needsOpts ? (overrides?.options ?? options).filter(o => o.trim()) : undefined,
+      required: overrides?.required ?? required,
+      config: Object.keys(overrides?.config ?? config).length > 0 ? (overrides?.config ?? config) : undefined,
+    });
+  }
 
   function handleSave() {
     if (!title.trim()) return;
@@ -62,17 +77,22 @@ export default function QuestionEditor({ question, index, onSave, onDelete, onMo
   }
 
   function addOption() {
-    setOptions([...options, `选项 ${options.length + 1}`]);
+    const next = [...options, `选项 ${options.length + 1}`];
+    setOptions(next);
+    emitChange({ options: next });
   }
 
   function removeOption(i: number) {
-    setOptions(options.filter((_, idx) => idx !== i));
+    const next = options.filter((_, idx) => idx !== i);
+    setOptions(next);
+    emitChange({ options: next });
   }
 
   function updateOption(i: number, val: string) {
     const next = [...options];
     next[i] = val;
     setOptions(next);
+    emitChange({ options: next });
   }
 
   if (!expanded) {
@@ -100,7 +120,7 @@ export default function QuestionEditor({ question, index, onSave, onDelete, onMo
         <span className="text-sm text-slate-400 font-mono w-6">{index + 1}</span>
         <select
           value={type}
-          onChange={e => setType(e.target.value as QuestionType)}
+          onChange={e => { const v = e.target.value as QuestionType; setType(v); emitChange({ type: v }); }}
           className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white"
         >
           {QUESTION_TYPES.map(t => (
@@ -108,7 +128,7 @@ export default function QuestionEditor({ question, index, onSave, onDelete, onMo
           ))}
         </select>
         <label className="flex items-center gap-1.5 text-sm text-slate-600 ml-auto">
-          <input type="checkbox" checked={required} onChange={e => setRequired(e.target.checked)} className="rounded" />
+          <input type="checkbox" checked={required} onChange={e => { setRequired(e.target.checked); emitChange({ required: e.target.checked }); }} className="rounded" />
           必填
         </label>
       </div>
@@ -116,7 +136,7 @@ export default function QuestionEditor({ question, index, onSave, onDelete, onMo
       <input
         type="text"
         value={title}
-        onChange={e => setTitle(e.target.value)}
+        onChange={e => { setTitle(e.target.value); emitChange({ title: e.target.value }); }}
         placeholder="问题标题"
         className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
       />
@@ -124,7 +144,7 @@ export default function QuestionEditor({ question, index, onSave, onDelete, onMo
       <input
         type="text"
         value={description}
-        onChange={e => setDescription(e.target.value)}
+        onChange={e => { setDescription(e.target.value); emitChange({ description: e.target.value }); }}
         placeholder="问题描述（可选）"
         className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
       />
@@ -154,7 +174,7 @@ export default function QuestionEditor({ question, index, onSave, onDelete, onMo
           <span className="text-sm text-slate-500">最高分</span>
           <select
             value={(config.max as number) || 5}
-            onChange={e => setConfig({ ...config, max: parseInt(e.target.value) })}
+            onChange={e => { const c = { ...config, max: parseInt(e.target.value) }; setConfig(c); emitChange({ config: c }); }}
             className="border border-slate-200 rounded px-2 py-1 text-sm"
           >
             {[3, 5, 7, 10].map(n => <option key={n} value={n}>{n}</option>)}
@@ -169,28 +189,28 @@ export default function QuestionEditor({ question, index, onSave, onDelete, onMo
             <input
               type="number"
               value={(config.min as number) ?? 0}
-              onChange={e => setConfig({ ...config, min: parseInt(e.target.value) })}
+              onChange={e => { const c = { ...config, min: parseInt(e.target.value) }; setConfig(c); emitChange({ config: c }); }}
               className="w-14 border border-slate-200 rounded px-2 py-1 text-sm"
             />
             <span className="text-slate-400">~</span>
             <input
               type="number"
               value={(config.max as number) ?? 10}
-              onChange={e => setConfig({ ...config, max: parseInt(e.target.value) })}
+              onChange={e => { const c = { ...config, max: parseInt(e.target.value) }; setConfig(c); emitChange({ config: c }); }}
               className="w-14 border border-slate-200 rounded px-2 py-1 text-sm"
             />
           </div>
           <input
             type="text"
             value={(config.minLabel as string) || ''}
-            onChange={e => setConfig({ ...config, minLabel: e.target.value })}
+            onChange={e => { const c = { ...config, minLabel: e.target.value }; setConfig(c); emitChange({ config: c }); }}
             placeholder="低分标签"
             className="flex-1 border border-slate-200 rounded px-2 py-1 text-sm"
           />
           <input
             type="text"
             value={(config.maxLabel as string) || ''}
-            onChange={e => setConfig({ ...config, maxLabel: e.target.value })}
+            onChange={e => { const c = { ...config, maxLabel: e.target.value }; setConfig(c); emitChange({ config: c }); }}
             placeholder="高分标签"
             className="flex-1 border border-slate-200 rounded px-2 py-1 text-sm"
           />

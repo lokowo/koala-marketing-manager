@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { BRAND } from '../../../lib/constants';
 
 export default function SettingsPage() {
   const [testing, setTesting] = useState(false);
@@ -97,7 +98,7 @@ export default function SettingsPage() {
             <span className="text-slate-400">域名</span><span>koalaphd.com</span>
           </div>
           <div className="flex justify-between py-1.5">
-            <span className="text-slate-400">微信</span><span>MissKoalaAu</span>
+            <span className="text-slate-400">微信</span><span>{BRAND.wechat}</span>
           </div>
         </div>
       </div>

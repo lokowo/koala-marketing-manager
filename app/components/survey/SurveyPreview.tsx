@@ -1,6 +1,7 @@
 'use client';
 
 import QuestionRenderer from './QuestionRenderer';
+import { BRAND } from '../../lib/constants';
 
 interface Question {
   id: string;
@@ -83,7 +84,7 @@ export default function SurveyPreview({ title, description, welcomeMessage, bran
 
         {/* Footer */}
         <div className="text-center py-4 border-t border-slate-100">
-          <span className="text-xs text-slate-400">Powered by Koala Study Advisors</span>
+          <span className="text-xs text-slate-400">Powered by {BRAND.name}</span>
         </div>
       </div>
     </div>

@@ -75,6 +75,7 @@ function EditContent() {
   const [qrCodes, setQrCodes] = useState<QRCode[]>([]);
   const [userRole, setUserRole] = useState<string>('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [editingQuestions, setEditingQuestions] = useState<Map<string, Omit<Question, 'id' | 'order_index'>>>(new Map());
 
   const fetchSurvey = useCallback(async () => {
     if (!surveyId) return;
@@ -218,7 +219,26 @@ function EditContent() {
   async function handleSaveAll() {
     if (!surveyId) return;
     setSaving(true);
-    const surveyJson = buildSurveyJson();
+    // Push any unsaved question edits to the server first
+    const updatePromises = Array.from(editingQuestions.entries()).map(([qId, data]) =>
+      fetch('/api/surveys/questions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: qId, ...data }),
+      })
+    );
+    if (updatePromises.length > 0) {
+      await Promise.all(updatePromises);
+      setEditingQuestions(new Map());
+    }
+    // Re-fetch to get the latest questions after batch update
+    const freshRes = await fetch(`/api/surveys/${surveyId}?_t=${Date.now()}`);
+    const freshSurvey = freshRes.ok ? await freshRes.json() : survey;
+    const qs = freshSurvey?.questions || [];
+    const surveyJson = questionsToSurveyJson(
+      { title, description, welcome_message: welcomeMessage, brand_color: brandColor },
+      qs.map((q: { config?: Record<string, unknown> }) => ({ ...q, config: q.config as Record<string, unknown> | undefined })),
+    );
     await fetch(`/api/surveys/${surveyId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -338,6 +358,7 @@ function EditContent() {
               question={q}
               index={i}
               onSave={data => handleUpdateQuestion(q.id, data)}
+              onChange={data => setEditingQuestions(prev => new Map(prev).set(q.id, data))}
               onDelete={() => handleDeleteQuestion(q.id)}
               onMoveUp={i > 0 ? () => handleMoveQuestion(q.id, 'up') : undefined}
               onMoveDown={i < questions.length - 1 ? () => handleMoveQuestion(q.id, 'down') : undefined}

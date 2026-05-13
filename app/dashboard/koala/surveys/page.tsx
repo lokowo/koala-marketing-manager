@@ -330,8 +330,22 @@ export default function SurveysPage() {
                               <span className="px-2 py-1 text-xs text-slate-300">请先发布</span>
                             )}
 
-                            {/* Active: end (admin/owner) */}
+                            {/* Active: pause (admin/owner) */}
                             {(isOwner || isAdmin) && s.status === 'active' && (
+                              <button onClick={() => handleStatusChange(s.id, 'paused')} className="px-2 py-1 text-xs rounded hover:bg-amber-50 text-amber-600">
+                                暂停
+                              </button>
+                            )}
+
+                            {/* Paused: resume (admin/owner) */}
+                            {(isOwner || isAdmin) && s.status === 'paused' && (
+                              <button onClick={() => handleStatusChange(s.id, 'active')} className="px-2 py-1 text-xs rounded hover:bg-green-50 text-green-600">
+                                恢复
+                              </button>
+                            )}
+
+                            {/* Active/Paused: end (admin/owner) */}
+                            {(isOwner || isAdmin) && (s.status === 'active' || s.status === 'paused') && (
                               <button onClick={() => { if (confirm('确定要结束这份问卷吗？结束后将无法继续收集回复。')) handleStatusChange(s.id, 'closed'); }} className="px-2 py-1 text-xs rounded hover:bg-red-50 text-red-500">
                                 结束
                               </button>

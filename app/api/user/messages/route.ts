@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { getServerUser } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { notifyNewSupportTicket } from '../../../lib/server/slack';
+import { BRAND } from '../../../lib/constants';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -149,7 +150,7 @@ function categoryLabel(cat: string): string {
 
 function getAutoReply(category: string): string {
   const replies: Record<string, string> = {
-    general: '您好！感谢您联系 Koala 客服团队。我们已收到您的消息，将在 24 小时内回复。如有紧急问题，请添加微信 MissKoalaAu。',
+    general: `您好！感谢您联系 Koala 客服团队。我们已收到您的消息，将在 24 小时内回复。如有紧急问题，请添加微信 ${BRAND.wechat}。`,
     account: '您好！我们已收到您的账户问题反馈。客服团队将核实您的账户信息并尽快回复。请勿在对话中分享密码等敏感信息。',
     professor: '您好！感谢您对教授信息的反馈。我们的数据团队将核实并更新相关信息。这对提升平台数据质量非常重要！',
     outreach: '您好！我们已收到您关于套磁信的问题。套磁信专员将尽快处理。如需查看已购买的套磁信，请访问"我的套磁信"页面。',
