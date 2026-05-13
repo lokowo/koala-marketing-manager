@@ -1,16 +1,12 @@
 import type { NextRequest } from 'next/server';
 import { searchProfessorAllSources, saveCandidateToDb } from '../../../lib/services/professorAutoAdd';
 import type { ProfessorCandidate } from '../../../lib/services/professorAutoAdd';
-import { requireAdmin } from '../../../lib/auth';
+import { getServerUser } from '../../../lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
-    try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
-    console.log('[auto-search] ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
-    console.log('[auto-search] ANTHROPIC_API_KEY length:', process.env.ANTHROPIC_API_KEY?.length);
     const name = req.nextUrl.searchParams.get('name');
     const university = req.nextUrl.searchParams.get('university') || undefined;
-    const deep = req.nextUrl.searchParams.get('deep') === 'true';
 
     if (!name || name.trim().length < 2) {
       return Response.json({ error: 'Missing or too short name param' }, { status: 400 });
@@ -30,6 +26,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await req.json();
     const candidate = body.candidate as ProfessorCandidate;
 

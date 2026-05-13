@@ -2,6 +2,8 @@ import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
 import * as cheerio from 'cheerio';
+import * as https from 'https';
+import * as constants from 'constants';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,13 +13,7 @@ const anthropic = new Anthropic();
 
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
-// ─── University configs ───
-
-interface UniversityConfig {
-  name: string;
-  ror: string;
-  scraper: () => Promise<ScrapedProfessor[]>;
-}
+// ─── Types ───
 
 interface ScrapedProfessor {
   name: string;
@@ -25,18 +21,255 @@ interface ScrapedProfessor {
   faculty: string;
   email?: string;
   profileUrl?: string;
+  researchAreas?: string[];
 }
 
-interface OpenAlexAuthor {
-  display_name: string;
-  summary_stats?: { h_index?: number };
-  works_count: number;
-  cited_by_count: number;
-  topics?: { display_name: string }[];
-  ids?: { openalex?: string };
+interface OpenAlexEnrichment {
+  h_index: number | null;
+  paper_count: number | null;
+  citation_count: number | null;
+  topics: string[];
 }
 
-const VALID_TITLES = /\b(professor|associate\s+professor|senior\s+lecturer)\b/i;
+interface UniversityConfig {
+  name: string;
+  ror: string;
+  scraper: (limit?: number) => Promise<ScrapedProfessor[]>;
+}
+
+// ─── Title filtering ───
+// ✅ Professor, Associate Professor, Senior Lecturer, Lecturer, Emeritus Professor
+// ❌ PhD Student, Postdoc, Research Fellow/Assistant, Tutor, Adjunct-only
+
+const VALID_TITLES = /\b(emeritus\s+professor|professor|associate\s+professor|senior\s+lecturer|lecturer)\b/i;
+
+const EXCLUDED_TITLES = /\b(phd\s+(student|candidate)|postdoc|postdoctoral|research\s+(fellow|assistant)|tutor|teaching\s+assistant|higher\s+degree\s+by\s+research)\b/i;
+
+function isValidTitle(text: string): boolean {
+  if (EXCLUDED_TITLES.test(text)) return false;
+  return VALID_TITLES.test(text);
+}
+
+function extractTitle(text: string): string {
+  const lower = text.toLowerCase();
+  if (/emeritus\s+professor/i.test(lower)) return 'Emeritus Professor';
+  if (/associate\s+professor/i.test(lower)) return 'Associate Professor';
+  if (/\bprofessor\b/i.test(lower)) return 'Professor';
+  if (/senior\s+lecturer/i.test(lower)) return 'Senior Lecturer';
+  if (/\blecturer\b/i.test(lower)) return 'Lecturer';
+  return text.trim();
+}
+
+function cleanName(raw: string): string {
+  return raw
+    .replace(/\s+/g, ' ')
+    .replace(/^(emeritus\s+professor|associate\s+professor|professor|senior\s+lecturer|lecturer|dr|mr|mrs|ms|miss|mx)\s+/i, '')
+    .trim();
+}
+
+// ─── Layer 1: University HTML scrapers ───
+
+async function fetchPage(url: string): Promise<string> {
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'KoalaPhD-Research-Bot/1.0 (academic research aggregator; info@koalastudy.net)' },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  return res.text();
+}
+
+// Adelaide's server uses legacy SSL renegotiation which Node.js fetch rejects
+async function fetchPageLegacySSL(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const options: https.RequestOptions = {
+      hostname: parsed.hostname,
+      path: parsed.pathname + parsed.search,
+      headers: { 'User-Agent': 'KoalaPhD-Research-Bot/1.0 (academic research aggregator; info@koalastudy.net)' },
+      secureOptions: constants.SSL_OP_LEGACY_SERVER_CONNECT,
+    };
+    https.get(options, (res) => {
+      if (res.statusCode && res.statusCode >= 400) {
+        reject(new Error(`HTTP ${res.statusCode} for ${url}`));
+        return;
+      }
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => resolve(data));
+    }).on('error', reject);
+  });
+}
+
+// --- UNSW Sydney ---
+// research.unsw.edu.au/researcher?page=N
+// Structure: .views-row > .info > a.title[href="/people/..."], <b>Faculty:</b> <a>, FoR links
+async function scrapeUNSW(limit?: number): Promise<ScrapedProfessor[]> {
+  const all: ScrapedProfessor[] = [];
+  let page = 0;
+  const maxPages = limit ? Math.ceil(limit / 25) + 1 : 200;
+
+  while (page < maxPages) {
+    const url = `https://research.unsw.edu.au/researcher?page=${page}`;
+    console.log(`    📄 Page ${page + 1}: ${url}`);
+    try {
+      const html = await fetchPage(url);
+      const $ = cheerio.load(html);
+      const rows = $('.views-row');
+      if (rows.length === 0) break;
+
+      rows.each((_, el) => {
+        if (limit && all.length >= limit) return;
+        const info = $(el).find('.info');
+        const nameLink = info.find('a.title');
+        const rawName = nameLink.text().trim();
+        const href = nameLink.attr('href') || '';
+
+        // The name includes title prefix: "Associate Professor Shengyu Li"
+        // Check if name contains valid title, or check bio for position
+        const bio = info.find('.bio').text().trim();
+        const combinedText = rawName + ' ' + bio;
+
+        if (!isValidTitle(combinedText)) return;
+
+        const name = cleanName(rawName);
+        if (!name || name.length < 2) return;
+
+        const position = extractTitle(combinedText);
+        const facultyLink = info.find('b:contains("Faculty")').parent().find('a').first();
+        const faculty = facultyLink.text().trim();
+
+        const forLinks: string[] = [];
+        const forSection = info.find('b:contains("Fields of Research")');
+        if (forSection.length) {
+          forSection.parent().find('a').each((_, a) => {
+            const t = $(a).text().trim();
+            if (t) forLinks.push(t);
+          });
+        }
+
+        all.push({
+          name,
+          position,
+          faculty,
+          profileUrl: href.startsWith('http') ? href : `https://research.unsw.edu.au${href}`,
+          researchAreas: forLinks.slice(0, 5),
+        });
+      });
+
+      if (limit && all.length >= limit) break;
+      page++;
+      await sleep(1000);
+    } catch (e) {
+      console.log(`    ⚠️ Page ${page + 1} failed: ${(e as Error).message}`);
+      break;
+    }
+  }
+  return all;
+}
+
+// --- University of Adelaide ---
+// researchers.adelaide.edu.au?page=N
+// Structure: .au-rp-card > .card-body > h3.card-title > a, .card-text > p (position, college)
+async function scrapeAdelaide(limit?: number): Promise<ScrapedProfessor[]> {
+  const all: ScrapedProfessor[] = [];
+  let page = 0;
+  const maxPages = limit ? Math.ceil(limit / 16) + 1 : 350;
+
+  while (page < maxPages) {
+    const url = `https://researchers.adelaide.edu.au?page=${page}`;
+    console.log(`    📄 Page ${page + 1}: ${url}`);
+    try {
+      const html = await fetchPageLegacySSL(url);
+      const $ = cheerio.load(html);
+      const cards = $('.au-rp-card');
+      if (cards.length === 0) break;
+
+      cards.each((_, el) => {
+        if (limit && all.length >= limit) return;
+        const rawName = $(el).find('.card-title a').text().trim();
+        const href = $(el).find('.card-title a').attr('href') || '';
+        const paragraphs = $(el).find('.card-text p');
+        const positionText = paragraphs.first().text().trim();
+        const college = paragraphs.eq(1).text().trim();
+
+        if (!isValidTitle(rawName + ' ' + positionText)) return;
+
+        const name = cleanName(rawName);
+        if (!name || name.length < 2) return;
+
+        all.push({
+          name,
+          position: extractTitle(positionText || rawName),
+          faculty: college,
+          profileUrl: href.startsWith('http') ? href : `https://researchers.adelaide.edu.au${href}`,
+        });
+      });
+
+      if (limit && all.length >= limit) break;
+      page++;
+      await sleep(1000);
+    } catch (e) {
+      console.log(`    ⚠️ Page ${page + 1} failed: ${(e as Error).message}`);
+      break;
+    }
+  }
+  return all;
+}
+
+// --- Fallback: OpenAlex-only scraper ---
+// For universities whose websites block scraping (Sydney, Melbourne, Monash, UQ, ANU, UWA)
+// Uses OpenAlex with stricter filters: h_index > 5 (active academics, not students)
+async function scrapeViaOpenAlex(ror: string, university: string, limit?: number): Promise<ScrapedProfessor[]> {
+  const all: ScrapedProfessor[] = [];
+  const perPage = 200;
+  let cursor = '*';
+  let page = 0;
+
+  while (cursor) {
+    page++;
+    const url = `https://api.openalex.org/authors?filter=last_known_institutions.ror:${ror},summary_stats.h_index:>5&per_page=${perPage}&cursor=${cursor}&sort=cited_by_count:desc&select=id,display_name,works_count,cited_by_count,summary_stats,topics,last_known_institutions,orcid&mailto=info@koalastudy.net`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        console.log(`    ⚠️ OpenAlex page ${page}: HTTP ${res.status}`);
+        break;
+      }
+      const data = await res.json();
+      const results = data.results || [];
+
+      if (results.length === 0) break;
+
+      for (const author of results) {
+        if (limit && all.length >= limit) break;
+        const name = author.display_name?.trim();
+        if (!name || name.length < 2) continue;
+
+        const topics = (author.topics || []).slice(0, 5).map((t: { display_name: string }) => t.display_name);
+
+        all.push({
+          name,
+          position: 'Researcher',
+          faculty: '',
+          researchAreas: topics,
+        });
+      }
+
+      const total = data.meta?.count || 0;
+      console.log(`    📄 Page ${page}: +${results.length} (${all.length}/${total})`);
+
+      if (limit && all.length >= limit) break;
+      cursor = data.meta?.next_cursor || null;
+      if (!cursor) break;
+      await sleep(500);
+    } catch (e) {
+      console.log(`    ⚠️ OpenAlex page ${page} error: ${(e as Error).message}`);
+      break;
+    }
+  }
+  return limit ? all.slice(0, limit) : all;
+}
+
+// ─── University configs ───
 
 const UNIVERSITIES: Record<string, UniversityConfig> = {
   'UNSW Sydney': {
@@ -44,397 +277,51 @@ const UNIVERSITIES: Record<string, UniversityConfig> = {
     ror: 'https://ror.org/03r8z3t63',
     scraper: scrapeUNSW,
   },
-  'University of Sydney': {
-    name: 'University of Sydney',
-    ror: 'https://ror.org/0384j8v12',
-    scraper: scrapeSydney,
-  },
-  'University of Melbourne': {
-    name: 'University of Melbourne',
-    ror: 'https://ror.org/01ej9dk98',
-    scraper: scrapeMelbourne,
-  },
-  'Monash University': {
-    name: 'Monash University',
-    ror: 'https://ror.org/02bfwt286',
-    scraper: scrapeMonash,
-  },
-  'University of Queensland': {
-    name: 'University of Queensland',
-    ror: 'https://ror.org/00rqy9422',
-    scraper: scrapeUQ,
-  },
-  'Australian National University': {
-    name: 'Australian National University',
-    ror: 'https://ror.org/019wvm592',
-    scraper: scrapeANU,
-  },
-  'University of Western Australia': {
-    name: 'University of Western Australia',
-    ror: 'https://ror.org/047272k79',
-    scraper: scrapeUWA,
-  },
   'University of Adelaide': {
     name: 'University of Adelaide',
     ror: 'https://ror.org/00892tw58',
     scraper: scrapeAdelaide,
   },
+  // Websites blocked (JS SPA / bot detection / Elsevier Pure 403) → OpenAlex fallback
+  'University of Sydney': {
+    name: 'University of Sydney',
+    ror: 'https://ror.org/0384j8v12',
+    scraper: (limit) => scrapeViaOpenAlex('https://ror.org/0384j8v12', 'University of Sydney', limit),
+  },
+  'University of Melbourne': {
+    name: 'University of Melbourne',
+    ror: 'https://ror.org/01ej9dk98',
+    scraper: (limit) => scrapeViaOpenAlex('https://ror.org/01ej9dk98', 'University of Melbourne', limit),
+  },
+  'Monash University': {
+    name: 'Monash University',
+    ror: 'https://ror.org/02bfwt286',
+    scraper: (limit) => scrapeViaOpenAlex('https://ror.org/02bfwt286', 'Monash University', limit),
+  },
+  'University of Queensland': {
+    name: 'University of Queensland',
+    ror: 'https://ror.org/00rqy9422',
+    scraper: (limit) => scrapeViaOpenAlex('https://ror.org/00rqy9422', 'University of Queensland', limit),
+  },
+  'Australian National University': {
+    name: 'Australian National University',
+    ror: 'https://ror.org/019wvm592',
+    scraper: (limit) => scrapeViaOpenAlex('https://ror.org/019wvm592', 'Australian National University', limit),
+  },
+  'University of Western Australia': {
+    name: 'University of Western Australia',
+    ror: 'https://ror.org/047272k79',
+    scraper: (limit) => scrapeViaOpenAlex('https://ror.org/047272k79', 'University of Western Australia', limit),
+  },
 };
 
-// ─── Layer 1: HTML scrapers (free) ───
-
-async function fetchPage(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'KoalaPhD-Research-Bot/1.0 (academic research aggregator)' },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-  return res.text();
-}
-
-async function scrapePaginated(
-  baseUrl: string,
-  parsePage: ($: cheerio.CheerioAPI, url: string) => ScrapedProfessor[],
-  nextPageUrl: ($: cheerio.CheerioAPI, currentUrl: string) => string | null,
-  maxPages = 50,
-): Promise<ScrapedProfessor[]> {
-  const all: ScrapedProfessor[] = [];
-  let url: string | null = baseUrl;
-  let page = 0;
-
-  while (url && page < maxPages) {
-    page++;
-    console.log(`    📄 Page ${page}: ${url.length > 80 ? url.slice(0, 77) + '...' : url}`);
-    try {
-      const html = await fetchPage(url);
-      const $ = cheerio.load(html);
-      const profs = parsePage($, url);
-      all.push(...profs);
-      url = nextPageUrl($, url);
-      if (url) await sleep(1000);
-    } catch (e) {
-      console.log(`    ⚠️ Page ${page} failed: ${(e as Error).message}`);
-      break;
-    }
-  }
-
-  return all;
-}
-
-// findanexpert.unimelb.edu.au uses a JSON API
-async function scrapeMelbourne(): Promise<ScrapedProfessor[]> {
-  const results: ScrapedProfessor[] = [];
-  const pageSize = 50;
-  let offset = 0;
-  let total = Infinity;
-
-  while (offset < total && offset < 5000) {
-    const url = `https://findanexpert.unimelb.edu.au/api/persons?page=${Math.floor(offset / pageSize) + 1}&per_page=${pageSize}&order=name`;
-    console.log(`    📄 API page ${Math.floor(offset / pageSize) + 1}`);
-    try {
-      const res = await fetch(url, {
-        headers: { 'Accept': 'application/json', 'User-Agent': 'KoalaPhD-Research-Bot/1.0' },
-      });
-      if (!res.ok) {
-        // Fallback to HTML scraping if API not available
-        console.log(`    ⚠️ API returned ${res.status}, falling back to HTML`);
-        return scrapeMelbourneHTML();
-      }
-      const data = await res.json();
-      if (data.total) total = data.total;
-      const items = data.items || data.data || [];
-      if (items.length === 0) break;
-
-      for (const item of items) {
-        const title = item.position || item.title || '';
-        if (!VALID_TITLES.test(title)) continue;
-        results.push({
-          name: item.name || item.display_name || '',
-          position: extractTitle(title),
-          faculty: item.organisation?.name || item.department || '',
-          email: item.email || undefined,
-          profileUrl: item.url || `https://findanexpert.unimelb.edu.au/profile/${item.id}`,
-        });
-      }
-      offset += pageSize;
-      await sleep(1000);
-    } catch (e) {
-      console.log(`    ⚠️ Melbourne API error: ${(e as Error).message}`);
-      break;
-    }
-  }
-
-  return results.length > 0 ? results : scrapeMelbourneHTML();
-}
-
-async function scrapeMelbourneHTML(): Promise<ScrapedProfessor[]> {
-  return scrapePaginated(
-    'https://findanexpert.unimelb.edu.au/browse/All',
-    ($) => {
-      const profs: ScrapedProfessor[] = [];
-      $('div.result, li.person, .researcher-item, tr').each((_, el) => {
-        const name = $(el).find('a h3, a.name, .person-name, td:first-child a').first().text().trim();
-        const title = $(el).find('.position, .title, td:nth-child(2)').first().text().trim();
-        const faculty = $(el).find('.department, .org, td:nth-child(3)').first().text().trim();
-        const href = $(el).find('a').first().attr('href') || '';
-        if (name && VALID_TITLES.test(title)) {
-          profs.push({
-            name,
-            position: extractTitle(title),
-            faculty,
-            profileUrl: href.startsWith('http') ? href : `https://findanexpert.unimelb.edu.au${href}`,
-          });
-        }
-      });
-      return profs;
-    },
-    ($) => {
-      const next = $('a.next, a[rel="next"], .pagination a:contains("Next")').attr('href');
-      return next ? (next.startsWith('http') ? next : `https://findanexpert.unimelb.edu.au${next}`) : null;
-    },
-  );
-}
-
-async function scrapeUNSW(): Promise<ScrapedProfessor[]> {
-  return scrapePaginated(
-    'https://research.unsw.edu.au/people?page=0',
-    ($) => {
-      const profs: ScrapedProfessor[] = [];
-      $('.view-content .views-row, .people-list .person, tr.views-row-item').each((_, el) => {
-        const name = $(el).find('h3 a, .views-field-title a, .name a, td a').first().text().trim();
-        const title = $(el).find('.views-field-field-position, .position, .title').first().text().trim();
-        const faculty = $(el).find('.views-field-field-faculty, .faculty, .school').first().text().trim();
-        const href = $(el).find('h3 a, .views-field-title a, .name a, td a').first().attr('href') || '';
-        if (name && VALID_TITLES.test(title)) {
-          profs.push({
-            name,
-            position: extractTitle(title),
-            faculty,
-            profileUrl: href.startsWith('http') ? href : `https://research.unsw.edu.au${href}`,
-          });
-        }
-      });
-      return profs;
-    },
-    ($, currentUrl) => {
-      const next = $('li.pager-next a, a[rel="next"], .pager__item--next a').attr('href');
-      if (!next) {
-        const match = currentUrl.match(/page=(\d+)/);
-        const currentPage = match ? parseInt(match[1]) : 0;
-        const hasContent = $('.view-content .views-row, .people-list .person').length > 0;
-        if (hasContent) return `https://research.unsw.edu.au/people?page=${currentPage + 1}`;
-        return null;
-      }
-      return next.startsWith('http') ? next : `https://research.unsw.edu.au${next}`;
-    },
-  );
-}
-
-async function scrapeSydney(): Promise<ScrapedProfessor[]> {
-  return scrapePaginated(
-    'https://www.sydney.edu.au/research/our-researchers.html',
-    ($) => {
-      const profs: ScrapedProfessor[] = [];
-      $('.researcher-card, .staff-list-item, .result-item, .b-profile-card').each((_, el) => {
-        const name = $(el).find('h3, .name, .researcher-name').first().text().trim();
-        const title = $(el).find('.position, .title, .role').first().text().trim();
-        const faculty = $(el).find('.faculty, .school, .department, .org-unit').first().text().trim();
-        const email = $(el).find('a[href^="mailto:"]').attr('href')?.replace('mailto:', '') || undefined;
-        const href = $(el).find('a').first().attr('href') || '';
-        if (name && VALID_TITLES.test(title)) {
-          profs.push({
-            name,
-            position: extractTitle(title),
-            faculty,
-            email,
-            profileUrl: href.startsWith('http') ? href : `https://www.sydney.edu.au${href}`,
-          });
-        }
-      });
-      return profs;
-    },
-    ($) => {
-      const next = $('a[rel="next"], .pagination a:contains("Next"), .pager-next a').attr('href');
-      return next ? (next.startsWith('http') ? next : `https://www.sydney.edu.au${next}`) : null;
-    },
-  );
-}
-
-async function scrapeMonash(): Promise<ScrapedProfessor[]> {
-  return scrapePaginated(
-    'https://research.monash.edu/en/persons/?type=%2Fdk%2Fatira%2Fpure%2Fperson%2Fpersontypes%2Fperson%2Facademic&page=0',
-    ($) => {
-      const profs: ScrapedProfessor[] = [];
-      $('.result-container .result-title, li.list-result-item').each((_, el) => {
-        const linkEl = $(el).find('a').first().length ? $(el).find('a').first() : $(el).find('h3 a').first();
-        const name = linkEl.text().trim() || $(el).find('.title').text().trim();
-        const span = $(el).parent().find('.person-details, .rendering_person, .rendered-text').first().text().trim();
-        const href = linkEl.attr('href') || '';
-        if (name && VALID_TITLES.test(span)) {
-          profs.push({
-            name,
-            position: extractTitle(span),
-            faculty: '',
-            profileUrl: href.startsWith('http') ? href : `https://research.monash.edu${href}`,
-          });
-        }
-      });
-      return profs;
-    },
-    ($, currentUrl) => {
-      const next = $('a.nextLink, a[rel="next"]').attr('href');
-      if (next) return next.startsWith('http') ? next : `https://research.monash.edu${next}`;
-      const match = currentUrl.match(/page=(\d+)/);
-      const currentPage = match ? parseInt(match[1]) : 0;
-      const hasResults = $('.result-container').length > 0;
-      return hasResults ? currentUrl.replace(/page=\d+/, `page=${currentPage + 1}`) : null;
-    },
-  );
-}
-
-async function scrapeUQ(): Promise<ScrapedProfessor[]> {
-  return scrapePaginated(
-    'https://researchers.uq.edu.au/browse?page=1',
-    ($) => {
-      const profs: ScrapedProfessor[] = [];
-      $('.researcher-listing .researcher-card, .views-row, .result-item').each((_, el) => {
-        const name = $(el).find('h3 a, .researcher-name a, .name a').first().text().trim();
-        const title = $(el).find('.position, .title, .field-position').first().text().trim();
-        const faculty = $(el).find('.school, .org-unit, .field-school').first().text().trim();
-        const href = $(el).find('h3 a, .researcher-name a, .name a').first().attr('href') || '';
-        if (name && VALID_TITLES.test(title)) {
-          profs.push({
-            name,
-            position: extractTitle(title),
-            faculty,
-            profileUrl: href.startsWith('http') ? href : `https://researchers.uq.edu.au${href}`,
-          });
-        }
-      });
-      return profs;
-    },
-    ($, currentUrl) => {
-      const next = $('a[rel="next"], .pager-next a, li.next a').attr('href');
-      if (next) return next.startsWith('http') ? next : `https://researchers.uq.edu.au${next}`;
-      const match = currentUrl.match(/page=(\d+)/);
-      const currentPage = match ? parseInt(match[1]) : 1;
-      const hasResults = $('.researcher-card, .views-row, .result-item').length > 0;
-      return hasResults ? currentUrl.replace(/page=\d+/, `page=${currentPage + 1}`) : null;
-    },
-  );
-}
-
-async function scrapeANU(): Promise<ScrapedProfessor[]> {
-  return scrapePaginated(
-    'https://researchers.anu.edu.au/browse?page=1',
-    ($) => {
-      const profs: ScrapedProfessor[] = [];
-      $('.researcher-item, .views-row, .result-item, .staff-list-item').each((_, el) => {
-        const name = $(el).find('h3 a, .name a, a.researcher-name').first().text().trim();
-        const title = $(el).find('.position, .title, .role').first().text().trim();
-        const faculty = $(el).find('.school, .college, .department').first().text().trim();
-        const href = $(el).find('h3 a, .name a, a.researcher-name').first().attr('href') || '';
-        if (name && VALID_TITLES.test(title)) {
-          profs.push({
-            name,
-            position: extractTitle(title),
-            faculty,
-            profileUrl: href.startsWith('http') ? href : `https://researchers.anu.edu.au${href}`,
-          });
-        }
-      });
-      return profs;
-    },
-    ($, currentUrl) => {
-      const next = $('a[rel="next"], .pager-next a').attr('href');
-      if (next) return next.startsWith('http') ? next : `https://researchers.anu.edu.au${next}`;
-      const match = currentUrl.match(/page=(\d+)/);
-      const currentPage = match ? parseInt(match[1]) : 1;
-      const hasResults = $('.researcher-item, .views-row, .result-item').length > 0;
-      return hasResults ? currentUrl.replace(/page=\d+/, `page=${currentPage + 1}`) : null;
-    },
-  );
-}
-
-async function scrapeUWA(): Promise<ScrapedProfessor[]> {
-  return scrapePaginated(
-    'https://research-repository.uwa.edu.au/en/persons/?type=%2Fdk%2Fatira%2Fpure%2Fperson%2Fpersontypes%2Fperson%2Facademic&page=0',
-    ($) => {
-      const profs: ScrapedProfessor[] = [];
-      $('.result-container, li.list-result-item').each((_, el) => {
-        const linkEl = $(el).find('.result-title a, h3 a').first();
-        const name = linkEl.text().trim();
-        const details = $(el).find('.person-details, .rendering_person').first().text().trim();
-        const href = linkEl.attr('href') || '';
-        if (name && VALID_TITLES.test(details)) {
-          profs.push({
-            name,
-            position: extractTitle(details),
-            faculty: '',
-            profileUrl: href.startsWith('http') ? href : `https://research-repository.uwa.edu.au${href}`,
-          });
-        }
-      });
-      return profs;
-    },
-    ($, currentUrl) => {
-      const next = $('a.nextLink, a[rel="next"]').attr('href');
-      if (next) return next.startsWith('http') ? next : `https://research-repository.uwa.edu.au${next}`;
-      const match = currentUrl.match(/page=(\d+)/);
-      const currentPage = match ? parseInt(match[1]) : 0;
-      const hasResults = $('.result-container, li.list-result-item').length > 0;
-      return hasResults ? currentUrl.replace(/page=\d+/, `page=${currentPage + 1}`) : null;
-    },
-  );
-}
-
-async function scrapeAdelaide(): Promise<ScrapedProfessor[]> {
-  return scrapePaginated(
-    'https://researchers.adelaide.edu.au/browse?page=1',
-    ($) => {
-      const profs: ScrapedProfessor[] = [];
-      $('.researcher-item, .views-row, .result-item, .staff-card').each((_, el) => {
-        const name = $(el).find('h3 a, .name a, a.researcher-name').first().text().trim();
-        const title = $(el).find('.position, .title, .role').first().text().trim();
-        const faculty = $(el).find('.school, .faculty, .department').first().text().trim();
-        const href = $(el).find('h3 a, .name a, a.researcher-name').first().attr('href') || '';
-        if (name && VALID_TITLES.test(title)) {
-          profs.push({
-            name,
-            position: extractTitle(title),
-            faculty,
-            profileUrl: href.startsWith('http') ? href : `https://researchers.adelaide.edu.au${href}`,
-          });
-        }
-      });
-      return profs;
-    },
-    ($, currentUrl) => {
-      const next = $('a[rel="next"], .pager-next a').attr('href');
-      if (next) return next.startsWith('http') ? next : `https://researchers.adelaide.edu.au${next}`;
-      const match = currentUrl.match(/page=(\d+)/);
-      const currentPage = match ? parseInt(match[1]) : 1;
-      const hasResults = $('.researcher-item, .views-row, .result-item').length > 0;
-      return hasResults ? currentUrl.replace(/page=\d+/, `page=${currentPage + 1}`) : null;
-    },
-  );
-}
-
-function extractTitle(text: string): string {
-  const m = text.match(/\b(Professor|Associate\s+Professor|Senior\s+Lecturer)\b/i);
-  if (!m) return text.trim();
-  const t = m[0].toLowerCase();
-  if (t === 'professor') return 'Professor';
-  if (t.includes('associate')) return 'Associate Professor';
-  return 'Senior Lecturer';
-}
-
-// ─── Layer 2: OpenAlex enrichment (free) ───
+// ─── Layer 2: OpenAlex enrichment ───
 
 async function enrichWithOpenAlex(
   professors: ScrapedProfessor[],
   ror: string,
-): Promise<Map<string, { h_index: number | null; paper_count: number | null; citation_count: number | null; topics: string[] }>> {
-  const enriched = new Map<string, { h_index: number | null; paper_count: number | null; citation_count: number | null; topics: string[] }>();
+): Promise<Map<string, OpenAlexEnrichment>> {
+  const enriched = new Map<string, OpenAlexEnrichment>();
   const batchSize = 5;
 
   for (let i = 0; i < professors.length; i += batchSize) {
@@ -445,7 +332,7 @@ async function enrichWithOpenAlex(
         const res = await fetch(url);
         if (!res.ok) return;
         const data = await res.json();
-        const results = data.results as OpenAlexAuthor[] | undefined;
+        const results = data.results;
         if (!results?.length) return;
         const author = results[0];
         enriched.set(prof.name, {
@@ -458,19 +345,18 @@ async function enrichWithOpenAlex(
     });
     await Promise.all(promises);
     if (i + batchSize < professors.length) await sleep(200);
+    if ((i + batchSize) % 50 === 0) {
+      console.log(`    📊 OpenAlex: ${enriched.size}/${Math.min(i + batchSize, professors.length)} enriched`);
+    }
   }
 
-  console.log(`  📊 OpenAlex: enriched ${enriched.size}/${professors.length} professors`);
+  console.log(`  📊 OpenAlex: enriched ${enriched.size}/${professors.length}`);
   return enriched;
 }
 
-// ─── Layer 3: Claude Haiku for missing research areas (cheap) ───
+// ─── Layer 3: Claude Haiku for missing research areas ───
 
-async function fillResearchAreas(
-  name: string,
-  university: string,
-  faculty: string,
-): Promise<string[]> {
+async function fillResearchAreas(name: string, university: string, faculty: string): Promise<string[]> {
   try {
     const response = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -495,20 +381,23 @@ async function fillResearchAreas(
 async function saveToDatabase(
   professors: ScrapedProfessor[],
   university: string,
-  openAlexData: Map<string, { h_index: number | null; paper_count: number | null; citation_count: number | null; topics: string[] }>,
+  openAlexData: Map<string, OpenAlexEnrichment>,
+  skipHaiku: boolean,
+  isOpenAlexSource: boolean,
 ) {
   let saved = 0;
   let updated = 0;
   let haikuCalls = 0;
 
-  for (const prof of professors) {
+  for (let i = 0; i < professors.length; i++) {
+    const prof = professors[i];
     if (!prof.name || prof.name.length < 2) continue;
 
     const oaData = openAlexData.get(prof.name);
-    let researchAreas = oaData?.topics?.length ? oaData.topics : [];
 
-    // Layer 3: fill missing research areas with Haiku
-    if (researchAreas.length === 0 && prof.faculty) {
+    let researchAreas = prof.researchAreas?.length ? prof.researchAreas : oaData?.topics || [];
+
+    if (!skipHaiku && researchAreas.length === 0 && prof.faculty) {
       researchAreas = await fillResearchAreas(prof.name, university, prof.faculty);
       haikuCalls++;
       if (haikuCalls % 10 === 0) await sleep(500);
@@ -521,27 +410,33 @@ async function saveToDatabase(
       .eq('university', university)
       .maybeSingle();
 
+    const dataSources = isOpenAlexSource ? ['openalex'] : ['university_website', 'openalex'];
+
     if (existing) {
       const updates: Record<string, unknown> = {};
       if (prof.email) updates.email = prof.email;
-      if (prof.position) updates.position_title = prof.position;
+      if (prof.position && prof.position !== 'Researcher') updates.position_title = prof.position;
       if (prof.faculty) updates.faculty = prof.faculty;
       if (prof.profileUrl) updates.profile_url = prof.profileUrl;
-      if (researchAreas.length > 0) updates.research_areas = researchAreas;
-      if (oaData?.h_index && (!existing.h_index || oaData.h_index > existing.h_index)) {
-        updates.h_index = oaData.h_index;
-        updates.paper_count = oaData.paper_count;
-        updates.citation_count = oaData.citation_count;
+      if (researchAreas.length > 0 && (!existing.research_areas || existing.research_areas.length === 0)) {
+        updates.research_areas = researchAreas;
+      }
+      const hIndex = oaData?.h_index;
+      if (hIndex && (!existing.h_index || hIndex > existing.h_index)) {
+        updates.h_index = hIndex;
+        updates.paper_count = oaData?.paper_count;
+        updates.citation_count = oaData?.citation_count;
       }
       updates.verification_status = 'Verified';
-      updates.data_sources = ['university_website', 'openalex'];
+      updates.data_sources = dataSources;
+      updates.last_synced_at = new Date().toISOString();
       await supabase.from('professors').update(updates).eq('id', existing.id);
       updated++;
     } else {
       const { error } = await supabase.from('professors').insert({
         name: prof.name,
         university,
-        position_title: prof.position,
+        position_title: prof.position || 'Researcher',
         faculty: prof.faculty || null,
         email: prof.email || null,
         research_areas: researchAreas,
@@ -550,7 +445,8 @@ async function saveToDatabase(
         paper_count: oaData?.paper_count ?? null,
         citation_count: oaData?.citation_count ?? null,
         verification_status: 'Verified',
-        data_sources: ['university_website', 'openalex'],
+        data_sources: dataSources,
+        last_synced_at: new Date().toISOString(),
       });
       if (error) {
         if (error.code !== '23505') console.error(`    ❌ ${prof.name}: ${error.message}`);
@@ -558,62 +454,95 @@ async function saveToDatabase(
         saved++;
       }
     }
+
+    if ((i + 1) % 50 === 0) {
+      console.log(`    💾 Progress: ${i + 1}/${professors.length} (New: ${saved}, Updated: ${updated})`);
+    }
   }
 
-  console.log(`  💾 New: ${saved}, Updated: ${updated}, Haiku calls: ${haikuCalls}`);
+  console.log(`  💾 Final: New: ${saved}, Updated: ${updated}, Haiku calls: ${haikuCalls}`);
   return { saved, updated, haikuCalls };
 }
 
 // ─── Main ───
 
-async function processUniversity(config: UniversityConfig) {
-  console.log(`\n${'='.repeat(50)}`);
+async function processUniversity(config: UniversityConfig, skipHaiku: boolean, limit?: number) {
+  console.log(`\n${'='.repeat(60)}`);
   console.log(`🏫 ${config.name}`);
-  console.log(`${'='.repeat(50)}`);
+  console.log(`${'='.repeat(60)}`);
 
-  // Layer 1: scrape HTML
-  console.log(`\n  🔍 Layer 1: Scraping university website...`);
-  const professors = await config.scraper();
-  console.log(`  ✅ Layer 1: Found ${professors.length} professors/assoc professors/senior lecturers`);
+  const isOpenAlexSource = !['UNSW Sydney', 'University of Adelaide'].includes(config.name);
+
+  // Layer 1: Scrape professor list
+  console.log(`\n  🔍 Layer 1: ${isOpenAlexSource ? 'OpenAlex (website blocked)' : 'University website'}...`);
+  const professors = await config.scraper(limit);
+  console.log(`  ✅ Layer 1 complete: ${professors.length} professors found`);
 
   if (professors.length === 0) {
-    console.log(`  ⚠️ No professors found — site structure may have changed. Skipping.`);
+    console.log(`  ⚠️ No professors found. Skipping.`);
     return;
   }
 
-  // Layer 2: enrich with OpenAlex
-  console.log(`\n  📊 Layer 2: Enriching with OpenAlex...`);
-  const openAlexData = await enrichWithOpenAlex(professors, config.ror);
+  // Layer 2: OpenAlex enrichment (skip for OpenAlex-sourced universities)
+  let openAlexData = new Map<string, OpenAlexEnrichment>();
+  if (!isOpenAlexSource) {
+    console.log(`\n  📊 Layer 2: OpenAlex enrichment...`);
+    openAlexData = await enrichWithOpenAlex(professors, config.ror);
+  }
 
-  // Layer 3 + save (Haiku called inside saveToDatabase for missing research areas)
-  console.log(`\n  💾 Layer 3 + Save: Writing to database...`);
-  await saveToDatabase(professors, config.name, openAlexData);
+  // Layer 3 + save
+  console.log(`\n  💾 Layer 3: Saving to database${skipHaiku ? ' (Haiku skipped)' : ''}...`);
+  await saveToDatabase(professors, config.name, openAlexData, skipHaiku, isOpenAlexSource);
 
-  // Stats
   const { count } = await supabase
     .from('professors')
     .select('*', { count: 'exact', head: true })
     .eq('university', config.name)
     .eq('verification_status', 'Verified');
-  console.log(`  📊 Total verified professors for ${config.name}: ${count}`);
+  console.log(`  📊 Total verified for ${config.name}: ${count}`);
 }
 
 async function main() {
-  const target = process.argv[2];
+  const args = process.argv.slice(2);
+  const target = args.find(a => !a.startsWith('--'));
+  const skipHaiku = args.includes('--skip-haiku');
+  const limitArg = args.find(a => a.startsWith('--limit'));
+  const limit = limitArg ? parseInt(limitArg.split('=')[1] || limitArg.replace('--limit', '').trim() || '0') || undefined : undefined;
 
   if (!target) {
+    console.log('🐨 Koala PhD — Professor Scraper v2');
+    console.log('');
     console.log('Usage:');
     console.log('  npx tsx scripts/scrape-professors-v2.ts "UNSW Sydney"');
     console.log('  npx tsx scripts/scrape-professors-v2.ts all');
-    console.log(`\nAvailable: ${Object.keys(UNIVERSITIES).join(', ')}`);
+    console.log('  npx tsx scripts/scrape-professors-v2.ts "UNSW Sydney" --limit=50');
+    console.log('  npx tsx scripts/scrape-professors-v2.ts all --skip-haiku');
+    console.log('');
+    console.log('Data sources:');
+    console.log('  🌐 HTML scraping: UNSW Sydney, University of Adelaide');
+    console.log('  📊 OpenAlex API:  Sydney, Melbourne, Monash, UQ, ANU, UWA (websites blocked)');
+    console.log('');
+    console.log(`Available: ${Object.keys(UNIVERSITIES).join(', ')}`);
     return;
   }
 
-  console.log('🐨 Koala PhD — Professor Scraper v2 (3-layer: HTML + OpenAlex + Haiku)\n');
+  console.log('🐨 Koala PhD — Professor Scraper v2\n');
+  console.log('Layer 1: University website HTML / OpenAlex (for blocked sites)');
+  console.log('Layer 2: OpenAlex enrichment (h-index, papers, citations)');
+  console.log('Layer 3: Claude Haiku (missing research areas)\n');
+  if (skipHaiku) console.log('⏭️  Haiku enrichment: SKIPPED\n');
+  if (limit) console.log(`🔢 Limit: ${limit} professors per university\n`);
+
+  const { count: before } = await supabase
+    .from('professors')
+    .select('*', { count: 'exact', head: true })
+    .eq('verification_status', 'Verified');
+  console.log(`📊 Database before: ${before} verified professors\n`);
 
   if (target === 'all') {
     for (const config of Object.values(UNIVERSITIES)) {
-      await processUniversity(config);
+      await processUniversity(config, skipHaiku, limit);
+      await sleep(3000);
     }
   } else {
     const config = UNIVERSITIES[target];
@@ -621,9 +550,15 @@ async function main() {
       console.error(`University "${target}" not found.\nAvailable: ${Object.keys(UNIVERSITIES).join(', ')}`);
       process.exit(1);
     }
-    await processUniversity(config);
+    await processUniversity(config, skipHaiku, limit);
   }
 
+  const { count: after } = await supabase
+    .from('professors')
+    .select('*', { count: 'exact', head: true })
+    .eq('verification_status', 'Verified');
+  console.log(`\n📊 Database after: ${after} verified professors`);
+  console.log(`📈 Net change: +${(after || 0) - (before || 0)}`);
   console.log('\n✅ Done!');
 }
 

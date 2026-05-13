@@ -174,7 +174,7 @@ export async function saveCandidateToDb(candidate: ProfessorCandidate): Promise<
     .insert({
       name: candidate.name,
       university: candidate.university,
-      position_title: candidate.position || null,
+      position_title: candidate.position || 'Researcher',
       faculty: candidate.faculty || null,
       research_areas: candidate.researchAreas,
       h_index: candidate.hIndex || null,
