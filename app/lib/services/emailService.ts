@@ -1,6 +1,11 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend(): Resend {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY is not set');
+  }
+  return new Resend(process.env.RESEND_API_KEY);
+}
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@koalaphd.com';
 const BRAND_NAME = 'Koala PhD';
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://koalaphd.com';
@@ -70,7 +75,7 @@ export async function sendVerificationEmail(params: {
     <p style="font-size:12px;color:#907858;">如果你没有注册过 ${BRAND_NAME}，请忽略此邮件。</p>
   `;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: `${BRAND_NAME} <${FROM_EMAIL}>`,
     to: params.to,
     subject: `${BRAND_NAME} — 验证你的邮箱`,
@@ -89,7 +94,7 @@ export async function sendVerificationReminder(params: {
     <p style="font-size:12px;color:#907858;">如果你已经验证，请忽略此邮件。</p>
   `;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: `${BRAND_NAME} <${FROM_EMAIL}>`,
     to: params.to,
     subject: `${BRAND_NAME} — 请完成邮箱验证`,
@@ -111,7 +116,7 @@ export async function sendPasswordResetEmail(params: {
     <p style="font-size:12px;color:#907858;">如果你没有请求重置密码，请忽略此邮件并确保你的账户安全。</p>
   `;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: `${BRAND_NAME} <${FROM_EMAIL}>`,
     to: params.to,
     subject: `${BRAND_NAME} — 重置密码`,
@@ -134,7 +139,7 @@ export async function sendWelcomeEmail(params: { to: string; name?: string }) {
     <p style="font-size:12px;color:#907858;">有任何问题，随时联系我们的团队。祝你申请顺利！</p>
   `;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: `${BRAND_NAME} <${FROM_EMAIL}>`,
     to: params.to,
     subject: `欢迎加入 ${BRAND_NAME} 🐨`,
@@ -154,7 +159,7 @@ export async function sendSecurityWarning(params: {
     <p style="font-size:12px;color:#907858;">如果你不再需要此账户，无需任何操作。</p>
   `;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: `${BRAND_NAME} <${FROM_EMAIL}>`,
     to: params.to,
     subject: `${BRAND_NAME} — 账户安全提醒`,
