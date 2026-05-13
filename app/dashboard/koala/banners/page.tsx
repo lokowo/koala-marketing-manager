@@ -53,6 +53,11 @@ export default function BannersPage() {
   const [newModalContent, setNewModalContent] = useState('');
   const [newStartDate, setNewStartDate] = useState('');
   const [newEndDate, setNewEndDate] = useState('');
+  const [imageTab, setImageTab] = useState<'upload' | 'ai'>('upload');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState('');
+  const [generateError, setGenerateError] = useState('');
 
   // Edit form state
   const [editAlt, setEditAlt] = useState('');
@@ -105,10 +110,18 @@ export default function BannersPage() {
   }
 
   async function handleCreate() {
-    if (!newImage) { flash('请选择图片'); return; }
+    let url: string | null = null;
+    if (imageTab === 'ai' && generatedImageUrl) {
+      url = generatedImageUrl;
+    } else if (imageTab === 'upload' && newImage) {
+      setSaving(true);
+      url = await uploadImage(newImage);
+      if (!url) { setSaving(false); return; }
+    } else {
+      flash('请选择或生成图片');
+      return;
+    }
     setSaving(true);
-    const url = await uploadImage(newImage);
-    if (!url) { setSaving(false); return; }
 
     try {
       const res = await fetch('/api/admin/banners', {
@@ -146,6 +159,32 @@ export default function BannersPage() {
     setNewModalContent('');
     setNewStartDate('');
     setNewEndDate('');
+    setImageTab('upload');
+    setAiPrompt('');
+    setGeneratedImageUrl('');
+    setGenerateError('');
+  }
+
+  async function handleGenerateImage() {
+    if (!aiPrompt.trim()) return;
+    setGenerating(true);
+    setGenerateError('');
+    try {
+      const res = await fetch('/api/admin/banners/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGeneratedImageUrl(data.imageUrl);
+      } else {
+        setGenerateError(data.error || '生成失败，请重试');
+      }
+    } catch {
+      setGenerateError('网络错误，请重试');
+    }
+    setGenerating(false);
   }
 
   function openEdit(b: Banner) {
@@ -430,28 +469,118 @@ export default function BannersPage() {
               <button onClick={() => setShowCreate(false)} className="text-[#9CA3AF] hover:text-[#374151]">✕</button>
             </div>
             <div className="p-5 space-y-4">
-              {/* Image upload */}
+              {/* Image source tabs */}
               <div>
                 <label className="block text-xs font-medium text-[#374151] mb-1.5">Banner 图片 *</label>
-                {newImagePreview ? (
-                  <div className="relative w-full h-40 rounded-xl overflow-hidden bg-[#F3F4F6] mb-2">
-                    <Image src={newImagePreview} alt="Preview" fill className="object-cover" sizes="100vw" />
-                    <button
-                      onClick={() => { setNewImage(null); setNewImagePreview(''); }}
-                      className="absolute top-2 right-2 size-6 rounded-full bg-black/50 text-white text-xs flex items-center justify-center"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ) : (
-                  <label className="block w-full h-32 rounded-xl border-2 border-dashed border-[#D1D5DB] flex items-center justify-center cursor-pointer hover:border-[#c9a96e] transition-colors">
-                    <div className="text-center">
-                      <div className="text-2xl mb-1">📷</div>
-                      <div className="text-xs text-[#9CA3AF]">点击上传图片</div>
-                      <div className="text-[10px] text-[#D1D5DB] mt-0.5">JPG, PNG, WebP, GIF · 最大 5MB</div>
+                <div className="flex gap-1 mb-3 bg-[#F3F4F6] rounded-lg p-1">
+                  <button
+                    onClick={() => setImageTab('upload')}
+                    className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      imageTab === 'upload' ? 'bg-white text-[#111827] shadow-sm' : 'text-[#6B7280] hover:text-[#374151]'
+                    }`}
+                  >
+                    上传图片
+                  </button>
+                  <button
+                    onClick={() => setImageTab('ai')}
+                    className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      imageTab === 'ai' ? 'bg-white text-[#111827] shadow-sm' : 'text-[#6B7280] hover:text-[#374151]'
+                    }`}
+                  >
+                    AI 生成
+                  </button>
+                </div>
+
+                {imageTab === 'upload' && (
+                  <>
+                    {newImagePreview ? (
+                      <div className="relative w-full h-40 rounded-xl overflow-hidden bg-[#F3F4F6] mb-2">
+                        <Image src={newImagePreview} alt="Preview" fill className="object-cover" sizes="100vw" />
+                        <button
+                          onClick={() => { setNewImage(null); setNewImagePreview(''); }}
+                          className="absolute top-2 right-2 size-6 rounded-full bg-black/50 text-white text-xs flex items-center justify-center"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="block w-full h-32 rounded-xl border-2 border-dashed border-[#D1D5DB] flex items-center justify-center cursor-pointer hover:border-[#c9a96e] transition-colors">
+                        <div className="text-center">
+                          <div className="text-2xl mb-1">📷</div>
+                          <div className="text-xs text-[#9CA3AF]">点击上传图片</div>
+                          <div className="text-[10px] text-[#D1D5DB] mt-0.5">JPG, PNG, WebP, GIF · 最大 5MB</div>
+                        </div>
+                        <input type="file" accept="image/*" className="hidden" onChange={e => handleFileSelect(e, 'create')} />
+                      </label>
+                    )}
+                  </>
+                )}
+
+                {imageTab === 'ai' && (
+                  <div className="space-y-3">
+                    <p className="text-xs text-[#6B7280]">描述你想要的图片内容，AI 自动生成专业 Banner</p>
+                    <textarea
+                      placeholder="例：澳洲大学校园秋天的景色，几位中国留学生在讨论学术研究"
+                      value={aiPrompt}
+                      onChange={e => setAiPrompt(e.target.value)}
+                      className="w-full border border-[#D1D5DB] rounded-lg p-3 text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e] resize-none"
+                      rows={3}
+                    />
+                    <div className="flex gap-1.5 flex-wrap">
+                      {[
+                        { label: '🏫 大学校园', prompt: '澳洲知名大学校园全景，秋天金色阳光，学术氛围浓厚' },
+                        { label: '📚 学术研究', prompt: '中国留学生在现代化图书馆里用笔记本电脑做研究，温暖的阳光照进来' },
+                        { label: '🎓 毕业典礼', prompt: 'PhD毕业典礼，穿着学位服的学生们开心地抛帽子庆祝' },
+                        { label: '🔬 导师指导', prompt: '教授在实验室里一对一指导学生做科研项目' },
+                        { label: '🌏 悉尼风景', prompt: '悉尼歌剧院和海港大桥的全景，远处可见大学建筑群' },
+                        { label: '🤖 AI科技', prompt: 'AI科技感界面，展示教授匹配和智能推荐的未来感画面' },
+                      ].map(item => (
+                        <button
+                          key={item.label}
+                          onClick={() => setAiPrompt(item.prompt)}
+                          className="px-2.5 py-1 rounded-lg text-[11px] border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB] hover:border-[#c9a96e] transition-colors"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
                     </div>
-                    <input type="file" accept="image/*" className="hidden" onChange={e => handleFileSelect(e, 'create')} />
-                  </label>
+                    <button
+                      onClick={handleGenerateImage}
+                      disabled={generating || !aiPrompt.trim()}
+                      className="w-full py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-50 transition-colors"
+                      style={{ background: '#1A1A2E' }}
+                    >
+                      {generating ? '🎨 生成中...预计15秒' : '🎨 生成图片'}
+                    </button>
+                    {generatedImageUrl && (
+                      <div className="border border-[#E5E7EB] rounded-xl overflow-hidden">
+                        <div className="relative w-full h-40 bg-[#F3F4F6]">
+                          <Image src={generatedImageUrl} alt="AI生成预览" fill className="object-cover" sizes="100vw" />
+                        </div>
+                        <div className="flex gap-2 p-3 bg-[#F9FAFB]">
+                          <button
+                            onClick={() => {
+                              setNewImage(null);
+                              setNewImagePreview('');
+                            }}
+                            className="flex-1 py-2 rounded-lg text-xs font-medium text-white bg-green-600 hover:bg-green-700 transition-colors"
+                          >
+                            ✅ 使用这张
+                          </button>
+                          <button
+                            onClick={handleGenerateImage}
+                            disabled={generating}
+                            className="flex-1 py-2 rounded-lg text-xs bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB] transition-colors disabled:opacity-50"
+                          >
+                            🔄 重新生成
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {generateError && (
+                      <p className="text-xs text-red-500">{generateError}</p>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -560,7 +689,7 @@ export default function BannersPage() {
               </button>
               <button
                 onClick={handleCreate}
-                disabled={saving || uploading || !newImage}
+                disabled={saving || uploading || (imageTab === 'upload' ? !newImage : !generatedImageUrl)}
                 className="px-4 py-2 text-sm text-white rounded-lg font-medium disabled:opacity-50"
                 style={{ background: '#c9a96e' }}
               >

@@ -185,43 +185,27 @@ export default function SalesDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] text-[#111827]">
-      {/* Top nav */}
-      <div className="bg-white border-b border-[#E5E7EB] px-4 sm:px-6 py-3 flex items-center justify-between">
-        <h1 className="text-base font-bold text-[#111827]">Sales Dashboard</h1>
-        <div className="flex items-center gap-2">
-          {isAdmin && (
-            <Link href="/dashboard/koala" className="px-3 py-1.5 rounded-lg text-xs text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] no-underline transition">
-              管理后台 →
-            </Link>
-          )}
-          <Link href="/koala/home" className="px-3 py-1.5 rounded-lg text-xs text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] no-underline transition">
-            🏠 主页
-          </Link>
-        </div>
-      </div>
-
-      <div className="p-4 sm:p-6">
+    <div className="text-[#111827]">
       <div className="max-w-4xl mx-auto space-y-5">
 
         {/* Quick actions */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Link href="/dashboard/koala/surveys" className="rounded-xl p-4 bg-white border border-[#E5E7EB] hover:border-[#D4A843]/40 hover:shadow-sm transition no-underline group">
+          <Link href="/dashboard/sales/surveys" className="rounded-xl p-4 bg-white border border-[#E5E7EB] hover:border-[#D4A843]/40 hover:shadow-sm transition no-underline group">
             <div className="text-2xl mb-2">📋</div>
             <div className="text-sm font-medium text-[#111827] group-hover:text-[#D4A843]">调研问卷</div>
             <div className="text-[10px] text-[#6B7280] mt-0.5">创建 · 编辑 · 推广</div>
           </Link>
-          <Link href="/dashboard/koala/surveys?tab=plaza" className="rounded-xl p-4 bg-white border border-[#E5E7EB] hover:border-[#D4A843]/40 hover:shadow-sm transition no-underline group">
+          <Link href="/dashboard/sales/surveys?tab=plaza" className="rounded-xl p-4 bg-white border border-[#E5E7EB] hover:border-[#D4A843]/40 hover:shadow-sm transition no-underline group">
             <div className="text-2xl mb-2">📱</div>
             <div className="text-sm font-medium text-[#111827] group-hover:text-[#D4A843]">生成推广码</div>
             <div className="text-[10px] text-[#6B7280] mt-0.5">为问卷生成二维码</div>
           </Link>
-          <Link href="/dashboard/koala/surveys/create" className="rounded-xl p-4 bg-white border border-[#E5E7EB] hover:border-[#D4A843]/40 hover:shadow-sm transition no-underline group">
+          <Link href="/dashboard/sales/surveys/create" className="rounded-xl p-4 bg-white border border-[#E5E7EB] hover:border-[#D4A843]/40 hover:shadow-sm transition no-underline group">
             <div className="text-2xl mb-2">✏️</div>
             <div className="text-sm font-medium text-[#111827] group-hover:text-[#D4A843]">新建问卷</div>
             <div className="text-[10px] text-[#6B7280] mt-0.5">创建新调研</div>
           </Link>
-          <Link href="/dashboard/koala/my-logs" className="rounded-xl p-4 bg-white border border-[#E5E7EB] hover:border-[#D4A843]/40 hover:shadow-sm transition no-underline group">
+          <Link href="/dashboard/sales/my-logs" className="rounded-xl p-4 bg-white border border-[#E5E7EB] hover:border-[#D4A843]/40 hover:shadow-sm transition no-underline group">
             <div className="text-2xl mb-2">📝</div>
             <div className="text-sm font-medium text-[#111827] group-hover:text-[#D4A843]">操作记录</div>
             <div className="text-[10px] text-[#6B7280] mt-0.5">我的工作日志</div>
@@ -678,7 +662,7 @@ export default function SalesDashboard() {
             <div className="py-8 text-center">
               <p className="text-sm text-[#6B7280] mb-3">还没有客户？去问卷广场选择一份调研来推广吧！</p>
               <Link
-                href="/dashboard/koala/surveys?tab=plaza"
+                href="/dashboard/sales/surveys?tab=plaza"
                 className="inline-block px-4 py-2 rounded-lg bg-[#D4A843] text-white text-xs font-medium no-underline hover:opacity-90 transition"
               >
                 去问卷广场 →
@@ -723,7 +707,6 @@ export default function SalesDashboard() {
             <p className="text-xs py-4 text-center text-[#6B7280]">暂无工作记录</p>
           )}
         </div>
-      </div>
       </div>
     </div>
   );

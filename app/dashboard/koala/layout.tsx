@@ -38,12 +38,8 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
       if (res.ok) {
         const { role } = await res.json();
         if (role === 'sales') {
-          const salesAllowed = ['/dashboard/koala/surveys', '/dashboard/koala/my-logs', '/dashboard/koala/marketing-tools'];
-          const allowed = salesAllowed.some(p => pathname.startsWith(p));
-          if (!allowed) {
-            router.replace('/dashboard/sales');
-            return;
-          }
+          router.replace('/dashboard/sales');
+          return;
         }
         setRole(role);
       }
@@ -108,7 +104,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
       );
     }
 
-    if (userRole === 'admin' || userRole === 'sales') {
+    if (userRole === 'admin') {
       const filtered = nav.filter(n => !n.adminOnly);
       filtered.push({ icon: '📝', label: '我的操作记录', href: '/dashboard/koala/my-logs' });
       return filtered;
