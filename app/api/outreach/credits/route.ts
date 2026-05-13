@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { CREDIT_PRICES, SUBSCRIPTION_TIERS } from '../../../lib/constants';
+import { getServerUser } from '../../../lib/auth';
 
 // Supabase client typed as any for tables not yet in database.types.ts
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,8 +70,9 @@ export async function deductCredit(
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id');
-    if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const userId = user.id;
 
     const { data: credits } = await db
       .from('user_credits')
@@ -98,8 +100,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id');
-    if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const userId = user.id;
 
     const body = await request.json() as { packageId?: string };
     const pkg = CREDIT_PACKAGES.find(p => p.id === body.packageId);

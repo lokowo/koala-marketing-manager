@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { saveProgress, completeResponse } from '../../../../../../lib/services/surveyService';
+import { surveySubmitLimiter } from '../../../../../../lib/ratelimit';
 
 export async function PUT(
   req: NextRequest,
@@ -24,6 +25,12 @@ export async function POST(
   { params }: { params: Promise<{ code: string; rid: string }> },
 ) {
   try {
+    if (surveySubmitLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+      const { success } = await surveySubmitLimiter.limit(ip);
+      if (!success) return Response.json({ error: '提交过于频繁，请稍后再试' }, { status: 429 });
+    }
+
     const { rid } = await params;
     const body = await req.json();
     const { answers } = body;

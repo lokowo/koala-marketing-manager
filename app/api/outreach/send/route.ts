@@ -1,17 +1,15 @@
 import type { NextRequest } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { getServerUser } from '../../../lib/auth';
 
-// Supabase client typed as any for tables not yet in database.types.ts
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
-// Phase 2: actual email delivery via Resend API.
-// Phase 1: mark email as "copied" so user can paste it manually.
-
 export async function POST(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id');
-    if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const userId = user.id;
 
     const body = await request.json() as { emailId?: string; action?: 'copy' | 'send' };
     const { emailId, action = 'copy' } = body;

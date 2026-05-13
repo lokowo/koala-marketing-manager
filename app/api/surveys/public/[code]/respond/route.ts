@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { startResponse } from '../../../../../lib/services/surveyService';
 import { supabaseAdmin } from '../../../../../lib/supabase/server';
+import { surveySubmitLimiter } from '../../../../../lib/ratelimit';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -10,6 +11,12 @@ export async function POST(
   { params }: { params: Promise<{ code: string }> },
 ) {
   try {
+    if (surveySubmitLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+      const { success } = await surveySubmitLimiter.limit(ip);
+      if (!success) return Response.json({ error: '提交过于频繁，请稍后再试' }, { status: 429 });
+    }
+
     const { code } = await params;
     const body = await req.json();
     const { device_fingerprint } = body;

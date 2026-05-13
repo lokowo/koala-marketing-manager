@@ -10,6 +10,7 @@ import { searchProfessorsForAI, getProfessor } from '../../../lib/services/profe
 import { findOrCreateProfessor } from '../../../lib/services/professorAutoAdd';
 import type { Professor } from '../../../lib/types';
 import { getStudentContext, buildStudentContextPrompt } from '../../../lib/server/student-context';
+import { aiLimiter } from '../../../lib/ratelimit';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -178,6 +179,12 @@ export async function POST(request: NextRequest) {
 
     if (!mode || !messages || !Array.isArray(messages)) {
       return Response.json({ error: 'Invalid request' }, { status: 400 });
+    }
+
+    if (aiLimiter) {
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+      const { success } = await aiLimiter.limit(ip);
+      if (!success) return Response.json({ error: '请求过于频繁，请稍后再试' }, { status: 429 });
     }
 
     // 1. Build base system prompt
