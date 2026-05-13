@@ -35,16 +35,24 @@ export async function POST(req: Request) {
       return Response.json({ error: createErr.message }, { status: 400 });
     }
 
+    // Generate referral code for the new user
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let refCode = '';
+    for (let i = 0; i < 6; i++) refCode += chars[Math.floor(Math.random() * chars.length)];
+
     // Create user_profiles record
     await db.from('user_profiles').upsert({
       id: userData.user.id,
       display_name: name || email.split('@')[0],
       email,
+      referral_code: refCode,
       data_consent: !!dataConsent,
       data_consent_at: dataConsent ? new Date().toISOString() : null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' });
+
+    await db.from('referral_codes').insert({ user_id: userData.user.id, code: refCode }).then(() => {}).catch(() => {});
 
     // Store referral and sales codes in user metadata
     if (referralCode || salesCode) {

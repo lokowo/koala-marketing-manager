@@ -356,7 +356,7 @@ function ThankYouPage({ contactInfo, registeredUserId, shareCode, responseId, on
 
         <div className="pt-4 border-t border-white/5 space-y-2">
           <div className="flex items-center justify-center gap-4 text-xs text-gray-600">
-            <span>微信: KoalaStudy</span>
+            <span>微信: MissKoalaAu</span>
             <span>小红书: @dr.koalaau</span>
           </div>
         </div>

@@ -97,7 +97,7 @@ export default function SettingsPage() {
             <span className="text-slate-400">域名</span><span>koalaphd.com</span>
           </div>
           <div className="flex justify-between py-1.5">
-            <span className="text-slate-400">微信</span><span>KoalaStudy</span>
+            <span className="text-slate-400">微信</span><span>MissKoalaAu</span>
           </div>
         </div>
       </div>

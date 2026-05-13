@@ -30,7 +30,7 @@ export default function SurveySuccessPage({ params }: { params: Promise<{ code: 
 
         <div className="pt-4 border-t border-slate-100 space-y-2">
           <div className="flex items-center justify-center gap-4 text-xs text-slate-400">
-            <span>微信: KoalaStudy</span>
+            <span>微信: MissKoalaAu</span>
             <span>小红书: @dr.koalaau</span>
           </div>
         </div>

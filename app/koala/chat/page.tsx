@@ -343,7 +343,7 @@ function ConsultationBanner() {
       <p className="text-[11px] leading-relaxed text-gray-500 dark:text-[#a09888]">AI 评估有局限，真人顾问能帮你做更精准的项目匹配。</p>
       <div className="flex gap-2 mt-2">
         <a href="mailto:info@koalaphd.com" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">📧 联系顾问</a>
-        <a href="weixin://dl/chat?username=KoalaStudyAdvisor" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline bg-gray-100 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 text-amber-700 dark:text-[#D4A843]">💬 微信咨询</a>
+        <a href="weixin://dl/chat?username=MissKoalaAu" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline bg-gray-100 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 text-amber-700 dark:text-[#D4A843]">💬 微信咨询</a>
       </div>
     </div>
   );

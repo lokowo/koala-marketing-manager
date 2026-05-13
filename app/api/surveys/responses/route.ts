@@ -57,10 +57,19 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
 
+    let salesUserId: string | undefined;
+    if (role === 'sales') {
+      const { data: surveyData } = await db.from('surveys')
+        .select('created_by').eq('id', surveyId).single();
+      if (!surveyData || surveyData.created_by !== user.id) {
+        salesUserId = user.id;
+      }
+    }
+
     const result = await listResponses(surveyId, {
       page,
       limit,
-      sales_user_id: role === 'sales' ? user.id : undefined,
+      sales_user_id: salesUserId,
     });
 
     if (role === 'admin') {

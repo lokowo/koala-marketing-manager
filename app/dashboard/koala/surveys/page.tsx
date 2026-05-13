@@ -289,6 +289,15 @@ export default function SurveysPage() {
                               </Link>
                             )}
 
+                            {/* Responses (admin/super_admin) */}
+                            {isAdmin && (
+                              <Link
+                                href={`/dashboard/koala/surveys/responses?id=${s.id}`}
+                                className="px-2 py-1 text-xs rounded hover:bg-amber-50 text-amber-600 no-underline"
+                              >
+                                回复
+                              </Link>
+                            )}
                             {/* Analytics (admin/super_admin) */}
                             {isAdmin && (
                               <Link
