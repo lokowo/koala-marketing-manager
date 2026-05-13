@@ -13,9 +13,7 @@ export async function GET() {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Try the DB function first, fall back to manual query
     let funnelData: Record<string, number> | null = null;
-    let unregisteredLeads = 0;
     let lost = 0;
 
     try {
@@ -28,7 +26,6 @@ export async function GET() {
           trial: data.trial || 0,
           converted: data.converted || 0,
         };
-        unregisteredLeads = data.unregistered_leads || 0;
         lost = data.lost || 0;
       }
     } catch {
@@ -36,7 +33,6 @@ export async function GET() {
     }
 
     if (!funnelData) {
-      // Manual: registered customers by stage
       const { data: custData } = await db
         .from('sales_customers')
         .select('stage')
@@ -47,22 +43,28 @@ export async function GET() {
         if (row.stage === 'lost' || row.stage === 'churned') { lost++; continue; }
         if (row.stage && stages[row.stage] !== undefined) stages[row.stage]++;
       }
-
-      // Unregistered survey leads
-      const { count } = await db
-        .from('survey_responses')
-        .select('id', { count: 'exact', head: true })
-        .eq('sales_user_id', user.id)
-        .eq('status', 'completed')
-        .is('registered_user_id', null);
-
-      unregisteredLeads = count || 0;
       funnelData = stages;
     }
 
-    // Total leads = all registered lead-stage + unregistered survey respondents
-    const totalInFunnel = Object.values(funnelData).reduce((s, n) => s + n, 0) + unregisteredLeads;
-    funnelData.lead += unregisteredLeads;
+    // Unregistered survey leads — distribute by follow_up_status into correct funnel stages
+    const { data: surveyLeads } = await db
+      .from('survey_responses')
+      .select('follow_up_status')
+      .eq('sales_user_id', user.id)
+      .eq('status', 'completed')
+      .is('registered_user_id', null);
+
+    const statusToStage: Record<string, string> = {
+      pending: 'lead', contacted: 'contacted', converted: 'converted',
+    };
+    for (const row of surveyLeads ?? []) {
+      if (row.follow_up_status === 'lost') { lost++; continue; }
+      const stage = statusToStage[row.follow_up_status] || 'lead';
+      if (funnelData[stage] !== undefined) funnelData[stage]++;
+      else funnelData.lead++;
+    }
+
+    const totalInFunnel = Object.values(funnelData).reduce((s, n) => s + n, 0);
 
     const conversionRate = totalInFunnel > 0
       ? ((funnelData.converted / totalInFunnel) * 100).toFixed(1)
