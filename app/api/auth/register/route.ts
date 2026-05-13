@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' });
 
-    // Store referral and sales codes in user metadata for later processing
+    // Store referral and sales codes in user metadata
     if (referralCode || salesCode) {
       const meta: Record<string, string> = {};
       if (referralCode) meta.referral_code = referralCode;
@@ -54,6 +54,71 @@ export async function POST(req: Request) {
       await supabaseAdmin.auth.admin.updateUserById(userData.user.id, {
         user_metadata: { ...userData.user.user_metadata, ...meta },
       });
+    }
+
+    // Auto-apply referral code credits
+    if (referralCode) {
+      try {
+        const upperCode = referralCode.toUpperCase();
+        const { data: referrerProfile } = await db
+          .from('user_profiles')
+          .select('id, credits_remaining, referral_code')
+          .eq('referral_code', upperCode)
+          .single();
+
+        if (referrerProfile && referrerProfile.id !== userData.user.id) {
+          const { count: referredCount } = await db
+            .from('user_profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('referred_by', referrerProfile.id);
+
+          if ((referredCount || 0) < 3) {
+            const newReferrerBalance = (referrerProfile.credits_remaining || 0) + 15;
+            await db.from('user_profiles')
+              .update({ credits_remaining: newReferrerBalance })
+              .eq('id', referrerProfile.id);
+            await db.from('credit_transactions').insert({
+              user_id: referrerProfile.id,
+              amount: 15,
+              balance_after: newReferrerBalance,
+              type: 'earn_referral',
+              description: `邀请好友注册（${email.split('@')[0]})`,
+              reference_id: userData.user.id,
+            });
+
+            const { data: myProfile } = await db
+              .from('user_profiles')
+              .select('credits_remaining')
+              .eq('id', userData.user.id)
+              .single();
+            const newMyBalance = (myProfile?.credits_remaining || 30) + 5;
+            await db.from('user_profiles')
+              .update({ credits_remaining: newMyBalance, referred_by: referrerProfile.id })
+              .eq('id', userData.user.id);
+            await db.from('credit_transactions').insert({
+              user_id: userData.user.id,
+              amount: 5,
+              balance_after: newMyBalance,
+              type: 'earn_referral',
+              description: '使用邀请码注册奖励',
+              reference_id: referrerProfile.id,
+            });
+
+            const { data: codeRecord } = await db
+              .from('referral_codes')
+              .select('uses')
+              .eq('user_id', referrerProfile.id)
+              .single();
+            if (codeRecord) {
+              await db.from('referral_codes')
+                .update({ uses: (codeRecord.uses || 0) + 1 })
+                .eq('user_id', referrerProfile.id);
+            }
+          }
+        }
+      } catch (refErr) {
+        console.error('[register] referral credit:', refErr);
+      }
     }
 
     // Generate and store verification code

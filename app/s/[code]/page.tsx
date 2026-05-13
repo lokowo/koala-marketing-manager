@@ -150,7 +150,7 @@ export default function PublicSurveyPage({ params }: { params: Promise<{ code: s
   return (
     <div className="min-h-screen bg-[#080C10] flex flex-col">
       <header className="border-b border-white/5 px-4 py-3">
-        <a href="https://koalaphd.com" className="flex items-center gap-3 no-underline w-fit">
+        <a href="/koala/home" className="flex items-center gap-3 no-underline w-fit">
           <span className="text-xl">🐨</span>
           <span className="text-sm font-medium text-white/80">Koala PhD</span>
         </a>
@@ -271,7 +271,7 @@ function ThankYouPage({ contactInfo, registeredUserId, shareCode, responseId, on
 
         {!registerSuccess && !contactInfo?.email && (
           <a
-            href="https://koalaphd.com"
+            href="/koala/home"
             className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-[#080C10] no-underline"
             style={{ backgroundColor: '#D4A843' }}
           >
@@ -332,9 +332,7 @@ function ThankYouPage({ contactInfo, registeredUserId, shareCode, responseId, on
               </span>
             </div>
             <a
-              href="https://koalaphd.com"
-              target="_blank"
-              rel="noopener"
+              href="/koala/home"
               className="inline-block mt-3 px-4 py-2 rounded-lg text-sm font-medium text-[#080C10] no-underline"
               style={{ backgroundColor: '#D4A843' }}
             >
@@ -349,9 +347,7 @@ function ThankYouPage({ contactInfo, registeredUserId, shareCode, responseId, on
             Koala Study Advisors — 澳洲领先的产学研科研机构
           </p>
           <a
-            href="https://koalastudy.net"
-            target="_blank"
-            rel="noopener"
+            href="/koala/home"
             className="inline-block px-4 py-2 rounded-lg text-xs text-[#D4A843] border border-[#D4A843]/30 no-underline mt-1 hover:bg-[#D4A843]/10"
           >
             访问 Koala

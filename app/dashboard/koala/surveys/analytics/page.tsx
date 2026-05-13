@@ -51,7 +51,7 @@ function AnalyticsContent() {
   if (loading) return <div className="text-center py-20 text-slate-400 text-sm">加载分析数据...</div>;
   if (!survey || !analytics) return <div className="text-center py-20 text-slate-500">问卷不存在</div>;
 
-  const canSeeResponses = role === 'super_admin' || role === 'sales';
+  const canSeeResponses = role === 'super_admin' || role === 'admin';
 
   return (
     <div className="space-y-5">

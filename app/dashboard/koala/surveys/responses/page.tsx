@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 interface Question {
@@ -24,7 +24,6 @@ interface SurveyResponse {
 
 function ResponsesContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const surveyId = searchParams.get('id') || searchParams.get('survey_id');
 
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
@@ -38,13 +37,9 @@ function ResponsesContent() {
 
   useEffect(() => {
     fetch('/api/admin/me').then(r => r.json()).then(d => {
-      const role = d.role || '';
-      setUserRole(role);
-      if (role === 'admin') {
-        router.replace(`/dashboard/koala/surveys/analytics?id=${surveyId}`);
-      }
+      setUserRole(d.role || '');
     }).catch(() => {});
-  }, [router, surveyId]);
+  }, []);
 
   const fetchData = useCallback(async () => {
     if (!surveyId) return;

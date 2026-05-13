@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 interface Survey {
   id: string;
@@ -20,25 +21,25 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   active: { label: '进行中', color: '#22c55e', bg: '#f0fdf4' },
   paused: { label: '已暂停', color: '#f59e0b', bg: '#fffbeb' },
   closed: { label: '已关闭', color: '#ef4444', bg: '#fef2f2' },
-  deleted: { label: '已删除', color: '#9ca3b8', bg: '#f1f5f9' },
 };
 
-type Tab = 'mine' | 'plaza' | 'promote' | 'analytics';
+type Tab = 'mine' | 'plaza' | 'promote';
 
-export default function SurveysPage() {
+function SurveysContent() {
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get('tab') as Tab) || 'mine';
+
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [userRole, setUserRole] = useState('');
   const [userId, setUserId] = useState('');
-  const [tab, setTab] = useState<Tab>('mine');
+  const [tab, setTab] = useState<Tab>(initialTab);
 
   useEffect(() => {
     fetch('/api/admin/me').then(r => r.json()).then(d => {
-      setUserRole(d.role || '');
       setUserId(d.id || d.userId || '');
     }).catch(() => {});
   }, []);
@@ -48,10 +49,7 @@ export default function SurveysPage() {
     const params = new URLSearchParams({ page: String(page), limit: '20' });
     if (search) params.set('search', search);
     if (statusFilter) params.set('status', statusFilter);
-
-    if (tab === 'plaza') {
-      params.set('status', 'active');
-    }
+    if (tab === 'plaza') params.set('status', 'active');
 
     const res = await fetch(`/api/surveys?${params}`);
     if (res.ok) {
@@ -86,25 +84,10 @@ export default function SurveysPage() {
     fetchSurveys();
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('确定要删除这份问卷吗？')) return;
-    await fetch(`/api/surveys/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'deleted' }),
-    });
-    fetchSurveys();
-  }
-
-  const isSales = userRole === 'sales';
-  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
-  const isSuperAdmin = userRole === 'super_admin';
-
-  const tabs: { key: Tab; label: string; visible: boolean }[] = [
-    { key: 'mine', label: '我的问卷', visible: true },
-    { key: 'plaza', label: '问卷广场', visible: true },
-    { key: 'promote', label: '我的推广', visible: isSales },
-    { key: 'analytics', label: '数据分析', visible: isAdmin },
+  const tabs: { key: Tab; label: string }[] = [
+    { key: 'mine', label: '我的问卷' },
+    { key: 'plaza', label: '问卷广场' },
+    { key: 'promote', label: '我的推广' },
   ];
 
   return (
@@ -112,10 +95,10 @@ export default function SurveysPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-800">问卷管理</h1>
-          <p className="text-sm text-slate-500 mt-0.5">创建、管理和分析调研问卷</p>
+          <p className="text-sm text-slate-500 mt-0.5">创建、编辑和推广调研问卷</p>
         </div>
         <Link
-          href="/dashboard/koala/surveys/create"
+          href="/dashboard/sales/surveys/create"
           className="px-4 py-2 rounded-lg text-sm font-medium text-white no-underline"
           style={{ backgroundColor: '#D4A843' }}
         >
@@ -123,9 +106,8 @@ export default function SurveysPage() {
         </Link>
       </div>
 
-      {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-slate-200">
-        {tabs.filter(t => t.visible).map(t => (
+        {tabs.map(t => (
           <button
             key={t.key}
             onClick={() => { setTab(t.key); setPage(1); }}
@@ -140,13 +122,12 @@ export default function SurveysPage() {
         ))}
       </div>
 
-      {/* Promote tab: redirect to responses */}
       {tab === 'promote' && (
         <div className="bg-white rounded-xl border border-slate-200 p-6">
           <h3 className="text-sm font-medium text-slate-700 mb-3">我推广的问卷</h3>
           <p className="text-xs text-slate-400 mb-4">查看您的推广二维码效果和客户详情</p>
           {surveys.filter(s => s.status === 'active').length === 0 ? (
-            <p className="text-sm text-slate-400">暂无可推广的问卷。请在「问卷广场」中生成推广码。</p>
+            <p className="text-sm text-slate-400">暂无可推广的问卷。请在「问卷广场」中选择问卷生成推广码。</p>
           ) : (
             <div className="space-y-2">
               {surveys.filter(s => s.status === 'active').map(s => (
@@ -154,13 +135,13 @@ export default function SurveysPage() {
                   <span className="text-sm text-slate-700">{s.title}</span>
                   <div className="flex gap-2">
                     <Link
-                      href={`/dashboard/koala/surveys/${s.id}/share`}
+                      href={`/dashboard/sales/surveys/${s.id}/share`}
                       className="px-3 py-1 text-xs rounded-lg font-medium text-teal-600 bg-teal-50 no-underline"
                     >
                       推广码
                     </Link>
                     <Link
-                      href={`/dashboard/koala/surveys/responses?survey_id=${s.id}`}
+                      href={`/dashboard/sales/surveys/${s.id}/clients`}
                       className="px-3 py-1 text-xs rounded-lg font-medium text-slate-600 bg-slate-100 no-underline"
                     >
                       客户详情
@@ -173,38 +154,8 @@ export default function SurveysPage() {
         </div>
       )}
 
-      {/* Analytics tab: redirect to analytics */}
-      {tab === 'analytics' && (
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <h3 className="text-sm font-medium text-slate-700 mb-3">数据分析</h3>
-          <p className="text-xs text-slate-400 mb-4">查看问卷聚合数据和回复趋势</p>
-          {surveys.filter(s => s.status !== 'deleted' && s.status !== 'draft').length === 0 ? (
-            <p className="text-sm text-slate-400">暂无可分析的问卷</p>
-          ) : (
-            <div className="space-y-2">
-              {surveys.filter(s => s.status !== 'deleted' && s.status !== 'draft').map(s => (
-                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50">
-                  <div>
-                    <span className="text-sm text-slate-700">{s.title}</span>
-                    <span className="ml-2 text-xs text-slate-400">{s.response_count ?? 0} 份回复</span>
-                  </div>
-                  <Link
-                    href={`/dashboard/koala/surveys/analytics?id=${s.id}`}
-                    className="px-3 py-1 text-xs rounded-lg font-medium text-amber-600 bg-amber-50 no-underline"
-                  >
-                    查看分析
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Mine / Plaza tabs: show table */}
       {(tab === 'mine' || tab === 'plaza') && (
         <>
-          {/* Filters */}
           <div className="flex items-center gap-3">
             <input
               type="text"
@@ -229,7 +180,6 @@ export default function SurveysPage() {
             <span className="text-sm text-slate-400">共 {total} 份</span>
           </div>
 
-          {/* Table */}
           {loading ? (
             <div className="text-center py-12 text-slate-400 text-sm">加载中...</div>
           ) : surveys.length === 0 ? (
@@ -238,7 +188,7 @@ export default function SurveysPage() {
               <p className="text-slate-500 text-sm mb-4">{tab === 'plaza' ? '暂无已发布的问卷' : '还没有问卷'}</p>
               {tab === 'mine' && (
                 <Link
-                  href="/dashboard/koala/surveys/create"
+                  href="/dashboard/sales/surveys/create"
                   className="px-4 py-2 rounded-lg text-sm font-medium text-white no-underline"
                   style={{ backgroundColor: '#D4A843' }}
                 >
@@ -265,7 +215,7 @@ export default function SurveysPage() {
                     return (
                       <tr key={s.id} className="border-t border-slate-100 hover:bg-slate-50/50">
                         <td className="px-4 py-3">
-                          <Link href={`/dashboard/koala/surveys/edit?id=${s.id}`} className="text-slate-800 hover:text-amber-600 no-underline font-medium">
+                          <Link href={`/dashboard/sales/surveys/${s.id}/edit`} className="text-slate-800 hover:text-amber-600 no-underline font-medium">
                             {s.title}
                           </Link>
                           {s.description && <p className="text-xs text-slate-400 mt-0.5 truncate max-w-xs">{s.description}</p>}
@@ -279,66 +229,38 @@ export default function SurveysPage() {
                         <td className="px-4 py-3 text-slate-400 text-xs">{new Date(s.created_at).toLocaleDateString('zh-CN')}</td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center gap-1 justify-end flex-wrap">
-                            {/* Edit (owner or admin) */}
-                            {(isOwner || isAdmin) && (
+                            {(isOwner || (tab === 'plaza' && s.status === 'active')) && (
                               <Link
-                                href={`/dashboard/koala/surveys/edit?id=${s.id}`}
+                                href={`/dashboard/sales/surveys/${s.id}/edit`}
                                 className="px-2 py-1 text-xs rounded hover:bg-slate-100 text-slate-500 no-underline"
                               >
                                 编辑
                               </Link>
                             )}
-
-                            {/* Analytics (admin/super_admin) */}
-                            {isAdmin && (
+                            {s.status === 'active' && (
                               <Link
-                                href={`/dashboard/koala/surveys/analytics?id=${s.id}`}
-                                className="px-2 py-1 text-xs rounded hover:bg-slate-100 text-slate-500 no-underline"
-                              >
-                                分析
-                              </Link>
-                            )}
-
-                            {/* Sales: generate promo code for active surveys */}
-                            {isSales && s.status === 'active' && (
-                              <Link
-                                href={`/dashboard/koala/surveys/${s.id}/share`}
+                                href={`/dashboard/sales/surveys/${s.id}/share`}
                                 className="px-2 py-1 text-xs rounded hover:bg-teal-50 text-teal-600 no-underline font-medium"
                               >
                                 推广
                               </Link>
                             )}
-
-                            {/* Draft: publish */}
-                            {(isOwner || isAdmin) && s.status === 'draft' && (
+                            {isOwner && s.status === 'draft' && (
                               <button onClick={() => handleStatusChange(s.id, 'active')} className="px-2 py-1 text-xs rounded hover:bg-green-50 text-green-600">
                                 发布
                               </button>
                             )}
-
-                            {/* Draft: no share button */}
                             {s.status === 'draft' && tab !== 'plaza' && (
                               <span className="px-2 py-1 text-xs text-slate-300">请先发布</span>
                             )}
-
-                            {/* Active: end (admin/owner) */}
-                            {(isOwner || isAdmin) && s.status === 'active' && (
+                            {isOwner && s.status === 'active' && (
                               <button onClick={() => { if (confirm('确定要结束这份问卷吗？结束后将无法继续收集回复。')) handleStatusChange(s.id, 'closed'); }} className="px-2 py-1 text-xs rounded hover:bg-red-50 text-red-500">
                                 结束
                               </button>
                             )}
-
-                            {/* Clone (all roles) */}
                             <button onClick={() => handleDuplicate(s.id)} className="px-2 py-1 text-xs rounded hover:bg-slate-100 text-slate-500">
                               复制
                             </button>
-
-                            {/* Delete (admin) */}
-                            {isAdmin && (
-                              <button onClick={() => handleDelete(s.id)} className="px-2 py-1 text-xs rounded hover:bg-red-50 text-red-400">
-                                删除
-                              </button>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -347,7 +269,6 @@ export default function SurveysPage() {
                 </tbody>
               </table>
 
-              {/* Pagination */}
               {total > 20 && (
                 <div className="flex items-center justify-center gap-2 py-3 border-t border-slate-100">
                   <button
@@ -373,4 +294,8 @@ export default function SurveysPage() {
       )}
     </div>
   );
+}
+
+export default function SalesSurveysPage() {
+  return <Suspense fallback={<div className="text-center py-20 text-slate-400 text-sm">加载中...</div>}><SurveysContent /></Suspense>;
 }

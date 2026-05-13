@@ -549,7 +549,7 @@ export async function listResponses(surveyId: string, params?: {
 
   if (params?.sales_user_id) {
     const { data: links } = await db.from('survey_share_links')
-      .select('id').eq('sales_id', params.sales_user_id);
+      .select('id').eq('sales_user_id', params.sales_user_id);
     const linkIds = (links || []).map((l: { id: string }) => l.id);
     if (linkIds.length === 0) return { responses: [], total: 0 };
     query = query.in('share_link_id', linkIds);

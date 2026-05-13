@@ -20,9 +20,7 @@ export default function SurveySuccessPage({ params }: { params: Promise<{ code: 
             Koala Study Advisors 是澳洲领先的产学研科研机构，帮助你从申请到毕业，每一步都在。
           </p>
           <a
-            href="https://koalastudy.net"
-            target="_blank"
-            rel="noopener"
+            href="/koala/home"
             className="inline-block px-4 py-2 rounded-lg text-sm text-white no-underline mt-1"
             style={{ backgroundColor: '#D4A843' }}
           >

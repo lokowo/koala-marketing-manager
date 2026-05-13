@@ -46,6 +46,13 @@ export async function POST(
     if (contactFields.email) metadata.contact_email = contactFields.email;
     if (contactFields.wechat) metadata.contact_wechat = contactFields.wechat;
 
+    if (contactFields.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactFields.email)) {
+      metadata.email_status = 'invalid';
+    }
+    if (contactFields.phone && contactFields.phone.replace(/\D/g, '').length < 8) {
+      metadata.phone_status = 'invalid';
+    }
+
     await completeResponse(rid, cleanedAnswers, metadata);
 
     return Response.json({ success: true, response_id: rid }, { status: 201 });

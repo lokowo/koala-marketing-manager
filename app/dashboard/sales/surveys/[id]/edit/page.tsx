@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import QuestionEditor from '../../../../components/survey/QuestionEditor';
-import SurveyPreview from '../../../../components/survey/SurveyPreview';
-import ShareCard from '../../../../components/survey/ShareCard';
-import type { QuestionType } from '../../../../lib/services/surveyService';
-import { questionsToSurveyJson } from '../../../../lib/services/surveyJsonBuilder';
+import { useEffect, useState, useCallback, use } from 'react';
+import { useRouter } from 'next/navigation';
+import QuestionEditor from '../../../../../components/survey/QuestionEditor';
+import SurveyPreview from '../../../../../components/survey/SurveyPreview';
+import ShareCard from '../../../../../components/survey/ShareCard';
+import type { QuestionType } from '../../../../../lib/services/surveyService';
+import { questionsToSurveyJson } from '../../../../../lib/services/surveyJsonBuilder';
 
 interface Question {
   id: string;
@@ -48,20 +48,13 @@ interface QRCode {
   response_count: number;
 }
 
-function EditContent() {
+export default function SalesEditSurveyPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: surveyId } = use(params);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const surveyId = searchParams.get('id');
-
-  const rawTab = searchParams.get('tab');
-  const validTabs = ['questions', 'settings', 'preview', 'share'] as const;
-  const initialTab = validTabs.includes(rawTab as typeof validTabs[number])
-    ? (rawTab as typeof validTabs[number])
-    : 'questions';
 
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'questions' | 'settings' | 'preview' | 'share'>(initialTab);
+  const [tab, setTab] = useState<'questions' | 'settings' | 'preview' | 'share'>('questions');
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -73,13 +66,12 @@ function EditContent() {
   const [onePerDevice, setOnePerDevice] = useState(true);
   const [addingQuestion, setAddingQuestion] = useState(false);
   const [qrCodes, setQrCodes] = useState<QRCode[]>([]);
-  const [userRole, setUserRole] = useState<string>('');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const fetchSurvey = useCallback(async () => {
     if (!surveyId) return;
     const res = await fetch(`/api/surveys/${surveyId}?_t=${Date.now()}`);
-    if (!res.ok) { router.push('/dashboard/koala/surveys'); return; }
+    if (!res.ok) { router.push('/dashboard/sales/surveys'); return; }
     const data = await res.json();
     setSurvey(data);
     setTitle(data.title);
@@ -94,13 +86,6 @@ function EditContent() {
   }, [surveyId, router]);
 
   useEffect(() => { fetchSurvey(); }, [fetchSurvey]);
-
-  useEffect(() => {
-    fetch('/api/admin/me').then(r => r.json()).then(d => {
-      setUserRole(d.role || '');
-      if (d.role !== 'sales' && tab === 'share') setTab('questions');
-    }).catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (surveyId && tab === 'share') {
@@ -183,7 +168,6 @@ function EditContent() {
 
   async function handleDeleteQuestion(qId: string) {
     if (!confirm('确定删除这个问题？')) return;
-    // Optimistically remove from UI immediately
     setSurvey(prev => prev ? { ...prev, questions: (prev.questions || []).filter(q => q.id !== qId) } : prev);
     const res = await fetch('/api/surveys/questions', {
       method: 'DELETE',
@@ -276,19 +260,17 @@ function EditContent() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/dashboard/koala/surveys')} className="text-slate-400 hover:text-slate-600 text-sm">&larr; 返回</button>
+          <button onClick={() => router.push('/dashboard/sales/surveys')} className="text-slate-400 hover:text-slate-600 text-sm">&larr; 返回</button>
           <h1 className="text-lg font-bold text-slate-800">{survey.title}</h1>
           <span className={`px-2 py-0.5 rounded-full text-xs ${
             survey.status === 'active' ? 'bg-green-100 text-green-600'
             : survey.status === 'paused' ? 'bg-amber-100 text-amber-600'
             : survey.status === 'closed' ? 'bg-red-100 text-red-600'
-            : survey.status === 'deleted' ? 'bg-slate-100 text-slate-500'
             : 'bg-slate-100 text-slate-500'
           }`}>
-            {survey.status === 'active' ? '进行中' : survey.status === 'paused' ? '已暂停' : survey.status === 'closed' ? '已关闭' : survey.status === 'deleted' ? '已删除' : '草稿'}
+            {survey.status === 'active' ? '进行中' : survey.status === 'paused' ? '已暂停' : survey.status === 'closed' ? '已关闭' : '草稿'}
           </span>
         </div>
         <div className="flex gap-2 items-center">
@@ -314,22 +296,20 @@ function EditContent() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-        {(['questions', 'settings', 'preview', ...(userRole === 'sales' ? ['share'] as const : [])] as const).map(t => (
+        {(['questions', 'settings', 'preview', 'share'] as const).map(t => (
           <button
             key={t}
-            onClick={() => setTab(t as typeof tab)}
+            onClick={() => setTab(t)}
             className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
               tab === t ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            {{ questions: '问题编辑', settings: '问卷设置', preview: '预览', share: '分享' }[t]}
+            {{ questions: '问题编辑', settings: '问卷设置', preview: '预览', share: '推广' }[t]}
           </button>
         ))}
       </div>
 
-      {/* Questions tab */}
       {tab === 'questions' && (
         <div className="space-y-3">
           {questions.map((q, i) => (
@@ -361,7 +341,6 @@ function EditContent() {
         </div>
       )}
 
-      {/* Settings tab */}
       {tab === 'settings' && (
         <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5 max-w-xl">
           <div>
@@ -428,7 +407,6 @@ function EditContent() {
         </div>
       )}
 
-      {/* Preview tab */}
       {tab === 'preview' && (
         <SurveyPreview
           title={title}
@@ -440,7 +418,6 @@ function EditContent() {
         />
       )}
 
-      {/* Share tab */}
       {tab === 'share' && (
         <ShareCard
           shareCode={survey.share_code}
@@ -449,13 +426,9 @@ function EditContent() {
           brandColor={brandColor}
           qrCodes={qrCodes}
           onGenerateQR={handleGenerateQR}
-          isSales={userRole === 'sales'}
+          isSales={true}
         />
       )}
     </div>
   );
-}
-
-export default function EditSurveyPage() {
-  return <Suspense fallback={<div className="text-center py-20 text-slate-400 text-sm">加载中...</div>}><EditContent /></Suspense>;
 }
