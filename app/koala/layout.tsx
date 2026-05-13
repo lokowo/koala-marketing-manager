@@ -19,21 +19,18 @@ export const metadata: Metadata = {
     siteName: 'Koala PhD',
     title: 'Koala PhD — 找到你的澳洲博导',
     description: 'AI 智能匹配澳洲 4,200+ 位教授，一键生成套磁信',
-    images: [{ url: '/og-image.svg', width: 1200, height: 630, alt: 'Koala PhD' }],
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Koala PhD' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Koala PhD — 找到你的澳洲博导',
     description: 'AI 智能匹配澳洲教授，一键生成套磁信',
-    images: ['/og-image.svg'],
+    images: ['/og-image.png'],
   },
   robots: {
     index: true,
     follow: true,
     googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
-  },
-  verification: {
-    google: '',
   },
 };
 

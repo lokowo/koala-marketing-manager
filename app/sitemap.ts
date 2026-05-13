@@ -17,12 +17,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const { data: posts } = await db
-      .from('blog_posts')
-      .select('id, slug, published_at, updated_at')
-      .eq('status', 'published')
-      .order('published_at', { ascending: false })
-      .limit(500);
+    const [{ data: posts }, { data: professors }] = await Promise.all([
+      db
+        .from('blog_posts')
+        .select('id, slug, published_at, updated_at')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false })
+        .limit(500),
+      db
+        .from('professors')
+        .select('id, last_synced_at')
+        .eq('verification_status', 'Verified')
+        .limit(5000),
+    ]);
 
     const blogPages: MetadataRoute.Sitemap = (posts || []).map((post: { id: string; slug?: string; published_at?: string; updated_at?: string }) => ({
       url: `${baseUrl}/koala/blog/${post.slug || post.id}`,
@@ -31,7 +38,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    return [...staticPages, ...blogPages];
+    const professorPages: MetadataRoute.Sitemap = (professors || []).map((prof: { id: string; last_synced_at?: string }) => ({
+      url: `${baseUrl}/koala/professors/${prof.id}`,
+      lastModified: prof.last_synced_at ? new Date(prof.last_synced_at) : new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    }));
+
+    return [...staticPages, ...professorPages, ...blogPages];
   } catch {
     return staticPages;
   }

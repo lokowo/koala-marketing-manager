@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: '博客 — 澳洲PhD申请攻略与导师推荐',
     description: '一站式了解澳洲PhD申请',
-    images: ['/og-image.svg'],
+    images: ['/og-image.png'],
   },
 };
 

@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = post.seo_title_zh || post.title_zh || post.title_en || '博客文章';
   const description = post.seo_description_zh || post.excerpt_zh || post.excerpt_en || '';
-  const image = post.cover_image_url || '/og-image.svg';
+  const image = post.cover_image_url || '/og-image.png';
 
   return {
     title,

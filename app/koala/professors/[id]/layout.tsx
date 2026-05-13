@@ -31,6 +31,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function ProfessorDetailLayout({ children }: { children: React.ReactNode }) {
-  return children;
+export default async function ProfessorDetailLayout({ params, children }: { params: Promise<{ id: string }>; children: React.ReactNode }) {
+  const { id } = await params;
+
+  const { data: prof } = await db
+    .from('professors')
+    .select('name')
+    .eq('id', id)
+    .single();
+
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: '首页', item: 'https://koalaphd.com' },
+      { '@type': 'ListItem', position: 2, name: '教授', item: 'https://koalaphd.com/koala/professors' },
+      ...(prof ? [{ '@type': 'ListItem', position: 3, name: prof.name }] : []),
+    ],
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      {children}
+    </>
+  );
 }
