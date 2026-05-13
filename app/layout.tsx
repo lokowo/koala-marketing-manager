@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Koala Marketing Manager",
   description: "Koala PhD marketing manager with bilingual UI",
+  verification: {
+    google: 'MNBTFnPgqdYoqogqXdHbKauY1flu9aA5YKvsDLb97bo',
+  },
 };
 
 export default function RootLayout({
