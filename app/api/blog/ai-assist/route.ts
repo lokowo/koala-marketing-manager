@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { requireAdmin } from '../../../lib/auth';
 
 const COVER_IMAGE_PROMPTS: Record<string, string> = {
   phd_guide: 'professional photo of international students studying at Australian university library',
@@ -14,6 +15,7 @@ const COVER_IMAGE_PROMPTS: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
+  try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
   try {
     const { action, content, category, title } = await req.json();
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });

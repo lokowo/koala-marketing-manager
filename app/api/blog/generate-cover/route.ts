@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { requireAdmin } from '../../../lib/auth';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -33,6 +34,7 @@ async function callWithRetry(fn: () => Promise<any>, maxRetries = 3): Promise<an
 }
 
 export async function POST(req: NextRequest) {
+  try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
   try {
     const { postId } = await req.json();
     console.log('[generate-cover] Starting for post:', postId);

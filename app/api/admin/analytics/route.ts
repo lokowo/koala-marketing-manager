@@ -1,10 +1,12 @@
 import { NextRequest } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { requireAdmin } from '../../../lib/auth';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
 export async function GET(req: NextRequest) {
+  try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
   const range = parseInt(req.nextUrl.searchParams.get('days') || '30');
   const since = new Date();
   since.setDate(since.getDate() - range);

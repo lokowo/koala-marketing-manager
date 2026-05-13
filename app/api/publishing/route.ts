@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { listPublishing, createPublishingRecord, getPublishingStats } from '../../lib/services/publishingService';
+import { requireAdmin } from '../../lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
     const body = await request.json();
     const record = await createPublishingRecord(body);
     return Response.json({ data: record }, { status: 201 });

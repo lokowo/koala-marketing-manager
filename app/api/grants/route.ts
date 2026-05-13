@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { listGrants, createGrant } from '../../lib/services/grantService';
+import { requireAdmin } from '../../lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,6 +19,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
     const body = await request.json();
     const grant = await createGrant(body);
     return Response.json({ data: grant }, { status: 201 });

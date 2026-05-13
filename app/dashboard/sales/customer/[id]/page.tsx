@@ -103,7 +103,14 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
     setContactOutcome('');
     if (customer) {
       await loadTimeline(customer.id);
-      if (customer.stage === 'lead') setCustomer(prev => prev ? { ...prev, stage: 'contacted' } : null);
+      const res = await fetch(`/api/sales/customers?limit=200`);
+      const d = await res.json();
+      const refreshed = (d.data ?? []).find((c: { id: string }) => c.id === id);
+      if (refreshed) {
+        setCustomer(refreshed);
+        setStage(refreshed.stage);
+        setNote(refreshed.note || '');
+      }
     }
   }
 

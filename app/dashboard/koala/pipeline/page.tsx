@@ -9,9 +9,8 @@ export default function PipelinePage() {
     setTriggering(true);
     setLog(prev => [...prev, `[${new Date().toISOString()}] 开始采集...`]);
     try {
-      const resp = await fetch('/api/cron/sync-professors', {
+      const resp = await fetch('/api/admin/trigger-sync', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET ?? 'dev'}` },
       });
       const data = await resp.json() as { synced?: number; message?: string };
       setLog(prev => [...prev, `[${new Date().toISOString()}] 完成: ${data.message ?? JSON.stringify(data)}`]);

@@ -1,9 +1,15 @@
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { requireAdmin } from '../../../lib/auth';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
 export async function GET() {
+  try {
+    await requireAdmin();
+  } catch {
+    return Response.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     const [chunksRes, lastChunkRes] = await Promise.all([
       db.from('knowledge_chunks').select('*', { count: 'exact', head: true }),

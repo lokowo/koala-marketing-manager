@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (!professor) {
-        return Response.json({ error: '该邮箱未在平台注册为教授。如有问题请联系 info@koalastudy.net' }, { status: 404 });
+        return Response.json({ error: '该邮箱未在平台注册为教授。如有问题请联系 info@koalaphd.com' }, { status: 404 });
       }
 
       // In production, send a real verification code via Resend

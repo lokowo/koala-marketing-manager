@@ -1,9 +1,17 @@
 import type { NextRequest } from 'next/server';
+import { getServerUser } from '../../../lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+
+    if (userId !== user.id) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(

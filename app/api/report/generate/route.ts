@@ -2,11 +2,15 @@ import type { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import type { StudentProfile } from '../../../lib/types';
 import { GLOBAL_SYSTEM_PROMPT } from '../../../lib/prompts/system';
+import { getServerUser } from '../../../lib/auth';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
     const { studentProfile, stage1Score, userGoal } = body as {
       studentProfile: StudentProfile;

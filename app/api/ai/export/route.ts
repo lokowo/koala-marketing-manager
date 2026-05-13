@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import type { AIMode } from '../../../lib/constants';
 import type { ChatMessage } from '../../../lib/types';
+import { getServerUser } from '../../../lib/auth';
 
 interface EmailResultForExport {
   professorName: string;
@@ -138,6 +139,9 @@ async function buildBatchDocx(emails: EmailResultForExport[], title: string): Pr
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
 
     // Batch emails export (docx)

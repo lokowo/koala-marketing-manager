@@ -1,9 +1,11 @@
 import type { NextRequest } from 'next/server';
 import { searchProfessorAllSources, saveCandidateToDb } from '../../../lib/services/professorAutoAdd';
 import type { ProfessorCandidate } from '../../../lib/services/professorAutoAdd';
+import { requireAdmin } from '../../../lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
+    try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
     console.log('[auto-search] ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
     console.log('[auto-search] ANTHROPIC_API_KEY length:', process.env.ANTHROPIC_API_KEY?.length);
     const name = req.nextUrl.searchParams.get('name');

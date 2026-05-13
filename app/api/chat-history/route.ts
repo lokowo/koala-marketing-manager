@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getServerUser } from '../../lib/auth';
 
 function getSupabaseAdmin() {
   return createClient(
@@ -11,6 +12,9 @@ function getSupabaseAdmin() {
 // GET: load recent messages for a mode
 export async function GET(req: NextRequest) {
   try {
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
     const url = new URL(req.url);
     const userId = url.searchParams.get('userId');
     const mode = url.searchParams.get('mode');
@@ -18,6 +22,10 @@ export async function GET(req: NextRequest) {
 
     if (!userId || !mode) {
       return Response.json({ error: 'userId and mode required' }, { status: 400 });
+    }
+
+    if (userId !== user.id) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const supabase = getSupabaseAdmin();
@@ -44,10 +52,17 @@ export async function GET(req: NextRequest) {
 // POST: save messages (batch)
 export async function POST(req: NextRequest) {
   try {
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { userId, mode, messages } = await req.json();
 
     if (!userId || !mode || !Array.isArray(messages) || messages.length === 0) {
       return Response.json({ error: 'userId, mode, and messages required' }, { status: 400 });
+    }
+
+    if (userId !== user.id) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const supabase = getSupabaseAdmin();

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { buildEmailPrompt } from '../../../lib/prompts/email';
 import { getStudentContext, buildStudentBackgroundForEmail } from '../../../lib/server/student-context';
+import { getServerUser } from '../../../lib/auth';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -45,6 +46,9 @@ function sendEvent(controller: ReadableStreamDefaultController, data: object) {
 }
 
 export async function POST(request: NextRequest) {
+  const user = await getServerUser();
+  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
   const body: BatchGenerateBody = await request.json();
   const { professorIds, studentProfile, tone = 'professional', purpose = 'PhD', userId } = body;
 

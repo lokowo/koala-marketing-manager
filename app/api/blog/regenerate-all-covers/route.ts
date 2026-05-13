@@ -1,9 +1,11 @@
 import { supabaseAdmin } from '@/app/lib/supabase/server';
+import { requireAdmin } from '@/app/lib/auth';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
 export async function POST() {
+  try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
   try {
     const { data: posts, error } = await db
       .from('blog_posts')

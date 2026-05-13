@@ -1,7 +1,10 @@
 import type { NextRequest } from 'next/server';
+import { getServerUser } from '../../../lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     const body = await request.json();
     const { emailId, status } = body;
 

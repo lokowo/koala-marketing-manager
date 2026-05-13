@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { buildEmailPrompt } from '../../../lib/prompts/email';
 import { getStudentContext, buildStudentBackgroundForEmail } from '../../../lib/server/student-context';
 import { logWork } from '../../../lib/worklog';
+import { getServerUser } from '../../../lib/auth';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -36,6 +37,9 @@ async function deductCredit(userId: string): Promise<void> {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
     const { professorId, studentProfile, tone = 'professional', purpose = 'PhD', userId } = body;
 

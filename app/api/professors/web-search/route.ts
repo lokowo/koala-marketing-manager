@@ -1,8 +1,10 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { requireAdmin } from '../../../lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
+    try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
     const name = req.nextUrl.searchParams.get('name');
     if (!name || typeof name !== 'string') {
       return Response.json({ error: 'Missing name param' }, { status: 400 });

@@ -1,6 +1,9 @@
 import { NextRequest } from 'next/server';
+import { getServerUser } from '../../../lib/auth';
 
 export async function POST(request: NextRequest) {
+  const user = await getServerUser();
+  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   const formData = await request.formData();
   const audioFile = formData.get('audio') as File;
   const lang = (formData.get('lang') as string) || 'zh';

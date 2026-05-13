@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { getGrant, updateGrant, deleteGrant } from '../../../lib/services/grantService';
+import { requireAdmin } from '../../../lib/auth';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -11,6 +12,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 }
 
 export async function PUT(request: NextRequest, ctx: Ctx) {
+  try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
   const { id } = await ctx.params;
   const body = await request.json();
   const grant = await updateGrant(id, body);
@@ -19,6 +21,7 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
 }
 
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
+  try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
   const { id } = await ctx.params;
   const deleted = await deleteGrant(id);
   if (!deleted) return Response.json({ error: 'Not found' }, { status: 404 });

@@ -53,6 +53,11 @@ export default function KpiSettingsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(kpi),
     });
+    const res = await fetch('/api/admin/kpi');
+    const d = await res.json();
+    if (d.kpi) setKpi(d.kpi);
+    setHistory(d.history ?? []);
+    setPerSales(d.perSalesKpi ?? []);
     setEditing(false);
   }
 

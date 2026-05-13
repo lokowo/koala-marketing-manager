@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
+import { requireAdmin } from '../../../lib/auth';
 
 export async function POST(req: NextRequest) {
+  try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
   try {
     const { topics, publishMode, imageCount } = await req.json();
 
