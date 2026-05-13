@@ -100,7 +100,7 @@ export default function ProfessorPortalPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mt-4">
           {stats.map(s => (
-            <div key={s.label} className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 p-4 text-center">
+            <div key={s.label} className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 p-4 text-center shadow-sm">
               <div className="text-2xl font-bold text-gray-800 dark:text-white">{s.value}</div>
               <div className="text-xs text-gray-400 dark:text-[#6a7a7e] mt-0.5">{s.label}</div>
             </div>
@@ -120,7 +120,7 @@ export default function ProfessorPortalPage() {
                   'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0',
                   active
                     ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-[#6a7a7e]',
+                    : 'text-gray-500 dark:text-[#6a7a7e] hover:bg-gray-100 dark:hover:bg-white/10',
                 ].join(' ')}
               >
                 <Icon className="size-3.5" />
@@ -133,7 +133,7 @@ export default function ProfessorPortalPage() {
         {/* Tab content */}
         <div className="mt-4">
           {tab === 'students' && (
-            <div className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+            <div className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-sm">
               {students.length === 0 ? (
                 <p className="p-6 text-center text-sm text-gray-300 dark:text-[#6a7a7e]">暂无感兴趣的学生</p>
               ) : (
@@ -158,7 +158,7 @@ export default function ProfessorPortalPage() {
           {tab === 'letters' && (
             <div className="space-y-2">
               {letters.length === 0 ? (
-                <div className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 p-6 text-center text-sm text-gray-300 dark:text-[#6a7a7e]">暂无申请信</div>
+                <div className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 p-6 text-center text-sm text-gray-300 dark:text-[#6a7a7e] shadow-sm">暂无申请信</div>
               ) : (
                 letters.map((l, i) => <LetterCard key={i} letter={l} />)
               )}
@@ -167,7 +167,7 @@ export default function ProfessorPortalPage() {
 
           {tab === 'publications' && (
             <div className="space-y-4">
-              <div className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+              <div className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-sm">
                 <div className="px-4 py-3 border-b border-gray-100 dark:border-white/5 text-sm font-semibold text-gray-700 dark:text-[#e8e4dc]">论文 ({papers.length})</div>
                 {papers.length === 0 ? (
                   <p className="p-4 text-sm text-gray-300 dark:text-[#6a7a7e]">暂无论文记录</p>
@@ -182,7 +182,7 @@ export default function ProfessorPortalPage() {
                   </div>
                 )}
               </div>
-              <div className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+              <div className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-sm">
                 <div className="px-4 py-3 border-b border-gray-100 dark:border-white/5 text-sm font-semibold text-gray-700 dark:text-[#e8e4dc]">经费 ({grants.length})</div>
                 {grants.length === 0 ? (
                   <p className="p-4 text-sm text-gray-300 dark:text-[#6a7a7e]">暂无经费记录</p>
@@ -201,7 +201,7 @@ export default function ProfessorPortalPage() {
           )}
 
           {tab === 'articles' && (
-            <div className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+            <div className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-sm">
               {articles.length === 0 ? (
                 <p className="p-6 text-center text-sm text-gray-300 dark:text-[#6a7a7e]">暂无推荐文章</p>
               ) : (
@@ -219,7 +219,7 @@ export default function ProfessorPortalPage() {
         </div>
 
         {/* Recruit CTA */}
-        <div className="mt-6 bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 p-5">
+        <div className="mt-6 bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-[#e8e4dc]">发布招生信息</h3>
             <button
@@ -367,7 +367,7 @@ function VerifyPage({ onVerified }: { onVerified: () => void }) {
 function LetterCard({ letter }: { letter: AnyObj }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+    <div className="bg-white dark:bg-[#0F1419] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-sm">
       <button onClick={() => setOpen(v => !v)} className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-white/5">
         <div className="flex-1 min-w-0">
           <p className="text-sm text-gray-800 dark:text-[#e8e4dc]">{letter.subject_line || '申请信'}</p>

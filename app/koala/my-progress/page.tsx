@@ -41,8 +41,8 @@ function StatCard({ icon, value, label, sub, color = '#D4A843' }: {
   icon: string; value: number | string; label: string; sub?: string; color?: string;
 }) {
   return (
-    <div className="rounded-2xl p-3 flex flex-col bg-white dark:bg-white/5 border border-gray-200 dark:border-[#D4A843]/10">
-      <span className="text-xl">{icon}</span>
+    <div className="rounded-2xl p-3 flex flex-col bg-white dark:bg-white/5 border border-gray-200 dark:border-[#D4A843]/10 shadow-sm">
+      <span className="w-9 h-9 rounded-xl flex items-center justify-center text-lg bg-amber-100/60 dark:bg-[#D4A843]/15">{icon}</span>
       <span className="text-2xl font-bold mt-1" style={{ color }}>{value}</span>
       <span className="text-[11px] font-medium mt-0.5 text-gray-900 dark:text-[#e8e4dc]">{label}</span>
       {sub && <span className="text-[10px] mt-0.5 text-gray-400 dark:text-[#b09878]">{sub}</span>}
@@ -88,7 +88,7 @@ export default function MyProgressPage() {
 
       <div className="flex-1 px-4 py-4 space-y-4 max-w-lg mx-auto w-full">
         {/* Research Readiness Score */}
-        <div className="rounded-2xl p-4 bg-white dark:bg-white/5 border-[1.5px] border-gray-200 dark:border-[#D4A843]/10">
+        <div className="rounded-2xl p-4 bg-white dark:bg-white/5 border-[1.5px] border-gray-200 dark:border-[#D4A843]/10 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div>
               <div className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">研究准备度</div>
@@ -194,10 +194,10 @@ export default function MyProgressPage() {
                 <div
                   key={key}
                   className={[
-                    'flex flex-col items-center rounded-xl py-2.5 px-1 border',
+                    'flex flex-col items-center rounded-xl py-2.5 px-1 border transition-all',
                     unlocked
-                      ? 'bg-amber-50 dark:bg-[#D4A843]/10 border-[#D4A843]/40'
-                      : 'bg-amber-50/50 dark:bg-[#D4A843]/5 border-amber-200/50 dark:border-[#D4A843]/10 opacity-45',
+                      ? 'bg-amber-50 dark:bg-[#D4A843]/10 border-[#D4A843]/40 ring-2 ring-[#D4A843]/30 shadow-sm'
+                      : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 opacity-40 grayscale',
                   ].join(' ')}
                 >
                   <span className="text-xl">{ACHIEVEMENT_ICONS[key]}</span>

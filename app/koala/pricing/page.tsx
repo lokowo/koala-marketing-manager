@@ -86,7 +86,7 @@ export default function PricingPage() {
 
       <div className="px-4 py-4 space-y-6 max-w-lg mx-auto">
         {/* Free tier */}
-        <div className="rounded-2xl overflow-hidden border-2 border-amber-200/50 dark:border-[#D4A843]/10">
+        <div className="rounded-2xl overflow-hidden border-2 border-amber-200/50 dark:border-[#D4A843]/10 shadow-sm">
           <div className="p-4 bg-amber-50 dark:bg-[#D4A843]/6">
             <div className="flex items-center justify-between">
               <div>
@@ -119,10 +119,10 @@ export default function PricingPage() {
               <div
                 key={pack.label}
                 className={[
-                  'rounded-2xl p-3.5',
+                  'rounded-2xl p-3.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg',
                   pack.highlight
-                    ? 'bg-amber-50 dark:bg-[#D4A843]/15 border-2 border-[#D4A843]'
-                    : 'bg-white dark:bg-white/5 border border-amber-200/50 dark:border-[#D4A843]/10',
+                    ? 'bg-amber-50 dark:bg-[#D4A843]/15 border-2 border-[#D4A843] ring-2 ring-[#D4A843]/40 shadow-md'
+                    : 'bg-white dark:bg-white/5 border border-amber-200/50 dark:border-[#D4A843]/10 shadow-sm',
                 ].join(' ')}
               >
                 {pack.highlight && (
@@ -156,12 +156,13 @@ export default function PricingPage() {
               <div
                 key={tier.id}
                 className={[
-                  'rounded-2xl overflow-hidden',
+                  'rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group relative',
                   tier.highlight
-                    ? 'border-2 border-[#D4A843]'
-                    : 'border border-amber-200/50 dark:border-[#D4A843]/10',
+                    ? 'border-2 border-[#D4A843] shadow-md'
+                    : 'border border-amber-200/50 dark:border-[#D4A843]/10 shadow-sm',
                 ].join(' ')}
               >
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4A843]/60 to-[#4ECDC4]/60 opacity-0 group-hover:opacity-100 transition-opacity" />
                 {tier.highlight && (
                   <div className="py-1.5 text-center text-xs font-bold text-white dark:text-[#080c10] bg-[#1A1A2E] dark:bg-[#D4A843]">
                     🌟 最受欢迎

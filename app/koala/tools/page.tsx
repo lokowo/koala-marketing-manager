@@ -38,12 +38,13 @@ function TierCard({
   return (
     <div
       className={[
-        'rounded-2xl overflow-hidden',
+        'rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group relative',
         isPopular
-          ? 'border-2 border-[#D4A843]'
-          : 'border border-amber-200/50 dark:border-[#D4A843]/10',
+          ? 'border-2 border-[#D4A843] shadow-md'
+          : 'border border-amber-200/50 dark:border-[#D4A843]/10 shadow-sm',
       ].join(' ')}
     >
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4A843]/60 to-[#4ECDC4]/60 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
       {/* Popular badge */}
       {isPopular && (
         <div className="text-center text-xs font-semibold py-1.5 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
