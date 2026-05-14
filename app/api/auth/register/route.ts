@@ -9,6 +9,137 @@ function generateCode(): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
+async function processReferralCode(
+  code: string,
+  newUserId: string,
+  newUserEmail: string,
+): Promise<boolean> {
+  const upperCode = code.toUpperCase();
+
+  // --- Tier 1: Match user_profiles.referral_code (normal user or admin) ---
+  let referrerProfile: { id: string; credits_remaining: number; referral_code: string; role?: string } | null = null;
+
+  const { data: directMatch } = await db
+    .from('user_profiles')
+    .select('id, credits_remaining, referral_code, role')
+    .eq('referral_code', upperCode)
+    .single();
+
+  if (directMatch) {
+    referrerProfile = directMatch;
+  } else {
+    const { data: codeRow } = await db
+      .from('referral_codes')
+      .select('user_id')
+      .eq('code', upperCode)
+      .single();
+    if (codeRow) {
+      const { data: fallbackProfile } = await db
+        .from('user_profiles')
+        .select('id, credits_remaining, referral_code, role')
+        .eq('id', codeRow.user_id)
+        .single();
+      if (fallbackProfile) {
+        await db.from('user_profiles').update({ referral_code: upperCode }).eq('id', fallbackProfile.id);
+        referrerProfile = fallbackProfile;
+      }
+    }
+  }
+
+  if (referrerProfile && referrerProfile.id !== newUserId) {
+    const isAdmin = referrerProfile.role === 'admin';
+
+    if (!isAdmin) {
+      const { data: codeRecord } = await db
+        .from('referral_codes')
+        .select('uses, max_uses')
+        .eq('user_id', referrerProfile.id)
+        .single();
+      const uses = codeRecord?.uses || 0;
+      const maxUses = codeRecord?.max_uses || 3;
+      if (uses >= maxUses) return false;
+    }
+
+    // Award credits to referrer (+15)
+    const newReferrerBalance = (referrerProfile.credits_remaining || 0) + 15;
+    await db.from('user_profiles').update({ credits_remaining: newReferrerBalance }).eq('id', referrerProfile.id);
+    await db.from('credit_transactions').insert({
+      user_id: referrerProfile.id,
+      amount: 15,
+      balance_after: newReferrerBalance,
+      type: 'earn_referral',
+      description: `邀请好友注册（${newUserEmail.split('@')[0]})`,
+      reference_id: newUserId,
+    });
+
+    // Award credits to new user (+5)
+    const { data: myProfile } = await db.from('user_profiles').select('credits_remaining').eq('id', newUserId).single();
+    const newMyBalance = (myProfile?.credits_remaining ?? 0) + 5;
+    await db.from('user_profiles').update({ credits_remaining: newMyBalance, referred_by: referrerProfile.id }).eq('id', newUserId);
+    await db.from('credit_transactions').insert({
+      user_id: newUserId,
+      amount: 5,
+      balance_after: newMyBalance,
+      type: 'earn_referral',
+      description: '使用邀请码注册奖励',
+      reference_id: referrerProfile.id,
+    });
+
+    // Increment uses count
+    const { data: codeRecord } = await db.from('referral_codes').select('uses').eq('user_id', referrerProfile.id).single();
+    if (codeRecord) {
+      await db.from('referral_codes').update({ uses: (codeRecord.uses || 0) + 1 }).eq('user_id', referrerProfile.id);
+    }
+
+    return true;
+  }
+
+  // --- Tier 2: Match sales_qrcodes.code (sales channel) ---
+  try {
+    const { data: salesQr } = await db
+      .from('sales_qrcodes')
+      .select('id, sales_user_id')
+      .eq('code', upperCode)
+      .single();
+
+    if (salesQr) {
+      await db.from('sales_customers').insert({
+        sales_user_id: salesQr.sales_user_id,
+        customer_user_id: newUserId,
+        qrcode_id: salesQr.id,
+        source: 'referral_code',
+        stage: 'registered',
+      }).then(() => {}).catch(() => {});
+
+      await db.from('sales_qrcodes')
+        .update({ register_count: db.raw('register_count + 1') })
+        .eq('id', salesQr.id)
+        .then(() => {}).catch(async () => {
+          const { data: qr } = await db.from('sales_qrcodes').select('register_count').eq('id', salesQr.id).single();
+          if (qr) await db.from('sales_qrcodes').update({ register_count: (qr.register_count || 0) + 1 }).eq('id', salesQr.id);
+        });
+
+      // Award new user +5 credits
+      const { data: myProfile } = await db.from('user_profiles').select('credits_remaining').eq('id', newUserId).single();
+      const newBalance = (myProfile?.credits_remaining ?? 0) + 5;
+      await db.from('user_profiles').update({ credits_remaining: newBalance }).eq('id', newUserId);
+      await db.from('credit_transactions').insert({
+        user_id: newUserId,
+        amount: 5,
+        balance_after: newBalance,
+        type: 'earn_referral',
+        description: 'Sales 渠道注册奖励',
+      });
+
+      return true;
+    }
+  } catch {
+    // sales_qrcodes table may not exist — skip silently
+  }
+
+  return false;
+}
+
 export async function POST(req: Request) {
   try {
     const { email, password, name, referralCode, salesCode, dataConsent } = await req.json();
@@ -65,89 +196,11 @@ export async function POST(req: Request) {
       });
     }
 
-    // Auto-apply referral code credits
+    // Auto-apply referral code credits (supports normal user, admin, and sales channels)
     let creditApplied = false;
     if (referralCode) {
       try {
-        const upperCode = referralCode.toUpperCase();
-        let { data: referrerProfile } = await db
-          .from('user_profiles')
-          .select('id, credits_remaining, referral_code')
-          .eq('referral_code', upperCode)
-          .single();
-
-        if (!referrerProfile) {
-          const { data: codeRow } = await db
-            .from('referral_codes')
-            .select('user_id')
-            .eq('code', upperCode)
-            .single();
-          if (codeRow) {
-            const { data: fallbackProfile } = await db
-              .from('user_profiles')
-              .select('id, credits_remaining, referral_code')
-              .eq('id', codeRow.user_id)
-              .single();
-            if (fallbackProfile) {
-              await db.from('user_profiles')
-                .update({ referral_code: upperCode })
-                .eq('id', fallbackProfile.id);
-              referrerProfile = fallbackProfile;
-            }
-          }
-        }
-
-        if (referrerProfile && referrerProfile.id !== userData.user.id) {
-          const { count: referredCount } = await db
-            .from('user_profiles')
-            .select('*', { count: 'exact', head: true })
-            .eq('referred_by', referrerProfile.id);
-
-          if ((referredCount || 0) < 3) {
-            const newReferrerBalance = (referrerProfile.credits_remaining || 0) + 15;
-            await db.from('user_profiles')
-              .update({ credits_remaining: newReferrerBalance })
-              .eq('id', referrerProfile.id);
-            await db.from('credit_transactions').insert({
-              user_id: referrerProfile.id,
-              amount: 15,
-              balance_after: newReferrerBalance,
-              type: 'earn_referral',
-              description: `邀请好友注册（${email.split('@')[0]})`,
-              reference_id: userData.user.id,
-            });
-
-            const { data: myProfile } = await db
-              .from('user_profiles')
-              .select('credits_remaining')
-              .eq('id', userData.user.id)
-              .single();
-            const newMyBalance = (myProfile?.credits_remaining ?? 0) + 5;
-            await db.from('user_profiles')
-              .update({ credits_remaining: newMyBalance, referred_by: referrerProfile.id })
-              .eq('id', userData.user.id);
-            await db.from('credit_transactions').insert({
-              user_id: userData.user.id,
-              amount: 5,
-              balance_after: newMyBalance,
-              type: 'earn_referral',
-              description: '使用邀请码注册奖励',
-              reference_id: referrerProfile.id,
-            });
-
-            const { data: codeRecord } = await db
-              .from('referral_codes')
-              .select('uses')
-              .eq('user_id', referrerProfile.id)
-              .single();
-            if (codeRecord) {
-              await db.from('referral_codes')
-                .update({ uses: (codeRecord.uses || 0) + 1 })
-                .eq('user_id', referrerProfile.id);
-            }
-            creditApplied = true;
-          }
-        }
+        creditApplied = await processReferralCode(referralCode, userData.user.id, email);
       } catch (refErr) {
         console.error('[register] referral credit failed:', { referralCode, userId: userData.user.id, error: refErr });
       }

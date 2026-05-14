@@ -7,6 +7,7 @@ import { useAuth, type UserProfile } from '../components/AuthContext';
 import { supabase } from '../../lib/supabase/client';
 import { shareToWechat } from '../../lib/share';
 import VoiceInputButton from '../../components/VoiceInputButton';
+import SharePoster from '../../components/SharePoster';
 
 // ─── timeAgo helper ────────────────────────
 function timeAgo(dateStr: string): string {
@@ -371,6 +372,8 @@ export default function MyProfilePage() {
   const [inviteText, setInviteText] = useState('');
   const [referralStats, setReferralStats] = useState({ invited: 0, maxInvites: 3, earned: 0 });
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [showPoster, setShowPoster] = useState(false);
+  const [posterData, setPosterData] = useState({ referralUrl: '', remainingInvites: 0, displayName: '' });
 
   const loadCredits = useCallback(() => {
     fetch('/api/user/credits').then(r => r.json()).then(d => {
@@ -1057,15 +1060,21 @@ export default function MyProfilePage() {
             </button>
           </div>
 
-          <textarea
-            value={inviteText}
-            onChange={e => setInviteText(e.target.value)}
-            rows={5}
-            disabled={referralStats.invited >= 3}
-            className={`w-full px-3 py-2 rounded-lg text-xs outline-none resize-none mb-3 ${INPUT_CLS} leading-relaxed`}
-          />
-
+          {/* Poster + copy buttons */}
           <div className="flex gap-2 mb-3">
+            <button
+              onClick={() => {
+                setPosterData({
+                  referralUrl: `https://koalaphd.com/koala/auth?ref=${referralCode}`,
+                  remainingInvites: referralStats.maxInvites - referralStats.invited,
+                  displayName: profile?.display_name || '考拉用户',
+                });
+                setShowPoster(true);
+              }}
+              className="flex-1 text-[11px] py-2.5 rounded-lg font-medium bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
+            >
+              生成邀请海报
+            </button>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(inviteText);
@@ -1073,25 +1082,9 @@ export default function MyProfilePage() {
                 setTimeout(() => setInviteCopied(false), 2500);
               }}
               disabled={referralStats.invited >= 3}
-              className={`flex-1 text-[11px] py-2 rounded-lg font-medium ${
-                referralStats.invited >= 3
-                  ? 'bg-gray-100 dark:bg-[#D4A843]/10 text-gray-300 dark:text-[#4a5a5e]'
-                  : 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'
-              }`}
+              className="flex-1 text-[11px] py-2.5 rounded-lg font-medium bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-[#a8b8ac] disabled:opacity-40"
             >
-              {inviteCopied ? '✅ 已复制，去分享给朋友吧！' : '一键复制邀请文案'}
-            </button>
-            <button
-              onClick={() => {
-                const msg = shareToWechat(inviteText);
-                setInviteCopied(true);
-                setRoleToast({ msg, ok: true });
-                setTimeout(() => setInviteCopied(false), 2500);
-              }}
-              disabled={referralStats.invited >= 3}
-              className="flex-1 text-[11px] py-2 rounded-lg font-medium bg-green-50 dark:bg-[rgba(90,128,96,0.12)] text-green-600 dark:text-[#5a8060] disabled:opacity-40"
-            >
-              {inviteCopied ? '✅ 已复制' : '分享到微信'}
+              {inviteCopied ? '✅ 已复制' : '复制邀请文案'}
             </button>
           </div>
 
@@ -1101,6 +1094,16 @@ export default function MyProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Share Poster Modal */}
+      <SharePoster
+        open={showPoster}
+        onClose={() => setShowPoster(false)}
+        referralCode={referralCode}
+        referralUrl={posterData.referralUrl}
+        remainingInvites={posterData.remainingInvites}
+        displayName={posterData.displayName}
+      />
 
       {/* ── Two-col layout ──────────────────── */}
       <div className="lg:flex lg:gap-3 lg:items-start lg:px-0">
