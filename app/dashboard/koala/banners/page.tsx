@@ -508,7 +508,7 @@ export default function BannersPage() {
                         <div className="text-center">
                           <div className="text-2xl mb-1">📷</div>
                           <div className="text-xs text-[#9CA3AF]">点击上传图片</div>
-                          <div className="text-[10px] text-[#D1D5DB] mt-0.5">JPG, PNG, WebP, GIF · 最大 5MB</div>
+                          <div className="text-[10px] text-[#D1D5DB] mt-0.5">推荐 1024×1024 或 4:3 比例 · 最大 5MB</div>
                         </div>
                         <input type="file" accept="image/*" className="hidden" onChange={e => handleFileSelect(e, 'create')} />
                       </label>

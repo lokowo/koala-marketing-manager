@@ -12,7 +12,7 @@ const basePrompt = `Professional website banner image for an education technolog
 
 Mandatory requirements:
 - Photorealistic style, high quality, cinematic lighting, professional composition
-- Banner aspect ratio (wide landscape)
+- Square or near-square aspect ratio (1:1), suitable for a side panel in a hero section
 - Clean, modern, inspiring, premium feel
 - If there is any text in the image, it MUST be in correct Simplified Chinese (简体中文). Every Chinese character must be accurate with zero errors. Double-check all Chinese text for correctness. If unsure about a character, do not include text.
 - No watermarks, no stock photo feel, no generic clip art
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const response = await openai.images.generate({
       model: 'gpt-image-1',
       prompt: fullPrompt,
-      size: size || '1536x1024',
+      size: size || '1024x1024',
       quality: 'medium',
       n: 1,
     });

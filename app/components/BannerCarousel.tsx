@@ -102,7 +102,7 @@ export default function BannerCarousel({ heroMode = false }: { heroMode?: boolea
   return (
     <>
       <div
-        className="relative overflow-hidden rounded-2xl group"
+        className={`relative overflow-hidden group ${heroMode ? 'rounded-xl' : 'rounded-2xl'}`}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={handleTouchStart}
