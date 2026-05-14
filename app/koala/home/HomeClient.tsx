@@ -314,30 +314,30 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
             <div className="absolute right-8 bottom-0 w-40 h-40 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.04) 0%, transparent 70%)' }} />
 
             <div className="flex flex-col md:flex-row md:items-center">
-              <div className="order-2 md:order-1 px-6 py-6 md:py-8 lg:p-10 relative z-10 md:w-1/2">
-                <div className="inline-flex items-center text-xs font-medium mb-2 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-transparent text-amber-700 dark:text-[#D4A843]/50 border border-amber-200 dark:border-transparent">
+              <div className="order-2 md:order-1 px-6 py-6 md:py-8 lg:py-12 lg:px-10 relative z-10 md:w-[45%]">
+                <div className="inline-flex items-center text-xs font-medium mb-4 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-transparent text-amber-700 dark:text-[#D4A843]/50 border border-amber-200 dark:border-transparent">
                   AI 导师匹配 · 免费使用
                 </div>
-                <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold leading-tight mb-1.5 text-[#1A1A2E] dark:text-[#e8e4dc]">
+                <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold leading-snug mb-3 text-[#1A1A2E] dark:text-[#e8e4dc]">
                   {profCount} 位澳洲导师<br />AI 帮你找最匹配的那个
                 </h1>
-                <p className="text-xs lg:text-sm leading-relaxed mb-4 text-gray-500 dark:text-[#6a7a7e]">
+                <p className="text-xs lg:text-sm leading-relaxed mb-6 text-gray-500 dark:text-[#6a7a7e]">
                   告诉 Koala 你的背景和兴趣，30 秒内获得个性化导师推荐
                 </p>
                 <Link
                   href="/koala/chat"
-                  className="inline-flex items-center justify-center gap-2 w-full md:w-auto px-5 py-2.5 rounded-full font-semibold text-sm no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
+                  className="inline-flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3 rounded-full font-semibold text-base no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
                 >
                   开始匹配 <ArrowRight className="size-4" />
                 </Link>
-                <div className="mt-3 text-[11px] text-center md:text-left text-amber-700 dark:text-[#D4A843]/40">
+                <div className="mt-4 text-[11px] text-center md:text-left text-amber-700 dark:text-[#D4A843]/40">
                   {matchCount > 0
                     ? `已帮助 ${displayMatchCount.toLocaleString()} 位同学匹配理想导师`
                     : '已帮助众多同学匹配理想导师'}
                 </div>
               </div>
 
-              <div className="order-1 md:order-2 md:w-1/2 p-3 md:p-4 md:pl-0">
+              <div className="order-1 md:order-2 md:w-[55%] p-3 md:p-4 md:pl-0">
                 <BannerCarousel heroMode />
               </div>
             </div>
