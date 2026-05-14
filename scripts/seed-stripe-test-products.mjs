@@ -98,6 +98,7 @@ async function main() {
       metadata: {
         type: 'subscription',
         tier: sub.tier,
+        credits: String(sub.monthlyCredits),
         monthly_credits: String(sub.monthlyCredits),
       },
       lookup_key: sub.lookup,
