@@ -310,8 +310,8 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
           <div
             className="rounded-2xl relative overflow-hidden border border-amber-200/30 dark:border-[#c9a96e]/15 bg-gradient-to-br from-[#F8F6F1] to-[#EDE8DC] dark:from-[#1a2a20] dark:via-[#0d1a14] dark:to-[#162028]"
           >
-            <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.06) 0%, transparent 70%)' }} />
-            <div className="absolute right-8 bottom-0 w-40 h-40 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.04) 0%, transparent 70%)' }} />
+            <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full dark:opacity-0" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.06) 0%, transparent 70%)' }} />
+            <div className="absolute right-8 bottom-0 w-40 h-40 rounded-full dark:opacity-0" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.04) 0%, transparent 70%)' }} />
 
             <div className="flex flex-col md:flex-row md:items-center">
               <div className="order-2 md:order-1 px-6 py-6 md:py-8 lg:py-12 lg:px-10 relative z-10 md:w-[45%]">
