@@ -45,6 +45,15 @@ const PRESET_COLORS = [
   { label: 'Teal', value: '#4ECDC4' },
 ];
 
+function generateAlt(prompt: string): string {
+  let alt = prompt.slice(0, 60);
+  const lastComma = alt.lastIndexOf('，');
+  const lastPeriod = alt.lastIndexOf('。');
+  const cutAt = Math.max(lastComma, lastPeriod);
+  if (cutAt > 20) alt = alt.slice(0, cutAt);
+  return alt;
+}
+
 function newLayer(): TextLayer {
   return { id: `l_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, text: '新文字', fontSize: 24, fontWeight: 'normal', color: '#ffffff', x: 50, y: 50, direction: 'horizontal' };
 }
@@ -356,7 +365,7 @@ export default function BannersPage() {
       const data = await res.json();
       if (data.success) {
         setGeneratedImageUrl(data.imageUrl);
-        setNewAlt(aiPrompt);
+        setNewAlt(generateAlt(aiPrompt));
       } else {
         setGenerateError(data.error || '生成失败，请重试');
       }
@@ -809,9 +818,14 @@ export default function BannersPage() {
                   type="text"
                   value={newAlt}
                   onChange={e => setNewAlt(e.target.value)}
+                  maxLength={100}
                   placeholder="描述图片内容..."
                   className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
                 />
+                <p className="text-xs text-[#9CA3AF] mt-1">建议 50-80 字符，简短描述图片内容用于 SEO</p>
+                {newAlt.length > 80 && (
+                  <p className="text-xs text-amber-500 mt-1">⚠️ 已 {newAlt.length}/100 字符，建议精简</p>
+                )}
               </div>
 
               {/* Overlay editor */}
