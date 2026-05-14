@@ -35,6 +35,24 @@ function extractInlineImages(content: string): InlineImage[] {
 
 marked.setOptions({ breaks: true, gfm: true });
 
+// ─── Word Count ─────────────────────────────────────────────────────────────
+
+function countWords(text: string): number {
+  if (!text) return 0;
+  const chinese = text.match(/[一-鿿㐀-䶿]/g)?.length || 0;
+  const cleaned = text.replace(/[一-鿿㐀-䶿]/g, ' ').trim();
+  const english = cleaned ? cleaned.split(/\s+/).filter(Boolean).length : 0;
+  return chinese + english;
+}
+
+function getPlatformHint(count: number): { text: string; color: string } {
+  if (count === 0) return { text: '', color: '' };
+  if (count < 300) return { text: '适合小红书、微博', color: 'text-pink-500' };
+  if (count <= 800) return { text: '适合微信公众号', color: 'text-green-600' };
+  if (count <= 2000) return { text: '适合博客网站', color: 'text-blue-600' };
+  return { text: '内容较长，建议分篇或精简', color: 'text-amber-600' };
+}
+
 // ─── AI Illustration Types ──────────────────────────────────────────────────
 
 interface GeneratedImage {
@@ -103,6 +121,17 @@ function BlogEditPageInner() {
     scheduled_at: '',
   });
 
+  // AI polish state
+  const [showPolishModal, setShowPolishModal] = useState(false);
+  const [polishStyle, setPolishStyle] = useState('social');
+  const [polishWordCount, setPolishWordCount] = useState('800');
+  const [polishPlatform, setPolishPlatform] = useState('blog');
+  const [polishing, setPolishing] = useState(false);
+  const [polishedContent, setPolishedContent] = useState('');
+  const [polishTruncated, setPolishTruncated] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+
   // AI illustration state
   const [showIllustrationPanel, setShowIllustrationPanel] = useState(false);
   const [generatingIllustrations, setGeneratingIllustrations] = useState(false);
@@ -137,6 +166,10 @@ function BlogEditPageInner() {
         .catch(() => setLoading(false));
     }
   }, [editId]);
+
+  const currentContent = contentTab === 'zh' ? form.content_zh : form.content_en;
+  const wordCount = useMemo(() => countWords(currentContent), [currentContent]);
+  const platformHint = useMemo(() => getPlatformHint(wordCount), [wordCount]);
 
   const inlineImages = useMemo(() => extractInlineImages(form.content_zh), [form.content_zh]);
   const insertionPoints = useMemo(() => getInsertionPoints(form.content_zh), [form.content_zh]);
@@ -202,6 +235,65 @@ function BlogEditPageInner() {
       }
     } catch { alert('AI封面生成失败'); }
     setAiWorking(null);
+  }
+
+  async function handlePolish() {
+    const content = contentTab === 'zh' ? form.content_zh : form.content_en;
+    if (!content) return;
+    setPolishing(true);
+    setPolishedContent('');
+    try {
+      const res = await fetch('/api/blog/ai-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'polish',
+          content,
+          title: form.title_zh || form.title_en,
+          category: form.category,
+          style: polishStyle,
+          wordCount: polishWordCount,
+          platform: polishPlatform,
+        }),
+      });
+      const data = await res.json();
+      if (data.polished) {
+        setPolishedContent(data.polished);
+        setPolishTruncated(!!data.truncated);
+      } else {
+        alert(data.error || 'AI 润色失败');
+      }
+    } catch { alert('AI 润色失败，请重试'); }
+    setPolishing(false);
+  }
+
+  function applyPolish() {
+    if (!polishedContent) return;
+    const key = contentTab === 'zh' ? 'content_zh' : 'content_en';
+    setForm(prev => ({ ...prev, [key]: polishedContent }));
+    setShowPolishModal(false);
+    setPolishedContent('');
+  }
+
+  async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert('文件不能超过 5MB'); return; }
+    if (!file.type.startsWith('image/')) { alert('只支持 JPG、PNG、WebP 格式'); return; }
+    setUploadingCover(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/blog/upload-cover', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.url) {
+        setForm(prev => ({ ...prev, cover_image_url: data.url }));
+      } else {
+        alert(data.error || '上传失败');
+      }
+    } catch { alert('上传失败'); }
+    setUploadingCover(false);
+    if (coverInputRef.current) coverInputRef.current.value = '';
   }
 
   function removeInlineImage(img: InlineImage) {
@@ -594,6 +686,12 @@ function BlogEditPageInner() {
                     {aiWorking === 'cover_image' ? '⏳ 生成中(~15s)...' : '🔄 重新生成'}
                   </button>
                   <button
+                    onClick={() => coverInputRef.current?.click()}
+                    className="px-3 py-1.5 text-xs border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50"
+                  >
+                    📁 上传替换
+                  </button>
+                  <button
                     onClick={() => setForm(prev => ({ ...prev, cover_image_url: '' }))}
                     className="px-3 py-1.5 text-xs border border-red-200 text-red-500 rounded-lg hover:bg-red-50"
                   >
@@ -602,19 +700,29 @@ function BlogEditPageInner() {
                 </div>
               </div>
             ) : (
-              <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
-                {aiWorking === 'cover_image' ? (
-                  <p className="text-sm text-amber-600 animate-pulse">⏳ 封面图生成中(~15s)...</p>
-                ) : editId ? (
-                  <button
-                    onClick={generateCover}
-                    className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700"
-                  >
-                    🎨 AI 生成封面图
-                  </button>
+              <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center space-y-3">
+                {aiWorking === 'cover_image' || uploadingCover ? (
+                  <p className="text-sm text-amber-600 animate-pulse">{uploadingCover ? '⏳ 上传中...' : '⏳ 封面图生成中(~15s)...'}</p>
                 ) : (
-                  <p className="text-sm text-slate-400">保存文章后可生成封面图</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      onClick={() => coverInputRef.current?.click()}
+                      className="px-4 py-2 text-sm border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                    >
+                      📁 上传本地图片
+                    </button>
+                    {editId && (
+                      <button
+                        onClick={generateCover}
+                        className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+                      >
+                        🎨 AI 生成封面图
+                      </button>
+                    )}
+                  </div>
                 )}
+                <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
+                {!editId && <p className="text-xs text-slate-400">保存后可使用 AI 生成封面图</p>}
               </div>
             )}
             <input
@@ -661,6 +769,13 @@ function BlogEditPageInner() {
                 </button>
               </div>
 
+              <button
+                onClick={() => { setPolishedContent(''); setShowPolishModal(true); }}
+                disabled={!currentContent}
+                className="text-xs px-3 py-1.5 border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 disabled:opacity-50"
+              >
+                ✨ AI 润色
+              </button>
               <button
                 onClick={() => aiAssist('translate')}
                 disabled={aiWorking === 'translate' || !form.content_zh}
@@ -724,6 +839,16 @@ function BlogEditPageInner() {
                   </div>
                 )}
               </>
+            )}
+
+            {/* Word count + platform hint */}
+            {editorMode === 'edit' && (
+              <div className="flex items-center gap-3 text-xs text-slate-500 -mt-1">
+                <span>当前字数：<strong className="text-slate-700">{wordCount}</strong> 字</span>
+                {platformHint.text && (
+                  <span className={platformHint.color}>{platformHint.text}</span>
+                )}
+              </div>
             )}
 
             {/* Visual edit mode — renders markdown with editable image overlays */}
@@ -983,6 +1108,106 @@ function BlogEditPageInner() {
                 {saving ? '保存中...' : '保存'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── AI Polish Modal ─── */}
+      {showPolishModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl w-[90vw] max-w-5xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-900">✨ AI 内容润色</h3>
+              <button onClick={() => setShowPolishModal(false)} className="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+            </div>
+
+            <div className="px-6 py-4 border-b border-slate-100 flex items-end gap-4 flex-wrap">
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">语言风格</label>
+                <select value={polishStyle} onChange={e => setPolishStyle(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
+                  <option value="news">新闻报道</option>
+                  <option value="social">社交媒体（小红书）</option>
+                  <option value="academic">学术科普</option>
+                  <option value="casual">轻松对话</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">目标字数</label>
+                <select value={polishWordCount} onChange={e => setPolishWordCount(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
+                  <option value="500">500 字</option>
+                  <option value="800">800 字</option>
+                  <option value="1200">1200 字</option>
+                  <option value="2000">2000 字</option>
+                  <option value="unlimited">不限</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">目标平台</label>
+                <select value={polishPlatform} onChange={e => setPolishPlatform(e.target.value)} className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
+                  <option value="wechat">微信公众号</option>
+                  <option value="xiaohongshu">小红书</option>
+                  <option value="blog">博客网站</option>
+                  <option value="linkedin">LinkedIn</option>
+                </select>
+              </div>
+              <button
+                onClick={handlePolish}
+                disabled={polishing}
+                className="px-5 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+              >
+                {polishing ? '⏳ 润色中...' : polishedContent ? '🔄 重新润色' : '✨ 开始润色'}
+              </button>
+            </div>
+
+            {polishTruncated && (
+              <div className="px-6 py-2 bg-amber-50 text-xs text-amber-700">
+                内容超过 5000 字符，已截取前 5000 字符进行润色。建议分段润色较长文章。
+              </div>
+            )}
+
+            <div className="flex-1 overflow-hidden flex">
+              <div className="flex-1 flex flex-col border-r border-slate-200 min-w-0">
+                <div className="px-4 py-2 bg-slate-50 text-xs font-medium text-slate-600 border-b border-slate-100">
+                  原文 ({countWords(currentContent)} 字)
+                </div>
+                <div className="flex-1 overflow-y-auto p-4">
+                  <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans leading-relaxed">{currentContent || '（无内容）'}</pre>
+                </div>
+              </div>
+              <div className="flex-1 flex flex-col min-w-0">
+                <div className="px-4 py-2 bg-purple-50 text-xs font-medium text-purple-700 border-b border-purple-100">
+                  润色后 {polishedContent ? `(${countWords(polishedContent)} 字)` : ''}
+                </div>
+                <div className="flex-1 overflow-y-auto p-4">
+                  {polishing ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <div className="inline-block w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mb-2" />
+                        <p className="text-sm text-slate-500">AI 正在润色内容...</p>
+                      </div>
+                    </div>
+                  ) : polishedContent ? (
+                    <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans leading-relaxed">{polishedContent}</pre>
+                  ) : (
+                    <p className="text-sm text-slate-400 text-center mt-8">选择润色参数后点击"开始润色"</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {polishedContent && !polishing && (
+              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
+                <button onClick={() => setShowPolishModal(false)} className="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-white">
+                  取消
+                </button>
+                <button
+                  onClick={applyPolish}
+                  className="px-5 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                >
+                  确认替换
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

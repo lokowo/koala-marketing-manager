@@ -17,7 +17,7 @@ const COVER_IMAGE_PROMPTS: Record<string, string> = {
 export async function POST(req: NextRequest) {
   try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
   try {
-    const { action, content, category, title } = await req.json();
+    const { action, content, category, title, style, wordCount, platform } = await req.json();
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
     if (action === 'recommend_category') {
@@ -59,6 +59,51 @@ export async function POST(req: NextRequest) {
     if (action === 'cover_prompt') {
       const prompt = COVER_IMAGE_PROMPTS[category] || COVER_IMAGE_PROMPTS.phd_guide;
       return Response.json({ prompt, category });
+    }
+
+    if (action === 'polish') {
+      const styleMap: Record<string, string> = {
+        news: '新闻报道风格：客观、专业、简洁有力，用第三人称叙述，多用数据和事实支撑',
+        social: '社交媒体/小红书风格：活泼亲切、使用短句、适当加入emoji、开头抓眼球、分段清晰',
+        academic: '学术科普风格：严谨但通俗易懂，用类比解释专业概念，保持学术准确性',
+        casual: '轻松对话风格：像朋友聊天一样，口语化、有温度、可以用"你"直接称呼读者',
+      };
+
+      const platformMap: Record<string, string> = {
+        wechat: '微信公众号：段落分明、小标题清晰、适合长阅读、可加粗重点',
+        xiaohongshu: '小红书：短段落、多换行、emoji点缀、开头要有吸引力、结尾带互动',
+        blog: '博客网站：结构化、可用Markdown标题和列表、适合深度阅读',
+        linkedin: 'LinkedIn：专业商务风格、英文思维、突出价值和洞察、适当用数据',
+      };
+
+      const styleInstruction = styleMap[style || ''] || styleMap.casual;
+      const platformInstruction = platformMap[platform || ''] || '';
+      const wordInstruction = wordCount && wordCount !== 'unlimited'
+        ? `目标字数约 ${wordCount} 字（±15%），如原文过长请精简，过短请扩充`
+        : '字数不限，保持内容完整';
+
+      const truncatedContent = (content || '').slice(0, 5000);
+
+      const resp = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4000,
+        system: `你是 Koala PhD (koalaphd.com) 的专业内容编辑。你的任务是润色用户提供的原始文章内容。
+
+润色要求：
+1. 语言风格：${styleInstruction}
+2. ${wordInstruction}
+${platformInstruction ? `3. 平台适配：${platformInstruction}` : ''}
+
+规则：
+- 保留原文的核心信息和观点，不要编造新内容
+- 保持 Markdown 格式
+- 不要加任何前缀说明（如"以下是润色后的内容"），直接输出润色后的正文
+- 如果原文提到了具体数据、人名、学校名，必须原样保留`,
+        messages: [{ role: 'user', content: `请润色以下内容：\n\n${truncatedContent}` }],
+      });
+
+      const polished = resp.content[0].type === 'text' ? resp.content[0].text : '';
+      return Response.json({ polished, truncated: (content || '').length > 5000 });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
