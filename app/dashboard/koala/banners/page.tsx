@@ -58,7 +58,8 @@ export default function BannersPage() {
   const [generating, setGenerating] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState('');
   const [generateError, setGenerateError] = useState('');
-  const [newOverlayText, setNewOverlayText] = useState('');
+  const [newOverlayTitle, setNewOverlayTitle] = useState('');
+  const [newOverlaySubtitle, setNewOverlaySubtitle] = useState('');
 
   // Edit form state
   const [editAlt, setEditAlt] = useState('');
@@ -68,7 +69,8 @@ export default function BannersPage() {
   const [editModalContent, setEditModalContent] = useState('');
   const [editStartDate, setEditStartDate] = useState('');
   const [editEndDate, setEditEndDate] = useState('');
-  const [editOverlayText, setEditOverlayText] = useState('');
+  const [editOverlayTitle, setEditOverlayTitle] = useState('');
+  const [editOverlaySubtitle, setEditOverlaySubtitle] = useState('');
 
   function flash(msg: string) {
     setToast(msg);
@@ -136,7 +138,8 @@ export default function BannersPage() {
           click_url: (newAction === 'internal_link' || newAction === 'external_link') ? newUrl : null,
           modal_title: newAction === 'modal' ? newModalTitle : null,
           modal_content: newAction === 'modal' ? newModalContent : null,
-          overlay_text: newOverlayText || null,
+          overlay_title: newOverlayTitle || null,
+          overlay_subtitle: newOverlaySubtitle || null,
           start_date: newStartDate || null,
           end_date: newEndDate || null,
         }),
@@ -166,7 +169,8 @@ export default function BannersPage() {
     setAiPrompt('');
     setGeneratedImageUrl('');
     setGenerateError('');
-    setNewOverlayText('');
+    setNewOverlayTitle('');
+    setNewOverlaySubtitle('');
   }
 
   async function handleGenerateImage() {
@@ -200,7 +204,8 @@ export default function BannersPage() {
     setEditModalContent(b.modal_content || '');
     setEditStartDate(b.start_date ? b.start_date.slice(0, 10) : '');
     setEditEndDate(b.end_date ? b.end_date.slice(0, 10) : '');
-    setEditOverlayText((b as Banner & { overlay_text?: string }).overlay_text || '');
+    setEditOverlayTitle((b as Banner & { overlay_title?: string }).overlay_title || '');
+    setEditOverlaySubtitle((b as Banner & { overlay_subtitle?: string }).overlay_subtitle || '');
   }
 
   async function handleUpdate() {
@@ -216,7 +221,8 @@ export default function BannersPage() {
           click_url: (editAction === 'internal_link' || editAction === 'external_link') ? editUrl : null,
           modal_title: editAction === 'modal' ? editModalTitle : null,
           modal_content: editAction === 'modal' ? editModalContent : null,
-          overlay_text: editOverlayText || null,
+          overlay_title: editOverlayTitle || null,
+          overlay_subtitle: editOverlaySubtitle || null,
           start_date: editStartDate || null,
           end_date: editEndDate || null,
         }),
@@ -607,17 +613,27 @@ export default function BannersPage() {
                 />
               </div>
 
-              {/* Overlay text */}
+              {/* Overlay title + subtitle */}
               <div>
-                <label className="block text-xs font-medium text-[#374151] mb-1.5">覆盖文字（可选）</label>
+                <label className="block text-xs font-medium text-[#374151] mb-1.5">覆盖标题（选填）</label>
                 <input
                   type="text"
-                  value={newOverlayText}
-                  onChange={e => setNewOverlayText(e.target.value)}
-                  placeholder="如需在图片上显示文字，在此输入（前端 HTML 渲染，确保文字正确）"
+                  value={newOverlayTitle}
+                  onChange={e => setNewOverlayTitle(e.target.value)}
+                  placeholder="显示在图片上方的文字，如：在澳大利亚找到你的博士导师"
                   className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
                 />
-                <p className="text-[10px] text-[#9CA3AF] mt-1">文字会以白色大字覆盖在图片上方，避免 AI 生成错误文字</p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#374151] mb-1.5">覆盖副标题（选填）</label>
+                <input
+                  type="text"
+                  value={newOverlaySubtitle}
+                  onChange={e => setNewOverlaySubtitle(e.target.value)}
+                  placeholder="副标题，如：QUT 全奖项目 · $40,000 奖学金"
+                  className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
+                />
+                <p className="text-[10px] text-[#9CA3AF] mt-1">标题/副标题以白色大字覆盖在图片上方（前端 HTML 渲染，文字永远正确）</p>
               </div>
 
               {/* Click action */}
@@ -753,17 +769,27 @@ export default function BannersPage() {
                 />
               </div>
 
-              {/* Overlay text */}
+              {/* Overlay title + subtitle */}
               <div>
-                <label className="block text-xs font-medium text-[#374151] mb-1.5">覆盖文字（可选）</label>
+                <label className="block text-xs font-medium text-[#374151] mb-1.5">覆盖标题（选填）</label>
                 <input
                   type="text"
-                  value={editOverlayText}
-                  onChange={e => setEditOverlayText(e.target.value)}
-                  placeholder="如需在图片上显示文字，在此输入"
+                  value={editOverlayTitle}
+                  onChange={e => setEditOverlayTitle(e.target.value)}
+                  placeholder="显示在图片上方的文字"
                   className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
                 />
-                <p className="text-[10px] text-[#9CA3AF] mt-1">文字会以白色大字覆盖在图片上方</p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#374151] mb-1.5">覆盖副标题（选填）</label>
+                <input
+                  type="text"
+                  value={editOverlaySubtitle}
+                  onChange={e => setEditOverlaySubtitle(e.target.value)}
+                  placeholder="副标题文字"
+                  className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
+                />
+                <p className="text-[10px] text-[#9CA3AF] mt-1">标题/副标题以白色大字覆盖在图片上方</p>
               </div>
 
               {/* Click action */}
