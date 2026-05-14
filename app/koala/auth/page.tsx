@@ -237,7 +237,7 @@ function AuthPageInner() {
             </p>
           </div>
 
-          <form onSubmit={handleVerify} className="rounded-2xl p-6 bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_4px_24px_rgba(125,99,64,0.08)]">
+          <form onSubmit={handleVerify} className="rounded-2xl p-6 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_4px_24px_rgba(125,99,64,0.08)]">
             <label className="block text-sm font-medium mb-2 text-gray-500 dark:text-[#a8b8ac]">6位验证码</label>
             <input
               type="text"
@@ -245,7 +245,7 @@ function AuthPageInner() {
               maxLength={6}
               value={code}
               onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
-              className="w-full text-center text-2xl font-bold tracking-[8px] rounded-xl px-4 py-3 focus:outline-none bg-white dark:bg-[#D4A843]/[0.06] border-2 border-gray-200 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
+              className="w-full text-center text-2xl font-bold tracking-[8px] rounded-xl px-4 py-3 focus:outline-none bg-white dark:bg-[#D4A843]/10 border-2 border-gray-200 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
               placeholder="000000"
               autoFocus
             />
@@ -299,7 +299,7 @@ function AuthPageInner() {
         )}
 
         {/* Mode tabs */}
-        <div className="flex mb-6 rounded-full p-1 bg-gray-100 dark:bg-[#D4A843]/[0.06]">
+        <div className="flex mb-6 rounded-full p-1 bg-gray-100 dark:bg-[#D4A843]/10">
           <button
             onClick={() => { setMode('register'); setError(''); }}
             className={`flex-1 py-2 rounded-full text-sm font-medium transition ${
@@ -325,7 +325,7 @@ function AuthPageInner() {
         {/* Form */}
         <form
           onSubmit={mode === 'register' ? handleRegister : handleLogin}
-          className="rounded-2xl p-6 bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_4px_24px_rgba(125,99,64,0.08)]"
+          className="rounded-2xl p-6 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_4px_24px_rgba(125,99,64,0.08)]"
         >
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1.5 text-gray-500 dark:text-[#a8b8ac]">邮箱</label>
@@ -334,7 +334,7 @@ function AuthPageInner() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none bg-white dark:bg-[#D4A843]/[0.06] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
+              className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none bg-white dark:bg-[#D4A843]/10 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
               placeholder="your@email.com"
             />
           </div>
@@ -347,7 +347,7 @@ function AuthPageInner() {
               onChange={e => setPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none bg-white dark:bg-[#D4A843]/[0.06] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
+              className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none bg-white dark:bg-[#D4A843]/10 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
               placeholder={mode === 'register' ? '至少8位' : '••••••••'}
             />
           </div>
@@ -360,7 +360,7 @@ function AuthPageInner() {
                 value={referralInput}
                 onChange={e => setReferralInput(e.target.value.toUpperCase())}
                 maxLength={8}
-                className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none tracking-wider bg-gray-50 dark:bg-[#111c28] border border-gray-300 dark:border-[#D4A843]/20 text-gray-900 dark:text-[#e8e4dc] font-mono"
+                className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none tracking-wider bg-gray-50 dark:bg-[#0F1419] border border-gray-300 dark:border-[#D4A843]/20 text-gray-900 dark:text-[#e8e4dc] font-mono"
                 placeholder="例：VPB89N"
               />
               {referralInput && (

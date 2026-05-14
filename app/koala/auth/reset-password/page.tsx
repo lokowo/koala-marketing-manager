@@ -57,7 +57,7 @@ export default function ResetPasswordPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl p-6 bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_4px_24px_rgba(125,99,64,0.08)]"
+          className="rounded-2xl p-6 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_4px_24px_rgba(125,99,64,0.08)]"
         >
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1.5 text-gray-500 dark:text-[#a8b8ac]">新密码</label>
@@ -67,7 +67,7 @@ export default function ResetPasswordPage() {
               onChange={e => setNewPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none bg-gray-50 dark:bg-[#111c28] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
+              className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none bg-gray-50 dark:bg-[#0F1419] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
               placeholder="至少8位，包含字母和数字"
             />
           </div>
@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
               onChange={e => setConfirmPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none bg-gray-50 dark:bg-[#111c28] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
+              className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none bg-gray-50 dark:bg-[#0F1419] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
               placeholder="再次输入新密码"
             />
           </div>

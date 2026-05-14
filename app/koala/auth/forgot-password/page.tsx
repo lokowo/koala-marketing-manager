@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
 
         <form
           onSubmit={step === 'email' ? handleSendCode : handleReset}
-          className="rounded-2xl p-6 bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_4px_24px_rgba(125,99,64,0.08)]"
+          className="rounded-2xl p-6 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_4px_24px_rgba(125,99,64,0.08)]"
         >
           {step === 'email' && (
             <div className="mb-4">
@@ -86,7 +86,7 @@ export default function ForgotPasswordPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none bg-white dark:bg-[#D4A843]/[0.06] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
+                className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none bg-white dark:bg-[#D4A843]/10 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
                 placeholder="your@email.com"
               />
             </div>
@@ -102,7 +102,7 @@ export default function ForgotPasswordPage() {
                   maxLength={6}
                   value={code}
                   onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
-                  className="w-full text-center text-xl font-bold tracking-[6px] rounded-xl px-4 py-2.5 focus:outline-none bg-white dark:bg-[#D4A843]/[0.06] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
+                  className="w-full text-center text-xl font-bold tracking-[6px] rounded-xl px-4 py-2.5 focus:outline-none bg-white dark:bg-[#D4A843]/10 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
                   placeholder="000000"
                 />
               </div>
@@ -113,7 +113,7 @@ export default function ForgotPasswordPage() {
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
                   minLength={8}
-                  className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none bg-white dark:bg-[#D4A843]/[0.06] border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
+                  className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none bg-white dark:bg-[#D4A843]/10 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
                   placeholder="至少8位"
                 />
               </div>

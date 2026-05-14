@@ -30,7 +30,7 @@ export function DontKnowResponse({
     : 'https://www.semanticscholar.org';
 
   return (
-    <div className="rounded-2xl p-3 mt-2 space-y-3 bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/10">
+    <div className="rounded-2xl p-3 mt-2 space-y-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10">
       <div className="flex items-start gap-2">
         <span className="text-base flex-shrink-0">⚠️</span>
         <div>

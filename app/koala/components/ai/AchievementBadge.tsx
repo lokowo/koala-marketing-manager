@@ -68,7 +68,7 @@ export function AchievementBadge({ achievementKey, unlockedAt, mode = 'toast', o
   }
 
   return (
-    <div className="flex flex-col items-center p-4 rounded-2xl text-center bg-gray-50 dark:bg-white/[0.04] border border-amber-200/50 dark:border-[#D4A843]/10">
+    <div className="flex flex-col items-center p-4 rounded-2xl text-center bg-gray-50 dark:bg-white/5 border border-amber-200/50 dark:border-[#D4A843]/10">
       <div className="text-4xl mb-2">{icon}</div>
       <div className="text-xs font-bold text-gray-900 dark:text-[#e8e4dc]">{label}</div>
       {unlockedAt && (

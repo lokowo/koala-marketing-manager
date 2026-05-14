@@ -40,7 +40,7 @@ export function MiniStats({
       {items.map(item => (
         <div
           key={item.label}
-          className="flex flex-col items-center rounded-xl py-2 bg-amber-50 dark:bg-[#D4A843]/[0.06]"
+          className="flex flex-col items-center rounded-xl py-2 bg-amber-50 dark:bg-[#D4A843]/10"
         >
           <span className="text-base">{item.icon}</span>
           <span className={`text-sm font-bold ${item.colorClass}`}>{item.value}</span>

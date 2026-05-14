@@ -68,7 +68,7 @@ export function PaperCitationCard({ paper, compact = false, index }: PaperCitati
         href={primaryLink ?? '#'}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-start gap-2 rounded-xl p-2.5 no-underline mt-1.5 block bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/10"
+        className="flex items-start gap-2 rounded-xl p-2.5 no-underline mt-1.5 block bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10"
       >
         <span className="text-sm flex-shrink-0 mt-0.5">📄</span>
         <div className="min-w-0">
@@ -84,7 +84,7 @@ export function PaperCitationCard({ paper, compact = false, index }: PaperCitati
   }
 
   return (
-    <div className="rounded-xl overflow-hidden mt-2 bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/10">
+    <div className="rounded-xl overflow-hidden mt-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10">
       <div className="p-3">
         <div className="flex items-start gap-2">
           <span className="text-base flex-shrink-0 mt-0.5">

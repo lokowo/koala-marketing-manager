@@ -97,7 +97,7 @@ export default function BlogPage() {
 
         {/* Search */}
         <div className="px-5 pb-3">
-          <div className="flex items-center gap-2 rounded-xl px-3 py-2 bg-white dark:bg-[#D4A843]/[0.06] border border-gray-200 dark:border-[#D4A843]/10">
+          <div className="flex items-center gap-2 rounded-xl px-3 py-2 bg-white dark:bg-[#D4A843]/10 border border-gray-200 dark:border-[#D4A843]/10">
             <Search className="size-4 flex-shrink-0 text-gray-400 dark:text-[#6a7a7e]" />
             <input
               type="text"
@@ -130,7 +130,7 @@ export default function BlogPage() {
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                         active
                           ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'
-                          : 'bg-gray-100 dark:bg-[#D4A843]/[0.06] text-gray-500 dark:text-[#a8b8ac]'
+                          : 'bg-gray-100 dark:bg-[#D4A843]/10 text-gray-500 dark:text-[#a8b8ac]'
                       }`}
                     >
                       {cat.label}
@@ -168,7 +168,7 @@ export default function BlogPage() {
         {loading && (
           <div className="px-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="rounded-xl animate-pulse overflow-hidden bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[#D4A843]/[0.08]">
+              <div key={i} className="rounded-xl animate-pulse overflow-hidden bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[#D4A843]/[0.08]">
                 <div className="w-full h-[160px] bg-gray-100 dark:bg-[#D4A843]/[0.08]" />
                 <div className="p-3.5 space-y-2">
                   <div className="h-4 rounded w-3/4 bg-gray-100 dark:bg-[#D4A843]/[0.08]" />
@@ -207,7 +207,7 @@ export default function BlogPage() {
                 <div className="p-3.5">
                   {/* Category + source */}
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-[#D4A843]/[0.06] text-amber-700 dark:text-[#D4A843]">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]">
                       {CATEGORY_LABELS[post.category] || post.category}
                     </span>
                     {post.is_pinned && (

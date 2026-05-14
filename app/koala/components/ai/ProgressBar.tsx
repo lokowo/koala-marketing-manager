@@ -25,7 +25,7 @@ export function ProgressBar({ score, label = 'Research Readiness', showDimension
   }
 
   return (
-    <div className="rounded-2xl p-3 bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/10">
+    <div className="rounded-2xl p-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">📊 {label}</span>
         <span className={`text-xl font-bold ${colorClass}`}>
@@ -33,7 +33,7 @@ export function ProgressBar({ score, label = 'Research Readiness', showDimension
           <span className="text-xs font-normal text-gray-500 dark:text-[#b09878]">/100</span>
         </span>
       </div>
-      <div className="h-2 rounded-full overflow-hidden mb-2 bg-amber-50 dark:bg-[#D4A843]/[0.06]">
+      <div className="h-2 rounded-full overflow-hidden mb-2 bg-amber-50 dark:bg-[#D4A843]/10">
         <div className={`h-full rounded-full transition-all duration-700 ${bgColorClass}`} style={{ width: `${score}%` }} />
       </div>
       {showDimensions && dimensions.length > 0 && (
@@ -44,7 +44,7 @@ export function ProgressBar({ score, label = 'Research Readiness', showDimension
                 <span className="text-gray-700 dark:text-[#a8b8ac]">{d.name}</span>
                 <span className="text-amber-600 dark:text-[#D4A843]">{d.score}</span>
               </div>
-              <div className="h-1 rounded-full overflow-hidden bg-amber-50 dark:bg-[#D4A843]/[0.06]">
+              <div className="h-1 rounded-full overflow-hidden bg-amber-50 dark:bg-[#D4A843]/10">
                 <div className="h-full rounded-full bg-[#1A1A2E] dark:bg-[#D4A843]" style={{ width: `${d.score}%` }} />
               </div>
             </div>

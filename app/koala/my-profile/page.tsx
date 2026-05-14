@@ -289,7 +289,7 @@ interface CreditTransaction {
 }
 
 // Shared input class for form fields
-const INPUT_CLS = 'w-full px-2.5 py-1.5 rounded-lg text-xs outline-none bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-[#D4A843]/[0.08] text-gray-900 dark:text-[#e8e4dc]';
+const INPUT_CLS = 'w-full px-2.5 py-1.5 rounded-lg text-xs outline-none bg-white dark:bg-white/5 border border-gray-200 dark:border-[#D4A843]/[0.08] text-gray-900 dark:text-[#e8e4dc]';
 const SELECT_CLS = INPUT_CLS;
 
 // ─────────────────────────────────────────────
@@ -722,7 +722,7 @@ export default function MyProfilePage() {
   ];
 
   // Shared card + divider classes
-  const CARD_CLS = 'bg-white dark:bg-[#D4A843]/[0.06] border border-gray-200 dark:border-[#D4A843]/[0.08] shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]';
+  const CARD_CLS = 'bg-white dark:bg-white/5 border border-gray-200 dark:border-[#D4A843]/10 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]';
   const DIVIDER_CLS = 'border-gray-200 dark:border-[#D4A843]/[0.08]';
 
   // ── Education form inline component ───────
@@ -1075,7 +1075,7 @@ export default function MyProfilePage() {
               disabled={referralStats.invited >= 3}
               className={`flex-1 text-[11px] py-2 rounded-lg font-medium ${
                 referralStats.invited >= 3
-                  ? 'bg-gray-100 dark:bg-[#D4A843]/[0.06] text-gray-300 dark:text-[#4a5a5e]'
+                  ? 'bg-gray-100 dark:bg-[#D4A843]/10 text-gray-300 dark:text-[#4a5a5e]'
                   : 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'
               }`}
             >
@@ -1823,7 +1823,7 @@ export default function MyProfilePage() {
       {/* Role Application Modal */}
       {showRoleApply && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setShowRoleApply(false)}>
-          <div className="w-full max-w-sm rounded-2xl p-6 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[#D4A843]/15" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-2xl p-6 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[#D4A843]/15" onClick={e => e.stopPropagation()}>
             <h3 className="text-sm font-bold mb-4 text-gray-900 dark:text-[#e8e4dc]">申请角色</h3>
                 <div className="flex gap-2 mb-3">
                   {(['admin', 'sales'] as const).map(r => {
@@ -1834,7 +1834,7 @@ export default function MyProfilePage() {
                         <button
                           key={r}
                           disabled
-                          className="flex-1 py-2 rounded-lg text-xs font-medium opacity-60 cursor-not-allowed bg-gray-50 dark:bg-white/[0.04] text-gray-400 dark:text-[#6a7a7e] border border-gray-200 dark:border-white/[0.06]"
+                          className="flex-1 py-2 rounded-lg text-xs font-medium opacity-60 cursor-not-allowed bg-gray-50 dark:bg-white/5 text-gray-400 dark:text-[#6a7a7e] border border-gray-200 dark:border-white/[0.06]"
                         >
                           ✅ 当前角色：{label}
                         </button>

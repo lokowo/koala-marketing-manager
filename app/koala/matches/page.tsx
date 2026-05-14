@@ -357,7 +357,7 @@ export default function MatchesPage() {
             ) : loadingSaved ? (
               <div className="space-y-3">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="rounded-2xl h-36 animate-pulse bg-gray-100 dark:bg-[#111c28]" />
+                  <div key={i} className="rounded-2xl h-36 animate-pulse bg-gray-100 dark:bg-[#0F1419]" />
                 ))}
               </div>
             ) : saved.length === 0 ? (
@@ -384,7 +384,7 @@ export default function MatchesPage() {
             ) : loadingEmails ? (
               <div className="space-y-3">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="rounded-2xl h-24 animate-pulse bg-gray-100 dark:bg-[#111c28]" />
+                  <div key={i} className="rounded-2xl h-24 animate-pulse bg-gray-100 dark:bg-[#0F1419]" />
                 ))}
               </div>
             ) : emails.length === 0 ? (

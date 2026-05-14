@@ -95,7 +95,7 @@ export default function ProfessorDetailClient({ professor, papers }: { professor
       <div>{/* left col */}
 
       {/* Profile Card */}
-      <div className="mx-4 lg:mx-0 mt-3 rounded-3xl p-5 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+      <div className="mx-4 lg:mx-0 mt-3 rounded-3xl p-5 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
         <div className="flex items-start gap-4">
           <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl flex-shrink-0 bg-amber-50 dark:bg-[rgba(212,168,67,0.1)]">
             👨‍🔬
@@ -126,7 +126,7 @@ export default function ProfessorDetailClient({ professor, papers }: { professor
       </div>
 
       {/* Opportunity Signal */}
-      <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+      <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">Opportunity Signal</span>
           <span className="text-xs font-bold" style={{ color: opportunityColor }}>
@@ -144,7 +144,7 @@ export default function ProfessorDetailClient({ professor, papers }: { professor
 
       {/* Research Areas */}
       {professor.researchAreas.length > 0 && (
-        <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+        <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
           <h2 className="text-xs font-semibold mb-2 text-gray-900 dark:text-[#e8e4dc]">研究方向</h2>
           <div className="flex flex-wrap gap-1.5">
             {professor.researchAreas.map(area => (
@@ -161,7 +161,7 @@ export default function ProfessorDetailClient({ professor, papers }: { professor
 
       {/* Suitable Backgrounds */}
       {professor.suitableStudentBackgrounds.length > 0 && (
-        <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+        <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
           <h2 className="text-xs font-semibold mb-2 text-gray-900 dark:text-[#e8e4dc]">适合的学生背景</h2>
           <div className="space-y-1">
             {professor.suitableStudentBackgrounds.map(bg => (
@@ -176,7 +176,7 @@ export default function ProfessorDetailClient({ professor, papers }: { professor
 
       {/* Stats */}
       {(professor.hIndex || professor.paperCount || professor.citationCount) && (
-        <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+        <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
           <h2 className="text-xs font-semibold mb-2 text-gray-900 dark:text-[#e8e4dc]">学术数据</h2>
           <div className="grid grid-cols-3 gap-2 text-center">
             {professor.hIndex !== undefined && (
@@ -206,7 +206,7 @@ export default function ProfessorDetailClient({ professor, papers }: { professor
 
       {/* Links */}
       {(professor.email || professor.profileUrl || professor.googleScholarUrl) && (
-        <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+        <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
           <h2 className="text-xs font-semibold mb-2 text-gray-900 dark:text-[#e8e4dc]">联系方式</h2>
           <div className="space-y-2">
             {professor.email && (
@@ -230,7 +230,7 @@ export default function ProfessorDetailClient({ professor, papers }: { professor
 
       {/* Papers */}
       {papers.length > 0 && (
-        <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+        <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
           <h2 className="text-xs font-semibold mb-3 text-gray-900 dark:text-[#e8e4dc]">
             代表论文 <span className="font-normal text-gray-500 dark:text-[#6a7a7e]">via Semantic Scholar</span>
           </h2>
@@ -258,7 +258,7 @@ export default function ProfessorDetailClient({ professor, papers }: { professor
       )}
 
       {/* Data disclaimer */}
-      <div className="mx-4 lg:mx-0 mt-4 mb-2 px-3 py-3 rounded-xl text-[11px] leading-relaxed bg-gray-50 dark:bg-[#111c28] text-gray-500 dark:text-[#6a7a7e] border border-gray-200 dark:border-[rgba(212,168,67,0.12)]">
+      <div className="mx-4 lg:mx-0 mt-4 mb-2 px-3 py-3 rounded-xl text-[11px] leading-relaxed bg-gray-50 dark:bg-[#0F1419] text-gray-500 dark:text-[#6a7a7e] border border-gray-200 dark:border-[rgba(212,168,67,0.12)]">
         ⚠️ 数据说明：本页信息来源于大学官网、Google Scholar 及公开数据库，仅供参考。教授的招生状态、经费情况和研究方向可能随时变化，具体信息请以导师本人确认为准。Koala PhD 不对信息的准确性和时效性承担责任。
       </div>
 

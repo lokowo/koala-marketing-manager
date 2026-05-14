@@ -183,7 +183,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
   // ── Step: Confirm ──
   if (step === 'confirm') {
     return (
-      <div className="rounded-2xl overflow-hidden bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/10">
+      <div className="rounded-2xl overflow-hidden bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10">
         <div className="p-4 bg-gray-200 dark:bg-[#e8e4dc]">
           <div className="text-sm font-bold text-gray-900 dark:text-white">📨 批量生成申请信</div>
           <div className="text-[11px] text-gray-700/60 dark:text-white/60 mt-0.5">每封消耗 1 积分，生成后可单独修改和下载</div>
@@ -231,7 +231,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
             {onClose && (
               <button
                 onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-amber-50 dark:bg-[#D4A843]/[0.06] text-gray-500 dark:text-[#6a7a7e] border border-gray-300 dark:border-[#d8c8a8]"
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-amber-50 dark:bg-[#D4A843]/10 text-gray-500 dark:text-[#6a7a7e] border border-gray-300 dark:border-[#d8c8a8]"
               >
                 取消
               </button>
@@ -254,13 +254,13 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
   if (step === 'generating') {
     const pct = Math.round(progress * 100);
     return (
-      <div className="rounded-2xl overflow-hidden bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/10">
+      <div className="rounded-2xl overflow-hidden bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10">
         <div className="p-4 bg-gray-200 dark:bg-[#e8e4dc]">
           <div className="text-sm font-bold text-gray-900 dark:text-white">🔄 正在生成申请信…</div>
           <div className="text-[11px] text-gray-700/60 dark:text-white/60 mt-0.5">{progressMsg}</div>
         </div>
         <div className="p-4 space-y-3">
-          <div className="h-2 rounded-full overflow-hidden bg-amber-50 dark:bg-[#D4A843]/[0.06]">
+          <div className="h-2 rounded-full overflow-hidden bg-amber-50 dark:bg-[#D4A843]/10">
             <div
               className="h-full rounded-full transition-all duration-500 bg-[#1A1A2E] dark:bg-[#D4A843]"
               style={{ width: `${pct}%` }}
@@ -282,7 +282,7 @@ export function BatchEmailFlow({ professors, studentProfile, userId, onClose }: 
 
           <button
             onClick={stopGeneration}
-            className="w-full py-2.5 rounded-xl text-sm font-medium bg-amber-50 dark:bg-[#D4A843]/[0.06] text-[#b06040] border border-gray-200 dark:border-[#e8d8c8]"
+            className="w-full py-2.5 rounded-xl text-sm font-medium bg-amber-50 dark:bg-[#D4A843]/10 text-[#b06040] border border-gray-200 dark:border-[#e8d8c8]"
           >
             停止生成
           </button>

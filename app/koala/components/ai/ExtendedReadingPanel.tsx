@@ -27,7 +27,7 @@ export function ExtendedReadingPanel({
   return (
     <div className="rounded-xl overflow-hidden mt-2 border border-gray-200 dark:border-white/10">
       <button
-        className="w-full flex items-center justify-between px-3 py-2.5 bg-amber-50 dark:bg-[#D4A843]/[0.06]"
+        className="w-full flex items-center justify-between px-3 py-2.5 bg-amber-50 dark:bg-[#D4A843]/10"
         onClick={() => setExpanded(e => !e)}
       >
         <div className="flex items-center gap-2">
@@ -65,7 +65,7 @@ export function ExtendedReadingPanel({
           {papers.length > 3 && (
             <button
               onClick={() => setShowAll(s => !s)}
-              className="w-full mt-2 py-2 rounded-xl text-[11px] font-medium bg-amber-50 dark:bg-[#D4A843]/[0.06] text-amber-600 dark:text-[#D4A843] border border-amber-200/50 dark:border-[#D4A843]/10"
+              className="w-full mt-2 py-2 rounded-xl text-[11px] font-medium bg-amber-50 dark:bg-[#D4A843]/10 text-amber-600 dark:text-[#D4A843] border border-amber-200/50 dark:border-[#D4A843]/10"
             >
               {showAll ? '收起 ▲' : `查看全部 ${papers.length} 篇 ▼`}
             </button>

@@ -24,7 +24,7 @@ export function ReportPreview({ studentName, overallScore, matches, onExportPDF 
   const [expandedIdx, setExpandedIdx] = useState<number | null>(0);
 
   return (
-    <div className="rounded-2xl overflow-hidden bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/10">
+    <div className="rounded-2xl overflow-hidden bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10">
       <div className="p-3 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-[#e8e4dc] dark:to-[#2a3442]">
         <div className="flex items-center justify-between">
           <div>
@@ -71,7 +71,7 @@ export function ReportPreview({ studentName, overallScore, matches, onExportPDF 
                     <div className="text-[10px] font-semibold mb-1 text-amber-600 dark:text-[#D4A843]">🔬 在研项目</div>
                     {m.grants.map((g, j) => (
                       <div key={j} className="text-[10px] leading-snug text-gray-700 dark:text-[#a8b8ac]">
-                        {g.id && <span className="text-[9px] px-1 rounded bg-amber-50 dark:bg-[#D4A843]/[0.06] text-gray-500 dark:text-[#6a7a7e]">{g.id}</span>} {g.title} {g.amount && <span className="text-amber-600 dark:text-[#D4A843]">({g.amount})</span>}
+                        {g.id && <span className="text-[9px] px-1 rounded bg-amber-50 dark:bg-[#D4A843]/10 text-gray-500 dark:text-[#6a7a7e]">{g.id}</span>} {g.title} {g.amount && <span className="text-amber-600 dark:text-[#D4A843]">({g.amount})</span>}
                       </div>
                     ))}
                   </div>

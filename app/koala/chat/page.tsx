@@ -143,7 +143,7 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
   const color = score >= 75 ? '#5a8060' : score >= 50 ? '#D4A843' : '#b06040';
   const hasStats = match.hIndex != null || match.paperCount != null || match.citationCount != null;
   return (
-    <div className="rounded-xl p-3 mt-2 bg-gray-50 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
+    <div className="rounded-xl p-3 mt-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
       <Link href={`/koala/professors/${match.professorId}`} style={{ textDecoration: 'none' }}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -197,7 +197,7 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
 
 function ScoreCardBlock({ card }: { card: ScoreCard }) {
   return (
-    <div className="rounded-xl p-3 mt-2 bg-gray-50 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
+    <div className="rounded-xl p-3 mt-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">📊 申请潜力初评</span>
         <span className="text-lg font-bold text-amber-600 dark:text-[#D4A843]">{card.totalScore}<span className="text-xs font-normal text-gray-400 dark:text-[#6a6058]">/100</span></span>
@@ -283,7 +283,7 @@ function FileUploadSheet({ onClose, onFile }: { onClose: () => void; onFile: (f:
         <div className="text-sm font-semibold mb-4 text-gray-900 dark:text-[#e8e4dc]">上传文件</div>
         <div className="space-y-2">
           {options.map(opt => (
-            <button key={opt.type} onClick={() => handleSelect(opt.type)} className="w-full flex items-center gap-3 rounded-2xl p-4 text-left bg-gray-50 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10">
+            <button key={opt.type} onClick={() => handleSelect(opt.type)} className="w-full flex items-center gap-3 rounded-2xl p-4 text-left bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
               <span className="text-xl">{opt.icon}</span>
               <div>
                 <span className="text-sm font-medium text-gray-900 dark:text-[#e8e4dc]">{opt.label}</span>
@@ -298,12 +298,12 @@ function FileUploadSheet({ onClose, onFile }: { onClose: () => void; onFile: (f:
           </p>
         )}
         {error && (
-          <div className="mt-3 rounded-xl px-3 py-2 text-xs" style={{ background: 'rgba(176,96,64,0.15)', color: '#e08060', border: '1px solid rgba(176,96,64,0.3)' }}>
+          <div className="mt-3 rounded-xl px-3 py-2 text-xs bg-red-50 dark:bg-red-900/15 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/30">
             {error}
           </div>
         )}
         <input ref={inputRef} type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" className="hidden" onChange={handleFileChange} />
-        <button className="w-full mt-4 py-3 rounded-2xl text-sm font-medium bg-gray-100 dark:bg-white/[0.06] text-gray-500 dark:text-[#8a8078]" onClick={onClose}>取消</button>
+        <button className="w-full mt-4 py-3 rounded-2xl text-sm font-medium bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-[#8a8078]" onClick={onClose}>取消</button>
       </div>
     </div>
   );
@@ -320,12 +320,12 @@ function CreditConfirmDialog({ remaining, onConfirm, onCancel }: { remaining: nu
         <p className="text-xs leading-relaxed mb-1 text-gray-500 dark:text-[#a09888]">本次生成将消耗 <strong>1 积分</strong>，剩余 {remaining} 积分。</p>
         <p className="text-[11px] text-gray-400 dark:text-[#8a8078]">月度额度优先扣除；单独购买的积分永久有效。</p>
         {remaining <= 0 && (
-          <div className="mt-3 rounded-xl p-3 text-xs" style={{ background: 'rgba(176,96,64,0.15)', border: '1px solid rgba(176,96,64,0.3)', color: '#e08060' }}>
+          <div className="mt-3 rounded-xl p-3 text-xs bg-red-50 dark:bg-red-900/15 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/30">
             积分不足！可前往「工具 → 定价」购买积分包，或升级订阅。
           </div>
         )}
         <div className="flex gap-2 mt-4">
-          <button className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-gray-100 dark:bg-white/[0.06] text-gray-500 dark:text-[#8a8078] border border-gray-200 dark:border-white/10" onClick={onCancel}>取消</button>
+          <button className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-[#8a8078] border border-gray-200 dark:border-white/10" onClick={onCancel}>取消</button>
           {remaining > 0 ? (
             <button className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]" onClick={onConfirm}>确认生成（−1 积分）</button>
           ) : (
@@ -344,7 +344,7 @@ function ConsultationBanner() {
       <p className="text-[11px] leading-relaxed text-gray-500 dark:text-[#a09888]">AI 评估有局限，真人顾问能帮你做更精准的项目匹配。</p>
       <div className="flex gap-2 mt-2">
         <a href="mailto:info@koalaphd.com" className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">📧 联系顾问</a>
-        <a href={`weixin://dl/chat?username=${BRAND.wechat}`} className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline bg-gray-100 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 text-amber-700 dark:text-[#D4A843]">💬 微信咨询</a>
+        <a href={`weixin://dl/chat?username=${BRAND.wechat}`} className="flex-1 py-1.5 rounded-lg text-[11px] font-medium text-center no-underline bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-amber-700 dark:text-[#D4A843]">💬 微信咨询</a>
       </div>
     </div>
   );
@@ -403,15 +403,14 @@ function SettingsPanel({
         <div className="space-y-2">
           <button
             onClick={() => { onClear(); onClose(); }}
-            className="w-full py-2.5 rounded-xl text-sm font-medium"
-            style={{ background: 'rgba(176,96,64,0.1)', color: '#e08060', border: '1px solid rgba(176,96,64,0.3)' }}
+            className="w-full py-2.5 rounded-xl text-sm font-medium bg-red-50 dark:bg-red-900/15 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/30"
           >
             🗑️ 清除对话记录
           </button>
           <Link
             href="/login"
             onClick={onClose}
-            className="block w-full py-2.5 rounded-xl text-sm font-medium text-center no-underline bg-gray-100 dark:bg-white/[0.06] text-gray-500 dark:text-[#8a8078] border border-gray-200 dark:border-white/10"
+            className="block w-full py-2.5 rounded-xl text-sm font-medium text-center no-underline bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-[#8a8078] border border-gray-200 dark:border-white/10"
           >
             退出登录
           </Link>
@@ -917,7 +916,7 @@ function ChatPageInner() {
               )}
               <div className="flex flex-col max-w-[80%]">
                 <div
-                  className={`px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]' : 'bg-gray-100 dark:bg-white/[0.06] text-gray-700 dark:text-[#e8e4dc]'}`}
+                  className={`px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]' : 'bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-[#e8e4dc]'}`}
                   style={msg.role === 'user'
                     ? { borderRadius: '1rem 0.25rem 1rem 1rem', boxShadow: '0 2px 8px rgba(212,168,67,0.20)' }
                     : { borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }
@@ -982,7 +981,7 @@ function ChatPageInner() {
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {msg.quickReplies.map(qr => (
                       <button key={qr} onClick={() => sendMessage(qr)} disabled={loading}
-                        className="text-xs px-3 py-1.5 rounded-full border bg-gray-100 dark:bg-white/[0.06] border-gray-200 dark:border-white/[0.12] text-gray-500 dark:text-[#a09888]"
+                        className="text-xs px-3 py-1.5 rounded-full border bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/[0.12] text-gray-500 dark:text-[#a09888]"
                       >
                         {qr}
                       </button>
@@ -1008,7 +1007,7 @@ function ChatPageInner() {
           <div className="flex flex-wrap gap-1.5 mt-1 ml-9">
             {currentMode.initialReplies.map(qr => (
               <button key={qr} onClick={() => sendMessage(qr)}
-                className="text-xs px-3 py-1.5 rounded-full border bg-gray-100 dark:bg-white/[0.06] border-gray-200 dark:border-white/[0.12] text-gray-500 dark:text-[#a09888]"
+                className="text-xs px-3 py-1.5 rounded-full border bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/[0.12] text-gray-500 dark:text-[#a09888]"
               >
                 {qr}
               </button>
@@ -1039,7 +1038,7 @@ function ChatPageInner() {
             <div className="mt-1 mr-2 flex-shrink-0">
               <KoalaAvatar size={28} />
             </div>
-            <div className="px-3.5 py-2.5 text-sm bg-gray-100 dark:bg-white/[0.06] text-gray-400 dark:text-[#8a8078]" style={{ borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <div className="px-3.5 py-2.5 text-sm bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-[#8a8078]" style={{ borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
               {mode === 'research' ? (
                 <span className="animate-pulse">🔬 正在检索论文…</span>
               ) : (
@@ -1073,11 +1072,11 @@ function ChatPageInner() {
         <div className="flex p-4 items-center gap-2">
           <button
             onClick={() => setShowUpload(true)}
-            className="size-9 shrink-0 rounded-full flex justify-center items-center bg-gray-100 dark:bg-white/[0.06]"
+            className="size-9 shrink-0 rounded-full flex justify-center items-center bg-gray-100 dark:bg-white/5"
           >
             <Plus className="size-5 text-gray-700 dark:text-[#e8e4dc]" />
           </button>
-          <div className="rounded-full px-4 py-2.5 flex-1 bg-gray-100 dark:bg-white/[0.06]">
+          <div className="rounded-full px-4 py-2.5 flex-1 bg-gray-100 dark:bg-white/5">
             <textarea
               ref={textareaRef}
               rows={1}

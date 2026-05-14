@@ -73,7 +73,7 @@ export function SendTutorial() {
         ))}
       </div>
 
-      <div className="rounded-xl p-3 bg-amber-50 dark:bg-[#D4A843]/[0.06]">
+      <div className="rounded-xl p-3 bg-amber-50 dark:bg-[#D4A843]/10">
         {TUTORIALS[activeClient].steps.map((step, i) => (
           <div
             key={i}

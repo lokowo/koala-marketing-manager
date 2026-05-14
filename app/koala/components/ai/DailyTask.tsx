@@ -19,7 +19,7 @@ export function DailyTask({ tasks, streak = 0, onComplete }: DailyTaskProps) {
   const completedCount = tasks.filter(t => t.completed).length;
 
   return (
-    <div className="rounded-2xl overflow-hidden bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/10">
+    <div className="rounded-2xl overflow-hidden bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10">
       <button
         className="w-full flex items-center justify-between p-3"
         onClick={() => setExpanded(e => !e)}
@@ -54,7 +54,7 @@ export function DailyTask({ tasks, streak = 0, onComplete }: DailyTaskProps) {
                 {task.title}
               </span>
               {task.reward && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-[#D4A843]/[0.06] text-amber-700 dark:text-[#D4A843]">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]">
                   +{task.reward}
                 </span>
               )}

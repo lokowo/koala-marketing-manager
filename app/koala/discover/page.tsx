@@ -188,7 +188,7 @@ export default function DiscoverPage() {
               {(user.email || '?')[0].toUpperCase()}
             </button>
             {showUserMenu && (
-              <div className="absolute right-0 top-11 w-48 rounded-xl py-2 z-50 bg-white dark:bg-[#111c28] shadow-lg dark:shadow-[0_8px_24px_rgba(0,0,0,0.4)] border border-gray-200 dark:border-[#c9a96e]/15">
+              <div className="absolute right-0 top-11 w-48 rounded-xl py-2 z-50 bg-white dark:bg-[#0F1419] shadow-lg dark:shadow-[0_8px_24px_rgba(0,0,0,0.4)] border border-gray-200 dark:border-[#c9a96e]/15">
                 <p className="px-4 py-1.5 text-[11px] truncate text-gray-500 dark:text-[#6a7a7e]">{user.email}</p>
                 <Link
                   href="/koala/my-profile"
@@ -222,7 +222,7 @@ export default function DiscoverPage() {
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden px-4 lg:px-8">
             <div className="flex gap-2 pb-3 overflow-x-auto">
               {['CS', '医学', '工程', '生物', '物理', '化学', '材料', '商科'].map(tag => (
-                <button key={tag} className="px-3 py-1 rounded-full text-xs whitespace-nowrap bg-amber-50 dark:bg-[#c9a96e]/[0.08] text-amber-700 dark:text-[#8a9a8e] border border-amber-200 dark:border-[#c9a96e]/15">{tag}</button>
+                <button key={tag} className="px-3 py-1 rounded-full text-xs whitespace-nowrap bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#8a9a8e] border border-amber-200 dark:border-[#c9a96e]/15">{tag}</button>
               ))}
             </div>
           </motion.div>
@@ -266,7 +266,7 @@ export default function DiscoverPage() {
                   >
                     <div
                       onClick={() => stackPos === 0 && setFlippedId(isFlipped ? null : prof.id)}
-                      className="w-full h-full rounded-2xl overflow-hidden relative cursor-pointer bg-white dark:bg-gradient-to-b dark:from-[#111c28] dark:to-[#0d1520] border border-gray-200 dark:border-[#c9a96e]/12"
+                      className="w-full h-full rounded-2xl overflow-hidden relative cursor-pointer bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[#c9a96e]/12"
                       style={{ boxShadow: stackPos === 0 ? '0 8px 32px rgba(0,0,0,0.15)' : '0 4px 16px rgba(0,0,0,0.08)' }}
                     >
                       {stackPos === 0 && swipeLabel && (
@@ -311,14 +311,14 @@ export default function DiscoverPage() {
                           </div>
                           <div className="grid grid-cols-3 gap-2 mb-3">
                             {[{ l: 'H-index', v: prof.hIndex ?? '?' }, { l: '论文', v: prof.paperCount ?? '?' }, { l: '引用', v: (prof.citationCount ?? 0).toLocaleString() }].map(s => (
-                              <div key={s.l} className="text-center p-2 rounded-lg bg-gray-100 dark:bg-[#c9a96e]/[0.06]">
+                              <div key={s.l} className="text-center p-2 rounded-lg bg-gray-100 dark:bg-[#D4A843]/10">
                                 <div className="text-sm font-semibold text-amber-600 dark:text-[#D4A843]">{s.v}</div>
                                 <div className="text-[9px] text-gray-500 dark:text-[#6a7a7e]">{s.l}</div>
                               </div>
                             ))}
                           </div>
                           <div className="mt-auto flex gap-2">
-                            <button onClick={(e) => { e.stopPropagation(); router.push('/koala/chat?professor=' + prof.id + '&mode=write'); }} className="flex-1 py-2.5 rounded-xl text-xs font-medium" style={{ background: 'linear-gradient(135deg, #c9a96e, #a68540)', color: '#080c10' }}>✉️ 写申请信</button>
+                            <button onClick={(e) => { e.stopPropagation(); router.push('/koala/chat?professor=' + prof.id + '&mode=write'); }} className="flex-1 py-2.5 rounded-xl text-xs font-medium bg-gradient-to-br from-[#c9a96e] to-[#a68540] text-[#080c10]">✉️ 写申请信</button>
                             <button onClick={(e) => { e.stopPropagation(); router.push('/koala/professors/' + prof.id); }} className="flex-1 py-2.5 rounded-xl text-xs font-medium bg-amber-50 dark:bg-[#c9a96e]/10 text-amber-700 dark:text-[#D4A843] border border-amber-200 dark:border-[#c9a96e]/25">👤 完整档案</button>
                           </div>
                         </div>
@@ -333,7 +333,7 @@ export default function DiscoverPage() {
           {/* Desktop detail panel — visible only on lg+ */}
           {currentProf && (
             <div
-              className="hidden lg:flex flex-col rounded-2xl overflow-hidden flex-1 bg-white dark:bg-gradient-to-b dark:from-[#111c28] dark:to-[#0d1520] border border-gray-200 dark:border-[#c9a96e]/12 shadow-sm dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+              className="hidden lg:flex flex-col rounded-2xl overflow-hidden flex-1 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[#c9a96e]/12 shadow-sm dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
               style={{
                 minWidth: 360,
                 maxWidth: 480,
@@ -379,7 +379,7 @@ export default function DiscoverPage() {
                     { l: '引用数', v: (currentProf.citationCount ?? 0).toLocaleString(), icon: Quote },
                     { l: '机会分', v: currentProf.opportunityScore ?? '?', icon: Heart },
                   ].map(s => (
-                    <div key={s.l} className="text-center p-2.5 rounded-xl bg-gray-100 dark:bg-[#c9a96e]/[0.06]">
+                    <div key={s.l} className="text-center p-2.5 rounded-xl bg-gray-100 dark:bg-[#D4A843]/10">
                       <s.icon className="size-3.5 mx-auto mb-1 text-gray-400 dark:text-[#5a6a6e]" />
                       <div className="text-sm font-semibold text-amber-600 dark:text-[#D4A843]">{s.v}</div>
                       <div className="text-[9px] text-gray-500 dark:text-[#6a7a7e]">{s.l}</div>
@@ -388,7 +388,7 @@ export default function DiscoverPage() {
                 </div>
 
                 {/* Divider */}
-                <div className="mb-4 h-px bg-gray-200 dark:bg-[#c9a96e]/[0.08]" />
+                <div className="mb-4 h-px bg-gray-200 dark:bg-[#D4A843]/10" />
 
                 {/* Research areas — all of them on desktop */}
                 <div className="mb-4">
@@ -414,8 +414,7 @@ export default function DiscoverPage() {
                 <div className="mt-auto flex gap-2">
                   <button
                     onClick={() => router.push('/koala/chat?professor=' + currentProf.id + '&mode=write')}
-                    className="flex-1 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5"
-                    style={{ background: 'linear-gradient(135deg, #c9a96e, #a68540)', color: '#080c10' }}
+                    className="flex-1 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 bg-gradient-to-br from-[#c9a96e] to-[#a68540] text-[#080c10]"
                   >
                     <Mail className="size-3.5" /> 写申请信
                   </button>
@@ -434,7 +433,7 @@ export default function DiscoverPage() {
 
       {/* Bottom control bar */}
       <div className="flex items-center justify-center gap-5 py-4">
-        <button onClick={() => swipeBtn('left')} className="size-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95 bg-gray-100 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10">
+        <button onClick={() => swipeBtn('left')} className="size-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
           <X className="size-5 text-gray-400 dark:text-[#6a7a7e]" />
         </button>
         <button

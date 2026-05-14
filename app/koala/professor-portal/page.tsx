@@ -77,7 +77,7 @@ export default function ProfessorPortalPage() {
         {/* Header */}
         <div className="bg-white dark:bg-[#0F1419] rounded-2xl shadow-sm border border-gray-200 dark:border-white/10 p-5 mt-6">
           <div className="flex items-start gap-4">
-            <div className="size-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+            <div className="size-14 rounded-full bg-[#1A1A2E] dark:bg-[#D4A843] flex items-center justify-center text-white dark:text-[#080c10] text-xl font-bold flex-shrink-0">
               {(professor?.name || 'P')[0]}
             </div>
             <div className="flex-1 min-w-0">
@@ -87,13 +87,13 @@ export default function ProfessorPortalPage() {
                 {professor?.faculty ? ` · ${professor.faculty}` : ''}
               </p>
               <div className="flex items-center gap-3 mt-2 flex-wrap">
-                {professor?.h_index && <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">H-index: {professor.h_index}</span>}
+                {professor?.h_index && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]">H-index: {professor.h_index}</span>}
                 {professor?.citation_count && <span className="text-xs text-gray-400 dark:text-[#6a7a7e]">{professor.citation_count.toLocaleString()} 引用</span>}
               </div>
             </div>
           </div>
           <div className="mt-3 text-xs text-gray-400 dark:text-[#6a7a7e]">
-            <a href="#" className="text-blue-500 no-underline">信息有误？申请修改</a>
+            <a href="#" className="text-amber-600 dark:text-[#D4A843] no-underline">信息有误？申请修改</a>
           </div>
         </div>
 
@@ -224,7 +224,7 @@ export default function ProfessorPortalPage() {
             <h3 className="text-sm font-semibold text-gray-700 dark:text-[#e8e4dc]">发布招生信息</h3>
             <button
               onClick={() => setRecruiting(v => !v)}
-              className="text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              className="text-xs px-3 py-1.5 rounded-lg bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] hover:bg-[#2a2a4e] dark:hover:bg-[#c4982e]"
             >
               {recruiting ? '收起' : '发布新招生'}
             </button>
@@ -253,7 +253,7 @@ export default function ProfessorPortalPage() {
                   setRecruiting(false);
                   alert('招生信息已发布');
                 }}
-                className="w-full py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                className="w-full py-2 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] text-sm rounded-lg hover:bg-[#2a2a4e] dark:hover:bg-[#c4982e]"
               >
                 发布
               </button>
@@ -325,7 +325,7 @@ function VerifyPage({ onVerified }: { onVerified: () => void }) {
             <button
               onClick={sendCode}
               disabled={loading || !email}
-              className="w-full py-2.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="w-full py-2.5 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] text-sm rounded-lg hover:bg-[#2a2a4e] dark:hover:bg-[#c4982e] disabled:opacity-50"
             >
               {loading ? '发送中...' : '发送验证码'}
             </button>
@@ -344,7 +344,7 @@ function VerifyPage({ onVerified }: { onVerified: () => void }) {
             <button
               onClick={verifyCode}
               disabled={loading || code.length < 6}
-              className="w-full py-2.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="w-full py-2.5 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] text-sm rounded-lg hover:bg-[#2a2a4e] dark:hover:bg-[#c4982e] disabled:opacity-50"
             >
               {loading ? '验证中...' : '验证'}
             </button>

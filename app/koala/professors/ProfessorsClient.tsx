@@ -393,7 +393,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
         {/* ── Left sidebar (desktop only) ── */}
         <aside className="hidden lg:block lg:w-64 lg:flex-shrink-0 lg:sticky lg:top-20">
           {/* Search */}
-          <div className="rounded-2xl flex px-4 py-3 items-center gap-2 mb-3 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+          <div className="rounded-2xl flex px-4 py-3 items-center gap-2 mb-3 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
             <Search className="size-4 shrink-0 text-gray-500 dark:text-[#6a7a7e]" />
             <input
               type="text" value={search} onChange={e => setSearch(e.target.value)}
@@ -424,7 +424,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
           )}
 
           {/* Categories */}
-          <div className="rounded-2xl overflow-hidden mb-3 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+          <div className="rounded-2xl overflow-hidden mb-3 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
             <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 dark:text-[#a8b8ac] border-b border-gray-200 dark:border-[rgba(212,168,67,0.12)]">研究方向</div>
             {CATEGORIES.map(cat => {
               const count = cat.value === 'all' ? total : (categoryCounts[cat.value] ?? null);
@@ -444,7 +444,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
           </div>
 
           {/* University filter */}
-          <div className="rounded-2xl overflow-hidden mb-3 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+          <div className="rounded-2xl overflow-hidden mb-3 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
             <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 dark:text-[#a8b8ac] border-b border-gray-200 dark:border-[rgba(212,168,67,0.12)]">大学</div>
             <div className="px-2 py-2">
               <select
@@ -461,7 +461,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
           </div>
 
           {/* Filters */}
-          <div className="rounded-2xl overflow-hidden mb-3 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+          <div className="rounded-2xl overflow-hidden mb-3 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
             <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 dark:text-[#a8b8ac] border-b border-gray-200 dark:border-[rgba(212,168,67,0.12)]">招生状态</div>
             {[['', '全部'], ['yes', '🟢 招生中']].map(([v, label]) => (
               <button key={v} onClick={() => setAccepting(v)}
@@ -471,7 +471,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
             ))}
           </div>
 
-          <div className="rounded-2xl overflow-hidden mb-3 bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+          <div className="rounded-2xl overflow-hidden mb-3 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
             <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 dark:text-[#a8b8ac] border-b border-gray-200 dark:border-[rgba(212,168,67,0.12)]">H指数</div>
             {[[0, '全部'], [10, 'H ≥ 10'], [20, 'H ≥ 20'], [40, 'H ≥ 40'], [80, 'H ≥ 80']].map(([v, label]) => (
               <button key={v} onClick={() => setHIndexMin(Number(v))}
@@ -481,7 +481,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
             ))}
           </div>
 
-          <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+          <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
             <div className="px-3 py-2.5 text-xs font-semibold text-gray-500 dark:text-[#a8b8ac] border-b border-gray-200 dark:border-[rgba(212,168,67,0.12)]">排序</div>
             {[['opportunity_score','⭐ 推荐度'],['h_index','📈 H指数'],['paper_count','📄 论文数'],['citation_count','📊 引用数']].map(([v, label]) => (
               <button key={v} onClick={() => setSortBy(v)}
@@ -497,7 +497,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
 
       {/* Mobile Search */}
       <div className="px-4 pt-2 lg:hidden">
-        <div className="rounded-2xl flex px-4 py-3 items-center gap-2 bg-gray-100 dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)]">
+        <div className="rounded-2xl flex px-4 py-3 items-center gap-2 bg-gray-100 dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)]">
           <Search className="size-4 shrink-0 text-gray-500 dark:text-[#6a7a7e]" />
           <input
             type="text" value={search} onChange={e => setSearch(e.target.value)}
@@ -536,7 +536,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
           const active = category === cat.value;
           return (
             <button key={cat.value} onClick={() => setCategory(cat.value)}
-              className={`whitespace-nowrap text-xs px-3 py-2 rounded-full transition-colors flex items-center gap-1 ${active ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] font-bold' : 'bg-gray-100 dark:bg-[#111c28] text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.15)]'}`}>
+              className={`whitespace-nowrap text-xs px-3 py-2 rounded-full transition-colors flex items-center gap-1 ${active ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] font-bold' : 'bg-gray-100 dark:bg-[#0F1419] text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.15)]'}`}>
               {cat.label}
               {count !== null && (
                 <span className="text-[10px]" style={{ opacity: active ? 0.85 : 0.5 }}>
@@ -562,7 +562,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
       <div className="flex px-4 pt-4 pb-2 flex-col gap-4 lg:px-0 lg:grid lg:grid-cols-2">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-2xl animate-pulse bg-gray-100 dark:bg-[#111c28]" style={{ height: 160 }} />
+            <div key={i} className="rounded-2xl animate-pulse bg-gray-100 dark:bg-[#0F1419]" style={{ height: 160 }} />
           ))
         ) : professors.length === 0 ? (
           <div className="flex flex-col items-center py-16 gap-3 lg:col-span-2">
@@ -575,7 +575,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
             </p>
             <div className="flex gap-2 mt-1">
               {search && <button onClick={() => { setSearch(''); setDB(''); }} className="text-xs px-4 py-2 rounded-full bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">清除搜索</button>}
-              {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); setUniversity(''); }} className="text-xs px-4 py-2 rounded-full bg-gray-100 dark:bg-[#111c28] text-gray-700 dark:text-[#e8e4dc]">清除筛选</button>}
+              {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); setUniversity(''); }} className="text-xs px-4 py-2 rounded-full bg-gray-100 dark:bg-[#0F1419] text-gray-700 dark:text-[#e8e4dc]">清除筛选</button>}
             </div>
             <Link href="/koala/chat" className="mt-2 text-xs px-5 py-2 rounded-full no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
               让 Koala AI 帮我匹配 →
@@ -589,7 +589,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
       {/* External search candidates */}
       {debouncedSearch && !loading && (searching || candidates.length > 0) && (
         <div className="px-4 pt-2 pb-4 lg:px-0">
-          <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+          <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
             <div className="px-4 py-3 flex items-center gap-2 border-b border-gray-100 dark:border-[rgba(212,168,67,0.08)]">
               <span className="text-sm font-semibold text-gray-900 dark:text-[#D4A843]">全网搜索结果</span>
               {searching && <Loader2 className="size-4 animate-spin text-amber-600 dark:text-[#D4A843]" />}
@@ -607,25 +607,25 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                   const added = addedIds.has(c.name) || c.existsInDb;
                   const adding = addingName === c.name;
                   const sourceBadge = c.source === 'database'
-                    ? { label: '✅ 已收录', bg: 'rgba(34,197,94,0.15)', color: '#22c55e' }
+                    ? { label: '✅ 已收录', cls: 'bg-green-500/15 text-green-500' }
                     : c.source === 'openalex'
-                      ? { label: '📊 学术数据库', bg: 'rgba(96,165,250,0.15)', color: '#60a5fa' }
-                      : { label: '🔍 网络搜索', bg: 'rgba(168,130,255,0.15)', color: '#a882ff' };
+                      ? { label: '📊 学术数据库', cls: 'bg-blue-400/15 text-blue-400' }
+                      : { label: '🔍 网络搜索', cls: 'bg-purple-400/15 text-purple-400' };
                   const confBadge = c.confidence === 'high'
-                    ? { label: '高匹配', color: '#22c55e' }
+                    ? { label: '高匹配', cls: 'text-green-500' }
                     : c.confidence === 'medium'
-                      ? { label: '中匹配', color: '#eab308' }
-                      : { label: '低匹配', color: '#6a7a7e' };
+                      ? { label: '中匹配', cls: 'text-yellow-500' }
+                      : { label: '低匹配', cls: 'text-[#6a7a7e]' };
 
                   return (
                     <div key={idx} className={`px-4 py-3 flex items-start gap-3 ${c.universityMismatch ? 'opacity-60' : ''}`}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-semibold truncate text-gray-900 dark:text-[#e8e4dc]">{c.name}</p>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: sourceBadge.bg, color: sourceBadge.color }}>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${sourceBadge.cls}`}>
                             {sourceBadge.label}
                           </span>
-                          <span className="text-[10px]" style={{ color: confBadge.color }}>{confBadge.label}</span>
+                          <span className={`text-[10px] ${confBadge.cls}`}>{confBadge.label}</span>
                           {c.universityMismatch && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
                               大学不匹配 ⚠️
@@ -656,10 +656,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                         <button
                           onClick={() => !added && !adding && handleAddCandidate(c)}
                           disabled={added || adding}
-                          className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70 ${added ? '' : 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'}`}
-                          style={added
-                            ? { background: 'rgba(34,197,94,0.15)', color: '#22c55e' }
-                            : {}}
+                          className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70 ${added ? 'bg-green-500/15 text-green-500' : 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'}`}
                         >
                           {added ? <><Check className="size-3" /> 已添加</> : adding ? <><Loader2 className="size-3 animate-spin" /> 添加中</> : <><Plus className="size-3" /> 录入并查看详情</>}
                         </button>
@@ -684,15 +681,14 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
           {!showDeepSearch ? (
             <button
               onClick={() => { setShowDeepSearch(true); setDeepName(debouncedSearch); setDeepUni(university); }}
-              className="w-full rounded-xl px-4 py-3 text-left text-xs leading-relaxed"
-              style={{ background: 'rgba(168,130,255,0.08)', border: '1px solid rgba(168,130,255,0.2)', color: '#a882ff' }}
+              className="w-full rounded-xl px-4 py-3 text-left text-xs leading-relaxed bg-purple-50 dark:bg-purple-900/15 border border-purple-200 dark:border-purple-700/30 text-purple-500 dark:text-purple-400"
             >
               ⚠️ 不是你要找的教授？点击这里用 AI 深度搜索
             </button>
           ) : (
-            <div className="rounded-xl overflow-hidden bg-white dark:bg-[#111c28]" style={{ border: '1px solid rgba(168,130,255,0.25)' }}>
-              <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(168,130,255,0.12)' }}>
-                <span className="text-sm font-semibold" style={{ color: '#a882ff' }}>🔍 AI 深度搜索</span>
+            <div className="rounded-xl overflow-hidden bg-white dark:bg-[#0F1419] border border-purple-300/50 dark:border-purple-700/25">
+              <div className="px-4 py-3 flex items-center justify-between border-b border-purple-200/40 dark:border-purple-700/15">
+                <span className="text-sm font-semibold text-purple-500 dark:text-purple-400">🔍 AI 深度搜索</span>
                 <button onClick={() => { setShowDeepSearch(false); setDeepCandidates([]); }} className="text-xs text-gray-500 dark:text-[#6a7a7e]">收起</button>
               </div>
               <div className="px-4 py-3 space-y-2">
@@ -718,28 +714,27 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                 <button
                   onClick={handleDeepSearch}
                   disabled={!deepName.trim() || deepSearching}
-                  className="w-full py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50"
-                  style={{ background: '#a882ff', color: '#fff' }}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 bg-purple-500 dark:bg-purple-600 text-white"
                 >
                   {deepSearching ? '正在从学术网络和大学官网搜索…' : '🔍 AI 深度搜索'}
                 </button>
               </div>
               {deepCandidates.length > 0 && (
-                <div className="divide-y divide-gray-100 dark:divide-[rgba(168,130,255,0.08)]" style={{ borderTop: '1px solid rgba(168,130,255,0.12)' }}>
+                <div className="divide-y divide-gray-100 dark:divide-purple-700/10 border-t border-purple-200/40 dark:border-purple-700/15">
                   {deepCandidates.map((c, idx) => {
                     const added = deepAddedIds.has(c.name) || c.existsInDb;
                     const adding = deepAddingName === c.name;
                     const sourceBadge = c.source === 'database'
-                      ? { label: '✅ 已收录', bg: 'rgba(34,197,94,0.15)', color: '#22c55e' }
+                      ? { label: '✅ 已收录', cls: 'bg-green-500/15 text-green-500' }
                       : c.source === 'openalex'
-                        ? { label: '📊 学术数据库', bg: 'rgba(96,165,250,0.15)', color: '#60a5fa' }
-                        : { label: '🔍 网络搜索', bg: 'rgba(168,130,255,0.15)', color: '#a882ff' };
+                        ? { label: '📊 学术数据库', cls: 'bg-blue-400/15 text-blue-400' }
+                        : { label: '🔍 网络搜索', cls: 'bg-purple-400/15 text-purple-400' };
                     return (
                       <div key={idx} className={`px-4 py-3 flex items-start gap-3 ${c.universityMismatch ? 'opacity-60' : ''}`}>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-semibold truncate text-gray-900 dark:text-[#e8e4dc]">{c.name}</p>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: sourceBadge.bg, color: sourceBadge.color }}>{sourceBadge.label}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${sourceBadge.cls}`}>{sourceBadge.label}</span>
                           </div>
                           <p className="text-xs mt-0.5 text-gray-500 dark:text-[#6a7a7e]">
                             {c.position && <span>{c.position} · </span>}{c.university}
@@ -758,17 +753,14 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                           </div>
                         </div>
                         {c.existsInDb ? (
-                          <span className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>
+                          <span className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-500/15 text-green-500">
                             <Check className="size-3" /> 已收录
                           </span>
                         ) : !c.universityMismatch && (
                           <button
                             onClick={() => !added && !adding && handleDeepAddCandidate(c)}
                             disabled={added || adding}
-                            className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70"
-                            style={added
-                              ? { background: 'rgba(34,197,94,0.15)', color: '#22c55e' }
-                              : { background: '#a882ff', color: '#fff' }}
+                            className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70 ${added ? 'bg-green-500/15 text-green-500' : 'bg-purple-500 dark:bg-purple-600 text-white'}`}
                           >
                             {added ? <><Check className="size-3" /> 已录入</> : adding ? <><Loader2 className="size-3 animate-spin" /> 录入中</> : <><Plus className="size-3" /> 录入并查看详情</>}
                           </button>
@@ -780,7 +772,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
               )}
               {deepSearching && (
                 <div className="px-4 py-6 text-center">
-                  <Loader2 className="size-5 animate-spin mx-auto mb-2" style={{ color: '#a882ff' }} />
+                  <Loader2 className="size-5 animate-spin mx-auto mb-2 text-purple-500 dark:text-purple-400" />
                   <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">正在从学术网络和大学官网搜索…</p>
                 </div>
               )}
@@ -811,7 +803,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
             style={{ maxWidth: 280 }}>
             没找到理想导师？让 Koala AI 精准匹配 →
           </Link>
-          <div className="mt-4 px-2 py-3 rounded-xl text-[11px] leading-relaxed bg-gray-50 dark:bg-[#111c28] text-gray-500 dark:text-[#6a7a7e] border border-gray-200 dark:border-[rgba(212,168,67,0.12)]">
+          <div className="mt-4 px-2 py-3 rounded-xl text-[11px] leading-relaxed bg-gray-50 dark:bg-[#0F1419] text-gray-500 dark:text-[#6a7a7e] border border-gray-200 dark:border-[rgba(212,168,67,0.12)]">
             以上数据来自大学官网、Google Scholar 及公开数据库，仅供参考。经费与招生状态可能与实际情况存在差异，请直接联系导师核实。如发现信息有误，欢迎反馈至{' '}
             <a href="mailto:info@koalaphd.com" className="text-[#1A1A2E] dark:text-[#D4A843]">info@koalaphd.com</a>
           </div>
@@ -846,7 +838,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
             <select
               value={university}
               onChange={e => setUniversity(e.target.value)}
-              className="w-full text-xs px-3 py-2 rounded-lg outline-none bg-gray-100 dark:bg-[#111c28] text-gray-900 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.15)]"
+              className="w-full text-xs px-3 py-2 rounded-lg outline-none bg-gray-100 dark:bg-[#0F1419] text-gray-900 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.15)]"
             >
               <option value="">全部大学</option>
               {ALL_UNIVERSITIES.map(u => (
@@ -888,7 +880,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
           <div className="flex gap-3 mt-6">
             <button
               onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); setUniversity(''); }}
-              className="flex-1 py-3 rounded-2xl text-sm font-medium bg-gray-100 dark:bg-[#111c28] text-gray-500 dark:text-[#a8b8ac] border border-gray-200 dark:border-[rgba(212,168,67,0.12)]">
+              className="flex-1 py-3 rounded-2xl text-sm font-medium bg-gray-100 dark:bg-[#0F1419] text-gray-500 dark:text-[#a8b8ac] border border-gray-200 dark:border-[rgba(212,168,67,0.12)]">
               重置
             </button>
             <button
@@ -1063,7 +1055,7 @@ function FilterSection({ label, children }: { label: string; children: React.Rea
 function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick}
-      className={`text-xs px-3 py-1.5 rounded-full transition-colors ${active ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] font-semibold' : 'bg-gray-100 dark:bg-[#111c28] text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.15)]'}`}>
+      className={`text-xs px-3 py-1.5 rounded-full transition-colors ${active ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] font-semibold' : 'bg-gray-100 dark:bg-[#0F1419] text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.15)]'}`}>
       {label}
     </button>
   );

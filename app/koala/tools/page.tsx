@@ -21,9 +21,9 @@ const FREE_FEATURES: { text: string; included: boolean }[] = [
 
 const CREDIT_PACKAGES: { credits: number; price: number; label: string; desc: string; highlight?: boolean }[] = [
   { credits: 1,   price: CREDIT_PRICES.single,  label: '单封',    desc: '按需购买' },
-  { credits: 10,  price: CREDIT_PRICES.pack10,  label: '10 封包', desc: '省 ¥0.10/封' },
-  { credits: 30,  price: CREDIT_PRICES.pack30,  label: '30 封包', desc: '省 ¥0.34/封', highlight: true },
-  { credits: 100, price: CREDIT_PRICES.pack100, label: '100 封包', desc: '省 ¥0.51/封' },
+  { credits: 10,  price: CREDIT_PRICES.pack10,  label: '10 封包', desc: '省 A$0.10/封' },
+  { credits: 30,  price: CREDIT_PRICES.pack30,  label: '30 封包', desc: '省 A$0.34/封', highlight: true },
+  { credits: 100, price: CREDIT_PRICES.pack100, label: '100 封包', desc: '省 A$0.51/封' },
 ];
 
 // ─── Tier card ────────────────────────────────────────────────────────────────

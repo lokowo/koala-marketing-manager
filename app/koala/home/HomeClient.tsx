@@ -353,38 +353,41 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
               {
                 icon: '💬', step: '01', title: '聊背景',
                 desc: '告诉 Koala 你的专业方向、学术经历和兴趣，AI 帮你评估申请竞争力',
-                features: ['✅ 覆盖 8 所 Go8 大学', '✅ 中英文双语支持'],
+                features: ['覆盖 8 所 Go8 大学', '中英文双语支持'],
                 extra: '⏱ 约 2 分钟',
                 primary: true,
                 iconBg: 'bg-[#D4A843]/20',
-                accentFrom: '#D4A843', accentTo: '#c9a96e',
+                gradientBar: 'bg-gradient-to-r from-[#D4A843] to-[#c9a96e]',
+                featureIcon: 'text-[#D4A843]',
               },
               {
                 icon: '🎯', step: '02', title: 'AI 匹配',
                 desc: `从 ${profCount} 位导师中，根据你的背景和研究兴趣精准推荐最佳导师`,
-                features: [`✅ ${profCount} 导师库`, '✅ 实时招生状态'],
+                features: [`${profCount} 导师库`, '实时招生状态'],
                 extra: '⚡ 30 秒出结果',
                 primary: false,
                 iconBg: 'bg-[#4ECDC4]/15 dark:bg-[#4ECDC4]/20',
-                accentFrom: '#4ECDC4', accentTo: '#38b2ac',
+                gradientBar: 'bg-gradient-to-r from-[#4ECDC4] to-[#38b2ac]',
+                featureIcon: 'text-[#4ECDC4]',
               },
               {
                 icon: '✉️', step: '03', title: '写申请信',
                 desc: '针对每位教授的研究方向和最新论文，AI 定制高回复率的专业邮件',
-                features: ['✅ 个性化定制内容', '✅ 支持批量生成'],
-                extra: '📧 ¥1/封起',
+                features: ['个性化定制内容', '支持批量生成'],
+                extra: '📧 A$1/封起',
                 primary: false,
                 iconBg: 'bg-amber-100 dark:bg-amber-900/20',
-                accentFrom: '#F59E0B', accentTo: '#D4A843',
+                gradientBar: 'bg-gradient-to-r from-[#F59E0B] to-[#D4A843]',
+                featureIcon: 'text-amber-500',
               },
             ] as const).map((s, i) => (
               <div key={s.step} className="flex items-center lg:flex-1">
                 <button
                   onClick={() => handleStepClick(STEP_LINKS[i].href)}
-                  className={`rounded-2xl p-5 lg:p-6 flex flex-col text-left w-full transition-all duration-300 active:scale-[0.98] cursor-pointer relative overflow-hidden group ${
+                  className={`rounded-2xl p-5 lg:p-6 flex flex-col text-left w-full h-full transition-all duration-300 active:scale-[0.98] cursor-pointer relative overflow-hidden group ${
                     s.primary
                       ? 'bg-gradient-to-br from-[#1A1A2E] to-[#2D2D4A] text-white shadow-lg hover:shadow-2xl hover:-translate-y-1.5 border border-transparent dark:border-[#D4A843]/30'
-                      : 'bg-white dark:bg-[#0F1419] border border-gray-100 dark:border-white/10 hover:-translate-y-1.5 hover:shadow-xl'
+                      : 'bg-white dark:bg-[#0F1419] border border-gray-100 dark:border-white/10 shadow-sm hover:-translate-y-1.5 hover:shadow-xl'
                   }`}
                 >
                   {s.primary && (
@@ -394,10 +397,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                       <div className="absolute right-4 bottom-4 text-[64px] leading-none opacity-[0.06] select-none">🐨</div>
                     </>
                   )}
-                  <div
-                    className="absolute top-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ background: `linear-gradient(to right, ${s.accentFrom}, ${s.accentTo})` }}
-                  />
+                  <div className={`absolute top-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity ${s.gradientBar}`} />
 
                   <div className="flex items-center gap-3 relative mb-3">
                     <span className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${s.iconBg}`}>{s.icon}</span>
@@ -406,9 +406,12 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                   <div className={`text-lg font-bold relative mb-1.5 ${s.primary ? 'text-white' : 'text-gray-900 dark:text-[#e8e4dc]'}`}>{s.title}</div>
                   <div className={`text-xs leading-relaxed relative mb-3 ${s.primary ? 'text-white/60' : 'text-gray-500 dark:text-[#6a7a7e]'}`}>{s.desc}</div>
 
-                  <div className="flex flex-col gap-1.5 relative mb-4">
+                  <div className="flex flex-col gap-2 relative mb-4">
                     {s.features.map(f => (
-                      <span key={f} className={`text-[11px] ${s.primary ? 'text-white/50' : 'text-gray-500 dark:text-[#a8b8ac]'}`}>{f}</span>
+                      <div key={f} className="flex items-center gap-2">
+                        <svg className={`size-3.5 shrink-0 ${s.primary ? 'text-[#D4A843]' : s.featureIcon}`} viewBox="0 0 16 16" fill="none"><path d="M13.3 4.3a1 1 0 0 1 0 1.4l-6 6a1 1 0 0 1-1.4 0l-3-3a1 1 0 1 1 1.4-1.4L6.6 9.6l5.3-5.3a1 1 0 0 1 1.4 0Z" fill="currentColor"/></svg>
+                        <span className={`text-[11px] ${s.primary ? 'text-white/60' : 'text-gray-600 dark:text-[#a8b8ac]'}`}>{f}</span>
+                      </div>
                     ))}
                   </div>
 
@@ -418,11 +421,11 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                   </div>
                 </button>
                 {i < 2 && (
-                  <div className="hidden lg:flex items-center justify-center w-10 shrink-0">
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="w-px h-3 bg-gray-200 dark:bg-white/10" />
-                      <ArrowRight className="size-5 text-gray-300 dark:text-[#D4A843]/40" />
-                      <div className="w-px h-3 bg-gray-200 dark:bg-white/10" />
+                  <div className="hidden lg:flex items-center justify-center w-12 shrink-0">
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div className="w-px h-5 border-l border-dashed border-gray-300 dark:border-[#D4A843]/30" />
+                      <ArrowRight className="size-6 text-gray-400 dark:text-[#D4A843]/50" />
+                      <div className="w-px h-5 border-l border-dashed border-gray-300 dark:border-[#D4A843]/30" />
                     </div>
                   </div>
                 )}
