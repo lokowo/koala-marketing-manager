@@ -16,4 +16,4 @@
 ## 3. Build & Push
 
 - [x] 3.1 Run `npm run build` to verify no type/compilation errors
-- [ ] 3.2 Git commit and push
+- [x] 3.2 Git commit and push
