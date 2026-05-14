@@ -571,17 +571,48 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
         </section>
 
         {/* ── Bottom CTA ── */}
-        <section>
-          <div className="rounded-3xl p-5 text-center bg-gray-50 dark:bg-[#c9a96e]/[0.06] border border-gray-200 dark:border-[#c9a96e]/10">
-            <div className="text-2xl mb-2">🐨</div>
-            <h3 className="text-sm font-bold mb-1 text-gray-900 dark:text-[#e8e4dc]">还在犹豫？先聊聊你的想法</h3>
-            <p className="text-xs mb-4 text-gray-500 dark:text-[#6a7a7e]">免费匹配导师，不满意随时退出</p>
-            <Link
-              href="/koala/chat"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
-            >
-              免费开始对话 <ArrowRight className="size-4" />
-            </Link>
+        <section className="bg-gradient-to-br from-[#1A1A2E] to-[#2D2D4A] dark:from-[#0F1419] dark:to-[#1A1A2E] rounded-2xl p-8 md:p-12 text-white relative overflow-hidden dark:border dark:border-[#D4A843]/20">
+          <div className="absolute -top-20 -right-20 w-60 h-60 bg-[#D4A843]/5 rounded-full" />
+          <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-[#4ECDC4]/5 rounded-full" />
+
+          <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-12 relative z-10">
+            <div className="flex-1">
+              <h2 className="text-2xl md:text-3xl font-bold mb-3">
+                还在犹豫？先聊聊你的想法
+              </h2>
+              <p className="text-gray-300 mb-6 text-base md:text-lg">
+                免费匹配导师，不满意随时退出。已有 {initialMatchCount.toLocaleString()} 位同学开始了对话。
+              </p>
+              <div className="flex flex-wrap gap-3 md:gap-4">
+                <Link
+                  href="/koala/chat?mode=path"
+                  className="inline-flex items-center gap-2 px-7 py-3 md:px-8 md:py-3.5 bg-[#D4A843] text-[#1A1A2E] font-bold rounded-xl hover:bg-[#B8922F] transition no-underline"
+                >
+                  免费开始对话 <ArrowRight className="size-4" />
+                </Link>
+                <Link
+                  href="/koala/professors"
+                  className="inline-flex items-center gap-2 px-5 py-3 md:px-6 md:py-3.5 border border-white/20 text-white rounded-xl hover:bg-white/10 transition no-underline"
+                >
+                  浏览导师库
+                </Link>
+              </div>
+            </div>
+
+            <div className="hidden md:flex gap-5">
+              <div className="text-center px-5 py-4 bg-white/5 rounded-xl min-w-[100px]">
+                <div className="text-2xl lg:text-3xl font-bold text-[#D4A843]">{profCount}</div>
+                <div className="text-xs text-gray-400 mt-1">认证导师</div>
+              </div>
+              <div className="text-center px-5 py-4 bg-white/5 rounded-xl min-w-[100px]">
+                <div className="text-2xl lg:text-3xl font-bold text-[#4ECDC4]">8</div>
+                <div className="text-xs text-gray-400 mt-1">Go8 大学</div>
+              </div>
+              <div className="text-center px-5 py-4 bg-white/5 rounded-xl min-w-[100px]">
+                <div className="text-2xl lg:text-3xl font-bold text-white">30s</div>
+                <div className="text-xs text-gray-400 mt-1">智能匹配</div>
+              </div>
+            </div>
           </div>
         </section>
 
