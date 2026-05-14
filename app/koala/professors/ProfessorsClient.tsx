@@ -204,7 +204,15 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
   // Active filter count for badge
   const activeFilters = [accepting !== '', hIndexMin > 0, sortBy !== 'opportunity_score', university !== ''].filter(Boolean).length;
 
-  // Trigger search explicitly (button click or Enter) — no auto-debounce
+  // Auto-debounce: typing triggers search after 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDB(search.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Trigger search immediately (button click or Enter) — skips debounce
   const triggerSearch = useCallback(() => {
     setDB(search.trim());
   }, [search]);
@@ -281,13 +289,15 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
     setAddingName(null);
   }, []);
 
-  const handleDeepSearch = useCallback(async () => {
-    if (!deepName.trim()) return;
+  const handleDeepSearch = useCallback(async (overrideName?: string, overrideUni?: string) => {
+    const name = overrideName ?? deepName;
+    const uni = overrideUni ?? deepUni;
+    if (!name.trim()) return;
     setDeepSearching(true);
     setDeepCandidates([]);
     try {
-      const params = new URLSearchParams({ name: deepName.trim(), deep: 'true' });
-      if (deepUni.trim()) params.set('university', deepUni.trim());
+      const params = new URLSearchParams({ name: name.trim(), deep: 'true' });
+      if (uni.trim()) params.set('university', uni.trim());
       const res = await fetch(`/api/professors/auto-search?${params}`);
       const data = await res.json();
       setDeepCandidates(data.candidates || []);
@@ -569,31 +579,44 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
             <div key={i} className="rounded-2xl animate-pulse bg-gray-100 dark:bg-[#0F1419]" style={{ height: 160 }} />
           ))
         ) : professors.length === 0 ? (
-          <div className="flex flex-col items-center py-12 gap-3 lg:col-span-2">
-            <div className="w-full max-w-md mx-auto rounded-2xl bg-amber-50/50 dark:bg-[#0F1419] border border-amber-200/50 dark:border-[rgba(212,168,67,0.15)] p-5">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl shrink-0 mt-0.5">🤔</span>
-                <div className="space-y-2">
-                  <p className="font-semibold text-sm text-gray-900 dark:text-[#e8e4dc]">
-                    {search ? `没有找到"${search}"相关的导师` : '暂无匹配数据'}
+          <div className="flex flex-col items-center py-8 gap-4 lg:col-span-2">
+            {search ? (
+              <div className="w-full max-w-lg mx-auto rounded-2xl bg-purple-50/80 dark:bg-purple-900/15 border-2 border-purple-300 dark:border-purple-700/40 p-6">
+                <div className="text-center space-y-3">
+                  <p className="text-3xl">😕</p>
+                  <p className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">
+                    数据库中未找到 &ldquo;{search}&rdquo;
                   </p>
-                  {search ? (
-                    <div className="text-xs leading-relaxed text-gray-600 dark:text-[#8a9a9e] space-y-1.5">
-                      <p>可能是因为该教授还未被收录到我们的数据库。别担心，你可以：</p>
-                      <p className="font-medium text-gray-800 dark:text-[#c8c0b4]">1. 滑到下方查看「全网搜索结果」，AI 正在帮你从学术网络搜索</p>
-                      <p className="font-medium text-gray-800 dark:text-[#c8c0b4]">2. 点击下方「AI 深度搜索」手动输入教授姓名搜索</p>
-                      <p className="font-medium text-gray-800 dark:text-[#c8c0b4]">3. 确认录入后，你将获得 <span className="text-amber-600 dark:text-[#D4A843]">10 积分奖励</span></p>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">尝试调整筛选条件或搜索教授名字</p>
-                  )}
+                  <p className="text-sm text-gray-600 dark:text-[#8a9a9e]">
+                    该教授可能还未被收录。试试 AI 深度搜索，我们可以从网上找到这位教授的信息！
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowDeepSearch(true);
+                      setDeepName(search);
+                      setDeepUni(university);
+                      handleDeepSearch(search, university);
+                    }}
+                    className="w-full py-3 rounded-xl text-sm font-bold bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700 transition flex items-center justify-center gap-2"
+                  >
+                    <Search className="size-4" />
+                    AI 深度搜索 &ldquo;{search}&rdquo;
+                  </button>
+                  <p className="text-xs text-purple-500 dark:text-purple-400">
+                    录入新教授可获得 <span className="font-bold">10 积分奖励</span> ✨
+                  </p>
+                </div>
+                <div className="flex justify-center gap-2 mt-4">
+                  <button onClick={() => { setSearch(''); setDB(''); }} className="text-xs px-4 py-2 rounded-full bg-white/60 dark:bg-[#0F1419] text-gray-700 dark:text-[#e8e4dc]">清除搜索</button>
+                  {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); setUniversity(''); }} className="text-xs px-4 py-2 rounded-full bg-white/60 dark:bg-[#0F1419] text-gray-700 dark:text-[#e8e4dc]">清除筛选</button>}
                 </div>
               </div>
-            </div>
-            <div className="flex gap-2 mt-1">
-              {search && <button onClick={() => { setSearch(''); setDB(''); }} className="text-xs px-4 py-2 rounded-full bg-gray-100 dark:bg-[#0F1419] text-gray-700 dark:text-[#e8e4dc]">清除搜索</button>}
-              {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); setUniversity(''); }} className="text-xs px-4 py-2 rounded-full bg-gray-100 dark:bg-[#0F1419] text-gray-700 dark:text-[#e8e4dc]">清除筛选</button>}
-            </div>
+            ) : (
+              <div className="w-full max-w-md mx-auto rounded-2xl bg-gray-50 dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.15)] p-5 text-center">
+                <p className="text-sm text-gray-500 dark:text-[#6a7a7e]">暂无匹配数据，尝试调整筛选条件或搜索教授名字</p>
+                {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); setUniversity(''); }} className="text-xs px-4 py-2 mt-3 rounded-full bg-gray-100 dark:bg-[#0d1520] text-gray-700 dark:text-[#e8e4dc]">清除筛选</button>}
+              </div>
+            )}
           </div>
         ) : (
           professors.map(p => <ProfCard key={p.id} p={p} />)
@@ -763,7 +786,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                   className="w-full rounded-lg px-3 py-2 text-sm outline-none bg-gray-100 dark:bg-[#0d1520] text-gray-900 dark:text-[#e8e4dc] border border-gray-200 dark:border-[rgba(212,168,67,0.15)]"
                 />
                 <button
-                  onClick={handleDeepSearch}
+                  onClick={() => handleDeepSearch()}
                   disabled={!deepName.trim() || deepSearching}
                   className="w-full py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 bg-purple-500 dark:bg-purple-600 text-white"
                 >

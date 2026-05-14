@@ -10,12 +10,25 @@ const db = supabaseAdmin as any;
 export default async function BlogDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const { data: post } = await db
+  // Try slug first (always safe), then UUID if slug misses
+  let { data: post } = await db
     .from('blog_posts')
     .select('*')
-    .or(`id.eq.${id},slug.eq.${id}`)
+    .eq('slug', id)
     .eq('status', 'published')
-    .single();
+    .maybeSingle();
+
+  if (!post) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (isUuid) {
+      ({ data: post } = await db
+        .from('blog_posts')
+        .select('*')
+        .eq('id', id)
+        .eq('status', 'published')
+        .maybeSingle());
+    }
+  }
 
   if (!post) notFound();
 
