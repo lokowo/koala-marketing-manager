@@ -554,3 +554,93 @@ Week 5: 打磨 + 部署
 ```
 Koala PhD is an AI-first platform where users chat with "考拉学长" to get free professor matching, then pay AUD 1/email for customized cold outreach letters. The backend auto-collects professor data from ARC Portal + Semantic Scholar + university websites. The AI adapts to each user's communication style and provides emotional support alongside practical PhD application guidance. All professor data must cite sources. Never say "guaranteed admission" or "guaranteed scholarship". Mobile-first design with bottom tab navigation.
 ```
+# CLAUDE.md — Koala PhD 项目开发规则
+# Claude Code 每次执行任务前必须遵守以下规则
+
+## 铁律（违反任何一条都不可接受）
+
+### 1. 先看后改
+- **改任何文件前必须先 `view` 该文件**
+- 不要猜测代码结构、变量名、函数名
+- 不要假设 import 路径，先看项目中已有的 import 方式
+
+### 2. 改完必须验证
+- 修改 state 后，确认 UI 会刷新（setXxx 被调用）
+- 修改 API 后，确认前端调用了该 API 并处理了返回值
+- 删除操作后，确认前端列表移除了该项（filter/splice）
+- 添加操作后，确认前端列表新增了该项（push/concat）
+- 表单提交后，确认有成功提示 + 页面刷新或跳转
+
+### 3. 不要只做一半
+- 写了 API 必须写前端调用
+- 写了前端按钮必须写 onClick 处理函数
+- 写了删除确认弹窗必须写确认后的逻辑
+- 写了 fetch 必须处理成功和失败两种情况
+- 改了后端数据必须刷新前端 state
+
+### 4. 角色权限检查
+- Sales 不能进 /dashboard/koala（重定向到 /dashboard/sales）
+- Admin 不能进 /dashboard/sales（重定向到 /dashboard/koala）
+- 只有 Sales 能生成推广二维码，Admin 不能
+- Admin 看聚合数据，不看客户个人信息
+- Sales 只看自己推广的客户，看不到别人的
+
+### 5. 样式规则
+- 后台 /dashboard/* 固定浅色（bg-white/bg-gray-50 + text-gray-900）
+- 前台 /koala/* 支持深浅色切换（用 dark: 前缀）
+- 调研问卷 /s/* 深色背景 + 白色文字
+- 金色 #D4A843 只做装饰/badge/图标，不做正文颜色
+- 主按钮用深海军蓝 bg-[#1A1A2E] text-white
+
+## 开发流程
+
+### 修 Bug 的标准流程
+```
+1. 先 view 相关文件，找到问题代码
+2. 理解当前逻辑（不要凭猜测修改）
+3. 修改代码
+4. 确认修改涉及的所有环节都更新了（API + 前端 state + UI 刷新）
+5. npm run build 确认没有编译错误
+6. git add -A && git commit -m "fix: 描述" && git push
+```
+
+### 新功能的标准流程
+```
+1. view 相关目录和文件，了解现有结构
+2. 复用已有的代码风格（supabase 初始化方式、API 格式、组件风格）
+3. 按顺序创建：数据库（如需要）→ 服务层 → API → 组件 → 页面
+4. 每层完成后确认能被下一层正确调用
+5. npm run build 确认通过
+6. git push
+```
+
+## 项目信息
+
+- **框架**: Next.js 16 + Supabase + Tailwind CSS
+- **域名**: koalaphd.com
+- **Supabase 项目 ID**: geolbgirpkzxrdvozmqw
+- **Super Admin**: renehee@hotmail.com + yangxianzeng2021@gmail.com
+- **语言**: 与开发者沟通用中文
+- **Supabase Admin Client**: 查找项目中已有的初始化方式，不要自己猜
+
+## 禁止事项
+
+- ❌ 不要创建已存在的数据库表（所有表已建好）
+- ❌ 不要用 npm qrcode 包生成二维码（用 api.qrserver.com 免费 API）
+- ❌ 不要在公开页面 /s/* 放任何 /dashboard 链接
+- ❌ 不要用 www.koalaphd.com 绝对路径（用相对路径 /koala/home）
+- ❌ 不要在浅色后台用深色背景 class（bg-gray-900 等）
+- ❌ 不要在手机号输入的 onValueChanged 中拼接区号（区号只在提交时合并）
+
+## 强制使用 OpenSpec 工作流
+
+所有代码变更必须通过 OpenSpec 流程执行，禁止直接改代码。
+
+标准流程：
+1. /opsx:new {需求} → 创建提案
+2. /opsx:ff → 生成完整文档
+3. /opsx:apply → 执行实施
+4. /opsx:verify → 验证结果
+5. /opsx:archive → 归档变更
+
+例外：一行代码的简单修复或紧急故障可跳过。
