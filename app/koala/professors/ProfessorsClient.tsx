@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import VoiceInputButton from '../../components/VoiceInputButton';
 import type { Professor } from '../../lib/types';
+import { getUniBadge, parseUniversity } from '../../lib/constants';
 
 interface SearchCandidate {
   name: string;
@@ -45,60 +46,46 @@ const CATEGORIES = [
 
 const HOT_TAGS = ['AI', 'Machine Learning', 'Neuroscience', 'Data Science', 'Finance', 'Education'];
 
-const UNI_COLORS: Record<string, { bg: string; fg: string; short: string }> = {
-  'Australian National University':        { bg: '#d4a84330', fg: '#b8922e', short: 'ANU' },
-  'University of Melbourne':               { bg: '#00308720', fg: '#1e4a8a', short: 'MEL' },
-  'University of Sydney':                  { bg: '#cc000018', fg: '#b83232', short: 'SYD' },
-  'UNSW Sydney':                           { bg: '#1a1a1a15', fg: '#3a3a3a', short: 'NSW' },
-  'University of Queensland':              { bg: '#51247a18', fg: '#6b3d96', short: 'UQ'  },
-  'Monash University':                     { bg: '#006dae18', fg: '#2680b8', short: 'MON' },
-  'University of Western Australia':       { bg: '#00308718', fg: '#1e4a8a', short: 'UWA' },
-  'University of Adelaide':                { bg: '#005a9c18', fg: '#2870a8', short: 'ADE' },
-  'University of Technology Sydney':       { bg: '#00a3e018', fg: '#1a8ab8', short: 'UTS' },
-  'RMIT University':                       { bg: '#e6002818', fg: '#c43838', short: 'RMT' },
-  'Macquarie University':                  { bg: '#e8291c18', fg: '#c44040', short: 'MAC' },
-  'Queensland University of Technology':   { bg: '#005a9c18', fg: '#2870a8', short: 'QUT' },
-  'Deakin University':                     { bg: '#00a86b18', fg: '#2d9060', short: 'DEA' },
-  'Griffith University':                   { bg: '#d4380d18', fg: '#b84830', short: 'GRF' },
-  'La Trobe University':                   { bg: '#e84e1b18', fg: '#c45830', short: 'LAT' },
-  'University of Newcastle':               { bg: '#1f164618', fg: '#3d3060', short: 'NEW' },
-  'University of Wollongong':              { bg: '#1e579918', fg: '#2e68a0', short: 'WOL' },
-  'Flinders University':                   { bg: '#004f9f18', fg: '#2868a0', short: 'FLI' },
-  'Curtin University':                     { bg: '#cfb44b20', fg: '#a8942e', short: 'CUR' },
-  'James Cook University':                 { bg: '#005c8418', fg: '#286880', short: 'JCU' },
-  'Swinburne University of Technology':    { bg: '#bb000018', fg: '#a83838', short: 'SWI' },
-  'Western Sydney University':             { bg: '#e5202018', fg: '#c43838', short: 'WSY' },
-};
-
 const ALL_UNIVERSITIES = [
-  'Australian National University', 'University of Melbourne', 'University of Sydney',
-  'UNSW Sydney', 'University of Queensland', 'Monash University',
-  'University of Western Australia', 'University of Adelaide',
-  'University of Technology Sydney', 'RMIT University', 'Macquarie University',
-  'Queensland University of Technology', 'Deakin University', 'Griffith University',
-  'La Trobe University', 'University of Newcastle', 'University of Wollongong',
-  'Flinders University', 'Curtin University', 'James Cook University',
-  'Swinburne University of Technology', 'Western Sydney University',
-  'University of Tasmania', 'Charles Sturt University', 'University of Canberra',
-  'Murdoch University', 'Victoria University', 'University of the Sunshine Coast',
-  'Edith Cowan University', 'Australian Catholic University', 'Bond University',
-  'Central Queensland University', 'Southern Cross University',
-  'University of New England', 'Federation University Australia',
-  'Charles Darwin University', 'University of Southern Queensland',
-  'Torrens University', 'University of New South Wales', 'University of Divinity',
-  'Western Australian Academy of Performing Arts',
+  'Australian National University (ANU)',
+  'University of Melbourne (MELB)',
+  'University of Sydney (USYD)',
+  'University of New South Wales (UNSW)',
+  'University of Queensland (UQ)',
+  'Monash University (MON)',
+  'University of Western Australia (UWA)',
+  'University of Adelaide (ADE)',
+  'University of Technology Sydney (UTS)',
+  'RMIT University (RMIT)',
+  'Macquarie University (MQ)',
+  'Queensland University of Technology (QUT)',
+  'Deakin University (DEA)',
+  'Griffith University (GRF)',
+  'La Trobe University (LAT)',
+  'University of Newcastle (UON)',
+  'University of Wollongong (UOW)',
+  'Flinders University (FLI)',
+  'Curtin University (CUR)',
+  'James Cook University (JCU)',
+  'Swinburne University of Technology (SWI)',
+  'Western Sydney University (WSU)',
+  'University of Tasmania (UTAS)',
+  'Murdoch University',
+  'Victoria University (VU)',
+  'Edith Cowan University (ECU)',
+  'Australian Catholic University (ACU)',
+  'Bond University (BOND)',
+  'Central Queensland University (CQU)',
+  'Southern Cross University (SCU)',
+  'University of New England (UNE)',
+  'Charles Darwin University (CDU)',
+  'University of Southern Queensland (USQ)',
 ];
 
 const LIMIT = 20;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getUniBadge(university: string) {
-  if (UNI_COLORS[university]) return UNI_COLORS[university];
-  // fallback: first 3 letters, blue-grey
-  const letters = university.replace(/University of |University /gi, '').slice(0, 3).toUpperCase();
-  return { bg: '#5a687818', fg: '#5a6878', short: letters };
-}
 
 function fmtCitations(n?: number): string {
   if (!n) return '';
@@ -201,6 +188,8 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingMoreRef = useRef(false);
+  const hasMoreRef = useRef(initialProfessors.length >= LIMIT);
 
   // Active filter count for badge
   const activeFilters = [accepting !== '', hIndexMin > 0, sortBy !== 'opportunity_score', university !== ''].filter(Boolean).length;
@@ -229,11 +218,13 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
     setSearchDone(false);
     setPage(1);
     setHasMore(false);
+    hasMoreRef.current = false;
     apiFetch(filters)
       .then(d => {
         setProfessors(d.data);
         setTotal(d.total);
         setHasMore(d.hasMore);
+        hasMoreRef.current = d.hasMore;
         setPage(2);
       })
       .catch(() => {})
@@ -315,24 +306,33 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
   }, []);
 
   // Load more
+  const pageRef = useRef(1);
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+  pageRef.current = page;
+
   const loadMore = useCallback(() => {
-    if (loadingMore || !hasMore) return;
+    if (loadingMoreRef.current || !hasMoreRef.current) return;
+    loadingMoreRef.current = true;
     setLoadingMore(true);
-    apiFetch({ ...filters, page })
+    apiFetch({ ...filtersRef.current, page: pageRef.current })
       .then(d => {
         setProfessors(prev => {
           const ids = new Set(prev.map(p => p.id));
           return [...prev, ...d.data.filter((p: Professor) => !ids.has(p.id))];
         });
         setHasMore(d.hasMore);
+        hasMoreRef.current = d.hasMore;
         setPage(p => p + 1);
       })
       .catch(() => {})
-      .finally(() => setLoadingMore(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, debouncedSearch, category, accepting, hIndexMin, sortBy, university, loadingMore, hasMore]);
+      .finally(() => {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      });
+  }, []);
 
-  // Intersection observer
+  // Intersection observer — stable callback via refs, no recreation loop
   useEffect(() => {
     observerRef.current?.disconnect();
     observerRef.current = new IntersectionObserver(
@@ -451,7 +451,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
               >
                 <option value="">全部大学</option>
                 {ALL_UNIVERSITIES.map(u => (
-                  <option key={u} value={u}>{u}</option>
+                  <option key={u} value={u}>{parseUniversity(u).full}</option>
                 ))}
               </select>
             </div>
@@ -650,7 +650,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                         </div>
                         <p className="text-xs text-gray-500 dark:text-[#6a7a7e] mb-2">
                           {savedProf.positionTitle && <span>{savedProf.positionTitle} · </span>}
-                          {savedProf.university}
+                          {parseUniversity(savedProf.university).full}
                         </p>
                         {savedProf.researchAreas.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-3">
@@ -691,7 +691,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                         </div>
                         <p className={`text-xs mt-0.5 ${c.universityMismatch ? 'text-red-500' : 'text-gray-500 dark:text-[#6a7a7e]'}`}>
                           {c.position && <span>{c.position} · </span>}
-                          {c.university}
+                          {parseUniversity(c.university).full}
                           {c.universityMismatch && <span className="ml-1.5 font-semibold">[不推荐]</span>}
                         </p>
                         {c.researchAreas.length > 0 && (
@@ -812,7 +812,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                           </div>
                           <p className="text-xs text-gray-500 dark:text-[#6a7a7e] mb-2">
                             {deepSavedProf.positionTitle && <span>{deepSavedProf.positionTitle} · </span>}
-                            {deepSavedProf.university}
+                            {parseUniversity(deepSavedProf.university).full}
                           </p>
                           {deepSavedProf.researchAreas.length > 0 && (
                             <div className="flex flex-wrap gap-1 mb-3">
@@ -844,7 +844,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${sourceBadge.cls}`}>{sourceBadge.label}</span>
                           </div>
                           <p className="text-xs mt-0.5 text-gray-500 dark:text-[#6a7a7e]">
-                            {c.position && <span>{c.position} · </span>}{c.university}
+                            {c.position && <span>{c.position} · </span>}{parseUniversity(c.university).full}
                           </p>
                           {c.researchAreas.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1.5">
@@ -952,7 +952,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
             >
               <option value="">全部大学</option>
               {ALL_UNIVERSITIES.map(u => (
-                <option key={u} value={u}>{u}</option>
+                <option key={u} value={u}>{parseUniversity(u).full}</option>
               ))}
             </select>
           </FilterSection>
@@ -1116,7 +1116,7 @@ function ProfCard({ p }: { p: Professor }) {
                 {p.positionTitle}
               </span>
             )}
-            <span>{p.university}</span>
+            <span>{parseUniversity(p.university).full}</span>
           </p>
         </div>
       </div>
