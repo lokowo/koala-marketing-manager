@@ -46,28 +46,28 @@ const CATEGORIES = [
 const HOT_TAGS = ['AI', 'Machine Learning', 'Neuroscience', 'Data Science', 'Finance', 'Education'];
 
 const UNI_COLORS: Record<string, { bg: string; fg: string; short: string }> = {
-  'Australian National University':        { bg: '#D4A843', fg: '#1a1a1a', short: 'ANU' },
-  'University of Melbourne':               { bg: '#003087', fg: '#fff',    short: 'MEL' },
-  'University of Sydney':                  { bg: '#cc0000', fg: '#fff',    short: 'SYD' },
-  'UNSW Sydney':                           { bg: '#1a1a1a', fg: '#ffe600', short: 'NSW' },
-  'University of Queensland':              { bg: '#51247a', fg: '#fff',    short: 'UQ'  },
-  'Monash University':                     { bg: '#006dae', fg: '#fff',    short: 'MON' },
-  'University of Western Australia':       { bg: '#003087', fg: '#fff',    short: 'UWA' },
-  'University of Adelaide':                { bg: '#005a9c', fg: '#fff',    short: 'ADE' },
-  'University of Technology Sydney':       { bg: '#00a3e0', fg: '#fff',    short: 'UTS' },
-  'RMIT University':                       { bg: '#e60028', fg: '#fff',    short: 'RMT' },
-  'Macquarie University':                  { bg: '#e8291c', fg: '#fff',    short: 'MAC' },
-  'Queensland University of Technology':   { bg: '#005a9c', fg: '#fff',    short: 'QUT' },
-  'Deakin University':                     { bg: '#00a86b', fg: '#fff',    short: 'DEA' },
-  'Griffith University':                   { bg: '#d4380d', fg: '#fff',    short: 'GRF' },
-  'La Trobe University':                   { bg: '#e84e1b', fg: '#fff',    short: 'LAT' },
-  'University of Newcastle':               { bg: '#1f1646', fg: '#fff',    short: 'NEW' },
-  'University of Wollongong':              { bg: '#1e5799', fg: '#fff',    short: 'WOL' },
-  'Flinders University':                   { bg: '#004f9f', fg: '#fff',    short: 'FLI' },
-  'Curtin University':                     { bg: '#cfb44b', fg: '#e8e4dc', short: 'CUR' },
-  'James Cook University':                 { bg: '#005c84', fg: '#fff',    short: 'JCU' },
-  'Swinburne University of Technology':    { bg: '#bb0000', fg: '#fff',    short: 'SWI' },
-  'Western Sydney University':             { bg: '#e52020', fg: '#fff',    short: 'WSY' },
+  'Australian National University':        { bg: '#d4a84330', fg: '#b8922e', short: 'ANU' },
+  'University of Melbourne':               { bg: '#00308720', fg: '#1e4a8a', short: 'MEL' },
+  'University of Sydney':                  { bg: '#cc000018', fg: '#b83232', short: 'SYD' },
+  'UNSW Sydney':                           { bg: '#1a1a1a15', fg: '#3a3a3a', short: 'NSW' },
+  'University of Queensland':              { bg: '#51247a18', fg: '#6b3d96', short: 'UQ'  },
+  'Monash University':                     { bg: '#006dae18', fg: '#2680b8', short: 'MON' },
+  'University of Western Australia':       { bg: '#00308718', fg: '#1e4a8a', short: 'UWA' },
+  'University of Adelaide':                { bg: '#005a9c18', fg: '#2870a8', short: 'ADE' },
+  'University of Technology Sydney':       { bg: '#00a3e018', fg: '#1a8ab8', short: 'UTS' },
+  'RMIT University':                       { bg: '#e6002818', fg: '#c43838', short: 'RMT' },
+  'Macquarie University':                  { bg: '#e8291c18', fg: '#c44040', short: 'MAC' },
+  'Queensland University of Technology':   { bg: '#005a9c18', fg: '#2870a8', short: 'QUT' },
+  'Deakin University':                     { bg: '#00a86b18', fg: '#2d9060', short: 'DEA' },
+  'Griffith University':                   { bg: '#d4380d18', fg: '#b84830', short: 'GRF' },
+  'La Trobe University':                   { bg: '#e84e1b18', fg: '#c45830', short: 'LAT' },
+  'University of Newcastle':               { bg: '#1f164618', fg: '#3d3060', short: 'NEW' },
+  'University of Wollongong':              { bg: '#1e579918', fg: '#2e68a0', short: 'WOL' },
+  'Flinders University':                   { bg: '#004f9f18', fg: '#2868a0', short: 'FLI' },
+  'Curtin University':                     { bg: '#cfb44b20', fg: '#a8942e', short: 'CUR' },
+  'James Cook University':                 { bg: '#005c8418', fg: '#286880', short: 'JCU' },
+  'Swinburne University of Technology':    { bg: '#bb000018', fg: '#a83838', short: 'SWI' },
+  'Western Sydney University':             { bg: '#e5202018', fg: '#c43838', short: 'WSY' },
 };
 
 const ALL_UNIVERSITIES = [
@@ -97,7 +97,7 @@ function getUniBadge(university: string) {
   if (UNI_COLORS[university]) return UNI_COLORS[university];
   // fallback: first 3 letters, blue-grey
   const letters = university.replace(/University of |University /gi, '').slice(0, 3).toUpperCase();
-  return { bg: '#5a6878', fg: '#fff', short: letters };
+  return { bg: '#5a687818', fg: '#5a6878', short: letters };
 }
 
 function fmtCitations(n?: number): string {
@@ -1045,12 +1045,12 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
 // ─── Professor Card ──────────────────────────────────────────────────────────
 
 function getPositionStyle(title?: string): { bg: string; color: string } {
-  if (!title) return { bg: 'rgba(106,122,126,0.15)', color: '#6a7a7e' };
+  if (!title) return { bg: 'rgba(106,122,126,0.1)', color: '#7a8a8e' };
   const t = title.toLowerCase();
-  if (t.includes('professor') && !t.includes('associate')) return { bg: 'rgba(212,168,67,0.2)', color: '#D4A843' };
-  if (t.includes('associate professor')) return { bg: 'rgba(192,192,210,0.2)', color: '#c0c0d2' };
-  if (t.includes('senior lecturer') || t.includes('senior research')) return { bg: 'rgba(96,165,250,0.2)', color: '#60a5fa' };
-  return { bg: 'rgba(106,122,126,0.15)', color: '#6a7a7e' };
+  if (t.includes('professor') && !t.includes('associate')) return { bg: 'rgba(180,140,50,0.12)', color: '#9a7a28' };
+  if (t.includes('associate professor')) return { bg: 'rgba(140,140,160,0.12)', color: '#8888a0' };
+  if (t.includes('senior lecturer') || t.includes('senior research')) return { bg: 'rgba(96,150,220,0.12)', color: '#5088c0' };
+  return { bg: 'rgba(106,122,126,0.1)', color: '#7a8a8e' };
 }
 
 function ProfCard({ p }: { p: Professor }) {
@@ -1062,7 +1062,7 @@ function ProfCard({ p }: { p: Professor }) {
   const isVerified = p.verificationStatus === 'Verified';
 
   return (
-    <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#0F1419] border border-gray-100 dark:border-white/10 hover:shadow-lg hover:border-[#D4A843]/30 transition-all duration-300 hover:-translate-y-1 group relative">
+    <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#0F1419] border border-gray-100 dark:border-white/10 hover:shadow-md hover:border-gray-200 dark:hover:border-[#D4A843]/30 transition-all duration-300 hover:-translate-y-0.5 group relative">
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4A843]/60 to-[#4ECDC4]/60 opacity-0 group-hover:opacity-100 transition-opacity" />
       {/* Top badges row */}
       <div className="flex items-center gap-2 px-4 pt-3 pb-2 flex-wrap">
@@ -1123,10 +1123,10 @@ function ProfCard({ p }: { p: Professor }) {
 
       {/* Stats row */}
       {hasStats && (
-        <div className="grid grid-cols-2 divide-x divide-gray-200 dark:divide-white/10 px-4 pb-3 text-xs text-gray-500 dark:text-[#6a7a7e]">
+        <div className="grid grid-cols-2 divide-x divide-gray-100 dark:divide-white/10 px-4 pb-3 text-xs text-gray-500 dark:text-[#6a7a7e]">
           <div className="flex items-center gap-2 pr-3">
             {p.hIndex != null && (
-              <span className="flex items-center gap-1 font-semibold text-amber-700 dark:text-[#D4A843]">
+              <span className="flex items-center gap-1 font-semibold text-amber-600 dark:text-[#D4A843]">
                 <TrendingUp className="size-3" />
                 H:{p.hIndex}
               </span>
@@ -1165,7 +1165,7 @@ function ProfCard({ p }: { p: Professor }) {
       {(p.researchAreas ?? []).length > 0 && (
         <div className="flex flex-wrap gap-1 px-4 pb-3">
           {p.researchAreas.slice(0, 3).map(area => (
-            <span key={area} className="rounded-md text-[10px] px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">
+            <span key={area} className="rounded-md text-[10px] px-2 py-0.5 bg-gray-50 dark:bg-amber-900/20 text-gray-600 dark:text-amber-400">
               {area}
             </span>
           ))}
@@ -1175,11 +1175,11 @@ function ProfCard({ p }: { p: Professor }) {
       {/* CTAs */}
       <div className="flex gap-2 px-4 pb-4">
         <Link href={`/koala/professors/${p.id}`}
-          className="flex-1 text-center text-xs font-semibold py-2.5 rounded-xl no-underline text-[#1A1A2E] dark:text-[#D4A843] bg-gray-50 dark:bg-white/5 hover:bg-[#1A1A2E] hover:text-white dark:hover:bg-[#D4A843] dark:hover:text-[#080C10] transition-all">
+          className="flex-1 text-center text-xs font-semibold py-2.5 rounded-xl no-underline text-gray-600 dark:text-[#D4A843] bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-[#D4A843] dark:hover:text-[#080C10] transition-all">
           查看详情
         </Link>
         <Link href={`/koala/chat?action=outreach&prof=${p.id}&name=${encodeURIComponent(p.name)}`}
-          className="flex-1 text-center text-xs font-semibold py-2 rounded-xl no-underline flex items-center justify-center gap-1 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
+          className="flex-1 text-center text-xs font-semibold py-2 rounded-xl no-underline flex items-center justify-center gap-1 bg-gray-700 hover:bg-gray-800 dark:bg-[#D4A843] text-white dark:text-[#080c10] transition-colors">
           <MessageSquarePlus className="size-3" />
           申请信
         </Link>
