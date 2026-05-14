@@ -999,6 +999,8 @@ export async function completeResponse(
   const contactEmail = metadata?.contact_email as string | undefined;
   const contactWechat = metadata?.contact_wechat as string | undefined;
   const durationSeconds = metadata?.duration_seconds as number | undefined;
+  const emailStatus = metadata?.email_status as string | undefined;
+  const phoneStatus = metadata?.phone_status as string | undefined;
 
   // Fetch response info for survey_id and sales_user_id
   const { data: respInfo } = await db.from('survey_responses')
@@ -1016,6 +1018,10 @@ export async function completeResponse(
     }
   }
 
+  const metadataJson: Record<string, unknown> = {};
+  if (emailStatus) metadataJson.email_status = emailStatus;
+  if (phoneStatus) metadataJson.phone_status = phoneStatus;
+
   const { error: updateErr } = await db.from('survey_responses')
     .update({
       status: 'completed',
@@ -1026,6 +1032,7 @@ export async function completeResponse(
       respondent_wechat: contactWechat || null,
       time_spent_seconds: durationSeconds || null,
       ...(valueScore !== null ? { value_score: valueScore } : {}),
+      ...(Object.keys(metadataJson).length > 0 ? { metadata: metadataJson } : {}),
     })
     .eq('id', responseId);
   if (updateErr) throw new Error(`Failed to complete response: ${updateErr.message}`);

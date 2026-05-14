@@ -560,8 +560,7 @@ export default function BannersPage() {
                         <div className="flex gap-2 p-3 bg-[#F9FAFB]">
                           <button
                             onClick={() => {
-                              setNewImage(null);
-                              setNewImagePreview('');
+                              flash('已选择 AI 生成的图片，点击下方"创建 Banner"保存');
                             }}
                             className="flex-1 py-2 rounded-lg text-xs font-medium text-white bg-green-600 hover:bg-green-700 transition-colors"
                           >

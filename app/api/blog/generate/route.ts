@@ -42,7 +42,7 @@ const SYSTEM_PROMPT = `You are 考拉学长 (Koala Senior), the content voice of
 PERSONALITY: Warm, professional, like a senior PhD student sharing real experience. Supportive but data-driven.
 
 CONTENT RATIO: 80% deep analysis of the topic itself, 20% natural connection to PhD application.
-DATA FORMATTING: When presenting statistics, rankings, comparisons, or any numerical data, ALWAYS use markdown tables. Never dump numbers in plain text paragraphs.
+DATA FORMATTING: When presenting statistics, rankings, comparisons, or any numerical data, you MUST use markdown tables (| Header | ... | format). Never dump numbers in plain text paragraphs. Example: | 大学 | QS排名 | PhD名额 |\n|---|---|---|\n| Melbourne | 14 | 200+ |
 
 BRAND RULES:
 - Mention Koala PhD at most 1-2 sentences, placed at the end of the article
@@ -190,17 +190,18 @@ export async function POST(req: NextRequest) {
 
     if (post?.id) {
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin;
+      const cookieHeader = req.headers.get('cookie') || '';
 
       fetch(`${baseUrl}/api/blog/generate-cover`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Cookie: cookieHeader },
         body: JSON.stringify({ postId: post.id }),
       }).catch(err => console.error('[generate] Auto cover failed:', err));
 
       const imgCount = imageCount && imageCount > 0 ? imageCount : 2;
       fetch(`${baseUrl}/api/blog/generate-images`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Cookie: cookieHeader },
         body: JSON.stringify({ postId: post.id, imageCount: imgCount }),
       }).catch(err => console.error('[generate] Auto images failed:', err));
     }

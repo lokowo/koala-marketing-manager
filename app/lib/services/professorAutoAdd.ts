@@ -222,7 +222,7 @@ export async function findOrCreateProfessor(name: string, university?: string): 
 async function searchOpenAlexCandidates(name: string, university?: string): Promise<ProfessorCandidate[]> {
   const query = encodeURIComponent(name);
   // Always search by name only — no institution filter — so we find all matches
-  const url = `https://api.openalex.org/authors?search=${query}&per_page=5&mailto=koalaphd@gmail.com`;
+  const url = `https://api.openalex.org/authors?search=${query}&per_page=15&mailto=koalaphd@gmail.com`;
 
   let data: { results: OpenAlexAuthor[] };
   try {

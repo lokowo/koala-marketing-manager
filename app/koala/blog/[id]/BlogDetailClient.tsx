@@ -135,7 +135,7 @@ export default function BlogDetailClient({ post, relatedPosts }: { post: BlogPos
 
         {/* 2. Meta info */}
         <div className="mt-5 flex items-center gap-2 flex-wrap">
-          <span className="text-xs px-3 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843]/[0.06] text-amber-700 dark:text-[#D4A843]">
+          <span className="text-xs px-3 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]">
             {CATEGORY_LABELS[post.category] || post.category}
           </span>
           <span className="text-xs text-gray-500 dark:text-[#6a7a7e]">
@@ -169,7 +169,7 @@ export default function BlogDetailClient({ post, relatedPosts }: { post: BlogPos
 
         {/* 5. Language switch */}
         {hasBilingual && (
-          <div className="mt-4 px-4 py-3 rounded-lg flex items-center justify-between bg-gray-50 dark:bg-[#D4A843]/[0.06]">
+          <div className="mt-4 px-4 py-3 rounded-lg flex items-center justify-between bg-gray-50 dark:bg-[#D4A843]/10">
             <span className="text-sm text-gray-500 dark:text-[#a8b8ac]">
               {lang === 'zh' ? '此文章提供英文版本' : 'This article is available in Chinese'}
             </span>
@@ -222,7 +222,7 @@ export default function BlogDetailClient({ post, relatedPosts }: { post: BlogPos
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/><line x1="12" y1="6" x2="12" y2="18" stroke="currentColor" strokeWidth="2"/><line x1="6" y1="12" x2="18" y2="12" stroke="currentColor" strokeWidth="2"/></svg>
             </ShareBtn>
             <ShareBtn onClick={shareXiaohongshu} title="小红书">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h13c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 18H7V4h11v16zM8 6h8v2H8V6zm0 4h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
+              <svg width="18" height="18" viewBox="0 0 200 200" fill="currentColor"><path d="M100 0C44.8 0 0 44.8 0 100s44.8 100 100 100 100-44.8 100-100S155.2 0 100 0zm0 18c45.2 0 82 36.8 82 82s-36.8 82-82 82-82-36.8-82-82 36.8-82 82-82zm-8 42v32H60v16h32v52h16v-52h32v-16h-32V60H92z"/></svg>
             </ShareBtn>
             <ShareBtn onClick={shareEmail} title="邮件">
               <Mail size={18} />

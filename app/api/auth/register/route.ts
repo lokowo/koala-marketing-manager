@@ -70,11 +70,32 @@ export async function POST(req: Request) {
     if (referralCode) {
       try {
         const upperCode = referralCode.toUpperCase();
-        const { data: referrerProfile } = await db
+        let { data: referrerProfile } = await db
           .from('user_profiles')
           .select('id, credits_remaining, referral_code')
           .eq('referral_code', upperCode)
           .single();
+
+        if (!referrerProfile) {
+          const { data: codeRow } = await db
+            .from('referral_codes')
+            .select('user_id')
+            .eq('code', upperCode)
+            .single();
+          if (codeRow) {
+            const { data: fallbackProfile } = await db
+              .from('user_profiles')
+              .select('id, credits_remaining, referral_code')
+              .eq('id', codeRow.user_id)
+              .single();
+            if (fallbackProfile) {
+              await db.from('user_profiles')
+                .update({ referral_code: upperCode })
+                .eq('id', fallbackProfile.id);
+              referrerProfile = fallbackProfile;
+            }
+          }
+        }
 
         if (referrerProfile && referrerProfile.id !== userData.user.id) {
           const { count: referredCount } = await db

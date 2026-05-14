@@ -87,7 +87,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
           { label: '调研问卷', href: '/dashboard/koala/surveys' },
         ],
       },
-      { icon: '👥', label: '用户管理', href: '/dashboard/koala/users', adminOnly: true },
+      { icon: '👥', label: '用户管理', href: '/dashboard/koala/users' },
       { icon: '📈', label: '数据分析', href: '/dashboard/koala/analytics' },
       { icon: '🌱', label: '用户增长', href: '/dashboard/koala/growth' },
       { icon: '⚙️', label: '系统设置', href: '/dashboard/koala/settings' },

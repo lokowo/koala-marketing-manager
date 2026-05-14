@@ -46,9 +46,6 @@ export async function GET(req: NextRequest) {
       const response = await getResponseById(responseId);
       if (!response) return Response.json({ error: 'Not found' }, { status: 404 });
 
-      if (role === 'admin') {
-        return Response.json(stripPii(response as unknown as Record<string, unknown>));
-      }
       return Response.json(response);
     }
 
@@ -71,13 +68,6 @@ export async function GET(req: NextRequest) {
       limit,
       sales_user_id: salesUserId,
     });
-
-    if (role === 'admin') {
-      return Response.json({
-        ...result,
-        responses: result.responses.map(r => stripPii(r as unknown as Record<string, unknown>)),
-      });
-    }
 
     return Response.json(result);
   } catch (error) {

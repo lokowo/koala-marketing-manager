@@ -65,6 +65,8 @@ function ResponsesContent() {
 
   const isSales = userRole === 'sales';
   const isSuperAdmin = userRole === 'super_admin';
+  const isAdmin = userRole === 'admin';
+  const canSeeContact = isSales || isSuperAdmin || isAdmin;
   const selectedResponse = responses.find(r => r.id === selectedId);
 
   if (!surveyId) return <div className="text-center py-20 text-slate-500">缺少问卷 ID</div>;
@@ -93,7 +95,7 @@ function ResponsesContent() {
                   <th className="px-4 py-3 text-slate-500 font-medium">#</th>
                   <th className="px-4 py-3 text-slate-500 font-medium">提交时间</th>
                   {/* Contact info visible to sales and super_admin */}
-                  {(isSales || isSuperAdmin) && (
+                  {canSeeContact && (
                     <>
                       <th className="px-4 py-3 text-slate-500 font-medium">姓名</th>
                       <th className="px-4 py-3 text-slate-500 font-medium">手机</th>
@@ -119,11 +121,14 @@ function ResponsesContent() {
                       <td className="px-4 py-3 text-slate-600 text-xs">
                         {new Date(r.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </td>
-                      {(isSales || isSuperAdmin) && (
+                      {canSeeContact && (
                         <>
                           <td className="px-4 py-3 text-slate-700 text-xs">{(meta.respondent_name as string) || '—'}</td>
                           <td className="px-4 py-3 text-slate-700 text-xs">{(meta.respondent_phone as string) || '—'}</td>
-                          <td className="px-4 py-3 text-slate-700 text-xs">{(meta.respondent_email as string) || '—'}</td>
+                          <td className="px-4 py-3 text-slate-700 text-xs">
+                            {(meta.respondent_email as string) || '—'}
+                            {meta.email_status === 'invalid' && <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] bg-red-100 text-red-600">格式无效</span>}
+                          </td>
                         </>
                       )}
                       <td className="px-4 py-3">
@@ -172,12 +177,15 @@ function ResponsesContent() {
                 <button onClick={() => setSelectedId(null)} className="text-slate-400 hover:text-slate-600 text-xs">关闭</button>
               </div>
               {/* Contact info section */}
-              {(isSales || isSuperAdmin) && (
+              {canSeeContact && (
                 <div className="bg-slate-50 rounded-lg p-3 space-y-1">
                   <div className="text-xs font-medium text-slate-500 mb-1">联系信息</div>
                   <div className="text-sm text-slate-700">{(selectedResponse.metadata?.respondent_name as string) || '—'}</div>
                   <div className="text-xs text-slate-500">{(selectedResponse.metadata?.respondent_phone as string) || '—'}</div>
-                  <div className="text-xs text-slate-500">{(selectedResponse.metadata?.respondent_email as string) || '—'}</div>
+                  <div className="text-xs text-slate-500">
+                    {(selectedResponse.metadata?.respondent_email as string) || '—'}
+                    {selectedResponse.metadata?.email_status === 'invalid' && <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] bg-red-100 text-red-600">格式无效</span>}
+                  </div>
                   {selectedResponse.metadata?.respondent_wechat ? (
                     <div className="text-xs text-slate-500">微信: {String(selectedResponse.metadata.respondent_wechat)}</div>
                   ) : null}

@@ -54,14 +54,20 @@ export async function POST(req: Request) {
     }
 
     // Ensure user_profiles row exists (FK requirement)
-    await db
+    const { error: upsertErr } = await db
       .from('user_profiles')
       .upsert({
         id: user.id,
         email: email,
         display_name: fullName || email.split('@')[0],
+        credits_remaining: 1,
         updated_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
       }, { onConflict: 'id', ignoreDuplicates: true });
+    if (upsertErr) {
+      console.error('[role-application] user_profiles upsert failed:', upsertErr);
+      return Response.json({ error: '用户资料创建失败，请重试' }, { status: 500 });
+    }
 
     const { data: existing } = await db
       .from('role_applications')
