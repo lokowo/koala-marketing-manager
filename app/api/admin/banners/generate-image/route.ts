@@ -8,19 +8,31 @@ const db = supabaseAdmin as any;
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const basePrompt = `Professional website banner photograph for "Koala PhD", an education platform helping Chinese students find PhD supervisors in Australia.
+const basePrompt = `A real photograph taken with a Canon EOS R5 camera, 85mm f/1.4 lens.
 
-CRITICAL RULES:
-- ABSOLUTELY NO TEXT, NO WORDS, NO LETTERS, NO CHARACTERS in the image. The image must be purely visual with ZERO text of any kind.
-- Photorealistic style, looks like a real professional photograph, NOT AI-generated looking
-- Real human faces must look natural, not plastic or uncanny
-- Natural lighting, no oversaturated colors
-- Clean composition suitable for a website banner
-- Academic/university/research context
-- Color palette: warm tones that complement gold and teal accents
-- NO watermarks, NO logos, NO icons, NO overlays
+MANDATORY STYLE REQUIREMENTS:
+- Must look like a REAL photograph taken by a professional photographer, NOT AI-generated
+- Shot on film stock Kodak Portra 400 — warm skin tones, soft natural grain, muted highlights
+- Natural lens imperfections: subtle bokeh, slight vignetting at edges, natural depth of field
+- Real-world lighting ONLY: golden hour sunlight, overcast diffused light, or indoor ambient light
+- NO perfect symmetry, NO plastic skin, NO HDR over-processing, NO over-sharpening
+- Skin texture must be visible and natural — pores, subtle blemishes, natural shadows under eyes
+- Clothing should have natural wrinkles and fabric texture
+- Background should have natural blur (shallow depth of field) with real bokeh circles
+- Colors should be slightly desaturated, NOT oversaturated or neon
+- NO lens flare effects, NO dramatic color grading, NO cinematic blue/orange toning
+- Avoid uncanny valley — if there are people, they must look completely real
 
-User's specific request: `;
+COMPOSITION:
+- Rule of thirds framing
+- Natural candid moment, not posed or staged looking
+- Environmental context: real university buildings, real libraries, real laboratories
+
+ABSOLUTELY NO TEXT, NO WORDS, NO LETTERS, NO CHARACTERS of any language in the image.
+
+CONTEXT: This is for Koala PhD, a platform helping Chinese students find PhD supervisors in Australian universities.
+
+Specific scene requested: `;
 
 export async function POST(req: NextRequest) {
   try {

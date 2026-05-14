@@ -708,6 +708,7 @@ export default function BannersPage() {
                       📐 AI 自动生成 1024×1024 像素（1:1 正方形）· 图片不含任何文字
                     </div>
                     <p className="text-xs text-[#6B7280]">描述你想要的图片内容，AI 自动生成专业 Banner</p>
+                    <p className="text-xs text-[#9CA3AF] italic">🎬 AI 将生成真实摄影风格的图片（柯达胶片色调 · 自然光 · 浅景深）</p>
                     <textarea
                       placeholder="例：澳洲大学校园秋天的景色，几位中国留学生在讨论学术研究"
                       value={aiPrompt}
@@ -717,12 +718,12 @@ export default function BannersPage() {
                     />
                     <div className="flex gap-1.5 flex-wrap">
                       {[
-                        { label: '🏫 大学校园', prompt: '澳洲知名大学校园全景，秋天金色阳光，学术氛围浓厚' },
-                        { label: '📚 学术研究', prompt: '中国留学生在现代化图书馆里用笔记本电脑做研究，温暖的阳光照进来' },
-                        { label: '🎓 毕业典礼', prompt: 'PhD毕业典礼，穿着学位服的学生们开心地抛帽子庆祝' },
-                        { label: '🔬 导师指导', prompt: '教授在实验室里一对一指导学生做科研项目' },
-                        { label: '🌏 悉尼风景', prompt: '悉尼歌剧院和海港大桥的全景，远处可见大学建筑群' },
-                        { label: '🤖 AI科技', prompt: 'AI科技感界面，展示教授匹配和智能推荐的未来感画面' },
+                        { label: '🏫 大学校园', prompt: '澳洲大学校园草坪上，两位亚洲学生边走边聊天，秋天下午的金色阳光，背景是哥特式建筑' },
+                        { label: '📚 学术研究', prompt: '亚洲女生在明亮的现代图书馆靠窗位置用笔记本电脑写论文，桌上有咖啡和书，自然光从大窗户照进来' },
+                        { label: '🎓 毕业典礼', prompt: '一群穿黑色学位服的毕业生在大学大厅外的台阶上笑着合影，有人抛帽子，背景是蓝天白云' },
+                        { label: '🔬 导师指导', prompt: '中年白人男教授和亚洲男研究生在实验室白板前讨论数据，教授指着图表，两人侧面特写' },
+                        { label: '🌏 悉尼风景', prompt: '从悉尼大学主楼钟塔的角度拍摄，前景是砂岩建筑和草坪上的学生，远处能看到悉尼塔' },
+                        { label: '🤖 AI科技', prompt: '亚洲女生对着笔记本电脑微笑，屏幕上有数据可视化图表，浅景深让背景模糊成光斑' },
                       ].map(item => (
                         <button
                           key={item.label}

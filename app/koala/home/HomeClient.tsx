@@ -438,63 +438,114 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
 
         {/* ── Hot Professors ── */}
         <section>
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">🔥 热门导师推荐</h2>
+          <div className="flex justify-between items-end mb-4">
+            <div>
+              <h2 className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">🔥 热门导师推荐</h2>
+              <p className="text-xs mt-0.5 text-gray-500 dark:text-[#6a7a7e]">基于匹配度和学术影响力排序</p>
+            </div>
             <Link href="/koala/professors" className="text-xs font-semibold flex items-center gap-1 no-underline text-[#1A1A2E] dark:text-[#D4A843]">
-              查看全部 <ChevronRight className="size-3" />
+              查看全部 <ArrowRight className="size-3" />
             </Link>
           </div>
           <div className="flex -mx-4 px-4 pb-2 gap-3 overflow-x-auto lg:overflow-visible lg:mx-0 lg:px-0 lg:grid lg:grid-cols-3 lg:gap-4" style={{ scrollbarWidth: 'none' }}>
             {(professors.length > 0 ? professors : Array(4).fill(null)).map((p, i) => {
               if (!p) return (
-                <div key={i} className="shrink-0 w-44 lg:w-auto h-52 rounded-2xl animate-pulse bg-gray-100 dark:bg-[#c9a96e]/[0.06]" />
+                <div key={i} className="shrink-0 w-56 lg:w-auto h-60 rounded-2xl animate-pulse bg-gray-100 dark:bg-[#c9a96e]/[0.06]" />
               );
               const badge = getUniBadge(p.university);
-              const status = p.acceptingStudents === 'yes' ? { label: '招生中', bg: '#d1fae5', color: '#065f46' }
-                           : p.acceptingStudents === 'no'  ? { label: '暂不招', bg: '#fee2e2', color: '#991b1b' }
+              const status = p.acceptingStudents === 'yes' ? { label: '招生中', dotCls: 'bg-emerald-500' }
+                           : p.acceptingStudents === 'no'  ? { label: '暂不招', dotCls: 'bg-red-400' }
                            : null;
+              const tags = (p.researchAreas || []).slice(0, 2);
               return (
                 <Link
                   key={p.id}
                   href={`/koala/professors/${p.id}`}
-                  className="shrink-0 w-44 lg:w-auto rounded-2xl p-3.5 flex flex-col gap-2 no-underline bg-white dark:bg-white/5 border border-gray-200 dark:border-[#c9a96e]/10 shadow-sm dark:shadow-[0_4px_16px_rgba(196,160,80,0.10)]"
+                  className="shrink-0 w-56 lg:w-auto bg-gradient-to-br from-white to-gray-50 dark:from-[#0F1419] dark:to-[#151B23] rounded-2xl p-5 border border-gray-100 dark:border-white/10 hover:shadow-xl hover:shadow-[#D4A843]/5 hover:-translate-y-1 transition-all duration-300 group cursor-pointer no-underline flex flex-col gap-2.5 relative overflow-hidden border-l-4"
+                  style={{ borderLeftColor: badge.bg }}
                 >
+                  {/* University badge + status */}
                   <div className="flex items-center justify-between">
                     <span
-                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      className="text-[10px] font-bold px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
                       style={{ background: badge.bg, color: badge.fg }}
                     >
                       {badge.short}
+                      <span className="font-medium opacity-80">·</span>
+                      <span className="font-medium text-[9px] opacity-90">
+                        {p.university.length > 20 ? p.university.slice(0, 18) + '…' : p.university}
+                      </span>
                     </span>
                     {status && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: status.bg, color: status.color }}>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full inline-flex items-center gap-1 bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-400">
+                        <span className={`size-1.5 rounded-full ${status.dotCls}`} />
                         {status.label}
                       </span>
                     )}
                   </div>
 
+                  {/* Name + position */}
                   <div>
-                    <div className="text-xs font-bold leading-snug text-gray-900 dark:text-[#e8e4dc]">{p.name}</div>
+                    <div className="text-sm font-bold leading-snug text-gray-900 dark:text-[#e8e4dc]">{p.name}</div>
                     {p.positionTitle && (
-                      <div className="text-[10px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">{p.positionTitle}</div>
+                      <div className="text-[11px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">{p.positionTitle}</div>
                     )}
                   </div>
 
-                  {p.researchAreas?.[0] && (
-                    <div className="text-[10px] px-2 py-1 rounded-full leading-tight bg-gray-100 dark:bg-[#c9a96e]/[0.06] text-gray-500 dark:text-[#a8b8ac]">
-                      {p.researchAreas[0].length > 30 ? p.researchAreas[0].slice(0, 28) + '…' : p.researchAreas[0]}
+                  {/* Research tags */}
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {tags[0] && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">
+                          {tags[0].length > 20 ? tags[0].slice(0, 18) + '…' : tags[0]}
+                        </span>
+                      )}
+                      {tags[1] && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400">
+                          {tags[1].length > 20 ? tags[1].slice(0, 18) + '…' : tags[1]}
+                        </span>
+                      )}
                     </div>
                   )}
 
-                  {(p.hIndex || p.paperCount) && (
-                    <div className="flex gap-2 text-[10px] text-gray-500 dark:text-[#6a7a7e]">
-                      {p.hIndex && <span>H={p.hIndex}</span>}
-                      {p.paperCount && <span>· {fmtNum(p.paperCount)} 篇</span>}
-                    </div>
+                  {/* Stats row */}
+                  {(p.hIndex || p.paperCount || p.citationCount) && (
+                    <>
+                      <div className="border-t border-gray-100 dark:border-white/5 mt-auto" />
+                      <div className="flex items-center gap-1.5 text-[10px] text-gray-500 dark:text-[#6a7a7e]">
+                        {p.hIndex != null && (
+                          <span className="flex items-center gap-0.5">
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">H-index</span>
+                            <span>{p.hIndex}</span>
+                          </span>
+                        )}
+                        {p.hIndex != null && p.paperCount != null && (
+                          <span className="text-gray-300 dark:text-gray-600">·</span>
+                        )}
+                        {p.paperCount != null && (
+                          <span className="flex items-center gap-0.5">
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">论文</span>
+                            <span>{fmtNum(p.paperCount)}</span>
+                          </span>
+                        )}
+                        {(p.hIndex != null || p.paperCount != null) && p.citationCount != null && (
+                          <span className="text-gray-300 dark:text-gray-600">·</span>
+                        )}
+                        {p.citationCount != null && (
+                          <span className="flex items-center gap-0.5">
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">引用</span>
+                            <span>{fmtNum(p.citationCount)}</span>
+                          </span>
+                        )}
+                      </div>
+                    </>
                   )}
 
-                  <div className="mt-auto text-[10px] font-medium text-center py-1.5 rounded-full bg-gray-100 dark:bg-[#c9a96e]/[0.06] text-[#1A1A2E] dark:text-[#D4A843]">
-                    查看详情 →
+                  {/* Hover button */}
+                  <div className="absolute bottom-3 left-5 right-5 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                    <div className="text-[11px] font-semibold text-center py-2 rounded-xl bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
+                      查看详情 →
+                    </div>
                   </div>
                 </Link>
               );
