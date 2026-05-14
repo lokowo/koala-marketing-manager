@@ -156,6 +156,63 @@ export async function searchProfessorAllSources(name: string, university?: strin
   });
 }
 
+// ─── Deep Search: DB + Claude only (skip OpenAlex) ──────────────────────────
+
+export async function searchProfessorDeep(name: string, university?: string): Promise<ProfessorCandidate[]> {
+  const expandedUni = expandUniversity(university);
+  const candidates: ProfessorCandidate[] = [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let dbQuery: any = supabaseAdmin
+    .from('professors')
+    .select('*')
+    .ilike('name', `%${name}%`);
+  if (expandedUni) dbQuery = dbQuery.ilike('university', `%${expandedUni}%`);
+  const { data: dbResults } = await dbQuery.limit(5);
+
+  if (dbResults?.length) {
+    for (const p of dbResults) {
+      candidates.push({
+        name: p.name,
+        university: p.university,
+        position: p.position_title || undefined,
+        faculty: p.faculty || undefined,
+        researchAreas: p.research_areas || [],
+        hIndex: p.h_index || undefined,
+        paperCount: p.paper_count || undefined,
+        citationCount: p.citation_count || undefined,
+        email: p.email || undefined,
+        profileUrl: p.profile_url || undefined,
+        googleScholarUrl: p.google_scholar_url || undefined,
+        source: 'database',
+        confidence: 'high',
+        existsInDb: true,
+        dbId: p.id,
+      });
+    }
+  }
+
+  const claudeResults = await searchClaudeCandidates(name, expandedUni);
+  candidates.push(...claudeResults);
+
+  const deduped = new Map<string, ProfessorCandidate>();
+  for (const c of candidates) {
+    const key = `${c.name.toLowerCase()}|${c.university.toLowerCase()}`;
+    const existing = deduped.get(key);
+    if (!existing || c.source === 'database' ||
+      (c.confidence === 'high' && existing.confidence !== 'high' && existing.source !== 'database')) {
+      deduped.set(key, c);
+    }
+  }
+
+  const priority: Record<string, number> = { database: 0, claude_web_search: 1 };
+  const confPriority: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+  return Array.from(deduped.values()).sort((a, b) => {
+    return ((priority[a.source] ?? 9) - (priority[b.source] ?? 9)) || (confPriority[a.confidence] - confPriority[b.confidence]);
+  });
+}
+
 // ─── Save Candidate to DB ────────────────────────────────────────────────────
 
 export async function saveCandidateToDb(candidate: ProfessorCandidate, userId?: string): Promise<Professor | null> {
@@ -307,7 +364,7 @@ async function searchClaudeCandidates(name: string, university?: string): Promis
       : `Professor ${name} Australian university`;
 
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1000,
       tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
       messages: [{

@@ -24,6 +24,14 @@ export const aiLimiter = redis
     })
   : null
 
+// 深度搜索（Claude web search）限流：每用户每小时 5 次
+export const deepSearchLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, '1 h'),
+    })
+  : null
+
 // 认证端点限流：每个 IP 每分钟最多 3 次（注册、忘记密码、发验证码）
 export const authLimiter = redis
   ? new Ratelimit({

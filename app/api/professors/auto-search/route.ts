@@ -1,30 +1,45 @@
 import type { NextRequest } from 'next/server';
-import { searchProfessorAllSources, saveCandidateToDb } from '../../../lib/services/professorAutoAdd';
+import { searchProfessorAllSources, searchProfessorDeep, saveCandidateToDb } from '../../../lib/services/professorAutoAdd';
 import type { ProfessorCandidate } from '../../../lib/services/professorAutoAdd';
 import { getServerUser } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { notifyUser } from '../../../lib/notifications';
-import { aiLimiter } from '../../../lib/ratelimit';
+import { aiLimiter, deepSearchLimiter } from '../../../lib/ratelimit';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
 export async function GET(req: NextRequest) {
   try {
-    if (aiLimiter) {
-      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-      const { success } = await aiLimiter.limit(ip);
-      if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
-    }
-
     const name = req.nextUrl.searchParams.get('name');
     const university = req.nextUrl.searchParams.get('university') || undefined;
+    const isDeep = req.nextUrl.searchParams.get('deep') === 'true';
 
     if (!name || name.trim().length < 2) {
       return Response.json({ error: 'Missing or too short name param' }, { status: 400 });
     }
 
-    const candidates = await searchProfessorAllSources(name.trim(), university);
+    let candidates: ProfessorCandidate[];
+
+    if (isDeep) {
+      const user = await getServerUser();
+      if (!user) return Response.json({ error: '请先登录再使用 AI 深度搜索' }, { status: 401 });
+
+      if (deepSearchLimiter) {
+        const { success } = await deepSearchLimiter.limit(user.id);
+        if (!success) return Response.json({ error: 'AI 深度搜索每小时限 5 次，请稍后再试' }, { status: 429 });
+      }
+
+      candidates = await searchProfessorDeep(name.trim(), university);
+    } else {
+      if (aiLimiter) {
+        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+        const { success } = await aiLimiter.limit(ip);
+        if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
+      }
+
+      candidates = await searchProfessorAllSources(name.trim(), university);
+    }
 
     return Response.json({
       candidates,

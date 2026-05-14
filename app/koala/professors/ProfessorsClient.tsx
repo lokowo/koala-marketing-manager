@@ -228,39 +228,13 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
     setSearching(false);
     setSearchDone(false);
     setPage(1);
-    setHasMore(true);
+    setHasMore(false);
     apiFetch(filters)
       .then(d => {
         setProfessors(d.data);
         setTotal(d.total);
         setHasMore(d.hasMore);
         setPage(2);
-        if (debouncedSearch && d.data.length < 3) {
-          setSearching(true);
-          fetch(`/api/professors/auto-search?name=${encodeURIComponent(debouncedSearch)}`)
-            .then(r => r.json())
-            .then(wd => {
-              const externalCandidates = (wd.candidates || []).filter(
-                (c: SearchCandidate) => !d.data.some((dp: Professor) => dp.name === c.name && dp.university === c.university)
-              );
-              setCandidates(externalCandidates);
-              // If any DB-sourced candidates were found that we missed, refresh
-              const hasNewDbResults = (wd.candidates || []).some(
-                (c: SearchCandidate) => c.existsInDb && !d.data.some((dp: Professor) => dp.id === c.dbId)
-              );
-              if (hasNewDbResults) {
-                apiFetch(filters)
-                  .then(refreshed => {
-                    setProfessors(refreshed.data);
-                    setTotal(refreshed.total);
-                    setHasMore(refreshed.hasMore);
-                  })
-                  .catch(() => {});
-              }
-            })
-            .catch(() => {})
-            .finally(() => { setSearching(false); setSearchDone(true); });
-        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -345,7 +319,14 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     apiFetch({ ...filters, page })
-      .then(d => { setProfessors(prev => [...prev, ...d.data]); setHasMore(d.hasMore); setPage(p => p + 1); })
+      .then(d => {
+        setProfessors(prev => {
+          const ids = new Set(prev.map(p => p.id));
+          return [...prev, ...d.data.filter((p: Professor) => !ids.has(p.id))];
+        });
+        setHasMore(d.hasMore);
+        setPage(p => p + 1);
+      })
       .catch(() => {})
       .finally(() => setLoadingMore(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -124,7 +124,6 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
   }
 
   if (!filters?.showAll) {
-    q = q.not('position_title', 'is', null);
     q = q.eq('verification_status', 'Verified');
   }
   if (filters?.university) q = q.eq('university', filters.university);
@@ -179,20 +178,29 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
     const allTerms = Array.from(new Set([...parts, ...expandedParts]))
       .filter(t => !CHINESE_STOP_WORDS.includes(t) && t.length > 0);
 
-    if (allTerms.length === 1) {
-      const t = allTerms[0];
-      q = q.or(`name.ilike.%${t}%,university.ilike.%${t}%,faculty.ilike.%${t}%`);
-    } else if (allTerms.length > 1) {
-      // Multi-word: each term must appear in name, university, or faculty (AND logic)
-      for (const t of allTerms) {
-        q = q.or(`name.ilike.%${t}%,university.ilike.%${t}%,faculty.ilike.%${t}%`);
-      }
-    }
+    // Single .or() call — PostgREST silently drops all but the last when chained
+    const conditions = allTerms.flatMap(t => [
+      `name.ilike.%${t}%`,
+      `university.ilike.%${t}%`,
+      `faculty.ilike.%${t}%`,
+    ]);
+    q = q.or(conditions.join(','));
   }
   const { data, error } = await q;
   if (error) throw new Error(error.message);
 
   let results = (data ?? []).map(fromRow);
+
+  // Multi-word AND: every term must appear somewhere in name+university+faculty
+  if (searchTerm) {
+    const allParts = searchTerm.split(/[\s,;，；]+/).filter(s => s.length > 0).map(t => t.toLowerCase());
+    if (allParts.length > 1) {
+      results = results.filter((p: Professor) => {
+        const combined = `${p.name} ${p.university} ${p.faculty}`.toLowerCase();
+        return allParts.every(t => combined.includes(t));
+      });
+    }
+  }
 
   if (searchTerm) {
     const parts = searchTerm.split(/[\s,;，；]+/).filter(s => s.length > 0);
@@ -201,7 +209,6 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let allQ: any = supabaseAdmin.from('professors').select('*').order(sortField, { ascending: false, nullsFirst: false }).limit(500);
     if (!filters?.showAll) {
-      allQ = allQ.not('position_title', 'is', null);
       allQ = allQ.eq('verification_status', 'Verified');
     }
     if (filters?.university) allQ = allQ.eq('university', filters.university);
@@ -247,9 +254,8 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
   if (hasCategory) {
     // Can't count with ilike on text[] in PostgREST — fetch and count in JS
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q: any = supabaseAdmin.from('professors').select('research_areas').limit(3000);
+    let q: any = supabaseAdmin.from('professors').select('name,university,faculty,research_areas').limit(3000);
     if (!filters?.showAll) {
-      q = q.not('position_title', 'is', null);
       q = q.eq('verification_status', 'Verified');
     }
     if (filters?.university) q = q.eq('university', filters.university);
@@ -259,14 +265,25 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
     if (filters?.contributedOnly) q = q.not('contributed_by', 'is', null);
     if (filters?.search) {
       const searchParts = filters.search.split(/[\s,;，；]+/).filter(s => s.length > 0);
-      for (const t of searchParts) {
-        q = q.or(`name.ilike.%${t}%,university.ilike.%${t}%,faculty.ilike.%${t}%`);
-      }
+      const conditions = searchParts.flatMap(t => [
+        `name.ilike.%${t}%`, `university.ilike.%${t}%`, `faculty.ilike.%${t}%`,
+      ]);
+      q = q.or(conditions.join(','));
     }
     const { data, error } = await q;
     if (error) throw new Error(error.message);
     const categoryKeywords = CATEGORY_KEYWORDS[filters!.category!].map(k => k.toLowerCase());
-    return (data ?? []).filter((row: { research_areas: string[] | null }) => {
+    let catResults = (data ?? []) as Array<{ name?: string; university?: string; faculty?: string; research_areas: string[] | null }>;
+    if (filters?.search) {
+      const parts = filters.search.split(/[\s,;，；]+/).filter(s => s.length > 0).map(t => t.toLowerCase());
+      if (parts.length > 1) {
+        catResults = catResults.filter(row => {
+          const combined = `${row.name || ''} ${row.university || ''} ${row.faculty || ''}`.toLowerCase();
+          return parts.every(t => combined.includes(t));
+        });
+      }
+    }
+    return catResults.filter(row => {
       const areasText = (row.research_areas ?? []).join(' ').toLowerCase();
       return categoryKeywords.some(k => areasText.includes(k));
     }).length;
@@ -279,7 +296,6 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let q: any = supabaseAdmin.from('professors').select('name,university,research_areas').limit(3000);
     if (!filters?.showAll) {
-      q = q.not('position_title', 'is', null);
       q = q.eq('verification_status', 'Verified');
     }
     if (filters?.university) q = q.eq('university', filters.university);
@@ -302,7 +318,6 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = supabaseAdmin.from('professors').select('*', { count: 'exact', head: true });
   if (!filters?.showAll) {
-    q = q.not('position_title', 'is', null);
     q = q.eq('verification_status', 'Verified');
   }
   if (filters?.university) q = q.eq('university', filters.university);
