@@ -58,6 +58,7 @@ export default function BannersPage() {
   const [generating, setGenerating] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState('');
   const [generateError, setGenerateError] = useState('');
+  const [newOverlayText, setNewOverlayText] = useState('');
 
   // Edit form state
   const [editAlt, setEditAlt] = useState('');
@@ -67,6 +68,7 @@ export default function BannersPage() {
   const [editModalContent, setEditModalContent] = useState('');
   const [editStartDate, setEditStartDate] = useState('');
   const [editEndDate, setEditEndDate] = useState('');
+  const [editOverlayText, setEditOverlayText] = useState('');
 
   function flash(msg: string) {
     setToast(msg);
@@ -134,6 +136,7 @@ export default function BannersPage() {
           click_url: (newAction === 'internal_link' || newAction === 'external_link') ? newUrl : null,
           modal_title: newAction === 'modal' ? newModalTitle : null,
           modal_content: newAction === 'modal' ? newModalContent : null,
+          overlay_text: newOverlayText || null,
           start_date: newStartDate || null,
           end_date: newEndDate || null,
         }),
@@ -163,6 +166,7 @@ export default function BannersPage() {
     setAiPrompt('');
     setGeneratedImageUrl('');
     setGenerateError('');
+    setNewOverlayText('');
   }
 
   async function handleGenerateImage() {
@@ -196,6 +200,7 @@ export default function BannersPage() {
     setEditModalContent(b.modal_content || '');
     setEditStartDate(b.start_date ? b.start_date.slice(0, 10) : '');
     setEditEndDate(b.end_date ? b.end_date.slice(0, 10) : '');
+    setEditOverlayText((b as Banner & { overlay_text?: string }).overlay_text || '');
   }
 
   async function handleUpdate() {
@@ -211,6 +216,7 @@ export default function BannersPage() {
           click_url: (editAction === 'internal_link' || editAction === 'external_link') ? editUrl : null,
           modal_title: editAction === 'modal' ? editModalTitle : null,
           modal_content: editAction === 'modal' ? editModalContent : null,
+          overlay_text: editOverlayText || null,
           start_date: editStartDate || null,
           end_date: editEndDate || null,
         }),
@@ -493,6 +499,9 @@ export default function BannersPage() {
 
                 {imageTab === 'upload' && (
                   <>
+                    <div className="bg-blue-50 text-blue-700 text-xs px-3 py-2 rounded-lg mb-3">
+                      📐 推荐尺寸：1024×1024 像素（1:1 正方形）· 支持 JPG/PNG/WebP · 最大 5MB
+                    </div>
                     {newImagePreview ? (
                       <div className="relative w-full h-40 rounded-xl overflow-hidden bg-[#F3F4F6] mb-2">
                         <Image src={newImagePreview} alt="Preview" fill className="object-cover" sizes="100vw" />
@@ -518,6 +527,9 @@ export default function BannersPage() {
 
                 {imageTab === 'ai' && (
                   <div className="space-y-3">
+                    <div className="bg-blue-50 text-blue-700 text-xs px-3 py-2 rounded-lg">
+                      📐 AI 自动生成 1024×1024 像素（1:1 正方形）· 图片不含任何文字
+                    </div>
                     <p className="text-xs text-[#6B7280]">描述你想要的图片内容，AI 自动生成专业 Banner</p>
                     <textarea
                       placeholder="例：澳洲大学校园秋天的景色，几位中国留学生在讨论学术研究"
@@ -593,6 +605,19 @@ export default function BannersPage() {
                   placeholder="描述图片内容..."
                   className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
                 />
+              </div>
+
+              {/* Overlay text */}
+              <div>
+                <label className="block text-xs font-medium text-[#374151] mb-1.5">覆盖文字（可选）</label>
+                <input
+                  type="text"
+                  value={newOverlayText}
+                  onChange={e => setNewOverlayText(e.target.value)}
+                  placeholder="如需在图片上显示文字，在此输入（前端 HTML 渲染，确保文字正确）"
+                  className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
+                />
+                <p className="text-[10px] text-[#9CA3AF] mt-1">文字会以白色大字覆盖在图片上方，避免 AI 生成错误文字</p>
               </div>
 
               {/* Click action */}
@@ -726,6 +751,19 @@ export default function BannersPage() {
                   onChange={e => setEditAlt(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] focus:outline-none focus:border-[#c9a96e]"
                 />
+              </div>
+
+              {/* Overlay text */}
+              <div>
+                <label className="block text-xs font-medium text-[#374151] mb-1.5">覆盖文字（可选）</label>
+                <input
+                  type="text"
+                  value={editOverlayText}
+                  onChange={e => setEditOverlayText(e.target.value)}
+                  placeholder="如需在图片上显示文字，在此输入"
+                  className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
+                />
+                <p className="text-[10px] text-[#9CA3AF] mt-1">文字会以白色大字覆盖在图片上方</p>
               </div>
 
               {/* Click action */}

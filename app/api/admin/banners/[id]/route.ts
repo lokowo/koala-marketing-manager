@@ -14,7 +14,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const body = await req.json();
 
     const updates: Record<string, unknown> = { updated_by: user.id, updated_at: new Date().toISOString() };
-    const allowedFields = ['image_url', 'image_alt', 'click_action', 'click_url', 'modal_title', 'modal_content', 'modal_image_url', 'is_active', 'sort_order', 'start_date', 'end_date'];
+    const allowedFields = ['image_url', 'image_alt', 'click_action', 'click_url', 'modal_title', 'modal_content', 'modal_image_url', 'overlay_text', 'is_active', 'sort_order', 'start_date', 'end_date'];
     for (const key of allowedFields) {
       if (key in body) updates[key] = body[key];
     }

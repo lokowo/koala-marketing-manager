@@ -14,6 +14,7 @@ interface Banner {
   modal_title: string | null;
   modal_content: string | null;
   modal_image_url: string | null;
+  overlay_text: string | null;
 }
 
 interface Settings {
@@ -130,6 +131,11 @@ export default function BannerCarousel({ heroMode = false }: { heroMode?: boolea
                 priority={i === 0}
                 sizes="100vw"
               />
+              {banner.overlay_text && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                  <h2 className="text-white text-2xl lg:text-3xl font-bold text-center px-6 drop-shadow-lg">{banner.overlay_text}</h2>
+                </div>
+              )}
             </div>
           ))}
         </div>

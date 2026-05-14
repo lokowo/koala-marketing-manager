@@ -8,17 +8,17 @@ const db = supabaseAdmin as any;
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const basePrompt = `Professional website banner image for an education technology platform called "Koala PhD" that helps Chinese students find PhD supervisors in Australia.
+const basePrompt = `Professional website banner photograph for "Koala PhD", an education platform helping Chinese students find PhD supervisors in Australia.
 
-Mandatory requirements:
-- Photorealistic style, high quality, cinematic lighting, professional composition
-- Square or near-square aspect ratio (1:1), suitable for a side panel in a hero section
-- Clean, modern, inspiring, premium feel
-- If there is any text in the image, it MUST be in correct Simplified Chinese (简体中文). Every Chinese character must be accurate with zero errors. Double-check all Chinese text for correctness. If unsure about a character, do not include text.
-- No watermarks, no stock photo feel, no generic clip art
-- Color palette should complement gold (#D4A843) and teal (#4ECDC4) accent colors
-- Suitable for a university/academic/PhD application context
-- Images should feel aspirational and professional, targeting Chinese international students
+CRITICAL RULES:
+- ABSOLUTELY NO TEXT, NO WORDS, NO LETTERS, NO CHARACTERS in the image. The image must be purely visual with ZERO text of any kind.
+- Photorealistic style, looks like a real professional photograph, NOT AI-generated looking
+- Real human faces must look natural, not plastic or uncanny
+- Natural lighting, no oversaturated colors
+- Clean composition suitable for a website banner
+- Academic/university/research context
+- Color palette: warm tones that complement gold and teal accents
+- NO watermarks, NO logos, NO icons, NO overlays
 
 User's specific request: `;
 
