@@ -179,8 +179,15 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
     const allTerms = Array.from(new Set([...parts, ...expandedParts]))
       .filter(t => !CHINESE_STOP_WORDS.includes(t) && t.length > 0);
 
-    const orClauses = allTerms.map(t => `name.ilike.%${t}%,university.ilike.%${t}%,faculty.ilike.%${t}%`).join(',');
-    q = q.or(orClauses);
+    if (allTerms.length === 1) {
+      const t = allTerms[0];
+      q = q.or(`name.ilike.%${t}%,university.ilike.%${t}%,faculty.ilike.%${t}%`);
+    } else if (allTerms.length > 1) {
+      // Multi-word: each term must appear in name, university, or faculty (AND logic)
+      for (const t of allTerms) {
+        q = q.or(`name.ilike.%${t}%,university.ilike.%${t}%,faculty.ilike.%${t}%`);
+      }
+    }
   }
   const { data, error } = await q;
   if (error) throw new Error(error.message);
@@ -205,12 +212,11 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
       const areaMatched = allData.map(fromRow).filter((p: Professor) => {
         if (nameUniMatched.has(p.id)) return false;
         const areasText = p.researchAreas.join(' ').toLowerCase();
-        return searchTerms.some(t => areasText.includes(t));
+        return searchTerms.every(t => areasText.includes(t));
       });
       results = [...results, ...areaMatched];
     }
 
-    // Rank results: professors matching MORE terms in name come first
     if (searchTerms.length > 1) {
       results.sort((a: Professor, b: Professor) => {
         const aName = a.name.toLowerCase();
@@ -251,7 +257,12 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
     if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
     if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
     if (filters?.contributedOnly) q = q.not('contributed_by', 'is', null);
-    if (filters?.search) q = q.or(`name.ilike.%${filters.search}%,university.ilike.%${filters.search}%`);
+    if (filters?.search) {
+      const searchParts = filters.search.split(/[\s,;，；]+/).filter(s => s.length > 0);
+      for (const t of searchParts) {
+        q = q.or(`name.ilike.%${t}%,university.ilike.%${t}%,faculty.ilike.%${t}%`);
+      }
+    }
     const { data, error } = await q;
     if (error) throw new Error(error.message);
     const categoryKeywords = CATEGORY_KEYWORDS[filters!.category!].map(k => k.toLowerCase());
@@ -283,7 +294,8 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
       const nameL = row.name.toLowerCase();
       const uniL = row.university.toLowerCase();
       const areasText = (row.research_areas ?? []).join(' ').toLowerCase();
-      return countTerms.some(t => nameL.includes(t) || uniL.includes(t) || areasText.includes(t));
+      const combined = `${nameL} ${uniL} ${areasText}`;
+      return countTerms.every(t => combined.includes(t));
     }).length;
   }
 
