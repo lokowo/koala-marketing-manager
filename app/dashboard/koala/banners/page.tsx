@@ -356,6 +356,7 @@ export default function BannersPage() {
       const data = await res.json();
       if (data.success) {
         setGeneratedImageUrl(data.imageUrl);
+        setNewAlt(aiPrompt);
       } else {
         setGenerateError(data.error || '生成失败，请重试');
       }
@@ -489,6 +490,8 @@ export default function BannersPage() {
     if (target === 'create') {
       setNewImage(file);
       setNewImagePreview(URL.createObjectURL(file));
+      const altFromName = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+      setNewAlt(altFromName);
     }
   }
 
@@ -771,7 +774,7 @@ export default function BannersPage() {
 
               {/* Alt text */}
               <div>
-                <label className="block text-xs font-medium text-[#374151] mb-1.5">图片描述 (Alt)</label>
+                <label className="block text-xs font-medium text-[#374151] mb-1.5">图片描述 (Alt){newAlt ? ' · 已自动生成，可修改' : ''}</label>
                 <input
                   type="text"
                   value={newAlt}
