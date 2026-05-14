@@ -1,7 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { Check, X } from 'lucide-react';
+import { Check, X, Loader2, Crown, Zap, Star } from 'lucide-react';
+import { CREDIT_PACKAGES, SUBSCRIPTION_TIERS } from '../../lib/constants';
+import { useSearchParams } from 'next/navigation';
 
 const FREE_FEATURES = [
   { text: '每天 10 轮 AI 对话', ok: true },
@@ -13,75 +15,150 @@ const FREE_FEATURES = [
   { text: 'PDF 报告下载', ok: false },
 ];
 
-const CREDIT_PACKS = [
-  { label: '单封', credits: 1, price: 1.00, unit: 'AUD 1/封', highlight: false },
-  { label: '10封包', credits: 10, price: 9.90, unit: 'AUD 0.99/封', highlight: false },
-  { label: '30封包', credits: 30, price: 19.90, unit: 'AUD 0.66/封', highlight: true },
-  { label: '100封包', credits: 100, price: 49.00, unit: 'AUD 0.49/封', highlight: false },
-];
+const TIER_ICONS: Record<string, React.ReactNode> = {
+  starter: <Zap className="size-4" />,
+  pro: <Star className="size-4" />,
+  elite: <Crown className="size-4" />,
+};
 
-const TIERS = [
-  {
-    id: 'starter',
-    label: 'Starter',
-    price: 19.9,
-    monthlyCredits: 10,
-    color: '#D4A843',
-    highlight: false,
-    features: [
-      '每月 10 积分（申请信额度）',
-      '无限 AI 对话',
-      '上传简历 & 成绩单',
-      '教授完整联系方式',
-      'PDF 报告生成',
-    ],
-  },
-  {
-    id: 'pro',
-    label: 'Pro',
-    price: 49,
-    monthlyCredits: 30,
-    color: '#D4A843',
-    highlight: true,
-    features: [
-      '每月 30 积分（申请信额度）',
-      '无限 AI 对话',
-      '上传简历 & 成绩单',
-      '教授完整联系方式',
-      'PDF 报告生成',
-      '优先客服响应',
-      'Research Proposal 批改',
-    ],
-  },
-  {
-    id: 'elite',
-    label: 'Elite',
-    price: 99,
-    monthlyCredits: 100,
-    color: '#D4A843',
-    highlight: false,
-    features: [
-      '每月 100 积分',
-      '无限 AI 对话',
-      '所有 Pro 功能',
-      '1 对 1 学术顾问会议（每月1次）',
-      'KSA 学术顾问深度辅导',
-    ],
-  },
-];
+const TIERS = Object.values(SUBSCRIPTION_TIERS);
 
 export default function PricingPage() {
-  const [billingCycle] = useState<'monthly'>('monthly');
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#080c10]"><Loader2 className="size-5 animate-spin text-gray-400" /></div>}>
+      <PricingContent />
+    </Suspense>
+  );
+}
+
+function PricingContent() {
+  const searchParams = useSearchParams();
+  const [balance, setBalance] = useState<number | null>(null);
+  const [planType, setPlanType] = useState<string>('free');
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [transactions, setTransactions] = useState<Array<{ id: string; amount: number; type: string; description: string; created_at: string; balance_after: number }>>([]);
+
+  const fetchCredits = useCallback(async () => {
+    try {
+      const res = await fetch('/api/user/credits');
+      if (res.ok) {
+        const data = await res.json();
+        setBalance(data.balance);
+        setTransactions(data.recentTransactions || []);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const fetchSubscription = useCallback(async () => {
+    try {
+      const res = await fetch('/api/stripe/subscription');
+      if (res.ok) {
+        const data = await res.json();
+        setPlanType(data.plan_type || 'free');
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    fetchCredits();
+    fetchSubscription();
+  }, [fetchCredits, fetchSubscription]);
+
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      setToast({ type: 'success', message: '支付成功！积分正在到账...' });
+      const poll = setInterval(fetchCredits, 2000);
+      const timeout = setTimeout(() => clearInterval(poll), 20000);
+      return () => { clearInterval(poll); clearTimeout(timeout); };
+    }
+    if (searchParams.get('canceled') === 'true') {
+      setToast({ type: 'error', message: '支付已取消' });
+    }
+  }, [searchParams, fetchCredits]);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  async function handleCheckout(priceId: string, itemId: string) {
+    if (!priceId) {
+      setToast({ type: 'error', message: '支付尚未配置，请联系管理员' });
+      return;
+    }
+    setLoadingId(itemId);
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else if (res.status === 401) {
+        window.location.href = '/koala/login?redirect=/koala/pricing';
+      } else {
+        setToast({ type: 'error', message: data.error || '创建支付失败' });
+      }
+    } catch {
+      setToast({ type: 'error', message: '网络错误，请重试' });
+    } finally {
+      setLoadingId(null);
+    }
+  }
+
+  async function handlePortal() {
+    setLoadingId('portal');
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        setToast({ type: 'error', message: data.error || '无法打开订阅管理' });
+      }
+    } catch {
+      setToast({ type: 'error', message: '网络错误，请重试' });
+    } finally {
+      setLoadingId(null);
+    }
+  }
+
+  const paymentTransactions = transactions.filter(t => t.type === 'purchase' || t.type === 'subscription_credit');
 
   return (
     <div className="min-h-screen pb-24 bg-gray-50 dark:bg-[#080c10]">
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg ${
+          toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       {/* Header */}
       <div className="px-4 pt-4 pb-3 sticky top-0 z-10 bg-gray-50 dark:bg-[#080c10] border-b border-gray-200 dark:border-[#D4A843]/20">
         <div className="flex items-center gap-2 mb-1">
-          <Link href="/koala/tools" className="text-[13px] text-[#1A1A2E] dark:text-[#D4A843]">← 工具</Link>
+          <Link href="/koala/tools" className="text-[13px] text-[#1A1A2E] dark:text-[#D4A843]">&larr; 工具</Link>
         </div>
-        <h1 className="text-base font-bold text-gray-900 dark:text-[#e8e4dc]">定价与积分</h1>
-        <p className="text-[11px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">免费开始，按需升级</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-base font-bold text-gray-900 dark:text-[#e8e4dc]">定价与积分</h1>
+            <p className="text-[11px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">免费开始，按需升级</p>
+          </div>
+          {balance !== null && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 dark:bg-[#D4A843]/15 border border-amber-300 dark:border-[#D4A843]/30">
+              <span className="text-xs text-amber-700 dark:text-[#D4A843]">余额</span>
+              <span className="text-sm font-bold text-amber-800 dark:text-[#e8e4dc]">{balance}</span>
+              <span className="text-xs text-amber-700 dark:text-[#D4A843]">积分</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="px-4 py-4 space-y-6 max-w-lg mx-auto">
@@ -111,105 +188,179 @@ export default function PricingPage() {
         </div>
 
         {/* Credit packages */}
-        <div>
-          <h2 className="text-sm font-bold mb-1 text-gray-900 dark:text-[#e8e4dc]">积分包</h2>
-          <p className="text-xs mb-3 text-gray-500 dark:text-[#6a7a7e]">每封申请信消耗 1 积分，积分永久有效（不过期）</p>
+        <div id="credit-packs">
+          <h2 className="text-sm font-bold mb-1 text-gray-900 dark:text-[#e8e4dc]">积分充值包</h2>
+          <p className="text-xs mb-3 text-gray-500 dark:text-[#6a7a7e]">一次性购买，积分永久有效（不过期）</p>
           <div className="grid grid-cols-2 gap-2.5">
-            {CREDIT_PACKS.map(pack => (
-              <div
-                key={pack.label}
-                className={[
-                  'rounded-2xl p-3.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg',
-                  pack.highlight
-                    ? 'bg-amber-50 dark:bg-[#D4A843]/15 border-2 border-[#D4A843] ring-2 ring-[#D4A843]/40 shadow-md'
-                    : 'bg-white dark:bg-white/5 border border-amber-200/50 dark:border-[#D4A843]/10 shadow-sm',
-                ].join(' ')}
-              >
-                {pack.highlight && (
-                  <div className="text-[9px] font-bold px-1.5 py-0.5 rounded-full mb-1.5 inline-block bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">最划算</div>
-                )}
-                <div className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">{pack.label}</div>
-                <div className="text-xs mt-0.5 text-gray-500 dark:text-[#6a7a7e]">{pack.credits} 积分</div>
-                <div className="text-lg font-bold mt-1 text-gray-900 dark:text-[#e8e4dc]">AUD {pack.price.toFixed(2)}</div>
-                <div className="text-[10px] mt-0.5 text-amber-600 dark:text-[#D4A843]">{pack.unit}</div>
-                <button
+            {CREDIT_PACKAGES.map((pack, idx) => {
+              const isHighlight = idx === 2;
+              return (
+                <div
+                  key={pack.id}
                   className={[
-                    'w-full mt-3 py-2 rounded-xl text-xs font-semibold',
-                    pack.highlight
-                      ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] border-0'
-                      : 'bg-amber-50 dark:bg-[#D4A843]/6 text-amber-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20',
+                    'rounded-2xl p-3.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg',
+                    isHighlight
+                      ? 'bg-amber-50 dark:bg-[#D4A843]/15 border-2 border-[#D4A843] ring-2 ring-[#D4A843]/40 shadow-md'
+                      : 'bg-white dark:bg-white/5 border border-amber-200/50 dark:border-[#D4A843]/10 shadow-sm',
                   ].join(' ')}
                 >
-                  购买
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Subscription tiers */}
-        <div>
-          <h2 className="text-sm font-bold mb-1 text-gray-900 dark:text-[#e8e4dc]">订阅套餐</h2>
-          <p className="text-xs mb-3 text-gray-500 dark:text-[#6a7a7e]">每月自动续订，随时取消</p>
-          <div className="space-y-3">
-            {TIERS.map(tier => (
-              <div
-                key={tier.id}
-                className={[
-                  'rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group relative',
-                  tier.highlight
-                    ? 'border-2 border-[#D4A843] shadow-md'
-                    : 'border border-amber-200/50 dark:border-[#D4A843]/10 shadow-sm',
-                ].join(' ')}
-              >
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4A843]/60 to-[#4ECDC4]/60 opacity-0 group-hover:opacity-100 transition-opacity" />
-                {tier.highlight && (
-                  <div className="py-1.5 text-center text-xs font-bold text-white dark:text-[#080c10] bg-[#1A1A2E] dark:bg-[#D4A843]">
-                    🌟 最受欢迎
-                  </div>
-                )}
-                <div className={`p-4 ${tier.highlight ? 'bg-amber-50 dark:bg-[#D4A843]/8' : 'bg-white dark:bg-white/5'}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <div className="text-sm font-bold text-amber-600 dark:text-[#D4A843]">{tier.label}</div>
-                      <div className="text-[11px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">每月 {tier.monthlyCredits} 积分</div>
+                  {'bonus' in pack && (pack as { bonus?: string }).bonus && (
+                    <div className="text-[9px] font-bold px-1.5 py-0.5 rounded-full mb-1.5 inline-block bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
+                      多送 {(pack as { bonus?: string }).bonus}
                     </div>
-                    <div className="text-right">
-                      <div className="text-xl font-bold text-gray-900 dark:text-[#e8e4dc]">AUD {tier.price}</div>
-                      <div className="text-[10px] text-gray-500 dark:text-[#b09878]">/月</div>
-                    </div>
-                  </div>
-                  <div className="space-y-1.5 mb-4">
-                    {tier.features.map((f, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <Check className="size-3.5 flex-shrink-0 mt-0.5 text-amber-600 dark:text-[#D4A843]" />
-                        <span className="text-xs text-gray-700 dark:text-[#e8e4dc]">{f}</span>
-                      </div>
-                    ))}
-                  </div>
+                  )}
+                  <div className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">{pack.label}</div>
+                  <div className="text-xs mt-0.5 text-gray-500 dark:text-[#6a7a7e]">{pack.credits} 积分</div>
+                  <div className="text-lg font-bold mt-1 text-gray-900 dark:text-[#e8e4dc]">AUD {pack.priceAUD.toFixed(2)}</div>
+                  <div className="text-[10px] mt-0.5 text-amber-600 dark:text-[#D4A843]">{pack.unit}</div>
                   <button
+                    onClick={() => handleCheckout(pack.stripePriceId, pack.id)}
+                    disabled={loadingId === pack.id}
                     className={[
-                      'w-full py-2.5 rounded-xl text-sm font-semibold',
-                      tier.highlight
+                      'w-full mt-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-60 flex items-center justify-center gap-1',
+                      isHighlight
                         ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] border-0'
                         : 'bg-amber-50 dark:bg-[#D4A843]/6 text-amber-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20',
                     ].join(' ')}
                   >
-                    开始 {tier.label} 订阅
+                    {loadingId === pack.id ? <Loader2 className="size-3.5 animate-spin" /> : '购买'}
                   </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
+
+        {/* Subscription tiers */}
+        <div id="subscriptions">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">订阅套餐</h2>
+            {planType !== 'free' && (
+              <button
+                onClick={handlePortal}
+                disabled={loadingId === 'portal'}
+                className="text-[11px] text-amber-600 dark:text-[#D4A843] underline disabled:opacity-60"
+              >
+                {loadingId === 'portal' ? '加载中...' : '管理订阅'}
+              </button>
+            )}
+          </div>
+          <p className="text-xs mb-3 text-gray-500 dark:text-[#6a7a7e]">每月自动续订，随时取消</p>
+          <div className="space-y-3">
+            {TIERS.map(tier => {
+              const isCurrentPlan = planType === tier.id;
+              const canUpgrade = planType !== 'free' && !isCurrentPlan && planType !== 'elite';
+
+              return (
+                <div
+                  key={tier.id}
+                  className={[
+                    'rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group relative',
+                    tier.popular
+                      ? 'border-2 border-[#D4A843] shadow-md'
+                      : isCurrentPlan
+                        ? 'border-2 border-green-500 dark:border-green-400 shadow-md'
+                        : 'border border-amber-200/50 dark:border-[#D4A843]/10 shadow-sm',
+                  ].join(' ')}
+                >
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4A843]/60 to-[#4ECDC4]/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {tier.popular && !isCurrentPlan && (
+                    <div className="py-1.5 text-center text-xs font-bold text-white dark:text-[#080c10] bg-[#1A1A2E] dark:bg-[#D4A843]">
+                      {TIER_ICONS[tier.id]} 最受欢迎
+                    </div>
+                  )}
+                  {isCurrentPlan && (
+                    <div className="py-1.5 text-center text-xs font-bold text-white bg-green-600 dark:bg-green-500">
+                      当前方案
+                    </div>
+                  )}
+                  <div className={`p-4 ${tier.popular && !isCurrentPlan ? 'bg-amber-50 dark:bg-[#D4A843]/8' : 'bg-white dark:bg-white/5'}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-amber-600 dark:text-[#D4A843]">{TIER_ICONS[tier.id]}</span>
+                          <span className="text-sm font-bold text-amber-600 dark:text-[#D4A843]">{tier.label}</span>
+                        </div>
+                        <div className="text-[11px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">每月 {tier.monthlyCredits} 积分</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xl font-bold text-gray-900 dark:text-[#e8e4dc]">AUD {tier.price}</div>
+                        <div className="text-[10px] text-gray-500 dark:text-[#b09878]">/月</div>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 mb-4">
+                      {tier.features.map((f, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <Check className="size-3.5 flex-shrink-0 mt-0.5 text-amber-600 dark:text-[#D4A843]" />
+                          <span className="text-xs text-gray-700 dark:text-[#e8e4dc]">{f}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {isCurrentPlan ? (
+                      <button
+                        onClick={handlePortal}
+                        disabled={loadingId === 'portal'}
+                        className="w-full py-2.5 rounded-xl text-sm font-semibold bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-[#a8b8ac] disabled:opacity-60"
+                      >
+                        管理订阅
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => canUpgrade ? handlePortal() : handleCheckout(tier.stripePriceId, tier.id)}
+                        disabled={loadingId === tier.id || loadingId === 'portal'}
+                        className={[
+                          'w-full py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60 flex items-center justify-center gap-1',
+                          tier.popular
+                            ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] border-0'
+                            : 'bg-amber-50 dark:bg-[#D4A843]/6 text-amber-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20',
+                        ].join(' ')}
+                      >
+                        {(loadingId === tier.id || (canUpgrade && loadingId === 'portal')) ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : canUpgrade ? '升级' : `开始 ${tier.label} 订阅`}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Purchase history */}
+        {paymentTransactions.length > 0 && (
+          <div>
+            <h2 className="text-sm font-bold mb-2 text-gray-900 dark:text-[#e8e4dc]">购买记录</h2>
+            <div className="rounded-2xl overflow-hidden border border-amber-200/50 dark:border-[#D4A843]/10 bg-white dark:bg-white/5">
+              {paymentTransactions.map((tx, i) => (
+                <div
+                  key={tx.id}
+                  className={`px-4 py-3 flex items-center justify-between ${i > 0 ? 'border-t border-gray-100 dark:border-[#D4A843]/10' : ''}`}
+                >
+                  <div>
+                    <div className="text-xs font-medium text-gray-900 dark:text-[#e8e4dc]">{tx.description}</div>
+                    <div className="text-[10px] text-gray-400 dark:text-[#6a7a7e]">
+                      {new Date(tx.created_at).toLocaleDateString('zh-CN')}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs font-bold text-green-600 dark:text-[#5a8060]">+{tx.amount}</div>
+                    <div className="text-[10px] text-gray-400 dark:text-[#6a7a7e]">余额 {tx.balance_after}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* FAQ */}
         <div className="rounded-2xl p-4 bg-amber-50 dark:bg-[#D4A843]/6 border border-amber-200/50 dark:border-[#D4A843]/10">
           <h2 className="text-xs font-bold mb-3 text-gray-900 dark:text-[#e8e4dc]">常见问题</h2>
           {[
             { q: '积分会过期吗？', a: '单独购买的积分永久有效，不过期。订阅积分在订阅有效期内可用。' },
-            { q: '如何取消订阅？', a: '随时可以取消，取消后当前订阅期仍然有效，下个周期不再扣款。' },
+            { q: '如何取消订阅？', a: '点击"管理订阅"按钮，在 Stripe 页面中取消。取消后当前订阅期仍然有效。' },
             { q: '积分不够用了怎么办？', a: '随时可以单独购买积分包，无需升级订阅。' },
+            { q: '支持哪些支付方式？', a: '支持 Visa、Mastercard、Apple Pay、Google Pay 等主流支付方式。' },
           ].map((item, i) => (
             <div key={i} className={i > 0 ? 'mt-3 pt-3 border-t border-amber-200/50 dark:border-[#D4A843]/10' : ''}>
               <div className="text-xs font-semibold mb-1 text-gray-900 dark:text-[#e8e4dc]">{item.q}</div>
@@ -219,7 +370,7 @@ export default function PricingPage() {
         </div>
 
         <p className="text-center text-[10px] text-gray-400 dark:text-[#b09878]">
-          价格以澳元 (AUD) 计算 · 支持 Stripe 支付 · 如有问题联系 info@koalaphd.com
+          价格以澳元 (AUD) 计算 · 支持 Stripe 安全支付 · 如有问题联系 info@koalaphd.com
         </p>
       </div>
     </div>

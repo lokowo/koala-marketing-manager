@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     // Parallel fetch all dashboard data
     const [creditsResult, achievementsResult, tasksResult, emailsResult, conversationsResult] = await Promise.all([
       userId
-        ? supabase.from('user_credits').select('*').eq('user_id', userId).single()
+        ? supabase.from('user_profiles').select('credits_remaining, plan_type').eq('id', userId).single()
         : Promise.resolve({ data: null }),
       userId
         ? supabase.from('user_achievements').select('*').eq('user_id', userId)
@@ -69,9 +69,9 @@ export async function GET(request: NextRequest) {
         { name: '回复率', score: replyScore },
       ],
       credits: {
-        balance: credits?.credit_balance ?? 0,
-        subscriptionTier: credits?.subscription_tier ?? null,
-        monthlyCredits: credits?.subscription_monthly_credits ?? 0,
+        balance: credits?.credits_remaining ?? 0,
+        subscriptionTier: credits?.plan_type ?? 'free',
+        monthlyCredits: 0,
       },
       stats: {
         emailsGenerated: emails.length,

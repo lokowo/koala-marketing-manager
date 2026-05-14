@@ -329,7 +329,7 @@ function CreditConfirmDialog({ remaining, onConfirm, onCancel }: { remaining: nu
           {remaining > 0 ? (
             <button className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]" onClick={onConfirm}>确认生成（−1 积分）</button>
           ) : (
-            <Link href="/koala/tools" className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-center no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">去购买积分</Link>
+            <Link href="/koala/pricing#credit-packs" className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-center no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">去购买积分</Link>
           )}
         </div>
       </div>

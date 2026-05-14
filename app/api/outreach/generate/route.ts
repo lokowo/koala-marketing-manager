@@ -16,18 +16,19 @@ async function getServerSupabase() {
 }
 
 async function checkCredits(userId: string | null): Promise<{ balance: number; ok: boolean }> {
-  if (!userId) return { balance: 1, ok: true }; // Allow anonymous with 1 credit for demo
+  if (!userId) return { balance: 1, ok: true };
   try {
     const supabase = await getServerSupabase();
     const { data } = await supabase
-      .from('user_credits')
-      .select('credit_balance')
-      .eq('user_id', userId)
+      .from('user_profiles')
+      .select('credits_remaining, plan_type')
+      .eq('id', userId)
       .single();
-    const balance = data?.credit_balance ?? 0;
+    if (data?.plan_type === 'elite') return { balance: data.credits_remaining ?? 999, ok: true };
+    const balance = data?.credits_remaining ?? 0;
     return { balance, ok: balance > 0 };
   } catch {
-    return { balance: 1, ok: true }; // Fail open in dev
+    return { balance: 1, ok: true };
   }
 }
 

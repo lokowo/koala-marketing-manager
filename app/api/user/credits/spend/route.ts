@@ -10,6 +10,7 @@ const COSTS: Record<string, { amount: number; label: string }> = {
   chat:   { amount: 1, label: 'AI 对话' },
   plan:   { amount: 3, label: '选校规划' },
   polish: { amount: 5, label: '文书润色' },
+  blog_generation: { amount: 10, label: '生成教授博客' },
 };
 
 export async function POST(req: Request) {
@@ -46,9 +47,11 @@ export async function POST(req: Request) {
     if (currentBalance < cost.amount) {
       return Response.json({
         error: '积分不足',
+        featureName: cost.label,
         needed: cost.amount,
         balance: currentBalance,
-        message: `${cost.label}需要 ${cost.amount} 积分，当前余额 ${currentBalance}。每日签到可获得 2 积分！`,
+        message: `${cost.label}需要 ${cost.amount} 积分，当前余额 ${currentBalance}。`,
+        pricingUrl: '/koala/pricing#credit-packs',
       }, { status: 402 });
     }
 

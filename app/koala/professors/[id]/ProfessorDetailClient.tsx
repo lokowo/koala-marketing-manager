@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Professor } from '../../../lib/types';
-import { OPPORTUNITY_LABELS } from '../../../lib/constants';
+import { OPPORTUNITY_LABELS, parseUniversity } from '../../../lib/constants';
 import { useAuth } from '../../components/AuthContext';
 
 interface Paper {
@@ -56,13 +56,17 @@ function getApplicationTips(professor: Professor): string[] {
   return tips;
 }
 
-export default function ProfessorDetailClient({ professor, papers, relatedBlogs, similarProfessors }: { professor: Professor; papers: Paper[]; relatedBlogs: RelatedBlog[]; similarProfessors: SimilarProfessor[] }) {
+export default function ProfessorDetailClient({ professor, papers, relatedBlogs: initialRelatedBlogs, similarProfessors }: { professor: Professor; papers: Paper[]; relatedBlogs: RelatedBlog[]; similarProfessors: SimilarProfessor[] }) {
   const router = useRouter();
   const { user, showLogin } = useAuth();
   const [saved, setSaved] = useState(false);
   const [savingBookmark, setSavingBookmark] = useState(false);
   const [aiSummary, setAiSummary] = useState<string | null>(professor.aiSummary ?? null);
   const [summaryLoading, setSummaryLoading] = useState(!professor.aiSummary);
+  const [relatedBlogs, setRelatedBlogs] = useState(initialRelatedBlogs);
+  const [blogGenerating, setBlogGenerating] = useState(false);
+  const [blogError, setBlogError] = useState<string | null>(null);
+  const [creditShortfall, setCreditShortfall] = useState<{ needed: number; balance: number } | null>(null);
 
   useEffect(() => {
     fetch(`/api/professors/${professor.id}/interactions`, {
@@ -111,6 +115,38 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs,
     setSavingBookmark(false);
   }
 
+  async function handleGenerateBlog() {
+    if (!user) {
+      showLogin(() => handleGenerateBlog());
+      return;
+    }
+    setBlogGenerating(true);
+    setBlogError(null);
+    setCreditShortfall(null);
+    try {
+      const res = await fetch(`/api/professors/${professor.id}/generate-blog`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.status === 402) {
+        setCreditShortfall({ needed: data.needed, balance: data.balance });
+        return;
+      }
+      if (!res.ok) {
+        setBlogError(data.error || '生成失败');
+        return;
+      }
+      if (data.exists || data.success) {
+        const blog = data.blog;
+        setRelatedBlogs(prev => [...prev, { id: blog.id, slug: blog.slug, title: blog.title, category: 'professor_spotlight', cover_image: null }]);
+      }
+    } catch {
+      setBlogError('网络错误，请稍后再试');
+    } finally {
+      setBlogGenerating(false);
+    }
+  }
+
   const score = professor.opportunityScore ?? 0;
   const opportunityText = score > 70
     ? OPPORTUNITY_LABELS.high
@@ -155,7 +191,7 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs,
               <div className="text-xs mt-0.5 text-amber-700 dark:text-[#D4A843]">{professor.positionTitle}</div>
             )}
             <div className="text-xs mt-1 text-gray-500 dark:text-[#a8b8ac]">
-              {professor.university}
+              {parseUniversity(professor.university).full}
               {professor.faculty && ` · ${professor.faculty}`}
             </div>
             <div className="flex gap-2 mt-2 flex-wrap">
@@ -336,7 +372,7 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs,
       )}
 
       {/* Related Blogs */}
-      {relatedBlogs.length > 0 && (
+      {relatedBlogs.length > 0 ? (
         <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
           <h2 className="text-xs font-semibold mb-3 text-gray-900 dark:text-[#e8e4dc]">📝 相关文章</h2>
           <div className="space-y-2.5">
@@ -352,6 +388,46 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs,
               </Link>
             ))}
           </div>
+        </div>
+      ) : (
+        <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+          <h2 className="text-xs font-semibold mb-2 text-gray-900 dark:text-[#e8e4dc]">📝 教授介绍文章</h2>
+          <p className="text-xs mb-3 text-gray-500 dark:text-[#a8b8ac]">
+            还没有关于这位教授的介绍文章，点击下方按钮由 AI 生成一篇详细的教授介绍。
+          </p>
+          {creditShortfall && (
+            <div className="mb-3 p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30">
+              <p className="text-xs text-red-700 dark:text-red-400">
+                积分不足：需要 {creditShortfall.needed} 积分，当前余额 {creditShortfall.balance}
+              </p>
+              <div className="flex gap-2 mt-2">
+                <Link href="/koala/pricing#credit-packs" className="text-[10px] px-2.5 py-1 rounded-full bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] font-semibold">
+                  充值积分
+                </Link>
+                <Link href="/koala/pricing#subscriptions" className="text-[10px] px-2.5 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843]/6 text-amber-700 dark:text-[#D4A843] border border-amber-300 dark:border-[#D4A843]/20 font-semibold">
+                  查看订阅
+                </Link>
+                <span className="text-[10px] py-1 text-gray-400 dark:text-[#6a7a7e]">每日签到可获 2 积分</span>
+              </div>
+            </div>
+          )}
+          {blogError && (
+            <p className="text-xs mb-2 text-red-500">{blogError}</p>
+          )}
+          <button
+            onClick={handleGenerateBlog}
+            disabled={blogGenerating}
+            className="w-full py-2.5 rounded-xl text-xs font-semibold bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] border border-amber-300 dark:border-[rgba(212,168,67,0.25)] disabled:opacity-50"
+          >
+            {blogGenerating ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                AI 正在生成文章（约 30 秒）...
+              </span>
+            ) : (
+              '生成教授介绍文章（首次免费 / 10 积分）'
+            )}
+          </button>
         </div>
       )}
 
@@ -400,7 +476,7 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs,
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-medium text-gray-800 dark:text-[#e8e4dc] group-hover:text-[#D4A843] dark:group-hover:text-[#D4A843]">{sp.name}</div>
                     <div className="text-[10px] text-gray-400 dark:text-[#6a7a7e]">
-                      {sp.university}{sp.position_title ? ` · ${sp.position_title}` : ''}
+                      {parseUniversity(sp.university).full}{sp.position_title ? ` · ${sp.position_title}` : ''}
                     </div>
                     {matchingAreas.length > 0 && (
                       <div className="flex gap-1 mt-1 flex-wrap">

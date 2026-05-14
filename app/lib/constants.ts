@@ -61,6 +61,13 @@ export const CREDIT_PRICES = {
   pack100: 49.00,
 } as const;
 
+export const CREDIT_PACKAGES = [
+  { id: 'credit_starter',  label: '入门包', credits: 50,  priceAUD: 4.99,  unit: 'AUD 0.10/积分', stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDIT_STARTER  || '' },
+  { id: 'credit_standard', label: '标准包', credits: 120, priceAUD: 9.99,  unit: 'AUD 0.083/积分', stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDIT_STANDARD || '', bonus: '+20%' },
+  { id: 'credit_pro',      label: '专业包', credits: 280, priceAUD: 19.99, unit: 'AUD 0.071/积分', stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDIT_PRO      || '', bonus: '+40%' },
+  { id: 'credit_flagship', label: '旗舰包', credits: 800, priceAUD: 49.99, unit: 'AUD 0.062/积分', stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDIT_FLAGSHIP || '', bonus: '+60%' },
+] as const;
+
 // New users get 50% off their first month's subscription
 export const NEW_USER_PROMO_DISCOUNT = 0.5;
 
@@ -82,6 +89,7 @@ export const SUBSCRIPTION_TIERS = {
     price: 19.9,
     monthlyCredits: 10,
     popular: false,
+    stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_SUB_STARTER || '',
     features: [
       '不限 AI 对话轮数',
       '上传简历 & 成绩单',
@@ -101,6 +109,7 @@ export const SUBSCRIPTION_TIERS = {
     price: 49.0,
     monthlyCredits: 30,
     popular: true,
+    stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_SUB_PRO || '',
     features: [
       'Starter 全部功能',
       '每月 30 封定制申请信',
@@ -121,6 +130,7 @@ export const SUBSCRIPTION_TIERS = {
     price: 99.0,
     monthlyCredits: 100,
     popular: false,
+    stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_SUB_ELITE || '',
     features: [
       'Pro 全部功能',
       '每月 100 封定制申请信',
@@ -135,3 +145,62 @@ export const SUBSCRIPTION_TIERS = {
 } as const;
 
 export type SubscriptionTierId = keyof typeof SUBSCRIPTION_TIERS;
+
+// ─── University badge colors (keyed by abbreviation) ────────────────────────
+
+const UNI_BADGE_COLORS: Record<string, { bg: string; fg: string }> = {
+  ANU:  { bg: '#d4a84330', fg: '#b8922e' },
+  MELB: { bg: '#00308720', fg: '#1e4a8a' },
+  MEL:  { bg: '#00308720', fg: '#1e4a8a' },
+  USYD: { bg: '#cc000018', fg: '#b83232' },
+  SYD:  { bg: '#cc000018', fg: '#b83232' },
+  UNSW: { bg: '#1a1a1a15', fg: '#3a3a3a' },
+  NSW:  { bg: '#1a1a1a15', fg: '#3a3a3a' },
+  UQ:   { bg: '#51247a18', fg: '#6b3d96' },
+  MON:  { bg: '#006dae18', fg: '#2680b8' },
+  UWA:  { bg: '#00308718', fg: '#1e4a8a' },
+  ADE:  { bg: '#005a9c18', fg: '#2870a8' },
+  UTS:  { bg: '#00a3e018', fg: '#1a8ab8' },
+  RMIT: { bg: '#e6002818', fg: '#c43838' },
+  RMT:  { bg: '#e6002818', fg: '#c43838' },
+  MAC:  { bg: '#e8291c18', fg: '#c44040' },
+  MQ:   { bg: '#e8291c18', fg: '#c44040' },
+  QUT:  { bg: '#005a9c18', fg: '#2870a8' },
+  DEA:  { bg: '#00a86b18', fg: '#2d9060' },
+  GRF:  { bg: '#d4380d18', fg: '#b84830' },
+  LAT:  { bg: '#e84e1b18', fg: '#c45830' },
+  NEW:  { bg: '#1f164618', fg: '#3d3060' },
+  UON:  { bg: '#1f164618', fg: '#3d3060' },
+  WOL:  { bg: '#1e579918', fg: '#2e68a0' },
+  UOW:  { bg: '#1e579918', fg: '#2e68a0' },
+  FLI:  { bg: '#004f9f18', fg: '#2868a0' },
+  CUR:  { bg: '#cfb44b20', fg: '#a8942e' },
+  JCU:  { bg: '#005c8418', fg: '#286880' },
+  SWI:  { bg: '#bb000018', fg: '#a83838' },
+  WSU:  { bg: '#e5202018', fg: '#c43838' },
+  WSY:  { bg: '#e5202018', fg: '#c43838' },
+  UTAS: { bg: '#00308718', fg: '#1e4a8a' },
+  TAS:  { bg: '#00308718', fg: '#1e4a8a' },
+  ACU:  { bg: '#005a9c18', fg: '#2870a8' },
+  ECU:  { bg: '#e6002818', fg: '#c43838' },
+  CDU:  { bg: '#005c8418', fg: '#286880' },
+  SCU:  { bg: '#00a86b18', fg: '#2d9060' },
+  UNE:  { bg: '#1f164618', fg: '#3d3060' },
+  VU:   { bg: '#00308718', fg: '#1e4a8a' },
+  BOND: { bg: '#cfb44b20', fg: '#a8942e' },
+  CQU:  { bg: '#005a9c18', fg: '#2870a8' },
+  USQ:  { bg: '#cfb44b20', fg: '#a8942e' },
+};
+
+export function parseUniversity(raw: string): { full: string; short: string } {
+  const match = raw.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
+  if (match) return { full: match[1].trim(), short: match[2] };
+  return { full: raw, short: raw.replace(/University of |University /gi, '').slice(0, 3).toUpperCase() };
+}
+
+export function getUniBadge(university: string): { bg: string; fg: string; short: string } {
+  const { short } = parseUniversity(university);
+  const colors = UNI_BADGE_COLORS[short];
+  if (colors) return { ...colors, short };
+  return { bg: '#5a687818', fg: '#5a6878', short: short.slice(0, 3) };
+}

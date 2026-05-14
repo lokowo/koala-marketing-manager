@@ -59,22 +59,27 @@ export async function POST(request: NextRequest) {
   const count = professorIds.length;
   const db = await getDb();
 
-  // Credit check upfront
-  let creditBalance = count; // fail-open for anonymous
+  let creditBalance = count;
   if (userId) {
-    const { data: creditRow } = await (db as any)
-      .from('user_credits')
-      .select('credit_balance')
-      .eq('user_id', userId)
+    const { data: profile } = await (db as any)
+      .from('user_profiles')
+      .select('credits_remaining, plan_type')
+      .eq('id', userId)
       .single();
-    creditBalance = creditRow?.credit_balance ?? 0;
-    if (creditBalance < count) {
-      return Response.json({
-        error: 'Insufficient credits',
-        message: `积分不足。需要 ${count} 积分，剩余 ${creditBalance} 积分。`,
-        required: count,
-        remaining: creditBalance,
-      }, { status: 402 });
+    if (profile?.plan_type === 'elite') {
+      creditBalance = 999;
+    } else {
+      creditBalance = profile?.credits_remaining ?? 0;
+      if (creditBalance < count) {
+        return Response.json({
+          error: 'Insufficient credits',
+          featureName: '批量生成套磁信',
+          message: `积分不足。需要 ${count} 积分，剩余 ${creditBalance} 积分。`,
+          needed: count,
+          balance: creditBalance,
+          pricingUrl: '/koala/pricing#credit-packs',
+        }, { status: 402 });
+      }
     }
   }
 

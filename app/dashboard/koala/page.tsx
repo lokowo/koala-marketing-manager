@@ -76,10 +76,14 @@ export default function KoalaDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [salesData, setSalesData] = useState<{ perSales: SalesUser[]; kpi: KPI | null }>({ perSales: [], kpi: null });
+  const [revenue, setRevenue] = useState<{ today: { transactions: number; totalCredits: number }; thisMonth: { transactions: number; totalCredits: number } } | null>(null);
+  const [subStats, setSubStats] = useState<{ stats: { totalActive: number; byTier: Record<string, number>; mrr: number; newThisMonth: number; canceledThisMonth: number }; subscribers: Array<{ user_id: string; tier: string; status: string; email: string; display_name: string; created_at: string }> } | null>(null);
 
   useEffect(() => {
     fetch('/api/admin/stats').then(r => r.json()).then(setStats);
     fetch('/api/admin/stats/trend').then(r => r.ok ? r.json() : { data: [] }).then(d => setTrend(d.data || []));
+    fetch('/api/admin/revenue').then(r => r.ok ? r.json() : null).then(setRevenue);
+    fetch('/api/admin/subscribers').then(r => r.ok ? r.json() : null).then(setSubStats);
 
     Promise.all([
       fetch('/api/admin/sales-overview').then(r => r.ok ? r.json() : { perSales: [] }),
@@ -93,7 +97,7 @@ export default function KoalaDashboard() {
     { icon: '📥', label: '今日注册', value: stats?.users.today ?? '—', sub: `总 ${stats?.users.total?.toLocaleString() ?? '—'}`, color: '#3b82f6' },
     { icon: '💬', label: '今日活跃对话', value: stats?.chat.today ?? '—', sub: `本月 ${stats?.chat.month ?? 0}`, color: '#f59e0b' },
     { icon: '✉️', label: '今日套磁信', value: stats?.outreach.today ?? '—', sub: `本月 ${stats?.outreach.month ?? 0}`, color: '#ef4444' },
-    { icon: '💰', label: '本月收入', value: '—', sub: '功能开发中', color: '#10b981' },
+    { icon: '💰', label: '本月付费', value: revenue?.thisMonth.transactions ?? '—', sub: `MRR AUD ${subStats?.stats.mrr?.toFixed(2) ?? '0'}`, color: '#10b981' },
     { icon: '📋', label: '待审批', value: stats?.pendingApprovals ?? '—', sub: '', color: '#f97316', href: '/dashboard/koala/roles' },
     { icon: '👤', label: '在线 Admin', value: stats?.onlineAdmins ?? '—', sub: '', color: '#8b5cf6' },
   ];
@@ -283,6 +287,71 @@ export default function KoalaDashboard() {
           </div>
         )}
       </div>
+      {/* Subscription & Revenue Panel */}
+      {subStats && (
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 className="text-sm font-semibold text-slate-700 mb-4">订阅 & 收入</h3>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+            <div className="p-3 rounded-lg bg-blue-50">
+              <div className="text-[10px] text-blue-600 font-medium">活跃订阅</div>
+              <div className="text-xl font-bold text-blue-800">{subStats.stats.totalActive}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-green-50">
+              <div className="text-[10px] text-green-600 font-medium">MRR</div>
+              <div className="text-xl font-bold text-green-800">A${subStats.stats.mrr.toFixed(0)}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-amber-50">
+              <div className="text-[10px] text-amber-600 font-medium">本月新增</div>
+              <div className="text-xl font-bold text-amber-800">{subStats.stats.newThisMonth}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-red-50">
+              <div className="text-[10px] text-red-600 font-medium">本月流失</div>
+              <div className="text-xl font-bold text-red-800">{subStats.stats.canceledThisMonth}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-purple-50">
+              <div className="text-[10px] text-purple-600 font-medium">按档位</div>
+              <div className="text-xs text-purple-800 mt-1 space-y-0.5">
+                <div>Starter: {subStats.stats.byTier.starter || 0}</div>
+                <div>Pro: {subStats.stats.byTier.pro || 0}</div>
+                <div>Elite: {subStats.stats.byTier.elite || 0}</div>
+              </div>
+            </div>
+          </div>
+          {subStats.subscribers.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-slate-500 mb-2">最近订阅用户</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100">
+                      <th className="text-left py-2 font-medium text-slate-500">用户</th>
+                      <th className="text-left py-2 font-medium text-slate-500">套餐</th>
+                      <th className="text-left py-2 font-medium text-slate-500">状态</th>
+                      <th className="text-left py-2 font-medium text-slate-500">日期</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subStats.subscribers.slice(0, 10).map((sub, i) => (
+                      <tr key={i} className="border-b border-slate-50">
+                        <td className="py-2 text-slate-700">{sub.display_name || sub.email || sub.user_id.slice(0, 8)}</td>
+                        <td className="py-2">
+                          <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-medium capitalize">{sub.tier}</span>
+                        </td>
+                        <td className="py-2">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${sub.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {sub.status === 'active' ? '活跃' : '已取消'}
+                          </span>
+                        </td>
+                        <td className="py-2 text-slate-400">{new Date(sub.created_at).toLocaleDateString('zh-CN')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
