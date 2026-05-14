@@ -74,6 +74,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
         href: '/dashboard/koala/professors',
         children: [
           { label: '全部教授', href: '/dashboard/koala/professors' },
+          { label: '用户贡献', href: '/dashboard/koala/professors/contributed' },
           { label: '数据质量', href: '/dashboard/koala/professors/quality' },
         ],
       },
