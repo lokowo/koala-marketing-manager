@@ -564,7 +564,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
         ) : professors.length === 0 ? (
           <div className="flex flex-col items-center py-8 gap-4 lg:col-span-2">
             {search ? (
-              <div className="w-full max-w-lg mx-auto rounded-2xl bg-purple-50/80 dark:bg-purple-900/15 border-2 border-purple-300 dark:border-purple-700/40 p-6">
+              <div className="w-full max-w-lg mx-auto rounded-2xl bg-amber-50/60 dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.2)] p-6">
                 <div className="text-center space-y-3">
                   <p className="text-3xl">😕</p>
                   <p className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">
@@ -580,12 +580,12 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                       setDeepUni(university);
                       handleDeepSearch(search, university);
                     }}
-                    className="w-full py-3 rounded-xl text-sm font-bold bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700 transition flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-xl text-sm font-bold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] hover:opacity-90 transition flex items-center justify-center gap-2"
                   >
                     <Search className="size-4" />
                     AI 深度搜索 &ldquo;{search}&rdquo;
                   </button>
-                  <p className="text-xs text-purple-500 dark:text-purple-400">
+                  <p className="text-xs text-amber-600 dark:text-amber-500">
                     录入新教授可获得 <span className="font-bold">10 积分奖励</span> ✨
                   </p>
                 </div>
@@ -617,7 +617,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
             {searching && candidates.length === 0 && (
               <div className="px-4 py-6 text-center">
                 <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">
-                  正在从 OpenAlex + 网络搜索 &ldquo;{debouncedSearch}&rdquo;…
+                  正在从网络搜索 &ldquo;{debouncedSearch}&rdquo;…
                 </p>
               </div>
             )}
@@ -630,7 +630,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                     ? { label: '✅ 已收录', cls: 'bg-green-500/15 text-green-500' }
                     : c.source === 'openalex'
                       ? { label: '📊 学术数据库', cls: 'bg-blue-400/15 text-blue-400' }
-                      : { label: '🔍 网络搜索', cls: 'bg-purple-400/15 text-purple-400' };
+                      : { label: '🔍 网络搜索', cls: 'bg-amber-400/15 text-amber-600 dark:text-amber-400' };
                   const confBadge = c.confidence === 'high'
                     ? { label: '高匹配', cls: 'text-green-500' }
                     : c.confidence === 'medium'
@@ -666,7 +666,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                           <Link href={`/koala/chat?action=outreach&prof=${savedProf.id}&name=${encodeURIComponent(savedProf.name)}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] hover:opacity-90 transition">
                             <FileEdit className="size-3" /> 写套磁信
                           </Link>
-                          <Link href={`/koala/chat?action=interview&prof=${savedProf.id}&name=${encodeURIComponent(savedProf.name)}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-500 dark:bg-purple-600 text-white hover:opacity-90 transition">
+                          <Link href={`/koala/chat?action=interview&prof=${savedProf.id}&name=${encodeURIComponent(savedProf.name)}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-300 dark:border-[rgba(212,168,67,0.2)] text-gray-700 dark:text-[#e8e4dc] hover:bg-gray-100 dark:hover:bg-[#1a2030] transition">
                             <Mic className="size-3" /> 模拟面试
                           </Link>
                         </div>
@@ -733,12 +733,12 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                     setDeepUni(university);
                     handleDeepSearch(debouncedSearch, university);
                   }}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700 transition"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] hover:opacity-90 transition"
                 >
                   <Search className="size-4" />
                   AI 深度搜索 &ldquo;{debouncedSearch}&rdquo;
                 </button>
-                <p className="text-xs text-purple-500 dark:text-purple-400">AI 可以从大学官网和学术网络搜索，录入可获 <span className="font-bold">10 积分</span></p>
+                <p className="text-xs text-amber-600 dark:text-amber-500">AI 可以从大学官网和学术网络搜索，录入可获 <span className="font-bold">10 积分</span></p>
               </div>
             )}
           </div>
@@ -751,14 +751,14 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
           {!showDeepSearch ? (
             <button
               onClick={() => { setShowDeepSearch(true); setDeepName(debouncedSearch); setDeepUni(university); }}
-              className="w-full rounded-xl px-4 py-3 text-left text-xs leading-relaxed bg-purple-50 dark:bg-purple-900/15 border border-purple-200 dark:border-purple-700/30 text-purple-500 dark:text-purple-400"
+              className="w-full rounded-xl px-4 py-3 text-left text-xs leading-relaxed bg-gray-50 dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] text-gray-500 dark:text-[#6a7a7e] hover:bg-gray-100 dark:hover:bg-[#141c28] transition"
             >
-              ⚠️ 不是你要找的教授？点击这里用 AI 深度搜索
+              不是你要找的教授？点击这里用 AI 深度搜索
             </button>
           ) : (
-            <div className="rounded-xl overflow-hidden bg-white dark:bg-[#0F1419] border border-purple-300/50 dark:border-purple-700/25">
-              <div className="px-4 py-3 flex items-center justify-between border-b border-purple-200/40 dark:border-purple-700/15">
-                <span className="text-sm font-semibold text-purple-500 dark:text-purple-400">🔍 AI 深度搜索</span>
+            <div className="rounded-xl overflow-hidden bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.15)]">
+              <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100 dark:border-[rgba(212,168,67,0.08)]">
+                <span className="text-sm font-semibold text-gray-900 dark:text-[#D4A843]">AI 深度搜索</span>
                 <button onClick={() => { setShowDeepSearch(false); setDeepCandidates([]); }} className="text-xs text-gray-500 dark:text-[#6a7a7e]">收起</button>
               </div>
               <div className="px-4 py-3 space-y-2">
@@ -784,13 +784,13 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                 <button
                   onClick={() => handleDeepSearch()}
                   disabled={!deepName.trim() || deepSearching}
-                  className="w-full py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 bg-purple-500 dark:bg-purple-600 text-white"
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
                 >
-                  {deepSearching ? '正在从学术网络和大学官网搜索…' : '🔍 AI 深度搜索'}
+                  {deepSearching ? '正在从学术网络和大学官网搜索…' : 'AI 深度搜索'}
                 </button>
               </div>
               {deepCandidates.length > 0 && (
-                <div className="divide-y divide-gray-100 dark:divide-purple-700/10 border-t border-purple-200/40 dark:border-purple-700/15">
+                <div className="divide-y divide-gray-100 dark:divide-[rgba(212,168,67,0.06)] border-t border-gray-100 dark:border-[rgba(212,168,67,0.08)]">
                   {deepCandidates.map((c, idx) => {
                     const added = deepAddedIds.has(c.name) || c.existsInDb;
                     const adding = deepAddingName === c.name;
@@ -798,7 +798,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                       ? { label: '✅ 已收录', cls: 'bg-green-500/15 text-green-500' }
                       : c.source === 'openalex'
                         ? { label: '📊 学术数据库', cls: 'bg-blue-400/15 text-blue-400' }
-                        : { label: '🔍 网络搜索', cls: 'bg-purple-400/15 text-purple-400' };
+                        : { label: '🔍 网络搜索', cls: 'bg-amber-400/15 text-amber-600 dark:text-amber-400' };
                     const deepSavedKey = `${c.name}|${c.university}`;
                     const deepSavedProf = savedProfessors.get(deepSavedKey);
 
@@ -828,7 +828,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                             <Link href={`/koala/chat?action=outreach&prof=${deepSavedProf.id}&name=${encodeURIComponent(deepSavedProf.name)}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] hover:opacity-90 transition">
                               <FileEdit className="size-3" /> 写套磁信
                             </Link>
-                            <Link href={`/koala/chat?action=interview&prof=${deepSavedProf.id}&name=${encodeURIComponent(deepSavedProf.name)}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-500 dark:bg-purple-600 text-white hover:opacity-90 transition">
+                            <Link href={`/koala/chat?action=interview&prof=${deepSavedProf.id}&name=${encodeURIComponent(deepSavedProf.name)}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-300 dark:border-[rgba(212,168,67,0.2)] text-gray-700 dark:text-[#e8e4dc] hover:bg-gray-100 dark:hover:bg-[#1a2030] transition">
                               <Mic className="size-3" /> 模拟面试
                             </Link>
                           </div>
@@ -867,7 +867,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                           <button
                             onClick={() => !added && !adding && handleDeepAddCandidate(c)}
                             disabled={added || adding}
-                            className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70 ${added ? 'bg-green-500/15 text-green-500' : 'bg-purple-500 dark:bg-purple-600 text-white'}`}
+                            className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70 ${added ? 'bg-green-500/15 text-green-500' : 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'}`}
                           >
                             {adding ? <><Loader2 className="size-3 animate-spin" /> 录入中</> : <><Plus className="size-3" /> 录入并使用</>}
                           </button>
@@ -879,7 +879,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
               )}
               {deepSearching && (
                 <div className="px-4 py-6 text-center">
-                  <Loader2 className="size-5 animate-spin mx-auto mb-2 text-purple-500 dark:text-purple-400" />
+                  <Loader2 className="size-5 animate-spin mx-auto mb-2 text-amber-600 dark:text-[#D4A843]" />
                   <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">正在从学术网络和大学官网搜索…</p>
                 </div>
               )}
@@ -1016,13 +1016,13 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
               <p className="text-xs text-amber-700/70 dark:text-amber-400/70 mt-0.5">当前余额 {rewardToast.newBalance} 积分</p>
             </div>
             {rewardToast.referralCode && (
-              <div className="rounded-xl bg-purple-50 dark:bg-purple-900/15 border border-purple-200/50 dark:border-purple-700/30 p-3 mb-4">
-                <p className="text-xs text-purple-700 dark:text-purple-400 mb-1.5">分享给同学注册，每人再赚 15 积分！</p>
+              <div className="rounded-xl bg-gray-50 dark:bg-[#0d1520] border border-gray-200 dark:border-[rgba(212,168,67,0.15)] p-3 mb-4">
+                <p className="text-xs text-gray-700 dark:text-[#8a9a9e] mb-1.5">分享给同学注册，每人再赚 15 积分！</p>
                 <div className="flex items-center justify-center gap-2">
-                  <code className="text-sm font-bold tracking-widest text-purple-600 dark:text-purple-300">{rewardToast.referralCode}</code>
+                  <code className="text-sm font-bold tracking-widest text-[#1A1A2E] dark:text-[#D4A843]">{rewardToast.referralCode}</code>
                   <button
                     onClick={() => { navigator.clipboard.writeText(`https://koalaphd.com/koala/auth?ref=${rewardToast.referralCode}`); }}
-                    className="text-[10px] px-2 py-1 rounded bg-purple-100 dark:bg-purple-800/30 text-purple-600 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800/50 transition"
+                    className="text-[10px] px-2 py-1 rounded bg-gray-100 dark:bg-[#1a2030] text-gray-700 dark:text-[#e8e4dc] hover:bg-gray-200 dark:hover:bg-[#252f40] transition"
                   >
                     复制链接
                   </button>
