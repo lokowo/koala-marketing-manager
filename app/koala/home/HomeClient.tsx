@@ -288,7 +288,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
           ) : (
             <div className="space-y-2">
               {notifications.map(n => (
-                <div key={n.id} className={`flex items-start gap-2 px-2 py-1.5 rounded-lg ${n.read ? '' : 'bg-amber-50/50 dark:bg-[#D4A843]/[0.06]'}`}>
+                <div key={n.id} className={`flex items-start gap-2 px-2 py-1.5 rounded-lg ${n.read ? '' : 'bg-amber-50/50 dark:bg-[#D4A843]/10'}`}>
                   {!n.read && <span className="mt-1.5 size-1.5 rounded-full flex-shrink-0 bg-amber-500 dark:bg-[#D4A843]" />}
                   <div className={n.read ? 'ml-3.5' : ''}>
                     <p className="text-xs font-medium text-gray-900 dark:text-[#e8e4dc]">{n.title}</p>
@@ -348,41 +348,82 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
             <span className="text-[10px] font-semibold tracking-widest uppercase px-2.5 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] border border-amber-200 dark:border-[#D4A843]/20">How it works</span>
             <h2 className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">三步搞定 PhD 申请</h2>
           </div>
-          <div className="flex flex-col lg:flex-row items-stretch gap-3 lg:gap-0">
-            {[
-              { icon: '💬', step: '01', title: '聊背景', desc: '告诉 Koala 你的专业和兴趣', extra: '⏱ 约2分钟', primary: true, iconBg: 'bg-[#D4A843]/15 dark:bg-[#D4A843]/20' },
-              { icon: '🎯', step: '02', title: 'AI 匹配', desc: `从 ${profCount} 位教授中精准推荐`, extra: '⚡ 30秒出结果', primary: false, iconBg: 'bg-[#4ECDC4]/15 dark:bg-[#4ECDC4]/20' },
-              { icon: '✉️', step: '03', title: '写申请信', desc: '针对每位教授定制专业邮件', extra: '📧 支持批量生成', primary: false, iconBg: 'bg-amber-100 dark:bg-amber-900/20' },
-            ].map((s, i) => (
+          <div className="flex flex-col lg:flex-row items-stretch gap-4 lg:gap-0">
+            {([
+              {
+                icon: '💬', step: '01', title: '聊背景',
+                desc: '告诉 Koala 你的专业方向、学术经历和兴趣，AI 帮你评估申请竞争力',
+                features: ['✅ 覆盖 8 所 Go8 大学', '✅ 中英文双语支持'],
+                extra: '⏱ 约 2 分钟',
+                primary: true,
+                iconBg: 'bg-[#D4A843]/20',
+                accentFrom: '#D4A843', accentTo: '#c9a96e',
+              },
+              {
+                icon: '🎯', step: '02', title: 'AI 匹配',
+                desc: `从 ${profCount} 位导师中，根据你的背景和研究兴趣精准推荐最佳导师`,
+                features: [`✅ ${profCount} 导师库`, '✅ 实时招生状态'],
+                extra: '⚡ 30 秒出结果',
+                primary: false,
+                iconBg: 'bg-[#4ECDC4]/15 dark:bg-[#4ECDC4]/20',
+                accentFrom: '#4ECDC4', accentTo: '#38b2ac',
+              },
+              {
+                icon: '✉️', step: '03', title: '写申请信',
+                desc: '针对每位教授的研究方向和最新论文，AI 定制高回复率的专业邮件',
+                features: ['✅ 个性化定制内容', '✅ 支持批量生成'],
+                extra: '📧 ¥1/封起',
+                primary: false,
+                iconBg: 'bg-amber-100 dark:bg-amber-900/20',
+                accentFrom: '#F59E0B', accentTo: '#D4A843',
+              },
+            ] as const).map((s, i) => (
               <div key={s.step} className="flex items-center lg:flex-1">
                 <button
                   onClick={() => handleStepClick(STEP_LINKS[i].href)}
-                  className={`rounded-2xl p-4 lg:p-5 flex flex-col gap-2 text-left w-full transition-all duration-300 active:scale-[0.98] cursor-pointer relative overflow-hidden ${
+                  className={`rounded-2xl p-5 lg:p-6 flex flex-col text-left w-full transition-all duration-300 active:scale-[0.98] cursor-pointer relative overflow-hidden group ${
                     s.primary
-                      ? 'bg-gradient-to-br from-[#1A1A2E] to-[#2D2D4A] text-white shadow-lg hover:shadow-xl hover:-translate-y-1 border border-transparent dark:border-[#D4A843]/30'
-                      : 'bg-white dark:bg-[#0F1419] border border-gray-100 dark:border-white/10 hover:-translate-y-1 hover:shadow-lg group'
+                      ? 'bg-gradient-to-br from-[#1A1A2E] to-[#2D2D4A] text-white shadow-lg hover:shadow-2xl hover:-translate-y-1.5 border border-transparent dark:border-[#D4A843]/30'
+                      : 'bg-white dark:bg-[#0F1419] border border-gray-100 dark:border-white/10 hover:-translate-y-1.5 hover:shadow-xl'
                   }`}
                 >
                   {s.primary && (
                     <>
                       <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#D4A843]/10 rounded-full" />
                       <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-[#4ECDC4]/10 rounded-full" />
+                      <div className="absolute right-4 bottom-4 text-[64px] leading-none opacity-[0.06] select-none">🐨</div>
                     </>
                   )}
-                  {!s.primary && (
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#4ECDC4] to-[#D4A843] opacity-0 group-hover:opacity-100 transition-opacity" />
-                  )}
-                  <div className="flex items-center gap-2 relative">
-                    <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg ${s.iconBg}`}>{s.icon}</span>
-                    <span className={`text-[10px] font-bold tracking-wide ${s.primary ? 'text-white/50' : 'text-amber-600 dark:text-[#D4A843]'}`}>STEP {s.step}</span>
+                  <div
+                    className="absolute top-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ background: `linear-gradient(to right, ${s.accentFrom}, ${s.accentTo})` }}
+                  />
+
+                  <div className="flex items-center gap-3 relative mb-3">
+                    <span className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${s.iconBg}`}>{s.icon}</span>
+                    <span className={`text-[10px] font-bold tracking-widest ${s.primary ? 'text-white/50' : 'text-gray-400 dark:text-[#D4A843]/60'}`}>STEP {s.step}</span>
                   </div>
-                  <div className={`text-sm font-bold relative ${s.primary ? 'text-white' : 'text-gray-900 dark:text-[#e8e4dc]'}`}>{s.title}</div>
-                  <div className={`text-[11px] leading-relaxed relative ${s.primary ? 'text-white/60' : 'text-gray-500 dark:text-[#6a7a7e]'}`}>{s.desc}</div>
-                  <div className={`text-[10px] mt-1 relative ${s.primary ? 'text-white/40' : 'text-gray-400 dark:text-[#6a7a7e]'}`}>{s.extra}</div>
+                  <div className={`text-lg font-bold relative mb-1.5 ${s.primary ? 'text-white' : 'text-gray-900 dark:text-[#e8e4dc]'}`}>{s.title}</div>
+                  <div className={`text-xs leading-relaxed relative mb-3 ${s.primary ? 'text-white/60' : 'text-gray-500 dark:text-[#6a7a7e]'}`}>{s.desc}</div>
+
+                  <div className="flex flex-col gap-1.5 relative mb-4">
+                    {s.features.map(f => (
+                      <span key={f} className={`text-[11px] ${s.primary ? 'text-white/50' : 'text-gray-500 dark:text-[#a8b8ac]'}`}>{f}</span>
+                    ))}
+                  </div>
+
+                  <div className="mt-auto relative">
+                    <div className={`h-px mb-3 ${s.primary ? 'bg-white/10' : 'bg-gray-100 dark:bg-white/5'}`} />
+                    <div className={`text-[11px] font-medium ${s.primary ? 'text-white/40' : 'text-gray-400 dark:text-[#6a7a7e]'}`}>{s.extra}</div>
+                  </div>
                 </button>
                 {i < 2 && (
-                  <div className="hidden lg:flex items-center justify-center w-8 shrink-0 text-gray-300 dark:text-[#6a7a7e]">
-                    <ArrowRight className="size-4" />
+                  <div className="hidden lg:flex items-center justify-center w-10 shrink-0">
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-px h-3 bg-gray-200 dark:bg-white/10" />
+                      <ArrowRight className="size-5 text-gray-300 dark:text-[#D4A843]/40" />
+                      <div className="w-px h-3 bg-gray-200 dark:bg-white/10" />
+                    </div>
                   </div>
                 )}
               </div>
