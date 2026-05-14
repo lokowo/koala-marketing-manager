@@ -181,6 +181,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
   // External search candidates
   const [candidates, setCandidates] = useState<SearchCandidate[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchDone, setSearchDone] = useState(false);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [addingName, setAddingName] = useState<string | null>(null);
 
@@ -225,6 +226,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
     setProfessors([]);
     setCandidates([]);
     setSearching(false);
+    setSearchDone(false);
     setPage(1);
     setHasMore(true);
     apiFetch(filters)
@@ -257,7 +259,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
               }
             })
             .catch(() => {})
-            .finally(() => setSearching(false));
+            .finally(() => { setSearching(false); setSearchDone(true); });
         }
       })
       .catch(() => {})
@@ -624,7 +626,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
       </div>
 
       {/* External search candidates */}
-      {debouncedSearch && !loading && (searching || candidates.length > 0) && (
+      {debouncedSearch && !loading && (searching || searchDone) && (
         <div className="px-4 pt-2 pb-4 lg:px-0">
           <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
             <div className="px-4 py-3 flex items-center gap-2 border-b border-gray-100 dark:border-[rgba(212,168,67,0.08)]">
@@ -740,9 +742,22 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                 })}
               </div>
             )}
-            {!searching && candidates.length === 0 && (
-              <div className="px-4 py-4 text-center">
-                <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">未找到相关教授</p>
+            {!searching && searchDone && candidates.length === 0 && (
+              <div className="px-4 py-5 text-center space-y-3">
+                <p className="text-sm text-gray-600 dark:text-[#8a9a9e]">全网搜索也未找到 &ldquo;{debouncedSearch}&rdquo; 相关教授</p>
+                <button
+                  onClick={() => {
+                    setShowDeepSearch(true);
+                    setDeepName(debouncedSearch);
+                    setDeepUni(university);
+                    handleDeepSearch(debouncedSearch, university);
+                  }}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700 transition"
+                >
+                  <Search className="size-4" />
+                  AI 深度搜索 &ldquo;{debouncedSearch}&rdquo;
+                </button>
+                <p className="text-xs text-purple-500 dark:text-purple-400">AI 可以从大学官网和学术网络搜索，录入可获 <span className="font-bold">10 积分</span></p>
               </div>
             )}
           </div>
@@ -888,7 +903,10 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                 </div>
               )}
               {!deepSearching && deepCandidates.length === 0 && deepName && (
-                <div className="px-4 pb-4" />
+                <div className="px-4 py-5 text-center">
+                  <p className="text-sm text-gray-500 dark:text-[#6a7a7e]">很抱歉，AI 也未找到 &ldquo;{deepName}&rdquo; 的信息</p>
+                  <p className="text-xs text-gray-400 dark:text-[#6a7a7e] mt-1">请确认拼写是否正确，或尝试输入教授的英文全名</p>
+                </div>
               )}
             </div>
           )}
