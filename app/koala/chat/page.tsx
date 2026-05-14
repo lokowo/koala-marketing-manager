@@ -529,12 +529,13 @@ function ChatPageInner() {
   const [mode, setMode] = useState<AIMode>(() => {
     const action = searchParams.get('action');
     if (action === 'outreach') return 'write';
+    if (action === 'interview') return 'interview';
     if (action === 'research') return 'research';
     return 'path';
   });
   const [messages, setMessages] = useState<Message[]>(() => {
     const action = searchParams.get('action');
-    const modeKey = action === 'outreach' ? 'write' : action === 'research' ? 'research' : 'path';
+    const modeKey = action === 'outreach' ? 'write' : action === 'interview' ? 'interview' : action === 'research' ? 'research' : 'path';
     const cfg = MODES.find(m => m.key === modeKey)!;
     // Try loading from localStorage immediately (server-rendered safe)
     const cached = getLocalHistory(modeKey);
@@ -591,6 +592,10 @@ function ChatPageInner() {
     if (action === 'outreach' && profName) {
       const decodedName = decodeURIComponent(profName);
       return { msg: `请帮我给 ${decodedName} 教授写一封申请信`, profId: profId ?? undefined };
+    }
+    if (action === 'interview' && profName) {
+      const decodedName = decodeURIComponent(profName);
+      return { msg: `请帮我模拟和 ${decodedName} 教授的面试`, profId: profId ?? undefined };
     }
     return null;
   });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Check, Trash2, Pencil, X, Loader2 } from 'lucide-react';
+import { Check, Trash2, Pencil, X, Loader2, User } from 'lucide-react';
 
 interface ContributedProfessor {
   id: string;
@@ -24,6 +24,7 @@ export default function ContributedProfessorsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', university: '', positionTitle: '', researchAreas: '' });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [contributorEmails, setContributorEmails] = useState<Record<string, string>>({});
 
   const fetchProfessors = useCallback(async () => {
     setLoading(true);
@@ -31,7 +32,23 @@ export default function ContributedProfessorsPage() {
       const res = await fetch('/api/professors?contributedOnly=true&showAll=true&sortBy=created_at&limit=100');
       if (res.ok) {
         const data = await res.json();
-        setProfessors(data.data || []);
+        const profs: ContributedProfessor[] = data.data || [];
+        setProfessors(profs);
+
+        const uniqueIds = [...new Set(profs.map(p => p.contributedBy).filter(Boolean))] as string[];
+        if (uniqueIds.length > 0) {
+          try {
+            const emailRes = await fetch('/api/admin/user-emails', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userIds: uniqueIds }),
+            });
+            if (emailRes.ok) {
+              const emailData = await emailRes.json();
+              setContributorEmails(emailData.emails || {});
+            }
+          } catch { /* ignore */ }
+        }
       }
     } catch { /* ignore */ }
     setLoading(false);
@@ -243,6 +260,12 @@ export default function ContributedProfessorsPage() {
                       <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-400">
                         {p.hIndex != null && <span>H-index: {p.hIndex}</span>}
                         {p.email && <span>{p.email}</span>}
+                        {p.contributedBy && (
+                          <span className="flex items-center gap-1 text-blue-500">
+                            <User className="size-3" />
+                            {contributorEmails[p.contributedBy] || p.contributedBy.slice(0, 8) + '…'}
+                          </span>
+                        )}
                         {p.contributedAt && (
                           <span>
                             贡献于 {new Date(p.contributedAt).toLocaleDateString('zh-CN')}
