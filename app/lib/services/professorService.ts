@@ -100,6 +100,7 @@ type ProfessorFilters = {
   limit?: number;
   offset?: number;
   showAll?: boolean;
+  contributedOnly?: boolean;
 };
 
 export async function listProfessors(filters?: ProfessorFilters): Promise<Professor[]> {
@@ -131,6 +132,7 @@ export async function listProfessors(filters?: ProfessorFilters): Promise<Profes
   if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
   if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
   if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
+  if (filters?.contributedOnly) q = q.not('contributed_by', 'is', null);
   const UNI_ABBREVIATIONS: Record<string, string> = {
     uts: 'University of Technology Sydney',
     unsw: 'UNSW Sydney',
@@ -248,6 +250,7 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
     if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
     if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
     if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
+    if (filters?.contributedOnly) q = q.not('contributed_by', 'is', null);
     if (filters?.search) q = q.or(`name.ilike.%${filters.search}%,university.ilike.%${filters.search}%`);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
@@ -272,6 +275,7 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
     if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
     if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
     if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
+    if (filters?.contributedOnly) q = q.not('contributed_by', 'is', null);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
     const countTerms = searchTerm.split(/[\s,;，；]+/).filter(s => s.length > 0).map(t => t.toLowerCase());
@@ -294,6 +298,7 @@ export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' |
   if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
   if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
   if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
+  if (filters?.contributedOnly) q = q.not('contributed_by', 'is', null);
   const { count, error } = await q;
   if (error) throw new Error(error.message);
   return count ?? 0;
@@ -351,6 +356,7 @@ export async function updateProfessor(
   if (data.acceptingStudents !== undefined) patch.accepting_students = data.acceptingStudents;
   if (data.opportunityScore !== undefined) patch.opportunity_score = data.opportunityScore;
   if (data.opportunityBreakdown !== undefined) patch.opportunity_breakdown = data.opportunityBreakdown;
+  if (data.contributedBy !== undefined) patch.contributed_by = data.contributedBy;
   patch.updated_at = new Date().toISOString();
 
   const { data: row, error } = await supabaseAdmin

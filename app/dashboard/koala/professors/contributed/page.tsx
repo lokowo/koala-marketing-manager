@@ -28,7 +28,7 @@ export default function ContributedProfessorsPage() {
   const fetchProfessors = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/professors?verificationStatus=user_contributed&showAll=true&sortBy=created_at&limit=100');
+      const res = await fetch('/api/professors?contributedOnly=true&showAll=true&sortBy=created_at&limit=100');
       if (res.ok) {
         const data = await res.json();
         setProfessors(data.data || []);
@@ -45,7 +45,7 @@ export default function ContributedProfessorsPage() {
       const res = await fetch(`/api/professors/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ verificationStatus: 'Verified' }),
+        body: JSON.stringify({ contributedBy: null }),
       });
       if (res.ok) {
         setProfessors(prev => prev.filter(p => p.id !== id));
@@ -87,7 +87,7 @@ export default function ContributedProfessorsPage() {
           university: editForm.university,
           positionTitle: editForm.positionTitle || null,
           researchAreas: editForm.researchAreas.split(',').map(s => s.trim()).filter(Boolean),
-          verificationStatus: 'Verified',
+          contributedBy: null,
         }),
       });
       if (res.ok) {
@@ -128,9 +128,9 @@ export default function ContributedProfessorsPage() {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">用户贡献数据审核</h1>
+        <h1 className="text-xl font-bold text-gray-900">用户贡献数据核查</h1>
         <p className="text-sm text-gray-500 mt-1">
-          审核用户通过 AI 搜索录入的教授数据。通过后将出现在公开教授列表中。
+          用户通过 AI 搜索录入的教授数据默认已上线。请核查信息准确性，如发现错误可编辑或删除。
         </p>
       </div>
 
@@ -140,13 +140,13 @@ export default function ContributedProfessorsPage() {
         </div>
       ) : professors.length === 0 ? (
         <div className="text-center py-20 bg-gray-50 rounded-xl border border-gray-200">
-          <p className="text-gray-500">暂无待审核的用户贡献数据</p>
+          <p className="text-gray-500">暂无待核查的用户贡献数据</p>
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
             <span className="text-sm font-medium text-gray-700">
-              共 {professors.length} 条待审核
+              共 {professors.length} 条待核查
             </span>
           </div>
           <div className="divide-y divide-gray-100">
@@ -199,7 +199,7 @@ export default function ContributedProfessorsPage() {
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
                       >
                         {actionLoading === p.id ? <Loader2 className="size-3 animate-spin" /> : <Check className="size-3" />}
-                        保存并通过
+                        保存并核查通过
                       </button>
                       <button
                         onClick={() => handleSave(p.id)}
@@ -276,7 +276,7 @@ export default function ContributedProfessorsPage() {
                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-50"
                           >
                             {actionLoading === p.id ? <Loader2 className="size-3 animate-spin" /> : <Check className="size-3" />}
-                            通过
+                            已核查
                           </button>
                           <button
                             onClick={() => startEdit(p)}

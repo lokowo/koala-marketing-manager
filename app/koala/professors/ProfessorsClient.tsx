@@ -195,6 +195,9 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
 
   const [savedProfessors, setSavedProfessors] = useState<Map<string, Professor>>(new Map());
 
+  // Reward toast state
+  const [rewardToast, setRewardToast] = useState<{ profName: string; credits: number; newBalance: number; referralCode: string } | null>(null);
+
   const sentinelRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -270,6 +273,9 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
           const key = `${candidate.name}|${candidate.university}`;
           setSavedProfessors(prev => new Map(prev).set(key, result.professor));
         }
+        if (result.reward) {
+          setRewardToast({ profName: candidate.name, credits: result.reward.credits, newBalance: result.reward.newBalance, referralCode: result.reward.referralCode });
+        }
       }
     } catch { /* ignore */ }
     setAddingName(null);
@@ -303,6 +309,9 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
         if (result.professor) {
           const key = `${candidate.name}|${candidate.university}`;
           setSavedProfessors(prev => new Map(prev).set(key, result.professor));
+        }
+        if (result.reward) {
+          setRewardToast({ profName: candidate.name, credits: result.reward.credits, newBalance: result.reward.newBalance, referralCode: result.reward.referralCode });
         }
       }
     } catch { /* ignore */ }
@@ -560,21 +569,31 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
             <div key={i} className="rounded-2xl animate-pulse bg-gray-100 dark:bg-[#0F1419]" style={{ height: 160 }} />
           ))
         ) : professors.length === 0 ? (
-          <div className="flex flex-col items-center py-16 gap-3 lg:col-span-2">
-            <span className="text-4xl">🔍</span>
-            <p className="font-medium text-sm text-gray-900 dark:text-[#e8e4dc]">
-              {search ? `未找到与"${search}"相关的导师` : '暂无匹配数据'}
-            </p>
-            <p className="text-xs text-center text-gray-500 dark:text-[#6a7a7e]">
-              {search ? '试试换个关键词，或点击热门标签' : '尝试调整筛选条件'}
-            </p>
+          <div className="flex flex-col items-center py-12 gap-3 lg:col-span-2">
+            <div className="w-full max-w-md mx-auto rounded-2xl bg-amber-50/50 dark:bg-[#0F1419] border border-amber-200/50 dark:border-[rgba(212,168,67,0.15)] p-5">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl shrink-0 mt-0.5">🤔</span>
+                <div className="space-y-2">
+                  <p className="font-semibold text-sm text-gray-900 dark:text-[#e8e4dc]">
+                    {search ? `没有找到"${search}"相关的导师` : '暂无匹配数据'}
+                  </p>
+                  {search ? (
+                    <div className="text-xs leading-relaxed text-gray-600 dark:text-[#8a9a9e] space-y-1.5">
+                      <p>可能是因为该教授还未被收录到我们的数据库。别担心，你可以：</p>
+                      <p className="font-medium text-gray-800 dark:text-[#c8c0b4]">1. 滑到下方查看「全网搜索结果」，AI 正在帮你从学术网络搜索</p>
+                      <p className="font-medium text-gray-800 dark:text-[#c8c0b4]">2. 点击下方「AI 深度搜索」手动输入教授姓名搜索</p>
+                      <p className="font-medium text-gray-800 dark:text-[#c8c0b4]">3. 确认录入后，你将获得 <span className="text-amber-600 dark:text-[#D4A843]">10 积分奖励</span></p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">尝试调整筛选条件或搜索教授名字</p>
+                  )}
+                </div>
+              </div>
+            </div>
             <div className="flex gap-2 mt-1">
-              {search && <button onClick={() => { setSearch(''); setDB(''); }} className="text-xs px-4 py-2 rounded-full bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">清除搜索</button>}
+              {search && <button onClick={() => { setSearch(''); setDB(''); }} className="text-xs px-4 py-2 rounded-full bg-gray-100 dark:bg-[#0F1419] text-gray-700 dark:text-[#e8e4dc]">清除搜索</button>}
               {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); setUniversity(''); }} className="text-xs px-4 py-2 rounded-full bg-gray-100 dark:bg-[#0F1419] text-gray-700 dark:text-[#e8e4dc]">清除筛选</button>}
             </div>
-            <Link href="/koala/chat" className="mt-2 text-xs px-5 py-2 rounded-full no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
-              让 Koala AI 帮我匹配 →
-            </Link>
           </div>
         ) : (
           professors.map(p => <ProfCard key={p.id} p={p} />)
@@ -960,6 +979,43 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
           </div>
         </div>
       </div>
+
+      {/* Reward toast overlay */}
+      {rewardToast && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setRewardToast(null)}>
+          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.2)] shadow-2xl p-6 text-center" onClick={e => e.stopPropagation()}>
+            <div className="text-4xl mb-3">🎉</div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-[#e8e4dc] mb-1">感谢你的贡献！</h3>
+            <p className="text-sm text-gray-600 dark:text-[#8a9a9e] mb-4">
+              你帮助我们完善了 <span className="font-semibold text-gray-900 dark:text-[#e8e4dc]">{rewardToast.profName}</span> 的信息
+            </p>
+            <div className="rounded-xl bg-amber-50 dark:bg-amber-900/15 border border-amber-200/50 dark:border-amber-700/30 p-3 mb-4">
+              <p className="text-2xl font-bold text-amber-600 dark:text-[#D4A843]">+{rewardToast.credits} 积分</p>
+              <p className="text-xs text-amber-700/70 dark:text-amber-400/70 mt-0.5">当前余额 {rewardToast.newBalance} 积分</p>
+            </div>
+            {rewardToast.referralCode && (
+              <div className="rounded-xl bg-purple-50 dark:bg-purple-900/15 border border-purple-200/50 dark:border-purple-700/30 p-3 mb-4">
+                <p className="text-xs text-purple-700 dark:text-purple-400 mb-1.5">分享给同学注册，每人再赚 15 积分！</p>
+                <div className="flex items-center justify-center gap-2">
+                  <code className="text-sm font-bold tracking-widest text-purple-600 dark:text-purple-300">{rewardToast.referralCode}</code>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(`https://koalaphd.com/koala/auth?ref=${rewardToast.referralCode}`); }}
+                    className="text-[10px] px-2 py-1 rounded bg-purple-100 dark:bg-purple-800/30 text-purple-600 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800/50 transition"
+                  >
+                    复制链接
+                  </button>
+                </div>
+              </div>
+            )}
+            <button
+              onClick={() => setRewardToast(null)}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
+            >
+              知道了
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

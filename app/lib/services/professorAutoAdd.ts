@@ -183,7 +183,7 @@ export async function saveCandidateToDb(candidate: ProfessorCandidate, userId?: 
       email: candidate.email || null,
       profile_url: candidate.profileUrl || null,
       google_scholar_url: candidate.googleScholarUrl || null,
-      verification_status: userId ? 'user_contributed' : 'Verified',
+      verification_status: 'Verified',
       data_sources: [candidate.source],
       ...(userId ? { contributed_by: userId, contributed_at: new Date().toISOString() } : {}),
     })
