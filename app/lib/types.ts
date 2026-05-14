@@ -25,7 +25,9 @@ export interface Professor {
   suitableStudentBackgrounds: string[];
   potentialRpTopics: string[];
   references: string;
-  verificationStatus: 'Verified' | 'Pending' | 'Rejected';
+  verificationStatus: 'Verified' | 'Pending' | 'Rejected' | 'Merged' | 'user_contributed';
+  contributedBy?: string;
+  contributedAt?: string;
   // Data pipeline fields
   sourceCandidateId?: string;
   arcProjectIds?: string[];

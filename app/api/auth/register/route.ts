@@ -15,6 +15,20 @@ async function processReferralCode(
   newUserEmail: string,
 ): Promise<boolean> {
   const upperCode = code.toUpperCase();
+  console.log('[referral] processing code:', upperCode, 'for user:', newUserId);
+
+  // Verify new user's profile exists before proceeding
+  const { data: newUserProfile, error: profileCheckErr } = await db
+    .from('user_profiles')
+    .select('id, credits_remaining')
+    .eq('id', newUserId)
+    .single();
+
+  if (!newUserProfile) {
+    console.error('[referral] new user profile not found, cannot process referral', { newUserId, error: profileCheckErr });
+    return false;
+  }
+  console.log('[referral] new user profile confirmed, credits:', newUserProfile.credits_remaining);
 
   // --- Tier 1: Match user_profiles.referral_code (normal user or admin) ---
   let referrerProfile: { id: string; credits_remaining: number; referral_code: string; role?: string } | null = null;
@@ -27,6 +41,7 @@ async function processReferralCode(
 
   if (directMatch) {
     referrerProfile = directMatch;
+    console.log('[referral] tier1: matched via user_profiles.referral_code, referrer:', directMatch.id, 'role:', directMatch.role);
   } else {
     const { data: codeRow } = await db
       .from('referral_codes')
@@ -42,6 +57,7 @@ async function processReferralCode(
       if (fallbackProfile) {
         await db.from('user_profiles').update({ referral_code: upperCode }).eq('id', fallbackProfile.id);
         referrerProfile = fallbackProfile;
+        console.log('[referral] tier1: matched via referral_codes table, referrer:', fallbackProfile.id);
       }
     }
   }
@@ -57,12 +73,19 @@ async function processReferralCode(
         .single();
       const uses = codeRecord?.uses || 0;
       const maxUses = codeRecord?.max_uses || 3;
-      if (uses >= maxUses) return false;
+      if (uses >= maxUses) {
+        console.log('[referral] referrer exhausted invites:', uses, '/', maxUses);
+        return false;
+      }
+      console.log('[referral] referrer invite count:', uses, '/', maxUses);
+    } else {
+      console.log('[referral] referrer is admin, skipping max_uses check');
     }
 
     // Award credits to referrer (+15)
     const newReferrerBalance = (referrerProfile.credits_remaining || 0) + 15;
-    await db.from('user_profiles').update({ credits_remaining: newReferrerBalance }).eq('id', referrerProfile.id);
+    const { error: refUpdateErr } = await db.from('user_profiles').update({ credits_remaining: newReferrerBalance }).eq('id', referrerProfile.id);
+    if (refUpdateErr) console.error('[referral] failed to update referrer credits:', refUpdateErr);
     await db.from('credit_transactions').insert({
       user_id: referrerProfile.id,
       amount: 15,
@@ -71,11 +94,14 @@ async function processReferralCode(
       description: `邀请好友注册（${newUserEmail.split('@')[0]})`,
       reference_id: newUserId,
     });
+    console.log('[referral] referrer +15 credits, new balance:', newReferrerBalance);
 
     // Award credits to new user (+5)
-    const { data: myProfile } = await db.from('user_profiles').select('credits_remaining').eq('id', newUserId).single();
-    const newMyBalance = (myProfile?.credits_remaining ?? 0) + 5;
-    await db.from('user_profiles').update({ credits_remaining: newMyBalance, referred_by: referrerProfile.id }).eq('id', newUserId);
+    const { data: freshProfile } = await db.from('user_profiles').select('credits_remaining').eq('id', newUserId).single();
+    const currentBalance = freshProfile?.credits_remaining ?? newUserProfile.credits_remaining ?? 0;
+    const newMyBalance = currentBalance + 5;
+    const { error: newUserUpdateErr } = await db.from('user_profiles').update({ credits_remaining: newMyBalance, referred_by: referrerProfile.id }).eq('id', newUserId);
+    if (newUserUpdateErr) console.error('[referral] failed to update new user credits:', newUserUpdateErr);
     await db.from('credit_transactions').insert({
       user_id: newUserId,
       amount: 5,
@@ -84,14 +110,22 @@ async function processReferralCode(
       description: '使用邀请码注册奖励',
       reference_id: referrerProfile.id,
     });
+    console.log('[referral] new user +5 credits, new balance:', newMyBalance);
 
     // Increment uses count
     const { data: codeRecord } = await db.from('referral_codes').select('uses').eq('user_id', referrerProfile.id).single();
     if (codeRecord) {
       await db.from('referral_codes').update({ uses: (codeRecord.uses || 0) + 1 }).eq('user_id', referrerProfile.id);
+      console.log('[referral] incremented referral_codes.uses to:', (codeRecord.uses || 0) + 1);
     }
 
+    console.log('[referral] tier1 complete: referrer', referrerProfile.id, '→ new user', newUserId);
     return true;
+  }
+
+  if (referrerProfile?.id === newUserId) {
+    console.log('[referral] self-referral blocked');
+    return false;
   }
 
   // --- Tier 2: Match sales_qrcodes.code (sales channel) ---
@@ -103,25 +137,25 @@ async function processReferralCode(
       .single();
 
     if (salesQr) {
+      console.log('[referral] tier2: matched sales_qrcodes, sales_user:', salesQr.sales_user_id);
+
       await db.from('sales_customers').insert({
         sales_user_id: salesQr.sales_user_id,
         customer_user_id: newUserId,
         qrcode_id: salesQr.id,
         source: 'referral_code',
         stage: 'registered',
-      }).then(() => {}).catch(() => {});
+      }).then(() => {}).catch((e: unknown) => console.error('[referral] sales_customers insert failed:', e));
 
-      await db.from('sales_qrcodes')
-        .update({ register_count: db.raw('register_count + 1') })
-        .eq('id', salesQr.id)
-        .then(() => {}).catch(async () => {
-          const { data: qr } = await db.from('sales_qrcodes').select('register_count').eq('id', salesQr.id).single();
-          if (qr) await db.from('sales_qrcodes').update({ register_count: (qr.register_count || 0) + 1 }).eq('id', salesQr.id);
-        });
+      const { data: qr } = await db.from('sales_qrcodes').select('register_count').eq('id', salesQr.id).single();
+      if (qr) {
+        await db.from('sales_qrcodes').update({ register_count: (qr.register_count || 0) + 1 }).eq('id', salesQr.id);
+      }
 
       // Award new user +5 credits
-      const { data: myProfile } = await db.from('user_profiles').select('credits_remaining').eq('id', newUserId).single();
-      const newBalance = (myProfile?.credits_remaining ?? 0) + 5;
+      const { data: freshProfile } = await db.from('user_profiles').select('credits_remaining').eq('id', newUserId).single();
+      const currentBalance = freshProfile?.credits_remaining ?? newUserProfile.credits_remaining ?? 0;
+      const newBalance = currentBalance + 5;
       await db.from('user_profiles').update({ credits_remaining: newBalance }).eq('id', newUserId);
       await db.from('credit_transactions').insert({
         user_id: newUserId,
@@ -130,13 +164,14 @@ async function processReferralCode(
         type: 'earn_referral',
         description: 'Sales 渠道注册奖励',
       });
-
+      console.log('[referral] tier2 complete: sales credit +5, new balance:', newBalance);
       return true;
     }
-  } catch {
-    // sales_qrcodes table may not exist — skip silently
+  } catch (e) {
+    console.error('[referral] tier2 sales lookup failed:', e);
   }
 
+  console.log('[referral] no match found for code:', upperCode);
   return false;
 }
 
@@ -171,8 +206,8 @@ export async function POST(req: Request) {
     let refCode = '';
     for (let i = 0; i < 6; i++) refCode += chars[Math.floor(Math.random() * chars.length)];
 
-    // Create user_profiles record
-    await db.from('user_profiles').upsert({
+    // Create user_profiles record — must succeed before referral processing
+    const { error: profileErr } = await db.from('user_profiles').upsert({
       id: userData.user.id,
       display_name: name || email.split('@')[0],
       email,
@@ -184,7 +219,25 @@ export async function POST(req: Request) {
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' });
 
-    await db.from('referral_codes').insert({ user_id: userData.user.id, code: refCode }).then(() => {}).catch(() => {});
+    if (profileErr) {
+      console.error('[register] user_profiles upsert failed, retrying:', profileErr);
+      const { error: retryErr } = await db.from('user_profiles').upsert({
+        id: userData.user.id,
+        display_name: name || email.split('@')[0],
+        email,
+        referral_code: refCode,
+        credits_remaining: 30,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
+      if (retryErr) {
+        console.error('[register] user_profiles upsert retry also failed:', retryErr);
+      }
+    }
+
+    await db.from('referral_codes').insert({ user_id: userData.user.id, code: refCode }).then(() => {}).catch((e: unknown) => {
+      console.error('[register] referral_codes insert failed:', e);
+    });
 
     // Store referral and sales codes in user metadata
     if (referralCode || salesCode) {

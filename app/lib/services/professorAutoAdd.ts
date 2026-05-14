@@ -158,7 +158,7 @@ export async function searchProfessorAllSources(name: string, university?: strin
 
 // ─── Save Candidate to DB ────────────────────────────────────────────────────
 
-export async function saveCandidateToDb(candidate: ProfessorCandidate): Promise<Professor | null> {
+export async function saveCandidateToDb(candidate: ProfessorCandidate, userId?: string): Promise<Professor | null> {
   // Check duplicate
   const { data: existing } = await supabaseAdmin
     .from('professors')
@@ -183,8 +183,9 @@ export async function saveCandidateToDb(candidate: ProfessorCandidate): Promise<
       email: candidate.email || null,
       profile_url: candidate.profileUrl || null,
       google_scholar_url: candidate.googleScholarUrl || null,
-      verification_status: 'Verified',
+      verification_status: userId ? 'user_contributed' : 'Verified',
       data_sources: [candidate.source],
+      ...(userId ? { contributed_by: userId, contributed_at: new Date().toISOString() } : {}),
     })
     .select()
     .single();
@@ -371,6 +372,8 @@ function fromRow(row: Record<string, unknown>): Professor {
     potentialRpTopics: (row.potential_rp_topics as string[]) ?? [],
     references: (row['references'] as string) ?? '',
     verificationStatus: (row.verification_status as Professor['verificationStatus']) ?? 'Pending',
+    contributedBy: (row.contributed_by as string) ?? undefined,
+    contributedAt: (row.contributed_at as string) ?? undefined,
     sourceCandidateId: (row.source_candidate_id as string) ?? undefined,
     arcProjectIds: (row.arc_project_ids as string[]) ?? undefined,
     semanticScholarId: (row.semantic_scholar_id as string) ?? undefined,

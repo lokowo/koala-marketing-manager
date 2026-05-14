@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   ChevronLeft, Search, SlidersHorizontal, Bookmark, Loader2,
   X, GraduationCap, BookOpen, TrendingUp, MessageSquarePlus, Plus, Check,
+  ExternalLink, FileEdit, Mic,
 } from 'lucide-react';
 import VoiceInputButton from '../../components/VoiceInputButton';
 import type { Professor } from '../../lib/types';
@@ -192,6 +193,8 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
   const [deepAddedIds, setDeepAddedIds] = useState<Set<string>>(new Set());
   const [deepAddingName, setDeepAddingName] = useState<string | null>(null);
 
+  const [savedProfessors, setSavedProfessors] = useState<Map<string, Professor>>(new Map());
+
   const sentinelRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -263,18 +266,14 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
       if (res.ok) {
         const result = await res.json();
         setAddedIds(prev => new Set(prev).add(candidate.name));
-        if (result.professor?.id) {
-          router.push(`/koala/professors/${result.professor.id}`);
-          return;
+        if (result.professor) {
+          const key = `${candidate.name}|${candidate.university}`;
+          setSavedProfessors(prev => new Map(prev).set(key, result.professor));
         }
-        const refreshed = await apiFetch(filters);
-        setProfessors(refreshed.data);
-        setTotal(refreshed.total);
-        setHasMore(refreshed.hasMore);
       }
     } catch { /* ignore */ }
     setAddingName(null);
-  }, [filters, router]);
+  }, []);
 
   const handleDeepSearch = useCallback(async () => {
     if (!deepName.trim()) return;
@@ -301,18 +300,14 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
       if (res.ok) {
         const result = await res.json();
         setDeepAddedIds(prev => new Set(prev).add(candidate.name));
-        if (result.professor?.id) {
-          router.push(`/koala/professors/${result.professor.id}`);
-          return;
+        if (result.professor) {
+          const key = `${candidate.name}|${candidate.university}`;
+          setSavedProfessors(prev => new Map(prev).set(key, result.professor));
         }
-        const refreshed = await apiFetch(filters);
-        setProfessors(refreshed.data);
-        setTotal(refreshed.total);
-        setHasMore(refreshed.hasMore);
       }
     } catch { /* ignore */ }
     setDeepAddingName(null);
-  }, [filters, router]);
+  }, []);
 
   // Category counts once on mount
   useEffect(() => {
@@ -617,6 +612,43 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                       ? { label: '中匹配', cls: 'text-yellow-500' }
                       : { label: '低匹配', cls: 'text-[#6a7a7e]' };
 
+                  const savedKey = `${c.name}|${c.university}`;
+                  const savedProf = savedProfessors.get(savedKey);
+
+                  if (savedProf) {
+                    return (
+                      <div key={idx} className="px-4 py-3 bg-green-50/50 dark:bg-green-900/10 border-l-2 border-green-500">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Check className="size-4 text-green-500" />
+                          <p className="text-sm font-semibold text-gray-900 dark:text-[#e8e4dc]">{savedProf.name}</p>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-500">已录入</span>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-[#6a7a7e] mb-2">
+                          {savedProf.positionTitle && <span>{savedProf.positionTitle} · </span>}
+                          {savedProf.university}
+                        </p>
+                        {savedProf.researchAreas.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {savedProf.researchAreas.slice(0, 4).map(area => (
+                              <span key={area} className="rounded-md text-[10px] px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">{area}</span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          <Link href={`/koala/professors/${savedProf.id}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 dark:bg-[#1a2030] text-gray-700 dark:text-[#e8e4dc] hover:bg-gray-200 dark:hover:bg-[#252f40] transition">
+                            <ExternalLink className="size-3" /> 查看详情
+                          </Link>
+                          <Link href={`/koala/chat?action=outreach&prof=${savedProf.id}&name=${encodeURIComponent(savedProf.name)}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] hover:opacity-90 transition">
+                            <FileEdit className="size-3" /> 写套磁信
+                          </Link>
+                          <Link href={`/koala/chat?action=interview&prof=${savedProf.id}&name=${encodeURIComponent(savedProf.name)}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-500 dark:bg-purple-600 text-white hover:opacity-90 transition">
+                            <Mic className="size-3" /> 模拟面试
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div key={idx} className={`px-4 py-3 flex items-start gap-3 ${c.universityMismatch ? 'opacity-60' : ''}`}>
                       <div className="flex-1 min-w-0">
@@ -658,7 +690,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                           disabled={added || adding}
                           className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70 ${added ? 'bg-green-500/15 text-green-500' : 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'}`}
                         >
-                          {added ? <><Check className="size-3" /> 已添加</> : adding ? <><Loader2 className="size-3 animate-spin" /> 添加中</> : <><Plus className="size-3" /> 录入并查看详情</>}
+                          {adding ? <><Loader2 className="size-3 animate-spin" /> 录入中</> : <><Plus className="size-3" /> 录入并使用</>}
                         </button>
                       )}
                     </div>
@@ -729,6 +761,43 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                       : c.source === 'openalex'
                         ? { label: '📊 学术数据库', cls: 'bg-blue-400/15 text-blue-400' }
                         : { label: '🔍 网络搜索', cls: 'bg-purple-400/15 text-purple-400' };
+                    const deepSavedKey = `${c.name}|${c.university}`;
+                    const deepSavedProf = savedProfessors.get(deepSavedKey);
+
+                    if (deepSavedProf) {
+                      return (
+                        <div key={idx} className="px-4 py-3 bg-green-50/50 dark:bg-green-900/10 border-l-2 border-green-500">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Check className="size-4 text-green-500" />
+                            <p className="text-sm font-semibold text-gray-900 dark:text-[#e8e4dc]">{deepSavedProf.name}</p>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-500">已录入</span>
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-[#6a7a7e] mb-2">
+                            {deepSavedProf.positionTitle && <span>{deepSavedProf.positionTitle} · </span>}
+                            {deepSavedProf.university}
+                          </p>
+                          {deepSavedProf.researchAreas.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {deepSavedProf.researchAreas.slice(0, 4).map(area => (
+                                <span key={area} className="rounded-md text-[10px] px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">{area}</span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex flex-wrap gap-2">
+                            <Link href={`/koala/professors/${deepSavedProf.id}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 dark:bg-[#1a2030] text-gray-700 dark:text-[#e8e4dc] hover:bg-gray-200 dark:hover:bg-[#252f40] transition">
+                              <ExternalLink className="size-3" /> 查看详情
+                            </Link>
+                            <Link href={`/koala/chat?action=outreach&prof=${deepSavedProf.id}&name=${encodeURIComponent(deepSavedProf.name)}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] hover:opacity-90 transition">
+                              <FileEdit className="size-3" /> 写套磁信
+                            </Link>
+                            <Link href={`/koala/chat?action=interview&prof=${deepSavedProf.id}&name=${encodeURIComponent(deepSavedProf.name)}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-500 dark:bg-purple-600 text-white hover:opacity-90 transition">
+                              <Mic className="size-3" /> 模拟面试
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     return (
                       <div key={idx} className={`px-4 py-3 flex items-start gap-3 ${c.universityMismatch ? 'opacity-60' : ''}`}>
                         <div className="flex-1 min-w-0">
@@ -762,7 +831,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                             disabled={added || adding}
                             className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition disabled:opacity-70 ${added ? 'bg-green-500/15 text-green-500' : 'bg-purple-500 dark:bg-purple-600 text-white'}`}
                           >
-                            {added ? <><Check className="size-3" /> 已录入</> : adding ? <><Loader2 className="size-3 animate-spin" /> 录入中</> : <><Plus className="size-3" /> 录入并查看详情</>}
+                            {adding ? <><Loader2 className="size-3 animate-spin" /> 录入中</> : <><Plus className="size-3" /> 录入并使用</>}
                           </button>
                         )}
                       </div>

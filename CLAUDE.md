@@ -632,6 +632,19 @@ Koala PhD is an AI-first platform where users chat with "考拉学长" to get fr
 - ❌ 不要在浅色后台用深色背景 class（bg-gray-900 等）
 - ❌ 不要在手机号输入的 onValueChanged 中拼接区号（区号只在提交时合并）
 
+## 追溯更新规则
+
+当修复了影响历史数据的 bug 时，必须同时处理已有数据：
+
+1. 修复注册积分逻辑后 → 检查所有历史注册用户，对漏发积分的补发
+2. 修复邀请码逻辑后 → 检查所有有邀请关系但积分没到账的，补发
+3. 修复价值评分算法后 → 对所有已有的 survey_responses 重新计算 value_score
+4. 修复客户阶段同步后 → 对所有现有客户重新同步漏斗数据
+
+执行方式：修完代码后写一个一次性的修复脚本（或 SQL），对历史数据按新逻辑重新处理。
+脚本命名：scripts/backfill-{功能名}-{日期}.ts
+跑完后脚本保留在 scripts/ 目录作为记录，不删除。
+
 ## 强制使用 OpenSpec 工作流
 
 所有代码变更必须通过 OpenSpec 流程执行，禁止直接改代码。

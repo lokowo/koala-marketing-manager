@@ -26,6 +26,8 @@ export interface Database {
           potential_rp_topics: string[];
           "references": string | null;
           verification_status: string;
+          contributed_by: string | null;
+          contributed_at: string | null;
           source_candidate_id: string | null;
           arc_project_ids: string[] | null;
           semantic_scholar_id: string | null;

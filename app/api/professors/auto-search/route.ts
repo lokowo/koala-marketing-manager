@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'candidate with name and university required' }, { status: 400 });
     }
 
-    const professor = await saveCandidateToDb(candidate);
+    const professor = await saveCandidateToDb(candidate, user.id);
     if (professor) {
       return Response.json({ success: true, professor });
     }

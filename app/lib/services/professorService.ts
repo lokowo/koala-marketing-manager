@@ -24,6 +24,8 @@ function fromRow(row: ProfessorRow): Professor {
     potentialRpTopics: row.potential_rp_topics ?? [],
     references: row['references'] ?? '',
     verificationStatus: row.verification_status as Professor['verificationStatus'],
+    contributedBy: row.contributed_by ?? undefined,
+    contributedAt: row.contributed_at ?? undefined,
     sourceCandidateId: row.source_candidate_id ?? undefined,
     arcProjectIds: row.arc_project_ids ?? undefined,
     semanticScholarId: row.semantic_scholar_id ?? undefined,
