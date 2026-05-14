@@ -239,6 +239,7 @@ export default function BannersPage() {
   const [imageTab, setImageTab] = useState<'upload' | 'ai'>('upload');
   const [aiPrompt, setAiPrompt] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [generatingPrompt, setGeneratingPrompt] = useState<string | null>(null);
   const [generatedImageUrl, setGeneratedImageUrl] = useState('');
   const [generateError, setGenerateError] = useState('');
   const [newOverlayConfig, setNewOverlayConfig] = useState<OverlayConfig>({ layers: [], backdropOpacity: 0 });
@@ -727,55 +728,32 @@ export default function BannersPage() {
                     />
                     <div className="flex gap-1.5 flex-wrap">
                       {[
-                        { label: '🏫 大学校园', prompts: [
-                          '澳洲顶尖大学的砂岩主楼前，两位中国留学生背着书包走在林荫道上，秋天的金色梧桐叶飘落，阳光透过树枝洒在草坪上，远处有其他学生坐在草地上看书',
-                          '悉尼大学哥特式教学楼的拱门走廊，一位亚洲女生抱着笔记本走过，走廊尽头是阳光明媚的庭院，墙上爬满了常青藤',
-                          '墨尔本大学校园的清晨，草坪上有薄雾，远处是标志性的钟塔，几个学生骑自行车经过，画面安静温暖',
-                          'UNSW 现代化的图书馆建筑外观，玻璃幕墙反射着蓝天白云，前面的广场上有学生坐在台阶上聊天喝咖啡',
-                          'ANU 校园里的湖边小路，一位中国男生坐在长椅上看书，背景是澳洲特有的桉树和蓝天，湖面有倒影',
-                        ]},
-                        { label: '📚 学术研究', prompts: [
-                          '现代化大学图书馆里，一位戴眼镜的亚洲女研究生在靠窗座位用MacBook写论文，桌上有一杯拿铁和几本打开的学术期刊，窗外是校园绿树',
-                          '明亮的生物实验室里，一位亚洲男研究生正在显微镜前观察样本，旁边的导师在记录数据，实验台上有整齐的试管和器材',
-                          '大学研讨室里，四个来自不同国家的PhD学生围着白板讨论研究方案，白板上画满了图表和公式，桌上散落着论文打印稿',
-                          '安静的大学阅览室角落，一位亚洲女生面前摊开三本厚书和一个平板电脑，正在认真做笔记，台灯的暖光照在她的侧脸上',
-                          '工程学院的工作坊里，一位亚洲学生戴着护目镜操作3D打印机，身后的架子上摆满了各种项目原型模型',
-                        ]},
-                        { label: '🎓 毕业典礼', prompts: [
-                          '一群穿着黑色学位服的毕业生在大学主楼前的大台阶上欢呼庆祝，有人把学位帽抛向蓝天，阳光灿烂，每个人脸上都是灿烂的笑容',
-                          '一位亚洲女博士毕业生手捧毕业证书站在校园花园里，她的导师站在旁边微笑着，背景是盛开的蓝花楹',
-                          '毕业典礼结束后，一对中国留学生情侣穿着学位服在校园草坪上拍合照，夕阳的光打在他们身上，画面温馨',
-                          '大学礼堂内的毕业典礼现场，舞台上一位亚洲学生正在接受校长颁发的博士学位证书，台下家人在鼓掌',
-                          '毕业典礼后的校园，三位亚洲女生穿着学位服在校园喷泉前自拍合影，手里拿着花束，阳光下她们的笑容很灿烂',
-                        ]},
-                        { label: '🔬 导师指导', prompts: [
-                          '教授办公室里，一位白发教授和亚洲PhD学生面对面坐着讨论论文，桌上摊开着标注了红色批注的打印稿，书架上堆满了学术著作',
-                          '实验室里，导师指着屏幕上的数据图表给学生讲解，两人表情专注，周围是先进的科研设备',
-                          '校园咖啡厅的户外座位，一位年轻教授和两位亚洲研究生轻松地聊天讨论，桌上有笔记本和咖啡，氛围融洽',
-                          '大学会议室里，一位导师用激光笔指着投影仪上的研究路线图，三位亚洲研究生在认真记笔记，窗外可以看到校园绿地',
-                          '一位资深教授在自己的办公室书架前，手持一本刚出版的学术专著跟亚洲学生分享，两人表情愉快，书架上摆着地球仪和学术奖杯',
-                        ]},
-                        { label: '🌏 悉尼风景', prompts: [
-                          '悉尼歌剧院和海港大桥的黄金时刻全景，夕阳将天空染成橙红色，前景是波光粼粼的海面和几艘帆船',
-                          '从悉尼大学校园高处俯瞰城市天际线，远处是海港大桥，近处是绿树成荫的校园，蓝天白云',
-                          '邦迪海滩的清晨，几位年轻人在海边慢跑，远处是彩色的冲浪板和金色的沙滩，海水是清澈的蓝绿色',
-                          '达令港的傍晚，海滨长廊上几位年轻人散步，远处是灯火辉煌的城市天际线和Pyrmont大桥，水面倒映着霓虹灯光',
-                          '皇家植物园里的林荫步道，两位亚洲留学生边走边聊，背景是歌剧院的白色帆形屋顶若隐若现，阳光透过棕榈树叶',
-                        ]},
-                        { label: '🤖 AI科技', prompts: [
-                          '未来感的全息投影界面悬浮在空中，显示教授匹配算法的网络图谱，蓝色和金色的数据流在节点间流动，背景是暗色调的实验室',
-                          '一位学生面前浮现出半透明的AI助手界面，屏幕上显示着教授推荐列表和匹配度百分比，科技蓝色光芒照亮面部',
-                          '抽象的数据可视化画面，无数光点连成知识图谱网络，中心是一个发光的考拉Logo，代表AI智能连接学生与导师',
-                          '深色背景中，发光的神经网络节点图谱从考拉形状的中心向外扩散，每个节点代表一位教授的研究领域，金色连接线表示匹配路径',
-                          '一双手在透明触控板上滑动操作，屏幕上显示着教授数据库的智能筛选界面，有匹配分数和研究方向标签在浮动',
-                        ]},
+                        { label: '🏫 大学校园', category: 'campus' },
+                        { label: '📚 学术研究', category: 'research' },
+                        { label: '🎓 毕业典礼', category: 'graduation' },
+                        { label: '🔬 导师指导', category: 'mentor' },
+                        { label: '🌏 悉尼风景', category: 'sydney' },
+                        { label: '🤖 AI科技', category: 'ai_tech' },
                       ].map(item => (
                         <button
-                          key={item.label}
-                          onClick={() => setAiPrompt(item.prompts[Math.floor(Math.random() * item.prompts.length)])}
-                          className="px-2.5 py-1 rounded-lg text-[11px] border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB] hover:border-[#c9a96e] transition-colors"
+                          key={item.category}
+                          disabled={generatingPrompt !== null}
+                          onClick={async () => {
+                            setGeneratingPrompt(item.category);
+                            try {
+                              const res = await fetch('/api/admin/banners/generate-prompt', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ category: item.category }),
+                              });
+                              const data = await res.json();
+                              if (data.prompt) setAiPrompt(data.prompt);
+                            } catch { /* ignore */ }
+                            setGeneratingPrompt(null);
+                          }}
+                          className="px-2.5 py-1 rounded-lg text-[11px] border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB] hover:border-[#c9a96e] transition-colors disabled:opacity-40"
                         >
-                          {item.label}
+                          {generatingPrompt === item.category ? '⏳ 生成中...' : item.label}
                         </button>
                       ))}
                     </div>
