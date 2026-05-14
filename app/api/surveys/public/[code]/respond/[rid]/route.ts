@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import { saveProgress, completeResponse } from '../../../../../../lib/services/surveyService';
 import { surveySubmitLimiter } from '../../../../../../lib/ratelimit';
+import { sendSurveyThankYouEmail } from '../../../../../../lib/services/emailService';
+import { supabaseAdmin } from '../../../../../../lib/supabase/server';
 
 export async function PUT(
   req: NextRequest,
@@ -53,14 +55,35 @@ export async function POST(
     if (contactFields.email) metadata.contact_email = contactFields.email;
     if (contactFields.wechat) metadata.contact_wechat = contactFields.wechat;
 
-    if (contactFields.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactFields.email)) {
+    const emailValid = contactFields.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactFields.email);
+    if (contactFields.email && !emailValid) {
       metadata.email_status = 'invalid';
+    } else if (emailValid) {
+      metadata.email_status = 'pending';
     }
     if (contactFields.phone && contactFields.phone.replace(/\D/g, '').length < 8) {
       metadata.phone_status = 'invalid';
     }
 
     await completeResponse(rid, cleanedAnswers, metadata);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabaseAdmin as any;
+
+    if (emailValid) {
+      sendSurveyThankYouEmail({
+        to: contactFields.email,
+        name: contactFields.name,
+        responseId: rid,
+      }).then(({ emailId }) => {
+        if (emailId) {
+          db.from('survey_responses')
+            .update({ metadata: { ...metadata, email_status: 'pending', resend_email_id: emailId } })
+            .eq('id', rid)
+            .then(() => {});
+        }
+      }).catch(() => {});
+    }
 
     return Response.json({ success: true, response_id: rid }, { status: 201 });
   } catch (error) {

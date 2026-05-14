@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     // 2. Unregistered survey leads
     const { data: unregistered } = await db
       .from('survey_responses')
-      .select('id, respondent_name, respondent_phone, respondent_email, respondent_wechat, follow_up_status, follow_up_notes, value_score, completed_at, survey_id, surveys!survey_id(title_zh)')
+      .select('id, respondent_name, respondent_phone, respondent_email, respondent_wechat, follow_up_status, follow_up_notes, value_score, completed_at, metadata, survey_id, surveys!survey_id(title_zh)')
       .eq('sales_user_id', user.id)
       .eq('status', 'completed')
       .is('registered_user_id', null)
@@ -65,6 +65,7 @@ export async function GET(req: NextRequest) {
         notes: r.notes || '',
         created_at: r.created_at,
         customer_user_id: r.customer_user_id,
+        email_status: null as string | null,
       })),
       ...(unregistered ?? []).map((u: AnyRow) => ({
         id: u.id,
@@ -84,6 +85,7 @@ export async function GET(req: NextRequest) {
         notes: u.follow_up_notes || '',
         created_at: u.completed_at,
         customer_user_id: null,
+        email_status: (u.metadata as Record<string, unknown>)?.email_status as string || null,
       })),
     ];
 

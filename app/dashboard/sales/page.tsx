@@ -12,6 +12,7 @@ interface Client {
   wechat?: string; stage: string; source: string; source_channel: string; registered: boolean;
   value_score: number | null; survey_title: string; last_contacted_at: string | null;
   contact_count: number; notes: string; created_at: string; customer_user_id: string | null;
+  email_status?: string | null;
 }
 
 interface FunnelData { funnel: Record<string, number>; total: number; conversionRate: string; lost: number }
@@ -591,7 +592,7 @@ export default function SalesDashboard() {
                           {c.source === 'survey' && <span>📋 {c.survey_title || '调研'}</span>}
                           {c.source !== 'survey' && c.source_channel && <span>{CH_LABELS[c.source_channel] || c.source_channel}</span>}
                           {c.phone && <span>📱{c.phone.slice(-4)}</span>}
-                          {c.email && <span>📧{c.email.split('@')[0]}</span>}
+                          {c.email && <span>📧{c.email.split('@')[0]}{c.email_status === 'valid' ? '✓' : c.email_status === 'invalid' ? '✗' : ''}</span>}
                         </div>
                       </div>
                       {c.value_score !== null && (
@@ -617,7 +618,7 @@ export default function SalesDashboard() {
                       <div className="px-3 pb-3 pt-1 border-t border-[#F3F4F6] bg-[#FAFAFA]">
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[10px] mb-3">
                           {c.phone && <div><span className="text-[#6B7280]">📱 手机：</span><span className="text-[#111827]">{c.phone}</span></div>}
-                          {c.email && <div><span className="text-[#6B7280]">📧 邮箱：</span><span className="text-[#111827]">{c.email}</span></div>}
+                          {c.email && <div><span className="text-[#6B7280]">📧 邮箱：</span><span className="text-[#111827]">{c.email}</span>{c.email_status === 'valid' ? <span className="ml-1 text-green-600" title="邮箱已验证">✓</span> : c.email_status === 'invalid' ? <span className="ml-1 text-red-500" title="邮箱无效">✗</span> : c.type === 'survey_lead' ? <span className="ml-1 text-[#9CA3AF]" title="验证中">⏳</span> : null}</div>}
                           {c.wechat && <div><span className="text-[#6B7280]">💬 微信：</span><span className="text-[#111827]">{c.wechat}</span></div>}
                           {c.survey_title && <div><span className="text-[#6B7280]">📋 来源：</span><span className="text-[#111827]">{c.survey_title}</span></div>}
                           <div><span className="text-[#6B7280]">📅 获取时间：</span><span className="text-[#111827]">{new Date(c.created_at).toLocaleDateString('zh-CN')}</span></div>

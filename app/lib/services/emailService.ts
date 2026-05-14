@@ -147,6 +147,45 @@ export async function sendWelcomeEmail(params: { to: string; name?: string }) {
   });
 }
 
+export async function sendSurveyThankYouEmail(params: {
+  to: string;
+  name?: string;
+  responseId: string;
+}): Promise<{ emailId?: string }> {
+  const greeting = params.name ? `${params.name}，你好！` : '你好！';
+  const body = `
+    <p>${greeting}</p>
+    <p>感谢你完成我们的调研问卷！你的反馈对我们非常重要。</p>
+    <p>${BRAND_NAME} 是一个 AI 驱动的澳洲 PhD 导师匹配平台，帮助中国留学生：</p>
+    <ul style="padding-left:20px;margin:16px 0;">
+      <li style="margin-bottom:8px;"><strong>智能匹配</strong> — 从数千位澳洲教授中找到最适合你的导师</li>
+      <li style="margin-bottom:8px;"><strong>定制套磁信</strong> — AI 针对每位教授生成个性化邮件</li>
+      <li style="margin-bottom:8px;"><strong>科研指导</strong> — 搜索论文、理解研究方向</li>
+    </ul>
+    ${ctaButton('免费注册，开始匹配', `${BASE_URL}/koala/home`)}
+    <p style="font-size:12px;color:#907858;">这封邮件由 ${BRAND_NAME} 自动发送，如有疑问请联系 info@koalaphd.com</p>
+  `;
+
+  try {
+    const result = await getResend().emails.send({
+      from: `${BRAND_NAME} <hello@koalaphd.com>`,
+      to: params.to,
+      subject: `🐨 感谢参与问卷！来认识你的 PhD 导师吧`,
+      html: brandTemplate('感谢参与问卷', body),
+      headers: {
+        'X-Entity-Ref-ID': params.responseId,
+      },
+      tags: [
+        { name: 'survey_response_id', value: params.responseId },
+      ],
+    });
+    return { emailId: result.data?.id };
+  } catch (e) {
+    console.error('[sendSurveyThankYouEmail]', e);
+    return {};
+  }
+}
+
 export async function sendSecurityWarning(params: {
   to: string;
   verifyUrl: string;
