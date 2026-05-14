@@ -313,12 +313,12 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
             <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.06) 0%, transparent 70%)' }} />
             <div className="absolute right-8 bottom-0 w-40 h-40 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.04) 0%, transparent 70%)' }} />
 
-            <div className="lg:flex lg:items-center">
-              <div className="px-6 py-8 lg:p-10 relative z-10 lg:w-1/2">
+            <div className="flex flex-col md:flex-row md:items-center">
+              <div className="order-2 md:order-1 px-6 py-6 md:py-8 lg:p-10 relative z-10 md:w-1/2">
                 <div className="inline-flex items-center text-xs font-medium mb-2 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-transparent text-amber-700 dark:text-[#D4A843]/50 border border-amber-200 dark:border-transparent">
                   AI 导师匹配 · 免费使用
                 </div>
-                <h1 className="text-xl lg:text-3xl font-bold leading-tight mb-1.5 text-[#1A1A2E] dark:text-[#e8e4dc]">
+                <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold leading-tight mb-1.5 text-[#1A1A2E] dark:text-[#e8e4dc]">
                   {profCount} 位澳洲导师<br />AI 帮你找最匹配的那个
                 </h1>
                 <p className="text-xs lg:text-sm leading-relaxed mb-4 text-gray-500 dark:text-[#6a7a7e]">
@@ -326,18 +326,18 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                 </p>
                 <Link
                   href="/koala/chat"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
+                  className="inline-flex items-center justify-center gap-2 w-full md:w-auto px-5 py-2.5 rounded-full font-semibold text-sm no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
                 >
                   开始匹配 <ArrowRight className="size-4" />
                 </Link>
-                <div className="mt-3 text-[11px] text-amber-700 dark:text-[#D4A843]/40">
+                <div className="mt-3 text-[11px] text-center md:text-left text-amber-700 dark:text-[#D4A843]/40">
                   {matchCount > 0
                     ? `已帮助 ${displayMatchCount.toLocaleString()} 位同学匹配理想导师`
                     : '已帮助众多同学匹配理想导师'}
                 </div>
               </div>
 
-              <div className="hidden lg:block lg:w-1/2 p-4 pl-0">
+              <div className="order-1 md:order-2 md:w-1/2 p-3 md:p-4 md:pl-0">
                 <BannerCarousel heroMode />
               </div>
             </div>

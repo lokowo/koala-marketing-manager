@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     const response = await openai.images.generate({
       model: 'gpt-image-1',
       prompt: fullPrompt,
-      size: size || '1024x1024',
+      size: size || '1536x1024',
       quality: 'medium',
       n: 1,
     });

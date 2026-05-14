@@ -686,7 +686,7 @@ export default function BannersPage() {
                 {imageTab === 'upload' && (
                   <>
                     <div className="bg-blue-50 text-blue-700 text-xs px-3 py-2 rounded-lg mb-3">
-                      📐 推荐尺寸：1024×1024 像素（1:1 正方形）· 支持 JPG/PNG/WebP · 最大 5MB
+                      📐 推荐尺寸：1536×1024 像素（3:2 横版）· 支持 JPG/PNG/WebP · 最大 5MB
                     </div>
                     {newImagePreview ? (
                       <div className="relative w-full h-40 rounded-xl overflow-hidden bg-[#F3F4F6] mb-2">
@@ -703,7 +703,7 @@ export default function BannersPage() {
                         <div className="text-center">
                           <div className="text-2xl mb-1">📷</div>
                           <div className="text-xs text-[#9CA3AF]">点击上传图片</div>
-                          <div className="text-[10px] text-[#D1D5DB] mt-0.5">推荐 1024×1024 或 4:3 比例 · 最大 5MB</div>
+                          <div className="text-[10px] text-[#D1D5DB] mt-0.5">推荐 1536×1024（3:2 横版）· 最大 5MB</div>
                         </div>
                         <input type="file" accept="image/*" className="hidden" onChange={e => handleFileSelect(e, 'create')} />
                       </label>
@@ -714,7 +714,7 @@ export default function BannersPage() {
                 {imageTab === 'ai' && (
                   <div className="space-y-3">
                     <div className="bg-blue-50 text-blue-700 text-xs px-3 py-2 rounded-lg">
-                      📐 AI 自动生成 1024×1024 像素（1:1 正方形）· 图片不含任何文字
+                      📐 AI 自动生成 1536×1024 像素（3:2 横版）· 图片不含任何文字
                     </div>
                     <p className="text-xs text-[#6B7280]">描述你想要的图片内容，AI 自动生成专业 Banner</p>
                     <p className="text-xs text-[#9CA3AF] italic">🎬 AI 将生成真实摄影风格的图片（柯达胶片色调 · 自然光 · 浅景深）</p>
