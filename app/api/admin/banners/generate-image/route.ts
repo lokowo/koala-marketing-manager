@@ -8,31 +8,17 @@ const db = supabaseAdmin as any;
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const basePrompt = `A real photograph taken with a Canon EOS R5 camera, 85mm f/1.4 lens.
+const basePrompt = `CRITICAL: The image must contain ABSOLUTELY NO text, words, letters, numbers, signs, or characters of any language. No watermarks. No logos.
 
-MANDATORY STYLE REQUIREMENTS:
-- Must look like a REAL photograph taken by a professional photographer, NOT AI-generated
-- Shot on film stock Kodak Portra 400 — warm skin tones, soft natural grain, muted highlights
-- Natural lens imperfections: subtle bokeh, slight vignetting at edges, natural depth of field
-- Real-world lighting ONLY: golden hour sunlight, overcast diffused light, or indoor ambient light
-- NO perfect symmetry, NO plastic skin, NO HDR over-processing, NO over-sharpening
-- Skin texture must be visible and natural — pores, subtle blemishes, natural shadows under eyes
-- Clothing should have natural wrinkles and fabric texture
-- Background should have natural blur (shallow depth of field) with real bokeh circles
-- Colors should be slightly desaturated, NOT oversaturated or neon
-- NO lens flare effects, NO dramatic color grading, NO cinematic blue/orange toning
-- Avoid uncanny valley — if there are people, they must look completely real
+Style: Documentary photography. Kodak Portra 400 film. Warm muted tones, visible film grain, soft natural light. Shallow depth of field with circular bokeh. Slight vignetting at edges.
 
-COMPOSITION:
-- Rule of thirds framing
-- Natural candid moment, not posed or staged looking
-- Environmental context: real university buildings, real libraries, real laboratories
+Lighting: Golden hour or overcast diffused daylight only. No flash, no studio lighting.
 
-ABSOLUTELY NO TEXT, NO WORDS, NO LETTERS, NO CHARACTERS of any language in the image.
+People (if any): East Asian university students in their 20s. Natural skin with visible texture and pores. Candid expressions, not posed. Natural clothing with wrinkles.
 
-CONTEXT: This is for Koala PhD, a platform helping Chinese students find PhD supervisors in Australian universities.
+Setting: Australian university campus environment.
 
-Specific scene requested: `;
+Scene: `;
 
 export async function POST(req: NextRequest) {
   try {
