@@ -18,11 +18,51 @@ interface Paper {
   ss_url: string | null;
 }
 
-export default function ProfessorDetailClient({ professor, papers }: { professor: Professor; papers: Paper[] }) {
+interface RelatedBlog {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  cover_image: string | null;
+}
+
+interface SimilarProfessor {
+  id: string;
+  name: string;
+  university: string;
+  research_areas: string[];
+  opportunity_score: number | null;
+  position_title: string | null;
+}
+
+function getApplicationTips(professor: Professor): string[] {
+  const tips: string[] = [];
+  if (professor.grantStatus === 'Active') {
+    tips.push('该教授目前有活跃科研经费支持，意味着可能有充足的资源支持新的 PhD 学生。');
+  }
+  if (professor.acceptingStudents === 'yes') {
+    tips.push('该教授明确表示正在招收学生，建议尽早联系并展示你的研究兴趣。');
+  } else if (professor.acceptingStudents === 'likely') {
+    tips.push('该教授可能正在招收学生，建议主动联系确认招生意向。');
+  }
+  if (professor.hIndex && professor.hIndex >= 40) {
+    tips.push('学术影响力较高（H-Index ' + professor.hIndex + '），在领域内有较强的学术声誉，跟随这样的导师有助于你的学术发展。');
+  } else if (professor.hIndex && professor.hIndex >= 20) {
+    tips.push('具有稳定的学术产出，适合希望在专注领域深入研究的学生。');
+  }
+  if (tips.length === 0) {
+    tips.push('建议通过邮件或大学官网了解该教授的最新招生情况，在联系前准备好你的研究兴趣和学术背景概述。');
+  }
+  return tips;
+}
+
+export default function ProfessorDetailClient({ professor, papers, relatedBlogs, similarProfessors }: { professor: Professor; papers: Paper[]; relatedBlogs: RelatedBlog[]; similarProfessors: SimilarProfessor[] }) {
   const router = useRouter();
   const { user, showLogin } = useAuth();
   const [saved, setSaved] = useState(false);
   const [savingBookmark, setSavingBookmark] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(professor.aiSummary ?? null);
+  const [summaryLoading, setSummaryLoading] = useState(!professor.aiSummary);
 
   useEffect(() => {
     fetch(`/api/professors/${professor.id}/interactions`, {
@@ -41,6 +81,15 @@ export default function ProfessorDetailClient({ professor, papers }: { professor
         setSaved(isSaved);
       }).catch(() => {});
   }, [user, professor.id]);
+
+  useEffect(() => {
+    if (professor.aiSummary) { setSummaryLoading(false); return; }
+    fetch(`/api/professors/${professor.id}/ai-summary`)
+      .then(r => r.json())
+      .then(d => { if (d.summary) setAiSummary(d.summary); })
+      .catch(() => {})
+      .finally(() => setSummaryLoading(false));
+  }, [professor.id, professor.aiSummary]);
 
   async function toggleBookmark() {
     if (!user) {
@@ -125,6 +174,25 @@ export default function ProfessorDetailClient({ professor, papers }: { professor
         </div>
       </div>
 
+      {/* AI Summary */}
+      <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">教授简介</h2>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full text-amber-600 dark:text-[#D4A843]/70 bg-amber-50 dark:bg-[#D4A843]/5">AI 生成</span>
+        </div>
+        {summaryLoading ? (
+          <div className="space-y-2 animate-pulse">
+            <div className="h-3 rounded bg-gray-100 dark:bg-white/5 w-full" />
+            <div className="h-3 rounded bg-gray-100 dark:bg-white/5 w-4/5" />
+            <div className="h-3 rounded bg-gray-100 dark:bg-white/5 w-3/5" />
+          </div>
+        ) : aiSummary ? (
+          <p className="text-xs leading-relaxed text-gray-600 dark:text-[#a8b8ac]">{aiSummary}</p>
+        ) : (
+          <p className="text-xs text-gray-400 dark:text-[#6a7a7e]">暂无简介</p>
+        )}
+      </div>
+
       {/* Opportunity Signal */}
       <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
         <div className="flex items-center justify-between mb-2">
@@ -140,6 +208,16 @@ export default function ProfessorDetailClient({ professor, papers }: { professor
           />
         </div>
         <p className="text-xs leading-relaxed text-gray-500 dark:text-[#a8b8ac]">{opportunityText}</p>
+      </div>
+
+      {/* Application Tips */}
+      <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-amber-50/50 dark:bg-[#D4A843]/5 border border-amber-200/50 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+        <h2 className="text-xs font-semibold mb-2 text-gray-900 dark:text-[#e8e4dc]">💡 申请建议</h2>
+        <div className="space-y-1.5">
+          {getApplicationTips(professor).map((tip, i) => (
+            <p key={i} className="text-xs leading-relaxed text-gray-600 dark:text-[#a8b8ac]">{tip}</p>
+          ))}
+        </div>
       </div>
 
       {/* Research Areas */}
@@ -257,6 +335,26 @@ export default function ProfessorDetailClient({ professor, papers }: { professor
         </div>
       )}
 
+      {/* Related Blogs */}
+      {relatedBlogs.length > 0 && (
+        <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+          <h2 className="text-xs font-semibold mb-3 text-gray-900 dark:text-[#e8e4dc]">📝 相关文章</h2>
+          <div className="space-y-2.5">
+            {relatedBlogs.map(blog => (
+              <Link key={blog.id} href={`/koala/blog/${blog.slug}`} className="flex items-start gap-3 group">
+                {blog.cover_image && (
+                  <img src={blog.cover_image} alt="" className="w-14 h-10 rounded-lg object-cover flex-shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium text-gray-800 dark:text-[#e8e4dc] group-hover:text-[#D4A843] dark:group-hover:text-[#D4A843] leading-snug line-clamp-2">{blog.title}</div>
+                  <span className="text-[10px] text-gray-400 dark:text-[#6a7a7e] mt-0.5 inline-block">{blog.category}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Data disclaimer */}
       <div className="mx-4 lg:mx-0 mt-4 mb-2 px-3 py-3 rounded-xl text-[11px] leading-relaxed bg-gray-50 dark:bg-[#0F1419] text-gray-500 dark:text-[#6a7a7e] border border-gray-200 dark:border-[rgba(212,168,67,0.12)]">
         ⚠️ 数据说明：本页信息来源于大学官网、Google Scholar 及公开数据库，仅供参考。教授的招生状态、经费情况和研究方向可能随时变化，具体信息请以导师本人确认为准。Koala PhD 不对信息的准确性和时效性承担责任。
@@ -287,6 +385,38 @@ export default function ProfessorDetailClient({ professor, papers }: { professor
           </button>
         )}
       </div>
+      {/* Similar Professors */}
+      {similarProfessors.length > 0 && (
+        <div className="mx-4 lg:mx-0 mt-4 rounded-2xl p-4 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">
+          <h2 className="text-xs font-semibold mb-3 text-gray-900 dark:text-[#e8e4dc]">该方向其他教授</h2>
+          <div className="space-y-2.5">
+            {similarProfessors.map(sp => {
+              const matchingAreas = sp.research_areas.filter(a => professor.researchAreas.includes(a));
+              return (
+                <Link key={sp.id} href={`/koala/professors/${sp.id}`} className="flex items-center gap-3 group">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0 bg-amber-50 dark:bg-[rgba(212,168,67,0.1)]">
+                    👨‍🔬
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-gray-800 dark:text-[#e8e4dc] group-hover:text-[#D4A843] dark:group-hover:text-[#D4A843]">{sp.name}</div>
+                    <div className="text-[10px] text-gray-400 dark:text-[#6a7a7e]">
+                      {sp.university}{sp.position_title ? ` · ${sp.position_title}` : ''}
+                    </div>
+                    {matchingAreas.length > 0 && (
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {matchingAreas.slice(0, 2).map(a => (
+                          <span key={a} className="text-[9px] px-1.5 py-0.5 rounded-full text-amber-600 dark:text-[#D4A843] bg-amber-50 dark:bg-[#D4A843]/10">{a}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       </div>{/* end right col */}
       </div>{/* end two-col grid */}
     </div>

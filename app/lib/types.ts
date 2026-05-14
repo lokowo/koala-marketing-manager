@@ -47,6 +47,7 @@ export interface Professor {
     publication: number;
     explicit: number;
   };
+  aiSummary?: string;
   // Extended matching fields
   supervisionStyle?: string;
   labSize?: string;

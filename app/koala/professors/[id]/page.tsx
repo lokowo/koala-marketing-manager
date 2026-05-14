@@ -23,6 +23,21 @@ export default async function ProfessorDetailPage({ params }: { params: Promise<
 
   const papers = papersRaw ?? [];
 
+  const { data: relatedBlogs } = await db
+    .from('blog_posts')
+    .select('id, slug, title, category, cover_image')
+    .ilike('title', `%${professor.name}%`)
+    .eq('status', 'published')
+    .limit(3);
+
+  const { data: similarProfs } = await db
+    .from('professors')
+    .select('id, name, university, research_areas, opportunity_score, position_title')
+    .overlaps('research_areas', professor.researchAreas)
+    .neq('id', id)
+    .order('opportunity_score', { ascending: false, nullsFirst: false })
+    .limit(3);
+
   const sameAs = [
     professor.googleScholarUrl,
     professor.linkedinUrl,
@@ -49,7 +64,7 @@ export default async function ProfessorDetailPage({ params }: { params: Promise<
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ProfessorDetailClient professor={professor} papers={papers} />
+      <ProfessorDetailClient professor={professor} papers={papers} relatedBlogs={relatedBlogs ?? []} similarProfessors={similarProfs ?? []} />
     </>
   );
 }

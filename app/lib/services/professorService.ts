@@ -37,6 +37,7 @@ function fromRow(row: ProfessorRow): Professor {
     lastSyncedAt: row.last_synced_at ?? undefined,
     opportunityScore: row.opportunity_score ?? undefined,
     opportunityBreakdown: (row.opportunity_breakdown as Professor['opportunityBreakdown']) ?? undefined,
+    aiSummary: row.ai_summary ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at ?? undefined,
   };

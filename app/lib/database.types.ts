@@ -39,6 +39,7 @@ export interface Database {
           last_synced_at: string | null;
           opportunity_score: number | null;
           opportunity_breakdown: Json | null;
+          ai_summary: string | null;
           created_at: string;
           updated_at: string | null;
         };
