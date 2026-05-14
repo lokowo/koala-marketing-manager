@@ -161,6 +161,8 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
   const fallbackPosts: BlogPost[] = [
     { id: '1', tag: '申请技巧', date: '4月28日', title: '如何写出打动教授的申请信', excerpt: '从研究兴趣切入，三步法精准匹配教授方向，提升回复率。' },
     { id: '2', tag: '选校攻略', date: '4月24日', title: '澳洲 PhD 奖学金的隐藏机会', excerpt: '盘点容易被忽视的资助渠道与时间节点，增加中签率。' },
+    { id: '3', tag: '科研方法', date: '4月20日', title: '文献综述的高效方法论', excerpt: '如何快速找到关键文献，构建你的研究框架。' },
+    { id: '4', tag: '导师关系', date: '4月16日', title: '第一次和导师开会该聊什么', excerpt: '准备清单与沟通技巧，让导师对你刮目相看。' },
   ];
 
   const displayPosts = blogPosts.length > 0 ? blogPosts : fallbackPosts;
@@ -523,12 +525,9 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
         <section>
           <div className="flex justify-between items-center mb-3">
             <h2 className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">最新博客</h2>
-            <Link href="/koala/blog" className="text-xs font-semibold flex items-center gap-1 no-underline text-[#1A1A2E] dark:text-[#D4A843]">
-              更多 <ChevronRight className="size-3" />
-            </Link>
           </div>
-          <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2">
-            {displayPosts.map(b => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {displayPosts.slice(0, 2).map(b => (
               <Link
                 key={b.id}
                 href={`/koala/blog/${b.slug || b.id}`}
@@ -544,6 +543,30 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                 <p className="text-xs leading-relaxed text-gray-500 dark:text-[#8a8a8a]">{b.excerpt}</p>
               </Link>
             ))}
+            {displayPosts.slice(2, 4).map(b => (
+              <Link
+                key={b.id}
+                href={`/koala/blog/${b.slug || b.id}`}
+                className="hidden md:flex rounded-2xl p-4 flex-col gap-2 no-underline bg-white dark:bg-white/5 border border-gray-200 dark:border-[#c9a96e]/[0.06] shadow-sm dark:shadow-[0_4px_16px_rgba(196,160,80,0.08)]"
+              >
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843] text-amber-700 dark:text-white border border-amber-200 dark:border-transparent">
+                    {b.tag}
+                  </span>
+                  <span className="text-[10px] text-gray-400 dark:text-[#b0b0b0]">{b.date}{b.viewCount ? ` · 👁 ${b.viewCount}` : ''}</span>
+                </div>
+                <h3 className="text-sm font-bold leading-snug text-gray-900 dark:text-[#e8e4dc]">{b.title}</h3>
+                <p className="text-xs leading-relaxed text-gray-500 dark:text-[#8a8a8a]">{b.excerpt}</p>
+              </Link>
+            ))}
+          </div>
+          <div className="text-center mt-6">
+            <Link
+              href="/koala/blog"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gray-50 dark:bg-white/5 text-[#1A1A2E] dark:text-[#D4A843] font-medium rounded-xl hover:bg-[#1A1A2E] hover:text-white dark:hover:bg-[#D4A843] dark:hover:text-[#080C10] transition-all duration-200 no-underline"
+            >
+              查看更多文章 →
+            </Link>
           </div>
         </section>
 

@@ -24,7 +24,35 @@ export default async function HomePage() {
     listProfessors({ limit: 6, sortBy: 'opportunity_score' }).catch(() => []),
     countProfessors({}).catch(() => 0),
     db.from('ai_conversations').select('id', { count: 'exact', head: true }).then((r: { count: number }) => r.count || 0).catch(() => 0),
-    db.from('blog_posts').select('id, slug, title_zh, title_en, excerpt_zh, excerpt_en, category, published_at, created_at, view_count').eq('status', 'published').order('published_at', { ascending: false }).limit(2).then((r: { data: Record<string, unknown>[] | null }) => r.data || []).catch(() => []),
+    (async () => {
+      try {
+        const { data: pinned } = await db
+          .from('blog_posts')
+          .select('id, slug, title_zh, title_en, excerpt_zh, excerpt_en, category, published_at, created_at, view_count')
+          .eq('status', 'published')
+          .eq('is_pinned', true)
+          .order('published_at', { ascending: false })
+          .limit(4);
+        const posts = pinned || [];
+        if (posts.length < 4) {
+          const pinnedIds = posts.map((p: Record<string, unknown>) => p.id as string);
+          let q = db
+            .from('blog_posts')
+            .select('id, slug, title_zh, title_en, excerpt_zh, excerpt_en, category, published_at, created_at, view_count')
+            .eq('status', 'published')
+            .order('published_at', { ascending: false })
+            .limit(4 - posts.length);
+          if (pinnedIds.length > 0) {
+            q = q.not('id', 'in', `(${pinnedIds.join(',')})`);
+          }
+          const { data: latest } = await q;
+          return [...posts, ...(latest || [])];
+        }
+        return posts;
+      } catch {
+        return [];
+      }
+    })(),
   ]);
 
   const blogPosts = (blogData as Record<string, unknown>[]).map((p) => ({
