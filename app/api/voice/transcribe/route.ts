@@ -1,9 +1,16 @@
 import { NextRequest } from 'next/server';
 import { getServerUser } from '../../../lib/auth';
+import { aiLimiter } from '../../../lib/ratelimit';
 
 export async function POST(request: NextRequest) {
   const user = await getServerUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  if (aiLimiter) {
+    const { success } = await aiLimiter.limit(user.id);
+    if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
+  }
+
   const formData = await request.formData();
   const audioFile = formData.get('audio') as File;
   const lang = (formData.get('lang') as string) || 'zh';

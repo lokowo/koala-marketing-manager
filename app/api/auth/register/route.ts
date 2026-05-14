@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { sendVerificationEmail } from '../../../lib/services/emailService';
 import { notifyNewUserSignup } from '../../../lib/server/slack';
+import { authLimiter } from '../../../lib/ratelimit';
 
 function generateCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -177,6 +178,12 @@ async function processReferralCode(
 
 export async function POST(req: Request) {
   try {
+    if (authLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+      const { success } = await authLimiter.limit(ip);
+      if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
+    }
+
     const { email, password, name, referralCode, salesCode, dataConsent } = await req.json();
     if (!email || !password) {
       return Response.json({ error: 'email and password required' }, { status: 400 });

@@ -1,10 +1,16 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { requireAdmin } from '../../../lib/auth';
+import { aiLimiter } from '../../../lib/ratelimit';
 
 export async function GET(req: NextRequest) {
   try {
-    try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
+    let adminUser: { user: { id: string } };
+    try { adminUser = await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
+    if (aiLimiter) {
+      const { success } = await aiLimiter.limit(adminUser.user.id);
+      if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
+    }
     const name = req.nextUrl.searchParams.get('name');
     if (!name || typeof name !== 'string') {
       return Response.json({ error: 'Missing name param' }, { status: 400 });
@@ -18,6 +24,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    if (aiLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+      const { success } = await aiLimiter.limit(ip);
+      if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
+    }
     const { name, university } = await req.json();
     if (!name || typeof name !== 'string') {
       return Response.json({ error: 'Missing professor name' }, { status: 400 });

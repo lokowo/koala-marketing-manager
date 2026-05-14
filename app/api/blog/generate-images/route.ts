@@ -2,13 +2,20 @@ import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { requireAdmin } from '../../../lib/auth';
+import { aiLimiter } from '../../../lib/ratelimit';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
 export async function POST(req: NextRequest) {
-  try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
+  let adminUser: { user: { id: string } };
+  try { adminUser = await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
   try {
+    if (aiLimiter) {
+      const { success } = await aiLimiter.limit(adminUser.user.id);
+      if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
+    }
+
     const { postId, imageCount } = await req.json();
 
     if (!postId || !imageCount || imageCount < 1) {

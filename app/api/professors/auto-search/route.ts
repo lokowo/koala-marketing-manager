@@ -4,12 +4,19 @@ import type { ProfessorCandidate } from '../../../lib/services/professorAutoAdd'
 import { getServerUser } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { notifyUser } from '../../../lib/notifications';
+import { aiLimiter } from '../../../lib/ratelimit';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
 export async function GET(req: NextRequest) {
   try {
+    if (aiLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+      const { success } = await aiLimiter.limit(ip);
+      if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
+    }
+
     const name = req.nextUrl.searchParams.get('name');
     const university = req.nextUrl.searchParams.get('university') || undefined;
 
@@ -33,6 +40,11 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getServerUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (aiLimiter) {
+      const { success } = await aiLimiter.limit(user.id);
+      if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
+    }
 
     const body = await req.json();
     const candidate = body.candidate as ProfessorCandidate;
