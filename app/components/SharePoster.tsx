@@ -38,18 +38,41 @@ export default function SharePoster({ open, onClose, referralCode, referralUrl, 
     if (!posterRef.current) return;
     setSaving(true);
     try {
-      const html2canvas = (await import('html2canvas' as string)).default as (el: HTMLElement, opts?: Record<string, unknown>) => Promise<HTMLCanvasElement>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const html2canvas = (await import('html2canvas' as any)).default;
       const canvas = await html2canvas(posterRef.current, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#FFFFFF',
+        logging: false,
       });
-      const link = document.createElement('a');
-      link.download = `koala-invite-${referralCode}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-      showToast('海报已保存');
-    } catch {
+      const dataUrl = canvas.toDataURL('image/png');
+
+      // Mobile Safari doesn't support link.click() download — open image in new tab instead
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        const blob = await (await fetch(dataUrl)).blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const w = window.open(blobUrl, '_blank');
+        if (w) {
+          showToast('长按图片保存到相册');
+        } else {
+          const link = document.createElement('a');
+          link.download = `koala-invite-${referralCode}.png`;
+          link.href = dataUrl;
+          link.click();
+          showToast('海报已保存');
+        }
+      } else {
+        const link = document.createElement('a');
+        link.download = `koala-invite-${referralCode}.png`;
+        link.href = dataUrl;
+        link.click();
+        showToast('海报已保存');
+      }
+    } catch (err) {
+      console.error('[SharePoster] html2canvas failed:', err);
       showToast('截图失败，请手动复制链接');
     } finally {
       setSaving(false);
