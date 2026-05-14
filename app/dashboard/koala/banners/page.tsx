@@ -1,7 +1,23 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
+
+interface TextLayer {
+  id: string;
+  text: string;
+  fontSize: number;
+  fontWeight: 'normal' | 'bold';
+  color: string;
+  x: number;
+  y: number;
+  direction: 'horizontal' | 'vertical';
+}
+
+interface OverlayConfig {
+  layers: TextLayer[];
+  backdropOpacity: number;
+}
 
 interface Banner {
   id: string;
@@ -12,11 +28,169 @@ interface Banner {
   modal_title: string | null;
   modal_content: string | null;
   modal_image_url: string | null;
+  overlay_title: string | null;
+  overlay_subtitle: string | null;
+  overlay_config: OverlayConfig | null;
   is_active: boolean;
   sort_order: number;
   start_date: string | null;
   end_date: string | null;
   created_at: string;
+}
+
+const PRESET_COLORS = [
+  { label: '白', value: '#ffffff' },
+  { label: '黑', value: '#000000' },
+  { label: '金', value: '#D4A843' },
+  { label: 'Teal', value: '#4ECDC4' },
+];
+
+function newLayer(): TextLayer {
+  return { id: `l_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, text: '新文字', fontSize: 24, fontWeight: 'normal', color: '#ffffff', x: 50, y: 50, direction: 'horizontal' };
+}
+
+function OverlayEditor({ config, onChange, imageUrl }: { config: OverlayConfig; onChange: (c: OverlayConfig) => void; imageUrl: string }) {
+  const previewRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ layerId: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
+
+  function updateLayer(id: string, patch: Partial<TextLayer>) {
+    onChange({ ...config, layers: config.layers.map(l => l.id === id ? { ...l, ...patch } : l) });
+  }
+
+  function removeLayer(id: string) {
+    onChange({ ...config, layers: config.layers.filter(l => l.id !== id) });
+  }
+
+  function addLayer() {
+    if (config.layers.length >= 5) return;
+    onChange({ ...config, layers: [...config.layers, newLayer()] });
+  }
+
+  function handlePointerDown(layerId: string, e: React.PointerEvent) {
+    e.preventDefault();
+    const rect = previewRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const layer = config.layers.find(l => l.id === layerId);
+    if (!layer) return;
+    dragRef.current = { layerId, startX: e.clientX, startY: e.clientY, origX: layer.x, origY: layer.y };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function handlePointerMove(e: React.PointerEvent) {
+    if (!dragRef.current || !previewRef.current) return;
+    const rect = previewRef.current.getBoundingClientRect();
+    const dx = ((e.clientX - dragRef.current.startX) / rect.width) * 100;
+    const dy = ((e.clientY - dragRef.current.startY) / rect.height) * 100;
+    const x = Math.max(0, Math.min(100, Math.round(dragRef.current.origX + dx)));
+    const y = Math.max(0, Math.min(100, Math.round(dragRef.current.origY + dy)));
+    updateLayer(dragRef.current.layerId, { x, y });
+  }
+
+  function handlePointerUp() {
+    dragRef.current = null;
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-medium text-[#374151]">文字图层</label>
+        <button onClick={addLayer} disabled={config.layers.length >= 5} className="text-[11px] px-2.5 py-1 rounded-lg border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB] disabled:opacity-40">+ 添加文字</button>
+      </div>
+
+      {/* Preview */}
+      {imageUrl && (
+        <div
+          ref={previewRef}
+          className="relative w-full aspect-square rounded-xl overflow-hidden bg-[#F3F4F6] select-none"
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+        >
+          <Image src={imageUrl} alt="Preview" fill className="object-cover pointer-events-none" sizes="400px" />
+          {config.backdropOpacity > 0 && (
+            <div className="absolute inset-0 pointer-events-none" style={{ background: `rgba(0,0,0,${config.backdropOpacity / 100})` }} />
+          )}
+          {config.layers.map(layer => (
+            <div
+              key={layer.id}
+              onPointerDown={e => handlePointerDown(layer.id, e)}
+              className="absolute touch-none"
+              style={{
+                left: `${layer.x}%`,
+                top: `${layer.y}%`,
+                transform: 'translate(-50%, -50%)',
+                fontSize: `${layer.fontSize}px`,
+                fontWeight: layer.fontWeight,
+                color: layer.color,
+                writingMode: layer.direction === 'vertical' ? 'vertical-rl' : 'horizontal-tb',
+                cursor: 'grab',
+                textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                lineHeight: 1.2,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {layer.text || '…'}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Layer controls */}
+      {config.layers.map((layer, idx) => (
+        <div key={layer.id} className="rounded-xl border border-[#E5E7EB] p-3 space-y-2.5 bg-[#FAFAFA]">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-[#6B7280]">图层 {idx + 1}</span>
+            <button onClick={() => removeLayer(layer.id)} className="text-[10px] text-red-500 hover:text-red-700">删除</button>
+          </div>
+          <input
+            type="text" value={layer.text} onChange={e => updateLayer(layer.id, { text: e.target.value })}
+            placeholder="输入文字"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] focus:outline-none focus:border-[#c9a96e]"
+          />
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[10px] text-[#9CA3AF]">字号</span>
+                <span className="text-[10px] font-medium text-[#374151]">{layer.fontSize}px</span>
+              </div>
+              <input type="range" min={12} max={60} value={layer.fontSize} onChange={e => updateLayer(layer.id, { fontSize: Number(e.target.value) })} className="w-full accent-[#c9a96e] h-1" />
+            </div>
+            <div className="flex gap-0.5">
+              <button onClick={() => updateLayer(layer.id, { fontWeight: 'normal' })} className={`px-2 py-1 rounded text-[10px] border ${layer.fontWeight === 'normal' ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E]' : 'border-[#E5E7EB] text-[#9CA3AF]'}`}>细</button>
+              <button onClick={() => updateLayer(layer.id, { fontWeight: 'bold' })} className={`px-2 py-1 rounded text-[10px] font-bold border ${layer.fontWeight === 'bold' ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E]' : 'border-[#E5E7EB] text-[#9CA3AF]'}`}>粗</button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-[#9CA3AF] shrink-0">颜色</span>
+            <div className="flex gap-1">
+              {PRESET_COLORS.map(c => (
+                <button key={c.value} onClick={() => updateLayer(layer.id, { color: c.value })}
+                  className={`size-6 rounded-full border-2 ${layer.color === c.value ? 'border-[#c9a96e] ring-2 ring-[#c9a96e]/30' : 'border-[#E5E7EB]'}`}
+                  style={{ background: c.value }}
+                  title={c.label}
+                />
+              ))}
+              <input type="color" value={layer.color} onChange={e => updateLayer(layer.id, { color: e.target.value })} className="size-6 rounded cursor-pointer border-0 p-0" title="自定义" />
+            </div>
+            <div className="flex gap-0.5 ml-auto">
+              <button onClick={() => updateLayer(layer.id, { direction: 'horizontal' })} className={`px-2 py-1 rounded text-[10px] border ${layer.direction === 'horizontal' ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E]' : 'border-[#E5E7EB] text-[#9CA3AF]'}`}>横</button>
+              <button onClick={() => updateLayer(layer.id, { direction: 'vertical' })} className={`px-2 py-1 rounded text-[10px] border ${layer.direction === 'vertical' ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E]' : 'border-[#E5E7EB] text-[#9CA3AF]'}`}>竖</button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Backdrop opacity */}
+      {config.layers.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-0.5">
+            <span className="text-[10px] text-[#9CA3AF]">背景遮罩</span>
+            <span className="text-[10px] font-medium text-[#374151]">{config.backdropOpacity}%</span>
+          </div>
+          <input type="range" min={0} max={80} value={config.backdropOpacity} onChange={e => onChange({ ...config, backdropOpacity: Number(e.target.value) })} className="w-full accent-[#c9a96e] h-1" />
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface Settings {
@@ -58,8 +232,7 @@ export default function BannersPage() {
   const [generating, setGenerating] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState('');
   const [generateError, setGenerateError] = useState('');
-  const [newOverlayTitle, setNewOverlayTitle] = useState('');
-  const [newOverlaySubtitle, setNewOverlaySubtitle] = useState('');
+  const [newOverlayConfig, setNewOverlayConfig] = useState<OverlayConfig>({ layers: [], backdropOpacity: 0 });
 
   // Edit form state
   const [editAlt, setEditAlt] = useState('');
@@ -69,8 +242,7 @@ export default function BannersPage() {
   const [editModalContent, setEditModalContent] = useState('');
   const [editStartDate, setEditStartDate] = useState('');
   const [editEndDate, setEditEndDate] = useState('');
-  const [editOverlayTitle, setEditOverlayTitle] = useState('');
-  const [editOverlaySubtitle, setEditOverlaySubtitle] = useState('');
+  const [editOverlayConfig, setEditOverlayConfig] = useState<OverlayConfig>({ layers: [], backdropOpacity: 0 });
 
   function flash(msg: string) {
     setToast(msg);
@@ -138,8 +310,7 @@ export default function BannersPage() {
           click_url: (newAction === 'internal_link' || newAction === 'external_link') ? newUrl : null,
           modal_title: newAction === 'modal' ? newModalTitle : null,
           modal_content: newAction === 'modal' ? newModalContent : null,
-          overlay_title: newOverlayTitle || null,
-          overlay_subtitle: newOverlaySubtitle || null,
+          overlay_config: newOverlayConfig.layers.length > 0 ? newOverlayConfig : null,
           start_date: newStartDate || null,
           end_date: newEndDate || null,
         }),
@@ -169,8 +340,7 @@ export default function BannersPage() {
     setAiPrompt('');
     setGeneratedImageUrl('');
     setGenerateError('');
-    setNewOverlayTitle('');
-    setNewOverlaySubtitle('');
+    setNewOverlayConfig({ layers: [], backdropOpacity: 0 });
   }
 
   async function handleGenerateImage() {
@@ -204,8 +374,7 @@ export default function BannersPage() {
     setEditModalContent(b.modal_content || '');
     setEditStartDate(b.start_date ? b.start_date.slice(0, 10) : '');
     setEditEndDate(b.end_date ? b.end_date.slice(0, 10) : '');
-    setEditOverlayTitle((b as Banner & { overlay_title?: string }).overlay_title || '');
-    setEditOverlaySubtitle((b as Banner & { overlay_subtitle?: string }).overlay_subtitle || '');
+    setEditOverlayConfig(b.overlay_config || { layers: [], backdropOpacity: 0 });
   }
 
   async function handleUpdate() {
@@ -221,8 +390,7 @@ export default function BannersPage() {
           click_url: (editAction === 'internal_link' || editAction === 'external_link') ? editUrl : null,
           modal_title: editAction === 'modal' ? editModalTitle : null,
           modal_content: editAction === 'modal' ? editModalContent : null,
-          overlay_title: editOverlayTitle || null,
-          overlay_subtitle: editOverlaySubtitle || null,
+          overlay_config: editOverlayConfig.layers.length > 0 ? editOverlayConfig : null,
           start_date: editStartDate || null,
           end_date: editEndDate || null,
         }),
@@ -613,28 +781,12 @@ export default function BannersPage() {
                 />
               </div>
 
-              {/* Overlay title + subtitle */}
-              <div>
-                <label className="block text-xs font-medium text-[#374151] mb-1.5">覆盖标题（选填）</label>
-                <input
-                  type="text"
-                  value={newOverlayTitle}
-                  onChange={e => setNewOverlayTitle(e.target.value)}
-                  placeholder="显示在图片上方的文字，如：在澳大利亚找到你的博士导师"
-                  className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-[#374151] mb-1.5">覆盖副标题（选填）</label>
-                <input
-                  type="text"
-                  value={newOverlaySubtitle}
-                  onChange={e => setNewOverlaySubtitle(e.target.value)}
-                  placeholder="副标题，如：QUT 全奖项目 · $40,000 奖学金"
-                  className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
-                />
-                <p className="text-[10px] text-[#9CA3AF] mt-1">标题/副标题以白色大字覆盖在图片上方（前端 HTML 渲染，文字永远正确）</p>
-              </div>
+              {/* Overlay editor */}
+              <OverlayEditor
+                config={newOverlayConfig}
+                onChange={setNewOverlayConfig}
+                imageUrl={generatedImageUrl || newImagePreview}
+              />
 
               {/* Click action */}
               <div>
@@ -769,28 +921,12 @@ export default function BannersPage() {
                 />
               </div>
 
-              {/* Overlay title + subtitle */}
-              <div>
-                <label className="block text-xs font-medium text-[#374151] mb-1.5">覆盖标题（选填）</label>
-                <input
-                  type="text"
-                  value={editOverlayTitle}
-                  onChange={e => setEditOverlayTitle(e.target.value)}
-                  placeholder="显示在图片上方的文字"
-                  className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-[#374151] mb-1.5">覆盖副标题（选填）</label>
-                <input
-                  type="text"
-                  value={editOverlaySubtitle}
-                  onChange={e => setEditOverlaySubtitle(e.target.value)}
-                  placeholder="副标题文字"
-                  className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
-                />
-                <p className="text-[10px] text-[#9CA3AF] mt-1">标题/副标题以白色大字覆盖在图片上方</p>
-              </div>
+              {/* Overlay editor */}
+              <OverlayEditor
+                config={editOverlayConfig}
+                onChange={setEditOverlayConfig}
+                imageUrl={editBanner.image_url}
+              />
 
               {/* Click action */}
               <div>

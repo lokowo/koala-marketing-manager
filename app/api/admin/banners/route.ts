@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const { image_url, image_alt, click_action, click_url, modal_title, modal_content, modal_image_url, sort_order, start_date, end_date, overlay_title, overlay_subtitle } = body;
+    const { image_url, image_alt, click_action, click_url, modal_title, modal_content, modal_image_url, sort_order, start_date, end_date, overlay_title, overlay_subtitle, overlay_config } = body;
 
     if (!image_url) {
       return Response.json({ error: 'image_url is required' }, { status: 400 });
@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
         modal_image_url: modal_image_url || null,
         overlay_title: overlay_title || null,
         overlay_subtitle: overlay_subtitle || null,
+        overlay_config: overlay_config || null,
         sort_order: sort_order ?? 0,
         start_date: start_date || null,
         end_date: end_date || null,

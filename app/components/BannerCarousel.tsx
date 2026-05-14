@@ -5,6 +5,22 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
+interface TextLayer {
+  id: string;
+  text: string;
+  fontSize: number;
+  fontWeight: 'normal' | 'bold';
+  color: string;
+  x: number;
+  y: number;
+  direction: 'horizontal' | 'vertical';
+}
+
+interface OverlayConfig {
+  layers: TextLayer[];
+  backdropOpacity: number;
+}
+
 interface Banner {
   id: string;
   image_url: string;
@@ -16,6 +32,7 @@ interface Banner {
   modal_image_url: string | null;
   overlay_title: string | null;
   overlay_subtitle: string | null;
+  overlay_config: OverlayConfig | null;
 }
 
 interface Settings {
@@ -132,7 +149,33 @@ export default function BannerCarousel({ heroMode = false }: { heroMode?: boolea
                 priority={i === 0}
                 sizes="100vw"
               />
-              {banner.overlay_title && (
+              {banner.overlay_config && banner.overlay_config.layers?.length > 0 ? (
+                <>
+                  {banner.overlay_config.backdropOpacity > 0 && (
+                    <div className="absolute inset-0 pointer-events-none" style={{ background: `rgba(0,0,0,${banner.overlay_config.backdropOpacity / 100})` }} />
+                  )}
+                  {banner.overlay_config.layers.map(layer => (
+                    <div
+                      key={layer.id}
+                      className="absolute pointer-events-none"
+                      style={{
+                        left: `${layer.x}%`,
+                        top: `${layer.y}%`,
+                        transform: 'translate(-50%, -50%)',
+                        fontSize: `${layer.fontSize}px`,
+                        fontWeight: layer.fontWeight,
+                        color: layer.color,
+                        writingMode: layer.direction === 'vertical' ? 'vertical-rl' : 'horizontal-tb',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                        lineHeight: 1.2,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {layer.text}
+                    </div>
+                  ))}
+                </>
+              ) : banner.overlay_title ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                   <div className="text-center px-6">
                     <h2 className="text-white text-2xl lg:text-3xl font-bold drop-shadow-lg">{banner.overlay_title}</h2>
@@ -141,7 +184,7 @@ export default function BannerCarousel({ heroMode = false }: { heroMode?: boolea
                     )}
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           ))}
         </div>
