@@ -22,7 +22,7 @@ interface Settings {
   transition_speed: number;
 }
 
-export default function BannerCarousel() {
+export default function BannerCarousel({ heroMode = false }: { heroMode?: boolean } = {}) {
   const router = useRouter();
   const [banners, setBanners] = useState<Banner[]>([]);
   const [settings, setSettings] = useState<Settings>({ auto_play: true, interval_seconds: 5, transition_speed: 500 });
@@ -82,7 +82,20 @@ export default function BannerCarousel() {
     else if (diff < -50) nextSlide();
   }
 
-  if (!loaded || banners.length === 0) return null;
+  if (!loaded) return null;
+
+  if (banners.length === 0) {
+    if (!heroMode) return null;
+    return (
+      <div className="relative overflow-hidden rounded-2xl h-full min-h-[260px] bg-gradient-to-br from-[#f0ebe0] to-[#e2d9c6] dark:from-[#1a2a20] dark:to-[#162028] flex items-center justify-center">
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 30% 40%, #c9a96e 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="text-center relative z-10">
+          <div className="text-5xl mb-3">🐨</div>
+          <p className="text-sm font-medium text-gray-500 dark:text-[#a8b8ac]">AI 帮你找到最佳导师</p>
+        </div>
+      </div>
+    );
+  }
 
   const clickable = (b: Banner) => b.click_action !== 'none';
 
@@ -106,7 +119,7 @@ export default function BannerCarousel() {
           {banners.map((banner, i) => (
             <div
               key={banner.id}
-              className={`w-full flex-shrink-0 relative h-[180px] md:h-[280px] lg:h-[380px] ${clickable(banner) ? 'cursor-pointer' : ''}`}
+              className={`w-full flex-shrink-0 relative ${heroMode ? 'h-[260px] lg:h-[300px]' : 'h-[180px] md:h-[280px] lg:h-[380px]'} ${clickable(banner) ? 'cursor-pointer' : ''}`}
               onClick={() => handleClick(banner)}
             >
               <Image

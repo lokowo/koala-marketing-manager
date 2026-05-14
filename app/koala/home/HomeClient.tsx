@@ -197,8 +197,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowNotif(!showNotif)}
-            className="relative size-9 flex justify-center items-center rounded-full transition-colors"
-            style={{ background: showNotif ? 'rgba(201,169,110,0.06)' : 'transparent' }}
+            className={`relative size-9 flex justify-center items-center rounded-full transition-colors ${showNotif ? 'bg-amber-50 dark:bg-[#D4A843]/10' : ''}`}
           >
             <Bell className="size-[18px] text-gray-400 dark:text-[#a8b8ac]" />
             {unreadCount > 0 && (
@@ -220,7 +219,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                 )}
               </button>
               {showUserMenu && (
-                <div className="absolute right-0 top-11 w-48 rounded-xl py-2 z-50 bg-white dark:bg-[#111c28] shadow-lg dark:shadow-[0_8px_24px_rgba(0,0,0,0.4)] border border-gray-200 dark:border-[#c9a96e]/15">
+                <div className="absolute right-0 top-11 w-48 rounded-xl py-2 z-50 bg-white dark:bg-[#0F1419] shadow-lg dark:shadow-[0_8px_24px_rgba(0,0,0,0.4)] border border-gray-200 dark:border-[#c9a96e]/15">
                   <p className="px-4 py-1.5 text-[11px] truncate text-gray-500 dark:text-[#6a7a7e]">{user.email}</p>
                   <Link
                     href="/koala/my-profile"
@@ -251,7 +250,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
 
       {/* Notification dropdown */}
       {showNotif && (
-        <div className="mx-4 mt-1 mb-2 rounded-2xl p-4 bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-[#c9a96e]/10 shadow-sm dark:shadow-[0_8px_24px_rgba(125,99,64,0.10)]">
+        <div className="mx-4 mt-1 mb-2 rounded-2xl p-4 bg-white dark:bg-white/5 border border-gray-200 dark:border-[#c9a96e]/10 shadow-sm dark:shadow-[0_8px_24px_rgba(125,99,64,0.10)]">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-gray-500 dark:text-[#a8b8ac]">通知</span>
             <div className="flex items-center gap-2">
@@ -289,7 +288,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
           ) : (
             <div className="space-y-2">
               {notifications.map(n => (
-                <div key={n.id} className="flex items-start gap-2 px-2 py-1.5 rounded-lg" style={{ background: n.read ? 'transparent' : 'rgba(201,169,110,0.04)' }}>
+                <div key={n.id} className={`flex items-start gap-2 px-2 py-1.5 rounded-lg ${n.read ? '' : 'bg-amber-50/50 dark:bg-[#D4A843]/[0.06]'}`}>
                   {!n.read && <span className="mt-1.5 size-1.5 rounded-full flex-shrink-0 bg-amber-500 dark:bg-[#D4A843]" />}
                   <div className={n.read ? 'ml-3.5' : ''}>
                     <p className="text-xs font-medium text-gray-900 dark:text-[#e8e4dc]">{n.title}</p>
@@ -304,37 +303,40 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
 
       <main className="px-4 lg:px-0 pt-2 pb-4 flex flex-col gap-6 lg:gap-10">
 
-        {/* ── Banner Carousel ── */}
-        <BannerCarousel />
-
-        {/* ── Hero ── */}
+        {/* ── Hero + Banner ── */}
         <section>
           <div
-            className="rounded-2xl px-6 py-8 lg:p-10 relative overflow-hidden lg:flex lg:items-center lg:gap-12 border border-amber-200/30 dark:border-[#c9a96e]/15 bg-gradient-to-br from-[#F8F6F1] to-[#EDE8DC] dark:from-[#1a2a20] dark:via-[#0d1a14] dark:to-[#162028]"
+            className="rounded-2xl relative overflow-hidden border border-amber-200/30 dark:border-[#c9a96e]/15 bg-gradient-to-br from-[#F8F6F1] to-[#EDE8DC] dark:from-[#1a2a20] dark:via-[#0d1a14] dark:to-[#162028]"
           >
             <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.06) 0%, transparent 70%)' }} />
             <div className="absolute right-8 bottom-0 w-40 h-40 rounded-full" style={{ background: 'radial-gradient(circle, rgba(201,169,110,0.04) 0%, transparent 70%)' }} />
 
-            <div className="relative z-10 lg:flex-1">
-              <div className="inline-flex items-center text-xs font-medium mb-2 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-transparent text-amber-700 dark:text-[#D4A843]/50 border border-amber-200 dark:border-transparent">
-                AI 导师匹配 · 免费使用
+            <div className="lg:flex lg:items-center">
+              <div className="px-6 py-8 lg:p-10 relative z-10 lg:w-1/2">
+                <div className="inline-flex items-center text-xs font-medium mb-2 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-transparent text-amber-700 dark:text-[#D4A843]/50 border border-amber-200 dark:border-transparent">
+                  AI 导师匹配 · 免费使用
+                </div>
+                <h1 className="text-xl lg:text-3xl font-bold leading-tight mb-1.5 text-[#1A1A2E] dark:text-[#e8e4dc]">
+                  {profCount} 位澳洲导师<br />AI 帮你找最匹配的那个
+                </h1>
+                <p className="text-xs lg:text-sm leading-relaxed mb-4 text-gray-500 dark:text-[#6a7a7e]">
+                  告诉 Koala 你的背景和兴趣，30 秒内获得个性化导师推荐
+                </p>
+                <Link
+                  href="/koala/chat"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
+                >
+                  开始匹配 <ArrowRight className="size-4" />
+                </Link>
+                <div className="mt-3 text-[11px] text-amber-700 dark:text-[#D4A843]/40">
+                  {matchCount > 0
+                    ? `已帮助 ${displayMatchCount.toLocaleString()} 位同学匹配理想导师`
+                    : '已帮助众多同学匹配理想导师'}
+                </div>
               </div>
-              <h1 className="text-xl lg:text-3xl font-bold leading-tight mb-1.5 text-[#1A1A2E] dark:text-[#e8e4dc]">
-                {profCount} 位澳洲导师<br />AI 帮你找最匹配的那个
-              </h1>
-              <p className="text-xs lg:text-sm leading-relaxed mb-4 text-gray-500 dark:text-[#6a7a7e]">
-                告诉 Koala 你的背景和兴趣，30 秒内获得个性化导师推荐
-              </p>
-              <Link
-                href="/koala/chat"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
-              >
-                开始匹配 <ArrowRight className="size-4" />
-              </Link>
-              <div className="mt-3 text-[11px] text-amber-700 dark:text-[#D4A843]/40">
-                {matchCount > 0
-                  ? `已帮助 ${displayMatchCount.toLocaleString()} 位同学匹配理想导师`
-                  : '已帮助众多同学匹配理想导师'}
+
+              <div className="hidden lg:block lg:w-1/2 p-4 pl-0">
+                <BannerCarousel heroMode />
               </div>
             </div>
           </div>
@@ -409,7 +411,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                 <Link
                   key={p.id}
                   href={`/koala/professors/${p.id}`}
-                  className="shrink-0 w-44 lg:w-auto rounded-2xl p-3.5 flex flex-col gap-2 no-underline bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-[#c9a96e]/10 shadow-sm dark:shadow-[0_4px_16px_rgba(196,160,80,0.10)]"
+                  className="shrink-0 w-44 lg:w-auto rounded-2xl p-3.5 flex flex-col gap-2 no-underline bg-white dark:bg-white/5 border border-gray-200 dark:border-[#c9a96e]/10 shadow-sm dark:shadow-[0_4px_16px_rgba(196,160,80,0.10)]"
                 >
                   <div className="flex items-center justify-between">
                     <span
@@ -486,7 +488,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
               <Link
                 key={b.id}
                 href={`/koala/blog/${b.slug || b.id}`}
-                className="rounded-2xl p-4 flex flex-col gap-2 no-underline bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-[#c9a96e]/[0.06] shadow-sm dark:shadow-[0_4px_16px_rgba(196,160,80,0.08)]"
+                className="rounded-2xl p-4 flex flex-col gap-2 no-underline bg-white dark:bg-white/5 border border-gray-200 dark:border-[#c9a96e]/[0.06] shadow-sm dark:shadow-[0_4px_16px_rgba(196,160,80,0.08)]"
               >
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843] text-amber-700 dark:text-white border border-amber-200 dark:border-transparent">
