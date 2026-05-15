@@ -139,15 +139,12 @@ export async function searchProfessorAllSources(name: string, university?: strin
     }
   }
 
-  // === Source 2 & 3: OpenAlex + Claude Web Search (parallel) ===
-  const oaPromise = searchOpenAlexCandidates(name, expandedUni);
-  const claudePromise = searchClaudeCandidates(name, expandedUni).catch(e => {
+  // === Source 2: Claude Web Search ===
+  const claudeResults = await searchClaudeCandidates(name, expandedUni).catch(e => {
     console.error('[searchProfessorAllSources] Claude failed:', e);
     return [] as ProfessorCandidate[];
   });
-
-  const [oaResults, claudeResults] = await Promise.all([oaPromise, claudePromise]);
-  candidates.push(...oaResults, ...claudeResults);
+  candidates.push(...claudeResults);
 
   // Deduplicate: same name + university keeps highest confidence / database source
   const deduped = new Map<string, ProfessorCandidate>();
@@ -160,8 +157,7 @@ export async function searchProfessorAllSources(name: string, university?: strin
     }
   }
 
-  // Sort: database > claude_web_search(high) > openalex(high) > rest
-  const priority: Record<string, number> = { database: 0, claude_web_search: 1, openalex: 2 };
+  const priority: Record<string, number> = { database: 0, claude_web_search: 1 };
   const confPriority: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
   return Array.from(deduped.values()).sort((a, b) => {
@@ -273,7 +269,7 @@ export async function saveCandidateToDb(candidate: ProfessorCandidate, userId?: 
 export async function findOrCreateProfessor(name: string, university?: string): Promise<{ source: string; professors: Professor[]; created: number }> {
   const candidates = await searchProfessorAllSources(name, university);
   if (candidates.length === 0) {
-    return { source: 'openalex', professors: [], created: 0 };
+    return { source: 'none', professors: [], created: 0 };
   }
 
   // Auto-select the best candidate for AI chat (needs fast response)
@@ -374,27 +370,32 @@ async function searchClaudeCandidates(name: string, university?: string): Promis
     const client = new Anthropic({ apiKey });
 
     const normalized = normalizeProfessorName(name);
+    const nameParts = normalized.split(' ').filter(p => p.length > 0);
+    const reversed = nameParts.length >= 2 ? `${nameParts[nameParts.length - 1]} ${nameParts.slice(0, -1).join(' ')}` : normalized;
 
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1500,
-      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 8 }],
       messages: [{
         role: 'user',
-        content: `Find the academic profile of a professor. The user typed: "${name}" (normalized: "${normalized}")${university ? `, university: ${university}` : ', likely at an Australian university'}.
+        content: `Find the academic profile of a professor. The user typed: "${name}" (normalized: "${normalized}", reversed: "${reversed}")${university ? `, university: ${university}` : ', likely at an Australian university'}.
 
-The input may be misspelled, oddly cased, or missing spaces. Try reasonable name variations.
+The input may be misspelled, oddly cased, or have reversed name order. Try both "${normalized}" and "${reversed}".
 
-Search strategy — try these queries in order until you find results:
-1. "${normalized}"${university ? ` ${university}` : ''} professor
-2. "${normalized}" site:.edu.au
-3. "${normalized}" researcher Australia
+Search strategy — try these queries until you find results:
+1. "${normalized}"${university ? ` ${university}` : ''} professor site:.edu.au
+2. "${normalized}" professor Australia
+3. "${reversed}" professor${university ? ` ${university}` : ' Australia'}
+4. "${normalized}" PhD supervisor${university ? ` ${university}` : ''}
+5. "${normalized}" Google Scholar
 
-Look for official university staff pages (*.edu.au), Google Scholar profiles, or ResearchGate.
+Prioritize official university staff pages (*.edu.au), then Google Scholar, then ResearchGate.
 
 When you find the professor, return ONLY a JSON object:
-{"found":true,"name":"full English name","university":"full official university name (e.g. University of Sydney)","position":"exact title","faculty":"department or school","researchAreas":["area1","area2","area3"],"email":"if publicly listed","profileUrl":"official staff page URL","googleScholarUrl":"Google Scholar URL if found","hIndex":null,"paperCount":null}
+{"found":true,"name":"full English name","university":"full official university name (e.g. University of Sydney)","position":"exact title (e.g. Professor, Associate Professor, Senior Lecturer)","faculty":"department or school","researchAreas":["area1","area2","area3"],"email":"if publicly listed","profileUrl":"official staff page URL","googleScholarUrl":"Google Scholar URL if found","hIndex":number or null,"paperCount":number or null,"citationCount":number or null}
 
+For Google Scholar pages, extract h_index, paper_count, and citation_count if visible.
 If not found after trying all queries: {"found":false}
 Only return verified info from official sources. Do NOT guess or fabricate.`,
       }],
@@ -420,6 +421,7 @@ Only return verified info from official sources. Do NOT guess or fabricate.`,
       researchAreas: info.researchAreas || [],
       hIndex: info.hIndex ?? undefined,
       paperCount: info.paperCount ?? undefined,
+      citationCount: info.citationCount ?? undefined,
       email: info.email || undefined,
       profileUrl: info.profileUrl || undefined,
       googleScholarUrl: info.googleScholarUrl || undefined,
