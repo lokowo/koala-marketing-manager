@@ -30,7 +30,7 @@ export default function TopNavBar() {
   return (
     <nav className="hidden lg:flex fixed top-0 inset-x-0 z-50 items-center justify-between px-8 h-16 bg-white dark:bg-[#0a0e14] border-b border-gray-200 dark:border-[rgba(201,169,110,0.12)] shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
       <Link href="/koala/home" className="flex items-center gap-2 no-underline">
-        <span className="text-2xl">🐨</span>
+        <OlaAvatar state="welcome" size="sm" className="rounded-full" />
         <span className="font-bold text-base text-[#1A1A2E] dark:text-[#D4A843]">Koala PhD</span>
       </Link>
 

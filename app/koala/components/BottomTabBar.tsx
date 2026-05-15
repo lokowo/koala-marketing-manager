@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Compass, Users, BookOpen, Heart } from 'lucide-react';
 import { APP_VERSION } from '../../lib/version';
 import { useTheme } from '../../lib/theme';
+import { OlaAvatar } from './ola/OlaAvatar';
 const LEFT_TABS = [
   { href: '/koala/discover', icon: Compass, label: '发现' },
   { href: '/koala/professors', icon: Users, label: '教授' },
@@ -58,8 +59,8 @@ export default function BottomTabBar() {
                 : '#1A1A2E',
             }}
           >
-            <span className="text-xl leading-none">🐨</span>
-            <span className={`font-semibold text-[9px] ${koalaActive ? 'text-white dark:text-[#0a0e14]' : 'text-white dark:text-[#D4A843]'}`}>Koala</span>
+            <OlaAvatar state="welcome" size="sm" className="size-7 rounded-full" />
+            <span className={`font-semibold text-[9px] ${koalaActive ? 'text-white dark:text-[#0a0e14]' : 'text-white dark:text-[#D4A843]'}`}>Ola</span>
           </Link>
         </div>
         {RIGHT_TABS.map(tab => {

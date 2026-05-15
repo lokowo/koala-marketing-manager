@@ -1,26 +1,43 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { ThemeProvider } from '../../lib/theme';
 import { AuthProvider } from './AuthContext';
 import TopNavBar from './TopNavBar';
 import BottomTabBar from './BottomTabBar';
+import { OlaWidget } from './ola/OlaWidget';
+
+function ShellInner({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const onChatPage = pathname.startsWith('/koala/chat');
+
+  return (
+    <div className="min-h-svh bg-[#F8FAFC] dark:bg-[#080c10] text-gray-900 dark:text-[#e8e4dc] transition-colors">
+      <TopNavBar />
+      <div className="relative mx-auto max-w-[480px] lg:max-w-6xl">
+        <div className="lg:pt-16 pb-[88px] lg:pb-8">
+          {children}
+        </div>
+      </div>
+      <div className="lg:hidden">
+        <BottomTabBar />
+      </div>
+      {!onChatPage && (
+        <div className="fixed bottom-[104px] right-4 lg:bottom-6 lg:right-6 z-[9999]">
+          <OlaWidget onClick={() => router.push('/koala/chat')} />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function KoalaShell({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <div className="min-h-svh bg-[#F8FAFC] dark:bg-[#080c10] text-gray-900 dark:text-[#e8e4dc] transition-colors">
-          <TopNavBar />
-          <div className="relative mx-auto max-w-[480px] lg:max-w-6xl">
-            <div className="lg:pt-16 pb-[88px] lg:pb-8">
-              {children}
-            </div>
-          </div>
-          <div className="lg:hidden">
-            <BottomTabBar />
-          </div>
-        </div>
+        <ShellInner>{children}</ShellInner>
       </AuthProvider>
     </ThemeProvider>
   );
