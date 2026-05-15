@@ -4,7 +4,7 @@ import type { ProfessorCandidate } from '../../../lib/services/professorAutoAdd'
 import { getServerUser } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { notifyUser } from '../../../lib/notifications';
-import { aiLimiter, deepSearchLimiter } from '../../../lib/ratelimit';
+import { aiLimiter, deepSearchLimiter, safeLimit } from '../../../lib/ratelimit';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -25,18 +25,14 @@ export async function GET(req: NextRequest) {
       const user = await getServerUser();
       if (!user) return Response.json({ error: '请先登录再使用 AI 深度搜索' }, { status: 401 });
 
-      if (deepSearchLimiter) {
-        const { success } = await deepSearchLimiter.limit(user.id);
-        if (!success) return Response.json({ error: 'AI 深度搜索每小时限 5 次，请稍后再试' }, { status: 429 });
-      }
+      const deepAllowed = await safeLimit(deepSearchLimiter, user.id);
+      if (!deepAllowed) return Response.json({ error: 'AI 深度搜索每小时限 5 次，请稍后再试' }, { status: 429 });
 
       candidates = await searchProfessorDeep(name.trim(), university);
     } else {
-      if (aiLimiter) {
-        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-        const { success } = await aiLimiter.limit(ip);
-        if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
-      }
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+      const aiAllowed = await safeLimit(aiLimiter, ip);
+      if (!aiAllowed) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
 
       candidates = await searchProfessorAllSources(name.trim(), university);
     }
@@ -56,10 +52,8 @@ export async function POST(req: NextRequest) {
     const user = await getServerUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (aiLimiter) {
-      const { success } = await aiLimiter.limit(user.id);
-      if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
-    }
+    const allowed = await safeLimit(aiLimiter, user.id);
+    if (!allowed) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
 
     const body = await req.json();
     const candidate = body.candidate as ProfessorCandidate;

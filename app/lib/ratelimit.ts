@@ -1,6 +1,17 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 
+export async function safeLimit(limiter: Ratelimit | null, key: string): Promise<boolean> {
+  if (!limiter) return true
+  try {
+    const { success } = await limiter.limit(key)
+    return success
+  } catch (e) {
+    console.warn('[ratelimit] Redis error, skipping rate limit:', (e as Error).message)
+    return true
+  }
+}
+
 const redisUrl = process.env.UPSTASH_REDIS_REST_URL?.replace(/^"|"$/g, '')
 const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN?.replace(/^"|"$/g, '')
 
@@ -29,6 +40,14 @@ export const deepSearchLimiter = redis
   ? new Ratelimit({
       redis,
       limiter: Ratelimit.slidingWindow(5, '1 h'),
+    })
+  : null
+
+// URL 导入限流：每用户每天 5 次
+export const urlImportLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, '1 d'),
     })
   : null
 

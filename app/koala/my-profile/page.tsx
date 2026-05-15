@@ -1484,7 +1484,7 @@ export default function MyProfilePage() {
               <div className="px-4 py-4 text-center">
                 <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">还没有收藏教授</p>
                 <Link href="/koala/professors" className="text-xs mt-1 inline-block no-underline font-medium text-[#1A1A2E] dark:text-[#D4A843]">
-                  去浏览教授库 →
+                  去浏览教授&学者库 →
                 </Link>
               </div>
             ) : (

@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { sendPasswordResetEmail } from '../../../lib/services/emailService';
-import { authLimiter } from '../../../lib/ratelimit';
+import { authLimiter, safeLimit } from '../../../lib/ratelimit';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -11,11 +11,9 @@ function generateCode(): string {
 
 export async function POST(req: Request) {
   try {
-    if (authLimiter) {
-      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-      const { success } = await authLimiter.limit(ip);
-      if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
-    }
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const allowed = await safeLimit(authLimiter, ip);
+    if (!allowed) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
 
     const { email } = await req.json();
     if (!email) return Response.json({ error: 'email required' }, { status: 400 });

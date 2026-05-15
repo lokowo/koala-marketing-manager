@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { requireAdmin } from '../../../lib/auth';
-import { aiLimiter } from '../../../lib/ratelimit';
+import { aiLimiter, safeLimit } from '../../../lib/ratelimit';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -38,10 +38,8 @@ export async function POST(req: NextRequest) {
   let adminUser: { user: { id: string } };
   try { adminUser = await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
   try {
-    if (aiLimiter) {
-      const { success } = await aiLimiter.limit(adminUser.user.id);
-      if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
-    }
+    const allowed = await safeLimit(aiLimiter, adminUser.user.id);
+    if (!allowed) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
 
     const { postId } = await req.json();
     console.log('[generate-cover] Starting for post:', postId);
@@ -119,6 +117,7 @@ export async function POST(req: NextRequest) {
             n: 1,
             size: '1536x1024',
             quality: 'high',
+            response_format: 'b64_json',
           }));
           imageB64 = response.data?.[0]?.b64_json ?? undefined;
         }

@@ -150,7 +150,6 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
   const [professors, setProfessors] = useState<Professor[]>(initialProfessors);
   const [total, setTotal] = useState<number | null>(initialTotal);
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
-  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(initialProfessors.length >= LIMIT);
   const [loading, setLoading] = useState(initialProfessors.length === 0);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -158,6 +157,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
   // Filters — initialize category from URL param if provided
   const [search, setSearch]         = useState('');
   const [debouncedSearch, setDB]    = useState('');
+  const [searchTick, setSearchTick] = useState(0);
   const [category, setCategory]     = useState(() => searchParams.get('category') ?? 'all');
   const [filterOpen, setFilterOpen] = useState(false);
   const [accepting, setAccepting]   = useState('');        // '' | 'yes'
@@ -181,6 +181,12 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
   const [deepAddedIds, setDeepAddedIds] = useState<Set<string>>(new Set());
   const [deepAddingName, setDeepAddingName] = useState<string | null>(null);
 
+  // URL import
+  const [importUrl, setImportUrl] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importedProfessor, setImportedProfessor] = useState<{ name: string; university: string; id: string } | null>(null);
+
   const [savedProfessors, setSavedProfessors] = useState<Map<string, Professor>>(new Map());
 
   // Reward toast state
@@ -190,6 +196,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingMoreRef = useRef(false);
   const hasMoreRef = useRef(initialProfessors.length >= LIMIT);
+  const fetchVersionRef = useRef(0);
 
   // Active filter count for badge
   const activeFilters = [accepting !== '', hIndexMin > 0, sortBy !== 'opportunity_score', university !== ''].filter(Boolean).length;
@@ -205,32 +212,35 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
   // Trigger search immediately (button click or Enter) — skips debounce
   const triggerSearch = useCallback(() => {
     setDB(search.trim());
+    setSearchTick(t => t + 1);
   }, [search]);
 
   const filters: Filters = { page: 1, search: debouncedSearch, category, accepting, hIndexMin, sortBy, university };
 
   // Reset + load on filter change
   useEffect(() => {
+    const version = ++fetchVersionRef.current;
     setLoading(true);
     setProfessors([]);
     setCandidates([]);
     setSearching(false);
     setSearchDone(false);
-    setPage(1);
+    pageRef.current = 1;
     setHasMore(false);
     hasMoreRef.current = false;
     apiFetch(filters)
       .then(d => {
+        if (version !== fetchVersionRef.current) return;
         setProfessors(d.data);
         setTotal(d.total);
         setHasMore(d.hasMore);
         hasMoreRef.current = d.hasMore;
-        setPage(2);
+        pageRef.current = 2;
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => { if (version === fetchVersionRef.current) setLoading(false); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, category, accepting, hIndexMin, sortBy, university]);
+  }, [debouncedSearch, searchTick, category, accepting, hIndexMin, sortBy, university]);
 
   // Add candidate to database via POST
   const handleAddCandidate = useCallback(async (candidate: SearchCandidate) => {
@@ -295,6 +305,38 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
     setDeepAddingName(null);
   }, []);
 
+  const handleUrlImport = useCallback(async () => {
+    if (!importUrl.trim()) return;
+    setImporting(true);
+    setImportError(null);
+    setImportedProfessor(null);
+    try {
+      const res = await fetch('/api/professors/import-from-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: importUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setImportError(data.error || '录入失败');
+        return;
+      }
+      const prof = data.professor;
+      setImportedProfessor({ name: prof.name, university: prof.university, id: prof.id });
+      if (data.alreadyExists) {
+        setImportError('该教授已在数据库中');
+      }
+      if (data.reward) {
+        setRewardToast({ profName: prof.name, credits: data.reward.credits, newBalance: data.reward.newBalance, referralCode: '' });
+      }
+      setImportUrl('');
+    } catch {
+      setImportError('网络错误，请稍后重试');
+    } finally {
+      setImporting(false);
+    }
+  }, [importUrl]);
+
   // Category counts once on mount
   useEffect(() => {
     Promise.all(
@@ -309,21 +351,19 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
   const pageRef = useRef(1);
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
-  pageRef.current = page;
 
   const loadMore = useCallback(() => {
     if (loadingMoreRef.current || !hasMoreRef.current) return;
+    const version = fetchVersionRef.current;
     loadingMoreRef.current = true;
     setLoadingMore(true);
     apiFetch({ ...filtersRef.current, page: pageRef.current })
       .then(d => {
-        setProfessors(prev => {
-          const ids = new Set(prev.map(p => p.id));
-          return [...prev, ...d.data.filter((p: Professor) => !ids.has(p.id))];
-        });
+        if (version !== fetchVersionRef.current) return;
+        pageRef.current += 1;
+        setProfessors(prev => [...prev, ...d.data]);
         setHasMore(d.hasMore);
         hasMoreRef.current = d.hasMore;
-        setPage(p => p + 1);
       })
       .catch(() => {})
       .finally(() => {
@@ -357,10 +397,10 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
           <ChevronLeft className="size-5 text-amber-600 dark:text-[#D4A843]" />
         </Link>
         <div className="flex flex-col items-center">
-          <h1 className="font-bold text-lg leading-7 text-gray-900 dark:text-[#e8e4dc]">教授库</h1>
+          <h1 className="font-bold text-lg leading-7 text-gray-900 dark:text-[#e8e4dc]">教授&学者库</h1>
           {total !== null && (
             <span className="text-xs text-gray-500 dark:text-[#6a7a7e]">
-              {debouncedSearch ? `找到 ${total.toLocaleString()} 位匹配导师` : `共 ${total.toLocaleString()} 位已认证导师`}
+              {debouncedSearch ? `找到 ${total.toLocaleString()} 位匹配导师` : `共 ${total.toLocaleString()} 位导师`}
             </span>
           )}
         </div>
@@ -380,8 +420,8 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
 
       {/* Desktop title */}
       <div className="hidden lg:flex items-baseline gap-3 pt-6 pb-2">
-        <h1 className="font-bold text-2xl text-gray-900 dark:text-[#e8e4dc]">教授库</h1>
-        {total !== null && <span className="text-sm text-gray-500 dark:text-[#6a7a7e]">{debouncedSearch ? `找到 ${total.toLocaleString()} 位匹配导师` : `共 ${total.toLocaleString()} 位已认证导师`}</span>}
+        <h1 className="font-bold text-2xl text-gray-900 dark:text-[#e8e4dc]">教授&学者库</h1>
+        {total !== null && <span className="text-sm text-gray-500 dark:text-[#6a7a7e]">{debouncedSearch ? `找到 ${total.toLocaleString()} 位匹配导师` : `共 ${total.toLocaleString()} 位导师`}</span>}
       </div>
 
       {/* Desktop layout: sidebar + list */}
@@ -563,12 +603,12 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
           ))
         ) : professors.length === 0 ? (
           <div className="flex flex-col items-center py-8 gap-4 lg:col-span-2">
-            {search ? (
+            {debouncedSearch ? (
               <div className="w-full max-w-lg mx-auto rounded-2xl bg-amber-50/60 dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.2)] p-6">
                 <div className="text-center space-y-3">
                   <p className="text-3xl">😕</p>
                   <p className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">
-                    数据库中未找到 &ldquo;{search}&rdquo;
+                    数据库中未找到 &ldquo;{debouncedSearch}&rdquo;
                   </p>
                   <p className="text-sm text-gray-600 dark:text-[#8a9a9e]">
                     该教授可能还未被收录。试试 AI 深度搜索，我们可以从网上找到这位教授的信息！
@@ -576,14 +616,14 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                   <button
                     onClick={() => {
                       setShowDeepSearch(true);
-                      setDeepName(search);
+                      setDeepName(debouncedSearch);
                       setDeepUni(university);
-                      handleDeepSearch(search, university);
+                      handleDeepSearch(debouncedSearch, university);
                     }}
                     className="w-full py-3 rounded-xl text-sm font-bold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] hover:opacity-90 transition flex items-center justify-center gap-2"
                   >
                     <Search className="size-4" />
-                    AI 深度搜索 &ldquo;{search}&rdquo;
+                    AI 深度搜索 &ldquo;{debouncedSearch}&rdquo;
                   </button>
                   <p className="text-xs text-amber-600 dark:text-amber-500">
                     录入新教授可获得 <span className="font-bold">10 积分奖励</span> ✨
@@ -745,12 +785,12 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
         </div>
       )}
 
-      {/* Deep search banner — placed after results so it doesn't overlap search box */}
-      {debouncedSearch && !loading && (
+      {/* Deep search banner — only show when there ARE results (user may want a different professor) */}
+      {debouncedSearch && !loading && professors.length > 0 && (
         <div className="px-4 pt-3 lg:px-0">
           {!showDeepSearch ? (
             <button
-              onClick={() => { setShowDeepSearch(true); setDeepName(debouncedSearch); setDeepUni(university); }}
+              onClick={() => { setShowDeepSearch(true); setDeepName(debouncedSearch); setDeepUni(university); handleDeepSearch(debouncedSearch, university); }}
               className="w-full rounded-xl px-4 py-3 text-left text-xs leading-relaxed bg-gray-50 dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] text-gray-500 dark:text-[#6a7a7e] hover:bg-gray-100 dark:hover:bg-[#141c28] transition"
             >
               不是你要找的教授？点击这里用 AI 深度搜索
@@ -884,9 +924,42 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                 </div>
               )}
               {!deepSearching && deepCandidates.length === 0 && deepName && (
-                <div className="px-4 py-5 text-center">
-                  <p className="text-sm text-gray-500 dark:text-[#6a7a7e]">很抱歉，AI 也未找到 &ldquo;{deepName}&rdquo; 的信息</p>
-                  <p className="text-xs text-gray-400 dark:text-[#6a7a7e] mt-1">请确认拼写是否正确，或尝试输入教授的英文全名</p>
+                <div className="px-4 py-5 text-center space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-[#6a7a7e]">很抱歉，AI 也未找到 &ldquo;{deepName}&rdquo; 的信息</p>
+                    <p className="text-xs text-gray-400 dark:text-[#6a7a7e] mt-1">请确认拼写是否正确，或尝试输入教授的英文全名</p>
+                  </div>
+                  <div className="border-t border-gray-100 dark:border-white/5 pt-4">
+                    <p className="text-xs text-gray-500 dark:text-[#8a9a8e] mb-2">找到了教授主页？把链接粘贴这里，我们帮你录入 👇</p>
+                    <div className="flex gap-2 max-w-md mx-auto">
+                      <input
+                        type="url"
+                        value={importUrl}
+                        onChange={e => { setImportUrl(e.target.value); setImportError(null); setImportedProfessor(null); }}
+                        placeholder="粘贴大学官网或 Google Scholar 链接"
+                        className="flex-1 px-3 py-2 rounded-lg text-xs bg-gray-50 dark:bg-[#0a1018] border border-gray-200 dark:border-[rgba(212,168,67,0.15)] text-gray-800 dark:text-[#e8e4dc] placeholder:text-gray-400 dark:placeholder:text-[#5a6a6e] focus:outline-none focus:ring-1 focus:ring-amber-400 dark:focus:ring-[#D4A843]"
+                      />
+                      <button
+                        onClick={handleUrlImport}
+                        disabled={importing || !importUrl.trim()}
+                        className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] disabled:opacity-40 hover:opacity-90 transition flex items-center gap-1.5"
+                      >
+                        {importing ? <><Loader2 className="size-3 animate-spin" /> 录入中</> : <><Plus className="size-3" /> 录入</>}
+                      </button>
+                    </div>
+                    {importError && <p className="text-xs text-red-500 mt-2">{importError}</p>}
+                    {importedProfessor && (
+                      <div className="mt-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30">
+                        <p className="text-xs text-green-700 dark:text-green-400 font-medium">
+                          ✓ 已录入：{importedProfessor.name}（{parseUniversity(importedProfessor.university).full}）
+                        </p>
+                        <Link href={`/koala/professors/${importedProfessor.id}`} className="text-xs text-green-600 dark:text-green-500 underline mt-1 inline-block">
+                          查看详情 →
+                        </Link>
+                      </div>
+                    )}
+                    <p className="text-[10px] text-gray-400 dark:text-[#5a6a6e] mt-2">支持：澳洲大学官网 (.edu.au)、Google Scholar、ResearchGate、ORCID</p>
+                  </div>
                 </div>
               )}
             </div>

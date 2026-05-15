@@ -9,7 +9,7 @@ import { useTheme } from '../../lib/theme';
 
 const NAV_ITEMS: { href: string; icon: React.ElementType; label: string; highlight?: boolean }[] = [
   { href: '/koala/discover', icon: Home, label: '发现' },
-  { href: '/koala/professors', icon: Users, label: '教授库' },
+  { href: '/koala/professors', icon: Users, label: '教授&学者库' },
   { href: '/koala/chat', icon: MessageCircle, label: 'Koala AI', highlight: true },
   { href: '/koala/blog', icon: BookOpen, label: '博客' },
   { href: '/koala/my-profile', icon: UserCircle, label: '我的' },

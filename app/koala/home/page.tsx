@@ -1,4 +1,4 @@
-import { listProfessors, countProfessors } from '../../lib/services/professorService';
+import { listProfessors } from '../../lib/services/professorService';
 import { supabaseAdmin } from '../../lib/supabase/server';
 import HomeClient from './HomeClient';
 
@@ -20,9 +20,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default async function HomePage() {
-  const [professors, profCount, matchData, blogData] = await Promise.all([
-    listProfessors({ limit: 6, sortBy: 'opportunity_score' }).catch(() => []),
-    countProfessors({}).catch(() => 0),
+  const [profResult, matchData, blogData] = await Promise.all([
+    listProfessors({ limit: 6, sortBy: 'opportunity_score' }).catch(() => ({ data: [], total: 0 })),
     db.from('ai_conversations').select('id', { count: 'exact', head: true }).then((r: { count: number }) => r.count || 0).catch(() => 0),
     (async () => {
       try {
@@ -110,8 +109,8 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
       />
       <HomeClient
-        initialProfessors={professors}
-        initialProfCount={profCount}
+        initialProfessors={profResult.data}
+        initialProfCount={profResult.total}
         initialMatchCount={matchData as number}
         initialBlogPosts={blogPosts}
       />

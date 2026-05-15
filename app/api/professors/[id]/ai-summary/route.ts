@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
-import { aiLimiter } from '../../../../lib/ratelimit';
+import { aiLimiter, safeLimit } from '../../../../lib/ratelimit';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -10,11 +10,9 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  if (aiLimiter) {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const { success } = await aiLimiter.limit(`ai-summary:${ip}`);
-    if (!success) return Response.json({ summary: null, error: '操作太频繁，请稍后再试' }, { status: 429 });
-  }
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const allowed = await safeLimit(aiLimiter, `ai-summary:${ip}`);
+  if (!allowed) return Response.json({ summary: null, error: '操作太频繁，请稍后再试' }, { status: 429 });
 
   const { data: prof, error } = await db
     .from('professors')

@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { listProfessors, countProfessors, createProfessor } from '../../lib/services/professorService';
+import { listProfessors, createProfessor } from '../../lib/services/professorService';
 import { getServerUser } from '../../lib/auth';
 import { logAdminAction } from '../../lib/worklog';
 
@@ -10,30 +10,22 @@ export async function GET(request: NextRequest) {
     const page = Math.max(parseInt(searchParams.get('page') ?? '1', 10), 1);
 
     const filters = {
-      university: searchParams.get('university') ?? undefined,
-      verificationStatus: searchParams.get('verificationStatus') ?? undefined,
-      researchArea: searchParams.get('researchArea') ?? undefined,
       category: searchParams.get('category') ?? undefined,
       search: searchParams.get('search') ?? undefined,
+      university: searchParams.get('university') ?? undefined,
       acceptingStudents: searchParams.get('acceptingStudents') ?? undefined,
-      grantStatus: searchParams.get('grantStatus') ?? undefined,
       hIndexMin: searchParams.get('hIndexMin') ? parseInt(searchParams.get('hIndexMin')!, 10) : undefined,
       sortBy: searchParams.get('sortBy') ?? undefined,
-      showAll: searchParams.get('showAll') === 'true',
-      contributedOnly: searchParams.get('contributedOnly') === 'true',
     };
 
-    const [professors, total] = await Promise.all([
-      listProfessors({ ...filters, limit, offset: (page - 1) * limit }),
-      countProfessors(filters),
-    ]);
+    const result = await listProfessors({ ...filters, limit, offset: (page - 1) * limit });
 
     const response = Response.json({
-      data: professors,
-      total,
+      data: result.data,
+      total: result.total,
       page,
       limit,
-      hasMore: page * limit < total,
+      hasMore: page * limit < result.total,
     });
     response.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
     return response;

@@ -334,7 +334,7 @@ export const translations: Record<Language, Translations> = {
       sidebarSubtitle: 'Marketing Manager',
       nav: {
         dashboard: '仪表盘',
-        professors: '教授库',
+        professors: '教授&学者库',
         grants: '资助库',
         topics: '研究专题',
         publishing: '发布追踪',

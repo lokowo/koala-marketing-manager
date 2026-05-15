@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getServerUser } from '../../../../lib/auth';
-import { aiLimiter } from '../../../../lib/ratelimit';
+import { aiLimiter, safeLimit } from '../../../../lib/ratelimit';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -19,10 +19,8 @@ export async function POST(req: NextRequest) {
     const user = await getServerUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (aiLimiter) {
-      const { success } = await aiLimiter.limit(user.id);
-      if (!success) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
-    }
+    const allowed = await safeLimit(aiLimiter, user.id);
+    if (!allowed) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
 
     const { category } = await req.json();
     const label = categoryLabels[category];

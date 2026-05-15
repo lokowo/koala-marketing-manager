@@ -58,7 +58,14 @@ export async function POST(req: Request) {
 
     return Response.json({ error: 'Invalid price ID' }, { status: 400 });
   } catch (error) {
-    console.error('[stripe/checkout]', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('[stripe/checkout]', msg, error);
+    if (msg.includes('No such price')) {
+      return Response.json({ error: 'Price configuration error. Please contact support.' }, { status: 500 });
+    }
+    if (msg.includes('No API key') || msg.includes('Invalid API Key')) {
+      return Response.json({ error: 'Payment system not configured' }, { status: 500 });
+    }
+    return Response.json({ error: 'Checkout failed. Please try again.' }, { status: 500 });
   }
 }

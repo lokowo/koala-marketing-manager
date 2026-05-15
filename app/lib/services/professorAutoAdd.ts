@@ -84,6 +84,15 @@ const UNI_ALIASES: Record<string, string> = {
   'VU': 'Victoria University',
 };
 
+function normalizeProfessorName(raw: string): string {
+  let name = raw.replace(/([a-z])([A-Z])/g, '$1 $2');
+  name = name.replace(/\s+/g, ' ').trim();
+  return name
+    .split(' ')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
 function expandUniversity(university?: string): string | undefined {
   if (!university) return undefined;
   const trimmed = university.trim();
@@ -96,6 +105,7 @@ function expandUniversity(university?: string): string | undefined {
 
 export async function searchProfessorAllSources(name: string, university?: string): Promise<ProfessorCandidate[]> {
   const expandedUni = expandUniversity(university);
+  const normalizedName = normalizeProfessorName(name);
   const candidates: ProfessorCandidate[] = [];
 
   // === Source 1: Local database ===
@@ -103,7 +113,7 @@ export async function searchProfessorAllSources(name: string, university?: strin
   let dbQuery: any = supabaseAdmin
     .from('professors')
     .select('*')
-    .ilike('name', `%${name}%`);
+    .ilike('name', `%${normalizedName}%`);
   if (expandedUni) dbQuery = dbQuery.ilike('university', `%${expandedUni}%`);
   const { data: dbResults } = await dbQuery.limit(5);
 
@@ -160,13 +170,14 @@ export async function searchProfessorAllSources(name: string, university?: strin
 
 export async function searchProfessorDeep(name: string, university?: string): Promise<ProfessorCandidate[]> {
   const expandedUni = expandUniversity(university);
+  const normalizedName = normalizeProfessorName(name);
   const candidates: ProfessorCandidate[] = [];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let dbQuery: any = supabaseAdmin
     .from('professors')
     .select('*')
-    .ilike('name', `%${name}%`);
+    .ilike('name', `%${normalizedName}%`);
   if (expandedUni) dbQuery = dbQuery.ilike('university', `%${expandedUni}%`);
   const { data: dbResults } = await dbQuery.limit(5);
 
@@ -359,19 +370,30 @@ async function searchClaudeCandidates(name: string, university?: string): Promis
     const Anthropic = (await import('@anthropic-ai/sdk')).default;
     const client = new Anthropic({ apiKey });
 
-    const searchQuery = university
-      ? `Professor ${name} at ${university}`
-      : `Professor ${name} Australian university`;
+    const normalized = normalizeProfessorName(name);
 
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1000,
-      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
+      max_tokens: 1500,
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
       messages: [{
         role: 'user',
-        content: `Search for ${searchQuery}. Find their official university staff page. Return ONLY a JSON object:
-{"found":true,"name":"full English name","university":"full university name","position":"exact title","faculty":"department","researchAreas":["area1","area2"],"email":"if public","profileUrl":"staff page URL","googleScholarUrl":"Google Scholar URL if available","hIndex":null,"paperCount":null}
-If not found: {"found":false}. Only return verified info from official sources. Do NOT guess.`,
+        content: `Find the academic profile of a professor. The user typed: "${name}" (normalized: "${normalized}")${university ? `, university: ${university}` : ', likely at an Australian university'}.
+
+The input may be misspelled, oddly cased, or missing spaces. Try reasonable name variations.
+
+Search strategy — try these queries in order until you find results:
+1. "${normalized}"${university ? ` ${university}` : ''} professor
+2. "${normalized}" site:.edu.au
+3. "${normalized}" researcher Australia
+
+Look for official university staff pages (*.edu.au), Google Scholar profiles, or ResearchGate.
+
+When you find the professor, return ONLY a JSON object:
+{"found":true,"name":"full English name","university":"full official university name (e.g. University of Sydney)","position":"exact title","faculty":"department or school","researchAreas":["area1","area2","area3"],"email":"if publicly listed","profileUrl":"official staff page URL","googleScholarUrl":"Google Scholar URL if found","hIndex":null,"paperCount":null}
+
+If not found after trying all queries: {"found":false}
+Only return verified info from official sources. Do NOT guess or fabricate.`,
       }],
     });
 

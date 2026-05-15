@@ -4,7 +4,7 @@ import { buildEmailPrompt } from '../../../lib/prompts/email';
 import { getStudentContext, buildStudentBackgroundForEmail } from '../../../lib/server/student-context';
 import { logWork } from '../../../lib/worklog';
 import { getServerUser } from '../../../lib/auth';
-import { aiLimiter } from '../../../lib/ratelimit';
+import { aiLimiter, safeLimit } from '../../../lib/ratelimit';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -42,10 +42,8 @@ export async function POST(request: NextRequest) {
     const user = await getServerUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (aiLimiter) {
-      const { success } = await aiLimiter.limit(user.id);
-      if (!success) return Response.json({ error: '请求过于频繁，请稍后再试' }, { status: 429 });
-    }
+    const allowed = await safeLimit(aiLimiter, user.id);
+    if (!allowed) return Response.json({ error: '请求过于频繁，请稍后再试' }, { status: 429 });
 
     const body = await request.json();
     const { professorId, studentProfile, tone = 'professional', purpose = 'PhD', userId } = body;

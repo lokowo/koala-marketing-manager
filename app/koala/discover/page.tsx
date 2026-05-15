@@ -7,21 +7,7 @@ import { X, Undo2, Mail, Heart, SlidersHorizontal, GraduationCap, FileText, Quot
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../components/AuthContext';
-
-const UNI: Record<string, { bg: string; fg: string; short: string }> = {
-  'Australian National University':  { bg: '#c9a96e', fg: '#e8e4dc', short: 'ANU' },
-  'University of Melbourne':         { bg: '#003087', fg: '#fff',    short: 'MEL' },
-  'University of Sydney':            { bg: '#cc0000', fg: '#fff',    short: 'SYD' },
-  'UNSW Sydney':                     { bg: '#1a1a1a', fg: '#ffe600', short: 'NSW' },
-  'University of Queensland':        { bg: '#51247a', fg: '#fff',    short: 'UQ'  },
-  'Monash University':               { bg: '#006dae', fg: '#fff',    short: 'MON' },
-  'University of Western Australia': { bg: '#003087', fg: '#fff',    short: 'UWA' },
-  'University of Adelaide':          { bg: '#005a9c', fg: '#fff',    short: 'ADE' },
-};
-
-function getUni(name: string) {
-  return UNI[name] ?? { bg: '#5a6878', fg: '#fff', short: name.replace(/University of |University /gi, '').slice(0, 3).toUpperCase() };
-}
+import { getUniBadge, parseUniversity } from '../../lib/constants';
 
 function recruitBadge(score: number) {
   if (score >= 70) return { label: '招生中', color: '#22c55e' };
@@ -240,7 +226,7 @@ export default function DiscoverPage() {
               const stackPos = currentIndex - index;
               if (stackPos > 2) return null;
               const isFlipped = flippedId === prof.id;
-              const uni = getUni(prof.university);
+              const uni = getUniBadge(prof.university);
               const badge = recruitBadge(prof.opportunityScore);
 
               return (
@@ -304,7 +290,7 @@ export default function DiscoverPage() {
                             <h3 className="text-sm font-semibold text-gray-900 dark:text-[#e8e4dc]">{prof.name}</h3>
                             <button onClick={(e) => { e.stopPropagation(); setFlippedId(null); }} className="text-xs px-2 py-1 rounded text-gray-400 dark:text-[#8a9a8e] bg-gray-100 dark:bg-white/5">← 翻回</button>
                           </div>
-                          <p className="text-xs mb-3 text-gray-500 dark:text-[#6a7a7e]">{prof.university} · {prof.positionTitle}</p>
+                          <p className="text-xs mb-3 text-gray-500 dark:text-[#6a7a7e]">{parseUniversity(prof.university).full} · {prof.positionTitle}</p>
                           <div className="mb-3">
                             <p className="text-[10px] uppercase mb-1.5 text-gray-400 dark:text-[#5a6a6e]" style={{ letterSpacing: '1px' }}>研究方向</p>
                             <p className="text-xs leading-relaxed text-gray-600 dark:text-[#a8b8ac]">{(prof.researchAreas ?? []).join(' · ')}</p>
@@ -345,8 +331,8 @@ export default function DiscoverPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="px-2.5 py-1 rounded-md text-xs font-bold" style={{ background: getUni(currentProf.university).bg, color: getUni(currentProf.university).fg }}>
-                        {getUni(currentProf.university).short}
+                      <div className="px-2.5 py-1 rounded-md text-xs font-bold" style={{ background: getUniBadge(currentProf.university).bg, color: getUniBadge(currentProf.university).fg }}>
+                        {getUniBadge(currentProf.university).short}
                       </div>
                       {recruitBadge(currentProf.opportunityScore).label && (
                         <div className="flex items-center gap-1">
@@ -359,7 +345,7 @@ export default function DiscoverPage() {
                     </div>
                     <h2 className="text-xl font-semibold mb-1 text-gray-900 dark:text-[#e8e4dc]">{currentProf.name}</h2>
                     <p className="text-xs text-gray-500 dark:text-[#6a7a7e]">
-                      {currentProf.positionTitle ?? 'Researcher'} · {currentProf.university}
+                      {currentProf.positionTitle ?? 'Researcher'} · {parseUniversity(currentProf.university).full}
                     </p>
                     {currentProf.faculty && (
                       <p className="text-xs mt-0.5 text-gray-400 dark:text-[#5a6a6e]">{currentProf.faculty}</p>

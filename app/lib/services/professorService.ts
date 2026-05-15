@@ -75,8 +75,6 @@ function toInsert(data: Omit<Professor, 'id' | 'createdAt' | 'updatedAt'>) {
   };
 }
 
-// Maps UI category tabs to keywords for ilike substring search on research_areas::text
-// Values must appear as substrings within the descriptive phrases stored in research_areas
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   health:  ['Cancer', 'Health', 'Disease', 'Clinical', 'Stroke', 'Alzheimer', 'Dementia', 'Mental Health', 'Blood Pressure', 'Diabetes', 'Obesity', 'Immune', 'Immunotherapy', 'HIV', 'Nursing', 'Pharmaceutical', 'Vaccine', 'Epidemiology', 'Public Health', 'Malaria', 'Melanoma', 'Asthma', 'Oncology', 'Psychiatric'],
   physics: ['Astrophysics', 'Astronomy', 'Cosmology', 'Particle physics', 'Quantum', 'Gravitational', 'Dark Matter', 'Gamma-ray', 'Pulsar', 'Supernova', 'Galaxy', 'Stellar', 'Photonic', 'Laser', 'High-Energy', 'Gravitational Wave', 'Atomic and Molecular'],
@@ -87,6 +85,8 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   eng:     ['Engineering', 'Materials Science', 'Battery', 'Energy storage', 'Nanotechnology', 'Semiconductor', 'Aerospace', 'Fiber Laser', 'Crystallization', 'X-ray Diffraction', 'Chemical Physics'],
   soc:     ['Psychology', 'Sociology', 'Education', 'Law', 'Politics', 'Policy', 'Economics', 'Business', 'Finance', 'Management', 'Social Science', 'Anthropology', 'Linguistics', 'History', 'Nutritional'],
 };
+
+const CHINESE_STOP_WORDS = new Set(['的', '中国', '教授', '老师', '导师', '大学', '学校', '澳洲', '澳大利亚']);
 
 type ProfessorFilters = {
   university?: string;
@@ -104,232 +104,49 @@ type ProfessorFilters = {
   contributedOnly?: boolean;
 };
 
-export async function listProfessors(filters?: ProfessorFilters): Promise<Professor[]> {
+function prepareSearchTerms(search: string): string[] {
+  const parts = search.split(/[\s,;，；]+/).filter(s => s.length > 0);
+  return parts.filter(t => !CHINESE_STOP_WORDS.has(t) && t.length > 0);
+}
+
+export async function listProfessors(filters?: ProfessorFilters): Promise<{ data: Professor[], total: number }> {
   const limit = filters?.limit ?? 20;
   const offset = filters?.offset ?? 0;
   const sortField = filters?.sortBy ?? 'opportunity_score';
-  const hasCategory = filters?.category && filters.category !== 'all' && CATEGORY_KEYWORDS[filters.category];
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let q: any = supabaseAdmin
-    .from('professors')
-    .select('*')
-    .order(sortField, { ascending: false, nullsFirst: false });
-
-  const hasSearch = !!filters?.search?.trim();
-  // When category or search is active, fetch more rows and rank/filter in JS
-  if (!hasCategory && !hasSearch) {
-    q = q.range(offset, offset + limit - 1);
-  } else {
-    q = q.limit(500);
-  }
-
-  if (!filters?.showAll) {
-    q = q.eq('verification_status', 'Verified');
-  }
-  if (filters?.university) q = q.eq('university', filters.university);
-  if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
-  if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
-  if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
-  if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
-  if (filters?.contributedOnly) q = q.not('contributed_by', 'is', null);
-  const UNI_ABBREVIATIONS: Record<string, string> = {
-    uts: 'University of Technology Sydney',
-    unsw: 'UNSW Sydney',
-    anu: 'Australian National University',
-    uq: 'University of Queensland',
-    uwa: 'University of Western Australia',
-    usyd: 'University of Sydney',
-    unimelb: 'University of Melbourne',
-    monash: 'Monash University',
-    rmit: 'RMIT University',
-    qut: 'Queensland University of Technology',
-    deakin: 'Deakin University',
-    macquarie: 'Macquarie University',
-    griffith: 'Griffith University',
-    latrobe: 'La Trobe University',
-    curtin: 'Curtin University',
-    flinders: 'Flinders University',
-    jcu: 'James Cook University',
-    swinburne: 'Swinburne University of Technology',
-    wsu: 'Western Sydney University',
-    adelaide: 'University of Adelaide',
-    wollongong: 'University of Wollongong',
-    newcastle: 'University of Newcastle',
-  };
-
-  const CHINESE_STOP_WORDS = ['的', '中国', '教授', '老师', '导师', '大学', '学校', '澳洲', '澳大利亚'];
 
   const searchTerm = filters?.search?.trim();
-  if (searchTerm) {
-    const parts = searchTerm.split(/[\s,;，；]+/).filter(s => s.length > 0);
+  const terms = searchTerm ? prepareSearchTerms(searchTerm) : null;
 
-    const expandedParts: string[] = [];
-    for (const part of parts) {
-      const lower = part.toLowerCase();
-      if (UNI_ABBREVIATIONS[lower]) {
-        expandedParts.push(UNI_ABBREVIATIONS[lower]);
-      }
-      const chineseChars = part.replace(new RegExp(`[${CHINESE_STOP_WORDS.join('')}]`, 'g'), '');
-      if (chineseChars.length > 0 && chineseChars !== part) {
-        expandedParts.push(chineseChars);
-      }
-    }
+  const hasCategory = filters?.category && filters.category !== 'all' && CATEGORY_KEYWORDS[filters.category];
+  const categoryKeywords = hasCategory ? CATEGORY_KEYWORDS[filters!.category!] : null;
 
-    const allTerms = Array.from(new Set([...parts, ...expandedParts]))
-      .filter(t => !CHINESE_STOP_WORDS.includes(t) && t.length > 0);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabaseAdmin as any).rpc('search_professors_v2', {
+    p_terms: terms && terms.length > 0 ? terms : null,
+    p_category_keywords: categoryKeywords,
+    p_university: filters?.university || null,
+    p_accepting: filters?.acceptingStudents || null,
+    p_h_index_min: filters?.hIndexMin ?? 0,
+    p_sort: sortField,
+    p_limit: limit,
+    p_offset: offset,
+  });
 
-    // Single .or() call — PostgREST silently drops all but the last when chained
-    const conditions = allTerms.flatMap(t => [
-      `name.ilike.%${t}%`,
-      `university.ilike.%${t}%`,
-      `faculty.ilike.%${t}%`,
-    ]);
-    q = q.or(conditions.join(','));
-  }
-  const { data, error } = await q;
   if (error) throw new Error(error.message);
 
-  let results = (data ?? []).map(fromRow);
+  const rows = result?.data ?? [];
+  const total = result?.total ?? 0;
 
-  // Multi-word AND: every term must appear somewhere in name+university+faculty
-  if (searchTerm) {
-    const allParts = searchTerm.split(/[\s,;，；]+/).filter(s => s.length > 0).map(t => t.toLowerCase());
-    if (allParts.length > 1) {
-      results = results.filter((p: Professor) => {
-        const combined = `${p.name} ${p.university} ${p.faculty}`.toLowerCase();
-        return allParts.every(t => combined.includes(t));
-      });
-    }
-  }
-
-  if (searchTerm) {
-    const parts = searchTerm.split(/[\s,;，；]+/).filter(s => s.length > 0);
-    const searchTerms = parts.map(t => t.toLowerCase());
-    const nameUniMatched = new Set(results.map((p: Professor) => p.id));
+  return {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let allQ: any = supabaseAdmin.from('professors').select('*').order(sortField, { ascending: false, nullsFirst: false }).limit(500);
-    if (!filters?.showAll) {
-      allQ = allQ.eq('verification_status', 'Verified');
-    }
-    if (filters?.university) allQ = allQ.eq('university', filters.university);
-    if (filters?.acceptingStudents) allQ = allQ.eq('accepting_students', filters.acceptingStudents);
-    if (filters?.hIndexMin) allQ = allQ.gte('h_index', filters.hIndexMin);
-    const { data: allData } = await allQ;
-    if (allData) {
-      const areaMatched = allData.map(fromRow).filter((p: Professor) => {
-        if (nameUniMatched.has(p.id)) return false;
-        const areasText = p.researchAreas.join(' ').toLowerCase();
-        return searchTerms.every(t => areasText.includes(t));
-      });
-      results = [...results, ...areaMatched];
-    }
-
-    if (searchTerms.length > 1) {
-      results.sort((a: Professor, b: Professor) => {
-        const aName = a.name.toLowerCase();
-        const bName = b.name.toLowerCase();
-        const aHits = searchTerms.filter(t => aName.includes(t)).length;
-        const bHits = searchTerms.filter(t => bName.includes(t)).length;
-        if (aHits !== bHits) return bHits - aHits;
-        return (b.opportunityScore ?? 0) - (a.opportunityScore ?? 0);
-      });
-    }
-  }
-
-  if (hasCategory) {
-    const categoryKeywords = CATEGORY_KEYWORDS[filters!.category!].map(k => k.toLowerCase());
-    results = results.filter((p: Professor) => {
-      const areasText = p.researchAreas.join(' ').toLowerCase();
-      return categoryKeywords.some(k => areasText.includes(k));
-    });
-  }
-
-  results = results.slice(offset, offset + limit);
-  return results;
+    data: rows.map((row: any) => fromRow(row)),
+    total,
+  };
 }
 
 export async function countProfessors(filters?: Omit<ProfessorFilters, 'limit' | 'offset' | 'sortBy'>): Promise<number> {
-  const hasCategory = filters?.category && filters.category !== 'all' && CATEGORY_KEYWORDS[filters.category];
-
-  if (hasCategory) {
-    // Can't count with ilike on text[] in PostgREST — fetch and count in JS
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q: any = supabaseAdmin.from('professors').select('name,university,faculty,research_areas').limit(3000);
-    if (!filters?.showAll) {
-      q = q.eq('verification_status', 'Verified');
-    }
-    if (filters?.university) q = q.eq('university', filters.university);
-    if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
-    if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
-    if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
-    if (filters?.contributedOnly) q = q.not('contributed_by', 'is', null);
-    if (filters?.search) {
-      const searchParts = filters.search.split(/[\s,;，；]+/).filter(s => s.length > 0);
-      const conditions = searchParts.flatMap(t => [
-        `name.ilike.%${t}%`, `university.ilike.%${t}%`, `faculty.ilike.%${t}%`,
-      ]);
-      q = q.or(conditions.join(','));
-    }
-    const { data, error } = await q;
-    if (error) throw new Error(error.message);
-    const categoryKeywords = CATEGORY_KEYWORDS[filters!.category!].map(k => k.toLowerCase());
-    let catResults = (data ?? []) as Array<{ name?: string; university?: string; faculty?: string; research_areas: string[] | null }>;
-    if (filters?.search) {
-      const parts = filters.search.split(/[\s,;，；]+/).filter(s => s.length > 0).map(t => t.toLowerCase());
-      if (parts.length > 1) {
-        catResults = catResults.filter(row => {
-          const combined = `${row.name || ''} ${row.university || ''} ${row.faculty || ''}`.toLowerCase();
-          return parts.every(t => combined.includes(t));
-        });
-      }
-    }
-    return catResults.filter(row => {
-      const areasText = (row.research_areas ?? []).join(' ').toLowerCase();
-      return categoryKeywords.some(k => areasText.includes(k));
-    }).length;
-  }
-
-  const searchTerm = filters?.search?.trim();
-
-  // If search term exists, we need to count matches including research_areas (JS filter)
-  if (searchTerm) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q: any = supabaseAdmin.from('professors').select('name,university,research_areas').limit(3000);
-    if (!filters?.showAll) {
-      q = q.eq('verification_status', 'Verified');
-    }
-    if (filters?.university) q = q.eq('university', filters.university);
-    if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
-    if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
-    if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
-    if (filters?.contributedOnly) q = q.not('contributed_by', 'is', null);
-    const { data, error } = await q;
-    if (error) throw new Error(error.message);
-    const countTerms = searchTerm.split(/[\s,;，；]+/).filter(s => s.length > 0).map(t => t.toLowerCase());
-    return (data ?? []).filter((row: { name: string; university: string; research_areas: string[] | null }) => {
-      const nameL = row.name.toLowerCase();
-      const uniL = row.university.toLowerCase();
-      const areasText = (row.research_areas ?? []).join(' ').toLowerCase();
-      const combined = `${nameL} ${uniL} ${areasText}`;
-      return countTerms.every(t => combined.includes(t));
-    }).length;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let q: any = supabaseAdmin.from('professors').select('*', { count: 'exact', head: true });
-  if (!filters?.showAll) {
-    q = q.eq('verification_status', 'Verified');
-  }
-  if (filters?.university) q = q.eq('university', filters.university);
-  if (filters?.verificationStatus) q = q.eq('verification_status', filters.verificationStatus);
-  if (filters?.researchArea) q = q.contains('research_areas', [filters.researchArea]);
-  if (filters?.acceptingStudents) q = q.eq('accepting_students', filters.acceptingStudents);
-  if (filters?.hIndexMin) q = q.gte('h_index', filters.hIndexMin);
-  if (filters?.contributedOnly) q = q.not('contributed_by', 'is', null);
-  const { count, error } = await q;
-  if (error) throw new Error(error.message);
-  return count ?? 0;
+  const result = await listProfessors({ ...filters, limit: 0, offset: 0 });
+  return result.total;
 }
 
 export async function getProfessor(id: string): Promise<Professor | null> {
