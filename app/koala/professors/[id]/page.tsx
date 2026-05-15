@@ -26,7 +26,7 @@ export default async function ProfessorDetailPage({ params }: { params: Promise<
   const { data: relatedBlogs } = await db
     .from('blog_posts')
     .select('id, slug, title, category, cover_image')
-    .ilike('title', `%${professor.name}%`)
+    .or(`title.ilike.%${professor.name}%,professor_id.eq.${id}`)
     .eq('status', 'published')
     .limit(3);
 
