@@ -16,10 +16,6 @@ export function getStripe(): Stripe {
   return _stripe;
 }
 
-export const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-04-22.dahlia' })
-  : (null as unknown as Stripe);
-
 const VALID_PRICE_IDS = new Set([
   ...CREDIT_PACKAGES.map(p => p.stripePriceId),
   ...Object.values(SUBSCRIPTION_TIERS).map(t => t.stripePriceId),
@@ -46,6 +42,7 @@ export function getSubscriptionTierByPriceId(priceId: string) {
 }
 
 export async function getOrCreateCustomer(userId: string, email: string): Promise<string> {
+  const s = getStripe();
   const { data: profile } = await db
     .from('user_profiles')
     .select('stripe_customer_id')
@@ -53,10 +50,15 @@ export async function getOrCreateCustomer(userId: string, email: string): Promis
     .single();
 
   if (profile?.stripe_customer_id) {
-    return profile.stripe_customer_id;
+    try {
+      const existing = await s.customers.retrieve(profile.stripe_customer_id);
+      if (!existing.deleted) return profile.stripe_customer_id;
+    } catch {
+      // Stale or cross-mode customer ID — clear it and create fresh
+    }
   }
 
-  const customer = await stripe.customers.create({
+  const customer = await s.customers.create({
     email,
     metadata: { supabase_user_id: userId },
   });

@@ -1,5 +1,5 @@
 import { getServerUser } from '../../../lib/auth';
-import { stripe } from '../../../lib/server/stripe';
+import { getStripe } from '../../../lib/server/stripe';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,7 +20,7 @@ export async function POST() {
       return Response.json({ error: 'No payment history found' }, { status: 400 });
     }
 
-    const session = await stripe.billingPortal.sessions.create({
+    const session = await getStripe().billingPortal.sessions.create({
       customer: profile.stripe_customer_id,
       return_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://koalaphd.com'}/koala/pricing`,
     });

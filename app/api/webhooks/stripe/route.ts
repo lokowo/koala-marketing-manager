@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { stripe, getSubscriptionTierByPriceId } from '../../../lib/server/stripe';
+import { getStripe, getSubscriptionTierByPriceId } from '../../../lib/server/stripe';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = getStripe().webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET!);
   } catch {
     return Response.json({ error: 'Invalid signature' }, { status: 400 });
   }
@@ -110,7 +110,7 @@ async function handleCreditPackPurchase(session: Stripe.Checkout.Session, userId
   const referenceId = `checkout_${session.id}`;
   if (await idempotentCheck(referenceId)) return;
 
-  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+  const lineItems = await getStripe().checkout.sessions.listLineItems(session.id, { limit: 1 });
   const priceId = lineItems.data[0]?.price?.id;
   if (!priceId) return;
 
@@ -133,7 +133,7 @@ async function handleNewSubscription(session: Stripe.Checkout.Session, userId: s
   const referenceId = `sub_start_${subscriptionId}`;
   if (await idempotentCheck(referenceId)) return;
 
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
   const priceId = subscription.items.data[0]?.price?.id;
   if (!priceId) return;
 
@@ -181,7 +181,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const tier = SUBSCRIPTION_TIERS[sub.tier as keyof typeof SUBSCRIPTION_TIERS];
   if (!tier) return;
 
-  const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const stripeSubscription = await getStripe().subscriptions.retrieve(subscriptionId);
   await db.from('subscriptions').update({
     current_period_start: new Date(stripeSubscription.items.data[0].current_period_start * 1000).toISOString(),
     current_period_end: new Date(stripeSubscription.items.data[0].current_period_end * 1000).toISOString(),

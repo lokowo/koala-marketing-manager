@@ -1,6 +1,6 @@
 import { getServerUser } from '../../../lib/auth';
 import {
-  stripe,
+  getStripe,
   isValidPriceId,
   isCreditPackPrice,
   isSubscriptionPrice,
@@ -19,6 +19,8 @@ export async function POST(req: Request) {
     }
 
     const customerId = await getOrCreateCustomer(user.id, user.email!);
+
+    const stripe = getStripe();
 
     if (isSubscriptionPrice(priceId)) {
       const activeSub = await getUserActiveSubscription(user.id);
