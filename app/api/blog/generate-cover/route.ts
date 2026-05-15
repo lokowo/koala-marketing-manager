@@ -107,9 +107,15 @@ export async function POST(req: NextRequest) {
             n: 1,
             size: '1792x1024',
             quality: 'hd',
-            response_format: 'b64_json',
           }));
-          imageB64 = response.data?.[0]?.b64_json ?? undefined;
+          const imageUrl = response.data?.[0]?.url;
+          if (imageUrl) {
+            const imgRes = await fetch(imageUrl);
+            if (imgRes.ok) {
+              const arrBuf = await imgRes.arrayBuffer();
+              imageB64 = Buffer.from(arrBuf).toString('base64');
+            }
+          }
         } else {
           const response = await callWithRetry(() => openai.images.generate({
             model,
