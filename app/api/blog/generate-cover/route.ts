@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     console.log('[generate-cover] Step 2: Generating image with fallback chain...');
     console.log('[generate-cover] Prompt length:', coverPrompt.length);
 
-    const IMAGE_MODELS = ['gpt-image-2', 'gpt-image-1', 'dall-e-3'];
+    const IMAGE_MODELS = ['gpt-image-2', 'gpt-image-1'];
     let imageB64: string | undefined;
     let usedModel = '';
 
@@ -100,32 +100,22 @@ export async function POST(req: NextRequest) {
       try {
         console.log(`[generate-cover] Trying model: ${model}`);
 
-        if (model === 'dall-e-3') {
-          const response = await callWithRetry(() => openai.images.generate({
-            model: 'dall-e-3',
-            prompt: coverPrompt,
-            n: 1,
-            size: '1792x1024',
-            quality: 'hd',
-          }));
-          const imageUrl = response.data?.[0]?.url;
-          if (imageUrl) {
-            const imgRes = await fetch(imageUrl);
-            if (imgRes.ok) {
-              const arrBuf = await imgRes.arrayBuffer();
-              imageB64 = Buffer.from(arrBuf).toString('base64');
-            }
+        const response = await callWithRetry(() => openai.images.generate({
+          model,
+          prompt: coverPrompt,
+          n: 1,
+          size: '1536x1024',
+          quality: 'high',
+        }));
+
+        const imageUrl = response.data?.[0]?.url;
+        if (imageUrl) {
+          console.log(`[generate-cover] ${model} returned URL, fetching...`);
+          const imgRes = await fetch(imageUrl);
+          if (imgRes.ok) {
+            const arrBuf = await imgRes.arrayBuffer();
+            imageB64 = Buffer.from(arrBuf).toString('base64');
           }
-        } else {
-          const response = await callWithRetry(() => openai.images.generate({
-            model,
-            prompt: coverPrompt,
-            n: 1,
-            size: '1536x1024',
-            quality: 'high',
-            response_format: 'b64_json',
-          }));
-          imageB64 = response.data?.[0]?.b64_json ?? undefined;
         }
 
         if (imageB64) {
@@ -134,7 +124,11 @@ export async function POST(req: NextRequest) {
           break;
         }
       } catch (err) {
-        console.error(`[generate-cover] Model ${model} failed:`, (err as Error).message);
+        const errDetail = err instanceof Error ? err.message : String(err);
+        console.error(`[generate-cover] Model ${model} failed:`, errDetail);
+        if (err && typeof err === 'object' && 'status' in err) {
+          console.error(`[generate-cover] ${model} HTTP status:`, (err as { status: number }).status);
+        }
       }
     }
 
