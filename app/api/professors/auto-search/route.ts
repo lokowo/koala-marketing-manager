@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import type { NextRequest } from 'next/server';
 import { searchProfessorAllSources, searchProfessorDeep, saveCandidateToDb } from '../../../lib/services/professorAutoAdd';
 import type { ProfessorCandidate } from '../../../lib/services/professorAutoAdd';
@@ -42,8 +44,9 @@ export async function GET(req: NextRequest) {
       total: candidates.length,
     });
   } catch (error) {
-    console.error('[professors/auto-search GET]', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : 'Internal server error';
+    console.error('[professors/auto-search GET]', msg, error);
+    return Response.json({ error: msg, candidates: [], total: 0 }, { status: 500 });
   }
 }
 

@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import type { NextRequest } from 'next/server';
 import { getServerUser } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';

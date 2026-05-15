@@ -141,7 +141,10 @@ export async function searchProfessorAllSources(name: string, university?: strin
 
   // === Source 2 & 3: OpenAlex + Claude Web Search (parallel) ===
   const oaPromise = searchOpenAlexCandidates(name, expandedUni);
-  const claudePromise = searchClaudeCandidates(name, expandedUni);
+  const claudePromise = searchClaudeCandidates(name, expandedUni).catch(e => {
+    console.error('[searchProfessorAllSources] Claude failed:', e);
+    return [] as ProfessorCandidate[];
+  });
 
   const [oaResults, claudeResults] = await Promise.all([oaPromise, claudePromise]);
   candidates.push(...oaResults, ...claudeResults);
@@ -426,7 +429,7 @@ Only return verified info from official sources. Do NOT guess or fabricate.`,
     }];
   } catch (e) {
     console.error('[professorSearch] Claude search failed:', e);
-    return [];
+    throw new Error(`Claude 搜索失败: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 

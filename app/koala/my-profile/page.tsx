@@ -1915,11 +1915,17 @@ export default function MyProfilePage() {
                     const timeStr = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
                     const isPositive = tx.amount >= 0;
                     const badgeMap: Record<string, { label: string; cls: string }> = {
-                      daily_checkin:    { label: '签到',   cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
-                      profile_complete: { label: '完善资料', cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-                      referral:         { label: '邀请好友', cls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
-                      purchase:         { label: '购买',   cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
-                      spend:            { label: '消耗',   cls: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' },
+                      earn_daily:          { label: '签到',     cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+                      daily_checkin:       { label: '签到',     cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+                      profile_complete:    { label: '完善资料', cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+                      earn_achievement:    { label: '成就奖励', cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+                      earn_referral:       { label: '邀请好友', cls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+                      referral_bonus:      { label: '邀请好友', cls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+                      referral:            { label: '邀请好友', cls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+                      purchase:            { label: '购买',     cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+                      subscription_credit: { label: '订阅',     cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+                      upgrade_credit:      { label: '升级奖励', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+                      spend:               { label: '消耗',     cls: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' },
                     };
                     const badge = badgeMap[tx.type] ?? { label: tx.type, cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700/30 dark:text-gray-300' };
                     return (

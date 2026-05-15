@@ -180,6 +180,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
   const [deepCandidates, setDeepCandidates] = useState<SearchCandidate[]>([]);
   const [deepAddedIds, setDeepAddedIds] = useState<Set<string>>(new Set());
   const [deepAddingName, setDeepAddingName] = useState<string | null>(null);
+  const [deepError, setDeepError] = useState<string | null>(null);
 
   // URL import
   const [importUrl, setImportUrl] = useState('');
@@ -272,13 +273,19 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
     if (!name.trim()) return;
     setDeepSearching(true);
     setDeepCandidates([]);
+    setDeepError(null);
     try {
       const params = new URLSearchParams({ name: name.trim(), deep: 'true' });
       if (uni.trim()) params.set('university', uni.trim());
       const res = await fetch(`/api/professors/auto-search?${params}`);
       const data = await res.json();
+      if (!res.ok || data.error) {
+        setDeepError(data.error || `搜索失败 (HTTP ${res.status})`);
+      }
       setDeepCandidates(data.candidates || []);
-    } catch { /* ignore */ }
+    } catch {
+      setDeepError('网络错误，请检查网络连接后重试');
+    }
     setDeepSearching(false);
   }, [deepName, deepUni]);
 
@@ -926,8 +933,17 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
               {!deepSearching && deepCandidates.length === 0 && deepName && (
                 <div className="px-4 py-5 text-center space-y-4">
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-[#6a7a7e]">很抱歉，AI 也未找到 &ldquo;{deepName}&rdquo; 的信息</p>
-                    <p className="text-xs text-gray-400 dark:text-[#6a7a7e] mt-1">请确认拼写是否正确，或尝试输入教授的英文全名</p>
+                    {deepError ? (
+                      <>
+                        <p className="text-sm text-red-500 dark:text-red-400">AI 搜索遇到问题</p>
+                        <p className="text-xs text-red-400 dark:text-red-500 mt-1">{deepError}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-500 dark:text-[#6a7a7e]">很抱歉，AI 也未找到 &ldquo;{deepName}&rdquo; 的信息</p>
+                        <p className="text-xs text-gray-400 dark:text-[#6a7a7e] mt-1">请确认拼写是否正确，或尝试输入教授的英文全名</p>
+                      </>
+                    )}
                   </div>
                   <div className="border-t border-gray-100 dark:border-white/5 pt-4">
                     <p className="text-xs text-gray-500 dark:text-[#8a9a8e] mb-2">找到了教授主页？把链接粘贴这里，我们帮你录入 👇</p>
