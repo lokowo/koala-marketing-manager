@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     const category = post.category || 'phd_guide';
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY!, timeout: 60000 });
 
     // Step 1: Extract keywords via Haiku
     console.log('[generate-cover] Step 1: Extracting keywords via Haiku...');
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     console.log('[generate-cover] Step 2: Generating image with fallback chain...');
     console.log('[generate-cover] Prompt length:', coverPrompt.length);
 
-    const IMAGE_MODELS = ['gpt-image-2', 'gpt-image-1'];
+    const IMAGE_MODELS = ['gpt-image-1'];
     let imageB64: string | undefined;
     let usedModel = '';
 
