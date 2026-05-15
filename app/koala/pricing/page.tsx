@@ -100,7 +100,7 @@ function PricingContent() {
       if (res.ok && data.url) {
         window.location.href = data.url;
       } else if (res.status === 401) {
-        window.location.href = '/koala/login?redirect=/koala/pricing';
+        window.location.href = '/login?redirect=/koala/pricing';
       } else {
         setToast({ type: 'error', message: data.error || '创建支付失败' });
       }
