@@ -1926,6 +1926,7 @@ export default function MyProfilePage() {
                       subscription_credit: { label: '订阅',     cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
                       upgrade_credit:      { label: '升级奖励', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
                       spend:               { label: '消耗',     cls: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' },
+                      admin_adjust:        { label: '管理员调整', cls: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' },
                     };
                     const badge = badgeMap[tx.type] ?? { label: tx.type, cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700/30 dark:text-gray-300' };
                     return (

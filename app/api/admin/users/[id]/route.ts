@@ -116,8 +116,21 @@ export async function PATCH(
       }
 
       if (credits_remaining !== undefined) {
-        await notifyUser(id, '积分变更', `管理员已将你的积分余额调整为 ${Number(credits_remaining)}。`).catch(() => {});
-        await notifySuperAdmins('积分手动充值', `用户 ${id} 的积分已被调整为 ${Number(credits_remaining)}。`).catch(() => {});
+        const newBalance = Number(credits_remaining);
+        const { data: oldProfile } = await db.from('user_profiles').select('credits_remaining').eq('id', id).single();
+        const oldBalance = oldProfile?.credits_remaining ?? 0;
+        const diff = newBalance - oldBalance;
+        if (diff !== 0) {
+          await db.from('credit_transactions').insert({
+            user_id: id,
+            amount: diff,
+            balance_after: newBalance,
+            type: 'admin_adjust',
+            description: diff > 0 ? `管理员充值 +${diff}` : `管理员扣减 ${diff}`,
+          });
+        }
+        await notifyUser(id, '积分变更', `管理员已将你的积分余额调整为 ${newBalance}。`).catch(() => {});
+        await notifySuperAdmins('积分手动充值', `用户 ${id} 的积分已被调整为 ${newBalance}。`).catch(() => {});
       }
     }
 
