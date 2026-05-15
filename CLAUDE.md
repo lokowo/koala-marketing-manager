@@ -657,3 +657,11 @@ Koala PhD is an AI-first platform where users chat with "考拉学长" to get fr
 5. /opsx:archive → 归档变更
 
 例外：一行代码的简单修复或紧急故障可跳过。
+
+## 设计规范
+
+所有前端页面开发必须遵循设计系统规范：
+
+- **设计系统**: `docs/design-system/DESIGN.md` — 色彩、字体、间距、组件样式
+- **网页开发技能**: `docs/design-system/SKILL-web-page.md` — 页面开发流程与规范
+- **使用说明**: `docs/design-system/README.md` — 设计系统概览与引用方式
