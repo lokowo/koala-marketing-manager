@@ -23,6 +23,21 @@ const TIER_ICONS: Record<string, React.ReactNode> = {
 
 const TIERS = Object.values(SUBSCRIPTION_TIERS);
 
+interface PlanSwitchPreview {
+  type: 'upgrade' | 'downgrade';
+  currentTier: string;
+  targetTier: string;
+  currentTierLabel: string;
+  targetTierLabel: string;
+  currentPrice: number;
+  proratedAmount?: number;
+  newMonthlyPrice: number;
+  creditsDiff?: number;
+  newMonthlyCredits?: number;
+  effectiveDate?: string;
+  effectiveNow: boolean;
+}
+
 export default function PricingPage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#080c10]"><Loader2 className="size-5 animate-spin text-gray-400" /></div>}>
@@ -38,6 +53,8 @@ function PricingContent() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [transactions, setTransactions] = useState<Array<{ id: string; amount: number; type: string; description: string; created_at: string; balance_after: number }>>([]);
+  const [switchPreview, setSwitchPreview] = useState<PlanSwitchPreview | null>(null);
+  const [confirmingSwitch, setConfirmingSwitch] = useState(false);
 
   const fetchCredits = useCallback(async () => {
     try {
@@ -125,6 +142,60 @@ function PricingContent() {
       setToast({ type: 'error', message: '网络错误，请重试' });
     } finally {
       setLoadingId(null);
+    }
+  }
+
+  async function handlePlanSwitch(targetTierId: string) {
+    setLoadingId(targetTierId);
+    try {
+      const res = await fetch('/api/stripe/upgrade/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetTierId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSwitchPreview(data);
+      } else if (res.status === 401) {
+        window.location.href = '/login?redirect=/koala/pricing';
+      } else {
+        setToast({ type: 'error', message: data.error || '获取预览失败' });
+      }
+    } catch {
+      setToast({ type: 'error', message: '网络错误，请重试' });
+    } finally {
+      setLoadingId(null);
+    }
+  }
+
+  async function confirmPlanSwitch() {
+    if (!switchPreview) return;
+    setConfirmingSwitch(true);
+    try {
+      const res = await fetch('/api/stripe/upgrade/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetTierId: switchPreview.targetTier }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSwitchPreview(null);
+        if (data.type === 'upgrade') {
+          setToast({ type: 'success', message: `升级成功！已补发 ${data.creditsDiff} 积分` });
+          setPlanType(data.targetTier);
+        } else {
+          const date = data.effectiveDate ? new Date(data.effectiveDate).toLocaleDateString('zh-CN') : '';
+          setToast({ type: 'success', message: `已安排降级，将于 ${date} 生效` });
+        }
+        fetchCredits();
+        fetchSubscription();
+      } else {
+        setToast({ type: 'error', message: data.error || '操作失败' });
+      }
+    } catch {
+      setToast({ type: 'error', message: '网络错误，请重试' });
+    } finally {
+      setConfirmingSwitch(false);
     }
   }
 
@@ -249,7 +320,9 @@ function PricingContent() {
           <div className="space-y-3">
             {TIERS.map(tier => {
               const isCurrentPlan = planType === tier.id;
-              const canUpgrade = planType !== 'free' && !isCurrentPlan && planType !== 'elite';
+              const currentTierPrice = planType !== 'free' ? SUBSCRIPTION_TIERS[planType as keyof typeof SUBSCRIPTION_TIERS]?.price ?? 0 : 0;
+              const isUpgrade = planType !== 'free' && !isCurrentPlan && tier.price > currentTierPrice;
+              const isDowngrade = planType !== 'free' && !isCurrentPlan && tier.price < currentTierPrice;
 
               return (
                 <div
@@ -304,10 +377,25 @@ function PricingContent() {
                       >
                         管理订阅
                       </button>
+                    ) : (isUpgrade || isDowngrade) ? (
+                      <button
+                        onClick={() => handlePlanSwitch(tier.id)}
+                        disabled={loadingId === tier.id}
+                        className={[
+                          'w-full py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60 flex items-center justify-center gap-1',
+                          isUpgrade
+                            ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] border-0'
+                            : 'bg-amber-50 dark:bg-[#D4A843]/6 text-amber-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20',
+                        ].join(' ')}
+                      >
+                        {loadingId === tier.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : isUpgrade ? `升级到 ${tier.label}` : `降级到 ${tier.label}`}
+                      </button>
                     ) : (
                       <button
-                        onClick={() => canUpgrade ? handlePortal() : handleCheckout(tier.stripePriceId, tier.id)}
-                        disabled={loadingId === tier.id || loadingId === 'portal'}
+                        onClick={() => handleCheckout(tier.stripePriceId, tier.id)}
+                        disabled={loadingId === tier.id}
                         className={[
                           'w-full py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60 flex items-center justify-center gap-1',
                           tier.popular
@@ -315,9 +403,9 @@ function PricingContent() {
                             : 'bg-amber-50 dark:bg-[#D4A843]/6 text-amber-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20',
                         ].join(' ')}
                       >
-                        {(loadingId === tier.id || (canUpgrade && loadingId === 'portal')) ? (
+                        {loadingId === tier.id ? (
                           <Loader2 className="size-4 animate-spin" />
-                        ) : canUpgrade ? '升级' : `开始 ${tier.label} 订阅`}
+                        ) : `开始 ${tier.label} 订阅`}
                       </button>
                     )}
                   </div>
@@ -373,6 +461,89 @@ function PricingContent() {
           价格以澳元 (AUD) 计算 · 支持 Stripe 安全支付 · 如有问题联系 info@koalaphd.com
         </p>
       </div>
+
+      {/* Plan switch confirmation modal */}
+      {switchPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[#D4A843]/20 shadow-2xl">
+            <div className="p-5">
+              <h3 className="text-base font-bold mb-4 text-gray-900 dark:text-[#e8e4dc]">
+                {switchPreview.type === 'upgrade' ? `升级到 ${switchPreview.targetTierLabel}` : `降级到 ${switchPreview.targetTierLabel}`}
+              </h3>
+
+              <div className="space-y-2.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-[#6a7a7e]">当前方案</span>
+                  <span className="font-medium text-gray-900 dark:text-[#e8e4dc]">{switchPreview.currentTierLabel} · AUD {switchPreview.currentPrice}/月</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-[#6a7a7e]">新方案</span>
+                  <span className="font-medium text-gray-900 dark:text-[#e8e4dc]">{switchPreview.targetTierLabel} · AUD {switchPreview.newMonthlyPrice}/月</span>
+                </div>
+
+                {switchPreview.type === 'upgrade' ? (
+                  <>
+                    <div className="border-t border-gray-100 dark:border-[#D4A843]/10 pt-2.5">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-[#6a7a7e]">本月补差价</span>
+                        <span className="font-bold text-amber-600 dark:text-[#D4A843]">AUD {switchPreview.proratedAmount?.toFixed(2)}</span>
+                      </div>
+                      <div className="text-[11px] text-gray-400 dark:text-[#6a7a7e] mt-0.5">Stripe 自动计算，立即扣款</div>
+                    </div>
+                    {(switchPreview.creditsDiff ?? 0) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-[#6a7a7e]">立即补发</span>
+                        <span className="font-bold text-green-600 dark:text-[#5a8060]">+{switchPreview.creditsDiff} 积分</span>
+                      </div>
+                    )}
+                    <div className="text-[11px] text-gray-400 dark:text-[#6a7a7e]">
+                      下月起：AUD {switchPreview.newMonthlyPrice}/月
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="border-t border-gray-100 dark:border-[#D4A843]/10 pt-2.5">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-[#6a7a7e]">生效时间</span>
+                        <span className="font-medium text-gray-900 dark:text-[#e8e4dc]">
+                          {switchPreview.effectiveDate ? new Date(switchPreview.effectiveDate).toLocaleDateString('zh-CN') : '当前周期结束后'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-[11px] leading-relaxed text-gray-400 dark:text-[#6a7a7e]">
+                      本月不受影响，继续享有 {switchPreview.currentTierLabel} 全部功能。降级将在当前计费周期结束后自动生效。
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-2.5 p-4 pt-0">
+              <button
+                onClick={() => setSwitchPreview(null)}
+                disabled={confirmingSwitch}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-[#a8b8ac] disabled:opacity-60"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmPlanSwitch}
+                disabled={confirmingSwitch}
+                className={[
+                  'flex-1 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60 flex items-center justify-center gap-1',
+                  switchPreview.type === 'upgrade'
+                    ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'
+                    : 'bg-amber-50 dark:bg-[#D4A843]/6 text-amber-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20',
+                ].join(' ')}
+              >
+                {confirmingSwitch ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : switchPreview.type === 'upgrade' ? '确认升级' : '确认降级'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
