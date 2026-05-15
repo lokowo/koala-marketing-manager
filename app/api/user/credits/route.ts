@@ -31,7 +31,7 @@ export async function GET() {
 
     const [profileRes, txRes, achRes, refRes] = await Promise.all([
       db.from('user_profiles').select('credits_remaining, last_daily_credit, referral_code').eq('id', user.id).single(),
-      db.from('credit_transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
+      db.from('credit_transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(200),
       db.from('user_achievements').select('achievement_key, unlocked_at').eq('user_id', user.id),
       db.from('referral_codes').select('code, uses').eq('user_id', user.id).single(),
     ]);

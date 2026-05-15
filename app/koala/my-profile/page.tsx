@@ -366,7 +366,7 @@ export default function MyProfilePage() {
   const [creditTxs, setCreditTxs] = useState<CreditTransaction[]>([]);
   const [creditAchievements, setCreditAchievements] = useState<string[]>([]);
   const [checkinLoading, setCheckinLoading] = useState(false);
-  const [showCreditsDetail, setShowCreditsDetail] = useState(false);
+  const [showCreditModal, setShowCreditModal] = useState(false);
   const [showCreditRules, setShowCreditRules] = useState(false);
   const [referralCopied, setReferralCopied] = useState(false);
   const [inviteText, setInviteText] = useState('');
@@ -1016,7 +1016,7 @@ export default function MyProfilePage() {
               📋 积分规则 {showCreditRules ? '▲' : '▼'}
             </button>
             <button
-              onClick={() => setShowCreditsDetail(!showCreditsDetail)}
+              onClick={() => setShowCreditModal(true)}
               className="text-[10px] text-[#1A1A2E] dark:text-[#D4A843] bg-transparent"
             >
               查看积分明细 →
@@ -1564,50 +1564,6 @@ export default function MyProfilePage() {
             )}
           </div>
 
-          {/* Credits transaction history */}
-          {showCreditsDetail && (
-            <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>
-              <div className={`flex items-center justify-between px-4 py-2.5 border-b ${DIVIDER_CLS}`}>
-                <span className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">
-                  💰 积分明细
-                </span>
-                <button
-                  onClick={() => setShowCreditsDetail(false)}
-                  className="text-[10px] text-gray-500 dark:text-[#6a7a7e] bg-transparent"
-                >
-                  收起 ▲
-                </button>
-              </div>
-              {creditTxs.length === 0 ? (
-                <div className="px-4 py-4 text-xs text-center text-gray-500 dark:text-[#6a7a7e]">暂无积分记录</div>
-              ) : (
-                <div className={`divide-y ${DIVIDER_CLS}`}>
-                  {creditTxs.map(tx => {
-                    const d = new Date(tx.created_at);
-                    const now = new Date();
-                    const isToday = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-                    const timeStr = isToday
-                      ? `今天 ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
-                      : d.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) + ' ' + d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
-                    const isPositive = tx.amount >= 0;
-                    return (
-                      <div key={tx.id} className="px-4 py-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[10px] flex-shrink-0 text-gray-500 dark:text-[#6a7a7e]">{timeStr}</span>
-                          <span className="text-[10px] text-gray-300 dark:text-[#4a5a5e]">·</span>
-                          <span className="text-[11px] truncate text-gray-500 dark:text-[#a8b8ac]">{tx.description}</span>
-                        </div>
-                        <span className={`text-xs font-semibold flex-shrink-0 ml-2 ${isPositive ? 'text-[#5a8060]' : 'text-[#b06040]'}`}>
-                          {isPositive ? '+' : ''}{tx.amount}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* AI Chat history */}
           <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>
             <div className={`flex items-center justify-between px-4 py-2.5 border-b ${DIVIDER_CLS}`}>
@@ -1926,6 +1882,66 @@ export default function MyProfilePage() {
           onClick={() => setRoleToast(null)}
         >
           {roleToast.msg}
+        </div>
+      )}
+
+      {/* ── Credit History Modal ──────────────────────── */}
+      {showCreditModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+          onClick={() => setShowCreditModal(false)}
+        >
+          <div className="absolute inset-0 bg-black/50" />
+          <div
+            className="relative w-full md:max-w-md max-h-[70vh] flex flex-col rounded-t-2xl md:rounded-2xl bg-white dark:bg-[#1a2332] shadow-xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-[#D4A843]/[0.08]">
+              <span className="text-sm font-semibold text-gray-900 dark:text-[#e8e4dc]">💰 积分明细</span>
+              <button
+                onClick={() => setShowCreditModal(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 dark:text-[#6a7a7e] hover:bg-gray-100 dark:hover:bg-white/5 bg-transparent"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {creditTxs.length === 0 ? (
+                <div className="px-4 py-12 text-xs text-center text-gray-500 dark:text-[#6a7a7e]">暂无积分记录</div>
+              ) : (
+                <div className="divide-y divide-gray-100 dark:divide-[#D4A843]/[0.06]">
+                  {creditTxs.map(tx => {
+                    const d = new Date(tx.created_at);
+                    const timeStr = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                    const isPositive = tx.amount >= 0;
+                    const badgeMap: Record<string, { label: string; cls: string }> = {
+                      daily_checkin:    { label: '签到',   cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+                      profile_complete: { label: '完善资料', cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+                      referral:         { label: '邀请好友', cls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+                      purchase:         { label: '购买',   cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+                      spend:            { label: '消耗',   cls: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' },
+                    };
+                    const badge = badgeMap[tx.type] ?? { label: tx.type, cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700/30 dark:text-gray-300' };
+                    return (
+                      <div key={tx.id} className="px-4 py-2.5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span className="text-[10px] flex-shrink-0 text-gray-400 dark:text-[#6a7a7e] w-[90px]">{timeStr}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 ${badge.cls}`}>{badge.label}</span>
+                          <span className="text-[11px] truncate text-gray-600 dark:text-[#a8b8ac]">{tx.description}</span>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <span className={`text-xs font-semibold ${isPositive ? 'text-[#5a8060]' : 'text-[#b06040]'}`}>
+                            {isPositive ? '+' : ''}{tx.amount}
+                          </span>
+                          <span className="text-[10px] text-gray-400 dark:text-[#6a7a7e] w-[32px] text-right">{tx.balance_after}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
