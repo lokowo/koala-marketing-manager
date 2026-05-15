@@ -8,6 +8,7 @@ import { ArrowRight, Bell, ChevronRight, X } from 'lucide-react';
 import BannerCarousel from '../../components/BannerCarousel';
 import type { Professor } from '../../lib/types';
 import { useAuth } from '../components/AuthContext';
+import { getUniBadge, parseUniversity } from '../../lib/constants';
 
 function useCountUp(target: number, duration = 1500) {
   const [count, setCount] = useState(0);
@@ -42,36 +43,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   professor_spotlight: '教授推荐',
 };
 
-const UNI_COLORS: Record<string, { bg: string; fg: string; short: string }> = {
-  'Australian National University':        { bg: '#c9a96e', fg: '#e8e4dc', short: 'ANU' },
-  'University of Melbourne':               { bg: '#003087', fg: '#fff',    short: 'MEL' },
-  'University of Sydney':                  { bg: '#cc0000', fg: '#fff',    short: 'SYD' },
-  'UNSW Sydney':                           { bg: '#1a1a1a', fg: '#ffe600', short: 'NSW' },
-  'University of Queensland':              { bg: '#51247a', fg: '#fff',    short: 'UQ'  },
-  'Monash University':                     { bg: '#006dae', fg: '#fff',    short: 'MON' },
-  'University of Western Australia':       { bg: '#003087', fg: '#fff',    short: 'UWA' },
-  'University of Adelaide':                { bg: '#005a9c', fg: '#fff',    short: 'ADE' },
-  'University of Technology Sydney':       { bg: '#00a3e0', fg: '#fff',    short: 'UTS' },
-  'RMIT University':                       { bg: '#e60028', fg: '#fff',    short: 'RMT' },
-  'Macquarie University':                  { bg: '#e8291c', fg: '#fff',    short: 'MAC' },
-  'Queensland University of Technology':   { bg: '#005a9c', fg: '#fff',    short: 'QUT' },
-  'Deakin University':                     { bg: '#00a86b', fg: '#fff',    short: 'DEA' },
-  'Griffith University':                   { bg: '#d4380d', fg: '#fff',    short: 'GRF' },
-  'La Trobe University':                   { bg: '#e84e1b', fg: '#fff',    short: 'LAT' },
-  'University of Newcastle':               { bg: '#1f1646', fg: '#fff',    short: 'NEW' },
-  'University of Wollongong':              { bg: '#1e5799', fg: '#fff',    short: 'WOL' },
-  'Flinders University':                   { bg: '#004f9f', fg: '#fff',    short: 'FLI' },
-  'Curtin University':                     { bg: '#cfb44b', fg: '#e8e4dc', short: 'CUR' },
-  'James Cook University':                 { bg: '#005c84', fg: '#fff',    short: 'JCU' },
-  'Swinburne University of Technology':    { bg: '#bb0000', fg: '#fff',    short: 'SWI' },
-  'Western Sydney University':             { bg: '#e52020', fg: '#fff',    short: 'WSY' },
-};
-
-function getUniBadge(university: string) {
-  if (UNI_COLORS[university]) return UNI_COLORS[university];
-  const letters = university.replace(/University of |University /gi, '').slice(0, 3).toUpperCase();
-  return { bg: '#5a6878', fg: '#fff', short: letters };
-}
 
 function fmtNum(n?: number): string {
   if (!n) return '';
@@ -376,7 +347,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                 icon: '✉️', step: '03', title: '写申请信',
                 desc: '针对每位教授的研究方向和最新论文，AI 定制高回复率的专业邮件',
                 features: ['个性化定制内容', '支持批量生成'],
-                extra: '📧 A$1/封起',
+                extra: '📧 积分制 · 低至 AUD 0.06/积分',
                 primary: false,
                 iconBg: 'bg-amber-100 dark:bg-amber-900/20',
                 gradientBar: 'bg-gradient-to-r from-[#F59E0B] to-[#D4A843]',
@@ -473,7 +444,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                       {badge.short}
                       <span className="font-medium opacity-80">·</span>
                       <span className="font-medium text-[9px] opacity-90">
-                        {p.university.length > 20 ? p.university.slice(0, 18) + '…' : p.university}
+                        {(() => { const full = parseUniversity(p.university).full; return full.length > 20 ? full.slice(0, 18) + '…' : full; })()}
                       </span>
                     </span>
                     {status && (

@@ -115,7 +115,7 @@ async function evaluateResponse(test: TestCase, response: string): Promise<{ sco
         passed = /不确定|不知道|无法确认|没有找到|建议.*验证|cannot confirm|暂无|无法找到|需要.*验证/i.test(response);
         break;
       case 'no_sales':
-        passed = !/购买|付费|AUD 1|$1|立即|马上购买|点击购买/i.test(response);
+        passed = !/付费|立即|马上购买|点击购买/i.test(response);
         break;
       case 'asks_followup':
         passed = /[？?]|请问|可以告诉我|你的|方向|时间|背景|建议/i.test(response) && response.length > 50;

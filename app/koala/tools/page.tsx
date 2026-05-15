@@ -2,105 +2,8 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Check, X, Zap } from 'lucide-react';
-import { SUBSCRIPTION_TIERS, CREDIT_PRICES, BRAND, FREE_LIMITS } from '../../lib/constants';
-
-// ─── Free tier description ────────────────────────────────────────────────────
-
-const FREE_FEATURES: { text: string; included: boolean }[] = [
-  { text: `每天 ${FREE_LIMITS.dailyAiTurns} 轮 AI 对话`, included: true },
-  { text: `Top ${FREE_LIMITS.professorMatchCount} 教授匹配（免费查看）`, included: true },
-  { text: '1 封免费申请信', included: true },
-  { text: '博客 / NIV 签证 / GPA 工具全免费', included: true },
-  { text: '上传简历 & 成绩单', included: false },
-  { text: '教授完整数据（经费/论文/联系方式）', included: false },
-  { text: 'PDF 报告下载', included: false },
-];
-
-// ─── Credit packages ──────────────────────────────────────────────────────────
-
-const CREDIT_PACKAGES: { credits: number; price: number; label: string; desc: string; highlight?: boolean }[] = [
-  { credits: 1,   price: CREDIT_PRICES.single,  label: '单封',    desc: '按需购买' },
-  { credits: 10,  price: CREDIT_PRICES.pack10,  label: '10 封包', desc: '省 A$0.01/封' },
-  { credits: 30,  price: CREDIT_PRICES.pack30,  label: '30 封包', desc: '省 A$0.34/封', highlight: true },
-  { credits: 100, price: CREDIT_PRICES.pack100, label: '100 封包', desc: '省 A$0.51/封' },
-];
-
-// ─── Tier card ────────────────────────────────────────────────────────────────
-
-function TierCard({
-  tier,
-  isPopular,
-}: {
-  tier: typeof SUBSCRIPTION_TIERS[keyof typeof SUBSCRIPTION_TIERS];
-  isPopular: boolean;
-}) {
-  return (
-    <div
-      className={[
-        'rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group relative',
-        isPopular
-          ? 'border-2 border-[#D4A843] shadow-md'
-          : 'border border-amber-200/50 dark:border-[#D4A843]/10 shadow-sm',
-      ].join(' ')}
-    >
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4A843]/60 to-[#4ECDC4]/60 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
-      {/* Popular badge */}
-      {isPopular && (
-        <div className="text-center text-xs font-semibold py-1.5 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]">
-          🏆 最受欢迎
-        </div>
-      )}
-
-      <div className={`p-4 ${isPopular ? 'bg-amber-50/50 dark:bg-[#D4A843]/8' : 'bg-white dark:bg-white/5'}`}>
-        {/* Header */}
-        <div className="flex items-end justify-between mb-1">
-          <div className="text-base font-bold text-gray-900 dark:text-[#e8e4dc]">{tier.label}</div>
-          <div className="text-right">
-            <span className={`text-xl font-bold ${isPopular ? 'text-amber-600 dark:text-[#D4A843]' : 'text-gray-900 dark:text-[#e8e4dc]'}`}>
-              AUD {tier.price}
-            </span>
-            <span className="text-xs text-gray-500 dark:text-[#6a7a7e]">/月</span>
-          </div>
-        </div>
-
-        <div className="text-[11px] mb-3 text-gray-500 dark:text-[#6a7a7e]">
-          含 {tier.monthlyCredits} 封申请信额度 · 新用户首月 5 折
-        </div>
-
-        {/* Included */}
-        <div className="space-y-1.5">
-          {tier.features.map(f => (
-            <div key={f} className="flex items-start gap-2">
-              <Check className="size-3.5 flex-shrink-0 mt-0.5 text-green-600 dark:text-[#5a8060]" />
-              <span className="text-xs leading-snug text-gray-700 dark:text-[#28201a]">{f}</span>
-            </div>
-          ))}
-          {tier.notIncluded.map(f => (
-            <div key={f} className="flex items-start gap-2 opacity-40">
-              <X className="size-3.5 flex-shrink-0 mt-0.5 text-gray-500 dark:text-[#6a7a7e]" />
-              <span className="text-xs leading-snug text-gray-500 dark:text-[#6a7a7e]">{f}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <button
-          className={[
-            'w-full mt-4 py-2.5 rounded-xl text-sm font-semibold transition-opacity active:opacity-70',
-            isPopular
-              ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] border-0'
-              : 'bg-gray-100 dark:bg-[#D4A843]/6 text-gray-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20',
-          ].join(' ')}
-        >
-          立即订阅
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+import { Check, Zap, Loader2 } from 'lucide-react';
+import { CREDIT_PACKAGES, BRAND } from '../../lib/constants';
 
 const FREE_TOOLS_GRID = [
   { icon: '📊', title: 'GPA 换算器',     desc: '中国GPA → 澳洲标准一键转换', href: '/koala/tools/niv' },
@@ -112,10 +15,47 @@ const FREE_TOOLS_GRID = [
 ];
 
 export default function ToolsPage() {
-  const [showCredits, setShowCredits] = useState(false);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  async function handleCheckout(priceId: string, itemId: string) {
+    if (!priceId) {
+      setToast({ type: 'error', message: '支付尚未配置，请联系管理员' });
+      return;
+    }
+    setLoadingId(itemId);
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else if (res.status === 401) {
+        window.location.href = '/login?redirect=/koala/tools';
+      } else {
+        setToast({ type: 'error', message: data.error || '创建支付失败' });
+      }
+    } catch {
+      setToast({ type: 'error', message: '网络错误，请重试' });
+    } finally {
+      setLoadingId(null);
+    }
+  }
 
   return (
     <div className="pb-8 bg-gray-50 dark:bg-[#080c10]">
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg ${
+          toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-200 dark:border-[#D4A843]/10">
         <h1 className="text-base font-bold text-gray-900 dark:text-[#e8e4dc]">工具 & 定价</h1>
@@ -124,7 +64,7 @@ export default function ToolsPage() {
         </p>
       </div>
 
-      {/* ── Free Tools (first!) ── */}
+      {/* ── Free Tools ── */}
       <div className="px-4 mt-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">免费工具箱</h2>
@@ -150,73 +90,69 @@ export default function ToolsPage() {
 
       {/* ── Value separator ── */}
       <div className="mx-4 mt-5 rounded-2xl p-4 bg-amber-50 dark:bg-[#D4A843]/6 border border-amber-200/50 dark:border-[#D4A843]/10">
-        <div className="text-xs font-semibold mb-1.5 text-gray-900 dark:text-[#e8e4dc]">想要更多？解锁完整功能</div>
+        <div className="text-xs font-semibold mb-1.5 text-gray-900 dark:text-[#e8e4dc]">想要更多？订阅解锁完整功能</div>
         <div className="space-y-1 text-[11px] text-gray-500 dark:text-[#a8b8ac]">
           <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0 text-green-600 dark:text-[#5a8060]" />无限 AI 对话轮次</div>
           <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0 text-green-600 dark:text-[#5a8060]" />上传简历 & 成绩单自动解析</div>
           <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0 text-green-600 dark:text-[#5a8060]" />查看完整教授联系方式 & 论文</div>
           <div className="flex items-center gap-2"><Check className="size-3 flex-shrink-0 text-green-600 dark:text-[#5a8060]" />每月申请信额度 & PDF 报告下载</div>
         </div>
+        <Link href="/koala/pricing" className="inline-block mt-2.5 text-xs px-3 py-1.5 rounded-full bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] no-underline font-medium">
+          查看订阅套餐 →
+        </Link>
       </div>
 
-      {/* ── Subscription tiers ── */}
-      <div className="px-4 mt-4">
-        <h2 className="text-sm font-semibold mb-1 text-gray-900 dark:text-[#e8e4dc]">订阅套餐</h2>
-        <p className="text-[11px] mb-3 text-gray-500 dark:text-[#6a7a7e]">新用户首月 5 折 · 月度额度当月有效</p>
-        <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-4">
-          {(Object.values(SUBSCRIPTION_TIERS) as typeof SUBSCRIPTION_TIERS[keyof typeof SUBSCRIPTION_TIERS][]).map(tier => (
-            <TierCard key={tier.id} tier={tier} isPopular={tier.popular} />
-          ))}
-        </div>
-      </div>
-
-      {/* Credit system */}
+      {/* ── Credit packs ── */}
       <div className="px-4 mt-6">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-[#e8e4dc]">单独购买积分</h2>
-            <p className="text-[11px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">
-              与订阅独立 · 用完月度额度后按需购买
-            </p>
-          </div>
-          <button
-            onClick={() => setShowCredits(v => !v)}
-            className="text-xs px-3 py-1.5 rounded-full bg-gray-100 dark:bg-[#D4A843]/6 text-gray-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20"
-          >
-            {showCredits ? '收起' : '查看套餐'}
-          </button>
+        <div className="mb-3">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-[#e8e4dc]">积分充值包</h2>
+          <p className="text-[11px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">
+            与订阅独立 · 用完月度额度后按需购买 · 永不过期
+          </p>
         </div>
 
-        {showCredits && (
-          <div className="grid grid-cols-2 gap-2.5">
-            {CREDIT_PACKAGES.map(pkg => (
+        <div className="grid grid-cols-2 gap-2.5">
+          {CREDIT_PACKAGES.map(pack => {
+            const isPro = pack.id === 'credit_pro';
+            return (
               <div
-                key={pkg.credits}
+                key={pack.id}
                 className={[
                   'rounded-xl p-3 flex flex-col gap-1',
-                  pkg.highlight
+                  isPro
                     ? 'bg-amber-50/50 dark:bg-[#D4A843]/12 border-[1.5px] border-[#D4A843]'
                     : 'bg-white dark:bg-white/5 border border-amber-200/50 dark:border-[#D4A843]/10',
                 ].join(' ')}
               >
-                {pkg.highlight && (
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <Zap className="size-3 text-amber-700 dark:text-[#D4A843]" />
-                    <span className="text-[10px] font-medium text-amber-700 dark:text-[#D4A843]">最划算</span>
-                  </div>
-                )}
-                <div className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">{pkg.label}</div>
-                <div className="text-[11px] text-gray-500 dark:text-[#6a7a7e]">{pkg.desc}</div>
-                <div className="text-base font-bold mt-1 text-amber-600 dark:text-[#D4A843]">
-                  AUD {pkg.price}
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">{pack.label}</div>
+                  {isPro && (
+                    <div className="flex items-center gap-1">
+                      <Zap className="size-3 text-amber-700 dark:text-[#D4A843]" />
+                      <span className="text-[10px] font-medium text-amber-700 dark:text-[#D4A843]">最划算</span>
+                    </div>
+                  )}
+                  {'bonus' in pack && pack.bonus && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                      {pack.bonus}
+                    </span>
+                  )}
                 </div>
-                <button className="mt-1 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-[#D4A843]/6 text-gray-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20">
-                  购买
+                <div className="text-[11px] text-gray-500 dark:text-[#6a7a7e]">{pack.credits} 积分 · {pack.unit}</div>
+                <div className="text-base font-bold mt-1 text-amber-600 dark:text-[#D4A843]">
+                  AUD {pack.priceAUD}
+                </div>
+                <button
+                  onClick={() => handleCheckout(pack.stripePriceId, pack.id)}
+                  disabled={loadingId === pack.id}
+                  className="mt-1 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 bg-gray-100 dark:bg-[#D4A843]/6 text-gray-700 dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/20"
+                >
+                  {loadingId === pack.id ? <Loader2 className="size-3 animate-spin mx-auto" /> : '购买'}
                 </button>
               </div>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
 
         {/* How credits work */}
         <div className="mt-3 rounded-xl p-3.5 bg-amber-50 dark:bg-[#D4A843]/6 border border-amber-200/50 dark:border-[#D4A843]/10">

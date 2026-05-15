@@ -321,7 +321,7 @@ function CreditConfirmDialog({ remaining, onConfirm, onCancel }: { remaining: nu
         <p className="text-[11px] text-gray-400 dark:text-[#8a8078]">月度额度优先扣除；单独购买的积分永久有效。</p>
         {remaining <= 0 && (
           <div className="mt-3 rounded-xl p-3 text-xs bg-red-50 dark:bg-red-900/15 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/30">
-            积分不足！可前往「工具 → 定价」购买积分包，或升级订阅。
+            积分不足！前往<Link href="/koala/pricing#credit-packs" className="underline font-medium text-red-600 dark:text-red-400">积分充值</Link>购买积分包，或升级订阅。
           </div>
         )}
         <div className="flex gap-2 mt-4">

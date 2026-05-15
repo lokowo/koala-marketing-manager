@@ -449,7 +449,7 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs:
             href={`/koala/chat?action=outreach&prof=${professor.id}&name=${encodeURIComponent(professor.name)}`}
             className="block w-full py-3 rounded-full text-center text-sm font-semibold border text-[#1A1A2E] dark:text-[#D4A843] border-gray-300 dark:border-[rgba(212,168,67,0.3)]"
           >
-            ✍️ 生成申请信 (AUD 1)
+            ✍️ 生成申请信 (1 积分)
           </Link>
         ) : (
           <button
