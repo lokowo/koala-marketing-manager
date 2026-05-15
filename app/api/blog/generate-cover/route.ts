@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     const category = post.category || 'phd_guide';
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY!, timeout: 60000 });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY!, timeout: 150000 });
 
     // Step 1: Extract keywords via Haiku
     console.log('[generate-cover] Step 1: Extracting keywords via Haiku...');
@@ -108,10 +108,13 @@ export async function POST(req: NextRequest) {
           quality: 'high',
         }));
 
-        const imageUrl = response.data?.[0]?.url;
-        if (imageUrl) {
+        const item = response.data?.[0];
+        if (item?.b64_json) {
+          console.log(`[generate-cover] ${model} returned b64_json directly`);
+          imageB64 = item.b64_json;
+        } else if (item?.url) {
           console.log(`[generate-cover] ${model} returned URL, fetching...`);
-          const imgRes = await fetch(imageUrl);
+          const imgRes = await fetch(item.url);
           if (imgRes.ok) {
             const arrBuf = await imgRes.arrayBuffer();
             imageB64 = Buffer.from(arrBuf).toString('base64');
