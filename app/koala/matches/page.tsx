@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Heart, Send, Inbox, Sparkles, Trash2, ExternalLink, Pen } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '../components/AuthContext';
+import { OlaEmpty } from '../components/ola/OlaEmpty';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -220,15 +221,6 @@ function OutreachEmailCard({ email }: { email: OutreachEmail }) {
   );
 }
 
-function EmptyState({ icon, title, desc }: { icon: string; title: string; desc: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-      <span className="text-5xl mb-4">{icon}</span>
-      <p className="text-sm font-medium mb-1 text-gray-700 dark:text-[#c8d0d4]">{title}</p>
-      <p className="text-xs leading-relaxed text-gray-500 dark:text-[#6a7a7e]">{desc}</p>
-    </div>
-  );
-}
 
 function LoginPrompt() {
   return (
@@ -361,10 +353,10 @@ export default function MatchesPage() {
                 ))}
               </div>
             ) : saved.length === 0 ? (
-              <EmptyState
-                icon="🔖"
-                title="还没有收藏的教授"
-                desc={"在「发现」页右滑或点击收藏按钮，\n教授会出现在这里"}
+              <OlaEmpty
+                message={"还没有收藏的教授\n在「发现」页右滑或点击收藏按钮，教授会出现在这里"}
+                actionLabel="去发现"
+                actionHref="/koala/discover"
               />
             ) : (
               <div className="space-y-3">
@@ -388,10 +380,10 @@ export default function MatchesPage() {
                 ))}
               </div>
             ) : emails.length === 0 ? (
-              <EmptyState
-                icon="✉️"
-                title="还没有生成申请信"
-                desc={"在「写申请信」模式生成后，\n记录会出现在这里"}
+              <OlaEmpty
+                message={"还没有生成申请信\n在「写申请信」模式生成后，记录会出现在这里"}
+                actionLabel="去写申请信"
+                actionHref="/koala/chat"
               />
             ) : (
               <div className="space-y-3">
@@ -408,20 +400,12 @@ export default function MatchesPage() {
 
         {/* ── 互相感兴趣 ── */}
         {activeTab === 'mutual' && (
-          <EmptyState
-            icon="✨"
-            title="功能开发中"
-            desc={"当教授也对你感兴趣时会出现在这里\n敬请期待"}
-          />
+          <OlaEmpty message={"功能开发中\n当教授也对你感兴趣时会出现在这里，敬请期待"} />
         )}
 
         {/* ── 橄榄枝 ── */}
         {activeTab === 'olive' && (
-          <EmptyState
-            icon="🌿"
-            title="功能开发中"
-            desc={"教授发给你的橄榄枝会出现在这里\n敬请期待"}
-          />
+          <OlaEmpty message={"功能开发中\n教授发给你的橄榄枝会出现在这里，敬请期待"} />
         )}
 
       </div>

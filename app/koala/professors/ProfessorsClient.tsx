@@ -11,6 +11,7 @@ import {
 import VoiceInputButton from '../../components/VoiceInputButton';
 import type { Professor } from '../../lib/types';
 import { getUniBadge, parseUniversity } from '../../lib/constants';
+import { OlaEmpty } from '../components/ola/OlaEmpty';
 
 interface SearchCandidate {
   name: string;
@@ -642,9 +643,9 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
                 </div>
               </div>
             ) : (
-              <div className="w-full max-w-md mx-auto rounded-2xl bg-gray-50 dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.15)] p-5 text-center">
-                <p className="text-sm text-gray-500 dark:text-[#6a7a7e]">暂无匹配数据，尝试调整筛选条件或搜索教授名字</p>
-                {activeFilters > 0 && <button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); setUniversity(''); }} className="text-xs px-4 py-2 mt-3 rounded-full bg-gray-100 dark:bg-[#0d1520] text-gray-700 dark:text-[#e8e4dc]">清除筛选</button>}
+              <div className="w-full max-w-md mx-auto">
+                <OlaEmpty message="暂无匹配数据，尝试调整筛选条件或搜索教授名字" actionLabel="浏览全部" actionHref="/koala/professors" />
+                {activeFilters > 0 && <div className="text-center -mt-8"><button onClick={() => { setAccepting(''); setHIndexMin(0); setSortBy('opportunity_score'); setUniversity(''); }} className="text-xs px-4 py-2 rounded-full bg-gray-100 dark:bg-[#0d1520] text-gray-700 dark:text-[#e8e4dc]">清除筛选</button></div>}
               </div>
             )}
           </div>

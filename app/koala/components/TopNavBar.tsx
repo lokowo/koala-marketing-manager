@@ -6,11 +6,12 @@ import { usePathname } from 'next/navigation';
 import { Home, Users, MessageCircle, BookOpen, UserCircle } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { useTheme } from '../../lib/theme';
+import { OlaAvatar } from './ola/OlaAvatar';
 
 const NAV_ITEMS: { href: string; icon: React.ElementType; label: string; highlight?: boolean }[] = [
   { href: '/koala/discover', icon: Home, label: '发现' },
   { href: '/koala/professors', icon: Users, label: '教授&学者库' },
-  { href: '/koala/chat', icon: MessageCircle, label: 'Koala AI', highlight: true },
+  { href: '/koala/chat', icon: MessageCircle, label: 'Ola AI', highlight: true },
   { href: '/koala/blog', icon: BookOpen, label: '博客' },
   { href: '/koala/my-profile', icon: UserCircle, label: '我的' },
 ];
@@ -57,7 +58,7 @@ export default function TopNavBar() {
                 href={item.href}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold mx-2 no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
               >
-                <Icon className="size-4" />
+                <OlaAvatar state="welcome" size="sm" className="size-5 rounded-full" />
                 {item.label}
               </Link>
             );

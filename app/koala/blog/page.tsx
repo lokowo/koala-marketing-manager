@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Search } from 'lucide-react';
+import { OlaEmpty } from '../components/ola/OlaEmpty';
 
 interface BlogPost {
   id: string;
@@ -182,11 +183,7 @@ export default function BlogPage() {
 
         {/* Empty */}
         {!loading && posts.length === 0 && (
-          <div className="px-5 pt-12 text-center">
-            <p className="text-sm text-gray-500 dark:text-[#6a7a7e]">
-              {search ? `没有找到「${search}」相关的文章` : '暂无文章'}
-            </p>
-          </div>
+          <OlaEmpty message={search ? `没有找到「${search}」相关的文章` : '暂无文章'} />
         )}
 
         {/* Article grid */}

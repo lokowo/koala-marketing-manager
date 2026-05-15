@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Settings, Plus, Send, Sparkles, PawPrint, Mic, MicOff } from 'lucide-react';
+import { Settings, Plus, Send, Sparkles, Mic, MicOff } from 'lucide-react';
 import VoiceInputButton from '../../components/VoiceInputButton';
 import Link from 'next/link';
 import { useAuth } from '../components/AuthContext';
@@ -17,7 +17,8 @@ import { AchievementBadge } from '../components/ai/AchievementBadge';
 import { MiniStats } from '../components/ai/MiniStats';
 import { ConfidenceBadge, type ConfidenceLevel } from '../components/ai/ConfidenceBadge';
 import { DontKnowResponse } from '../components/ai/DontKnowResponse';
-import { KoalaAvatar, UserAvatar } from '../components/KoalaAvatar';
+import { UserAvatar } from '../components/KoalaAvatar';
+import { OlaAvatar } from '../components/ola/OlaAvatar';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -864,15 +865,13 @@ function ChatPageInner() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 bg-gray-50 dark:bg-[#0d1520] border-b border-gray-200 dark:border-white/10">
         <div className="flex items-center gap-2">
-          <div className="size-9 rounded-full flex justify-center items-center flex-shrink-0 bg-[#1A1A2E] dark:bg-[#D4A843]">
-            <PawPrint className="size-5 text-white dark:text-[#080c10]" />
-          </div>
+          <OlaAvatar state="welcome" size="sm" className="flex-shrink-0" />
           <div className="flex flex-col">
             <span className="font-bold text-base leading-6 tracking-wide text-[#1A1A2E] dark:text-[#D4A843]">
-              Koala PhD
+              Ola AI
             </span>
             <span className="text-[10px] text-amber-600 dark:text-[#D4A843]/70">
-              考拉学长 · 在线
+              小欧 · 在线
             </span>
           </div>
         </div>
@@ -916,7 +915,7 @@ function ChatPageInner() {
             <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-0.5`}>
               {msg.role === 'assistant' && (
                 <div className="mt-1 mr-2 flex-shrink-0">
-                  <KoalaAvatar size={28} />
+                  <OlaAvatar state="welcome" size="sm" />
                 </div>
               )}
               <div className="flex flex-col max-w-[80%]">
@@ -1041,13 +1040,13 @@ function ChatPageInner() {
         {loading && (
           <div className="flex justify-start mb-1">
             <div className="mt-1 mr-2 flex-shrink-0">
-              <KoalaAvatar size={28} />
+              <OlaAvatar state="thinking" size="sm" />
             </div>
             <div className="px-3.5 py-2.5 text-sm bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-[#8a8078]" style={{ borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
               {mode === 'research' ? (
                 <span className="animate-pulse">🔬 正在检索论文…</span>
               ) : (
-                <span className="animate-pulse">正在思考中…</span>
+                <span className="animate-pulse">小欧正在思考…</span>
               )}
             </div>
           </div>

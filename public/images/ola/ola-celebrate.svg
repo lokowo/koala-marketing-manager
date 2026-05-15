@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 150" width="120" height="150">
+  <!-- Confetti -->
+  <rect x="15" y="10" width="4" height="4" fill="#FFD700" transform="rotate(30,17,12)"/>
+  <rect x="100" y="15" width="4" height="4" fill="#FF6B9D" transform="rotate(-20,102,17)"/>
+  <rect x="50" y="5" width="3" height="3" fill="#0D7C5F" transform="rotate(45,51.5,6.5)"/>
+  <rect x="85" y="5" width="3" height="3" fill="#FFD700" transform="rotate(-15,86.5,6.5)"/>
+  <rect x="25" y="0" width="3" height="3" fill="#FF6B9D" transform="rotate(60,26.5,1.5)"/>
+  <!-- Left ear -->
+  <circle cx="28" cy="38" r="22" fill="#A39E99"/>
+  <circle cx="28" cy="38" r="13" fill="#C4BAB2"/>
+  <!-- Right ear -->
+  <circle cx="92" cy="38" r="22" fill="#A39E99"/>
+  <circle cx="92" cy="38" r="13" fill="#C4BAB2"/>
+  <!-- Body -->
+  <ellipse cx="60" cy="115" rx="32" ry="28" fill="#A39E99"/>
+  <ellipse cx="60" cy="118" rx="20" ry="18" fill="#F5F0E8"/>
+  <!-- Head -->
+  <circle cx="60" cy="65" r="30" fill="#A39E99"/>
+  <ellipse cx="60" cy="70" rx="22" ry="20" fill="#F5F0E8"/>
+  <!-- Star eyes -->
+  <polygon points="49,64 50.5,60 52,64 56,64 53,67 54,71 49,68 44,71 45,67 42,64" fill="#FFD700"/>
+  <polygon points="71,64 72.5,60 74,64 78,64 75,67 76,71 71,68 66,71 67,67 64,64" fill="#FFD700"/>
+  <!-- Nose -->
+  <ellipse cx="60" cy="75" rx="5" ry="3.5" fill="#1A1A2E"/>
+  <!-- Big smile -->
+  <path d="M48 80 Q60 90 72 80" stroke="#1A1A2E" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- Blush -->
+  <circle cx="42" cy="77" r="5" fill="#FFB5B5" opacity="0.6"/>
+  <circle cx="78" cy="77" r="5" fill="#FFB5B5" opacity="0.6"/>
+  <!-- Left arm (raised) -->
+  <path d="M30 100 Q10 70 15 45" stroke="#A39E99" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <!-- Right arm (raised) -->
+  <path d="M90 100 Q110 70 105 45" stroke="#A39E99" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <!-- Cap (thrown in air) -->
+  <g transform="translate(0, -15) rotate(-10, 60, 30)">
+    <polygon points="35,38 60,28 85,38 60,48" fill="#0D7C5F"/>
+    <rect x="55" y="28" width="10" height="4" fill="#0D7C5F"/>
+    <rect x="57" y="22" width="6" height="8" fill="#0D7C5F"/>
+    <line x1="85" y1="38" x2="92" y2="48" stroke="#FFD700" stroke-width="2"/>
+    <circle cx="92" cy="50" r="3" fill="#FFD700"/>
+  </g>
+</svg>

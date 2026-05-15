@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 140" width="130" height="140">
+  <!-- Left ear -->
+  <circle cx="28" cy="28" r="22" fill="#A39E99"/>
+  <circle cx="28" cy="28" r="13" fill="#C4BAB2"/>
+  <!-- Right ear -->
+  <circle cx="92" cy="28" r="22" fill="#A39E99"/>
+  <circle cx="92" cy="28" r="13" fill="#C4BAB2"/>
+  <!-- Body -->
+  <ellipse cx="60" cy="105" rx="32" ry="28" fill="#A39E99"/>
+  <ellipse cx="60" cy="108" rx="20" ry="18" fill="#F5F0E8"/>
+  <!-- Head -->
+  <circle cx="60" cy="55" r="30" fill="#A39E99"/>
+  <ellipse cx="60" cy="60" rx="22" ry="20" fill="#F5F0E8"/>
+  <!-- Left eye -->
+  <circle cx="49" cy="54" r="4.5" fill="#1A1A2E"/>
+  <circle cx="50.5" cy="52.5" r="1.5" fill="#FFFFFF"/>
+  <!-- Right eye -->
+  <circle cx="71" cy="54" r="4.5" fill="#1A1A2E"/>
+  <circle cx="72.5" cy="52.5" r="1.5" fill="#FFFFFF"/>
+  <!-- Nose -->
+  <ellipse cx="60" cy="63" rx="5" ry="3.5" fill="#1A1A2E"/>
+  <!-- Gentle smile -->
+  <path d="M53 68 Q60 73 67 68" stroke="#1A1A2E" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <!-- Blush -->
+  <circle cx="42" cy="65" r="4" fill="#FFB5B5" opacity="0.5"/>
+  <circle cx="78" cy="65" r="4" fill="#FFB5B5" opacity="0.5"/>
+  <!-- Left arm -->
+  <path d="M30 90 Q20 95 22 105" stroke="#A39E99" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <!-- Right arm (pointing right) -->
+  <path d="M90 90 Q105 80 118 78" stroke="#A39E99" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <!-- Lightbulb near hand -->
+  <circle cx="122" cy="68" r="7" fill="#FFD700" opacity="0.3"/>
+  <circle cx="122" cy="68" r="5" fill="#FFD700"/>
+  <rect x="120" y="75" width="4" height="3" rx="1" fill="#D4A843"/>
+  <!-- Graduation cap -->
+  <polygon points="35,38 60,28 85,38 60,48" fill="#0D7C5F"/>
+  <rect x="55" y="28" width="10" height="4" fill="#0D7C5F"/>
+  <rect x="57" y="22" width="6" height="8" fill="#0D7C5F"/>
+  <line x1="85" y1="38" x2="92" y2="48" stroke="#FFD700" stroke-width="2"/>
+  <circle cx="92" cy="50" r="3" fill="#FFD700"/>
+</svg>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="120" height="140">
+  <!-- Left ear -->
+  <circle cx="28" cy="28" r="22" fill="#A39E99"/>
+  <circle cx="28" cy="28" r="13" fill="#C4BAB2"/>
+  <!-- Right ear -->
+  <circle cx="92" cy="28" r="22" fill="#A39E99"/>
+  <circle cx="92" cy="28" r="13" fill="#C4BAB2"/>
+  <!-- Body -->
+  <ellipse cx="60" cy="105" rx="32" ry="28" fill="#A39E99"/>
+  <ellipse cx="60" cy="108" rx="20" ry="18" fill="#F5F0E8"/>
+  <!-- Head -->
+  <circle cx="60" cy="55" r="30" fill="#A39E99"/>
+  <ellipse cx="60" cy="60" rx="22" ry="20" fill="#F5F0E8"/>
+  <!-- Left eye -->
+  <circle cx="49" cy="54" r="4.5" fill="#1A1A2E"/>
+  <circle cx="50.5" cy="52.5" r="1.5" fill="#FFFFFF"/>
+  <!-- Right eye (winking) -->
+  <path d="M66 54 Q71 51 76 54" stroke="#1A1A2E" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Nose -->
+  <ellipse cx="60" cy="63" rx="5" ry="3.5" fill="#1A1A2E"/>
+  <!-- Big enthusiastic smile -->
+  <path d="M50 68 Q60 76 70 68" stroke="#1A1A2E" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  <!-- Blush -->
+  <circle cx="42" cy="65" r="4.5" fill="#FFB5B5" opacity="0.6"/>
+  <circle cx="78" cy="65" r="4.5" fill="#FFB5B5" opacity="0.6"/>
+  <!-- Left arm -->
+  <path d="M30 90 Q20 95 22 105" stroke="#A39E99" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <!-- Right arm (raised with flag) -->
+  <path d="M90 90 Q105 70 100 50" stroke="#A39E99" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <!-- Flag pole -->
+  <line x1="100" y1="50" x2="100" y2="20" stroke="#8B7355" stroke-width="2"/>
+  <!-- Flag -->
+  <path d="M100 20 L118 26 L100 32 Z" fill="#FF6B9D"/>
+  <text x="104" y="29" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#FFFFFF">GO</text>
+  <!-- Graduation cap -->
+  <polygon points="35,38 60,28 85,38 60,48" fill="#0D7C5F"/>
+  <rect x="55" y="28" width="10" height="4" fill="#0D7C5F"/>
+  <rect x="57" y="22" width="6" height="8" fill="#0D7C5F"/>
+  <line x1="85" y1="38" x2="92" y2="48" stroke="#FFD700" stroke-width="2"/>
+  <circle cx="92" cy="50" r="3" fill="#FFD700"/>
+</svg>
