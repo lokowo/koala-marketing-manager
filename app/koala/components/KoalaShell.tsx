@@ -7,6 +7,7 @@ import { AuthProvider } from './AuthContext';
 import TopNavBar from './TopNavBar';
 import BottomTabBar from './BottomTabBar';
 import { OlaWidget } from './ola/OlaWidget';
+import { OlaTriggerEngine } from './ola/OlaTriggerEngine';
 
 function ShellInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -26,6 +27,7 @@ function ShellInner({ children }: { children: ReactNode }) {
       </div>
       {!onChatPage && (
         <div className="fixed bottom-[104px] right-4 lg:bottom-6 lg:right-6 z-[9999]">
+          <OlaTriggerEngine />
           <OlaWidget onClick={() => router.push('/koala/chat')} />
         </div>
       )}

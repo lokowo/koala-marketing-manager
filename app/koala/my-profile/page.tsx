@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase/client';
 import { shareToWechat } from '../../lib/share';
 import VoiceInputButton from '../../components/VoiceInputButton';
 import SharePoster from '../../components/SharePoster';
+import { OlaAchievements } from '../components/ola/OlaAchievements';
 
 // ─── timeAgo helper ────────────────────────
 function timeAgo(dateStr: string): string {
@@ -1467,6 +1468,9 @@ export default function MyProfilePage() {
 
         {/* ── Right column ── */}
         <div className="flex-1 min-w-0">
+
+          {/* Achievements */}
+          {user && <OlaAchievements userId={user.id} />}
 
           {/* Saved professors */}
           <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>
