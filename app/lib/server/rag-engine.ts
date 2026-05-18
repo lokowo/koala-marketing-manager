@@ -17,7 +17,7 @@ export async function searchKnowledgeBase(query: string, limit = 10): Promise<Kn
 
     const { data, error } = await supabase.rpc('match_knowledge', {
       query_embedding: embedding,
-      match_threshold: 0.7,
+      match_threshold: 0.45,
       match_count: limit,
     });
 

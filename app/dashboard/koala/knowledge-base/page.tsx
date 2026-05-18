@@ -46,10 +46,13 @@ export default function KnowledgeBasePage() {
   const [importing, setImporting] = useState(false);
 
   const [semQuery, setSemQuery] = useState('');
-  const [semThreshold, setSemThreshold] = useState(0.7);
-  const [semLimit, setSemLimit] = useState(5);
+  const [semThreshold, setSemThreshold] = useState(0.45);
+  const [semLimit, setSemLimit] = useState(10);
   const [semResults, setSemResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState('');
 
   const LIMIT = 20;
 
@@ -162,6 +165,7 @@ export default function KnowledgeBasePage() {
     if (!semQuery.trim()) return;
     setSearching(true);
     setSemResults([]);
+    setSearchError('');
     try {
       const resp = await fetch('/api/admin/knowledge/search', {
         method: 'POST',
@@ -169,9 +173,36 @@ export default function KnowledgeBasePage() {
         body: JSON.stringify({ query: semQuery, threshold: semThreshold, limit: semLimit }),
       });
       const data = await resp.json();
+      if (!resp.ok) {
+        setSearchError(data.error ?? `请求失败 (${resp.status})`);
+        return;
+      }
       setSemResults(data.results ?? []);
-    } catch { /* handled by UI state */ } finally {
+      if ((data.results ?? []).length === 0) {
+        setSearchError('无匹配结果，试试降低阈值或换个查询词');
+      }
+    } catch {
+      setSearchError('网络错误，无法连接搜索服务');
+    } finally {
       setSearching(false);
+    }
+  }
+
+  async function handleBackfill() {
+    setBackfilling(true);
+    setBackfillResult('');
+    try {
+      const resp = await fetch('/api/admin/knowledge/backfill', { method: 'POST' });
+      const data = await resp.json();
+      if (resp.ok) {
+        setBackfillResult(data.message + (data.processed > 0 ? ` — 处理 ${data.processed} 条，失败 ${data.failed} 条` : ''));
+      } else {
+        setBackfillResult(`错误: ${data.error}`);
+      }
+    } catch {
+      setBackfillResult('网络错误');
+    } finally {
+      setBackfilling(false);
     }
   }
 
@@ -185,6 +216,9 @@ export default function KnowledgeBasePage() {
           <p className="text-sm text-slate-500 mt-1">管理 AI 的知识库内容和向量索引 · 共 {total} 条</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={handleBackfill} disabled={backfilling} className="px-3 py-2 border border-orange-300 text-orange-700 text-sm rounded-lg hover:bg-orange-50 transition disabled:opacity-50">
+            {backfilling ? '重建中...' : '重建索引'}
+          </button>
           <button onClick={() => setShowBatch(true)} className="px-3 py-2 border border-slate-300 text-slate-700 text-sm rounded-lg hover:bg-slate-50 transition">
             批量导入
           </button>
@@ -193,6 +227,10 @@ export default function KnowledgeBasePage() {
           </button>
         </div>
       </div>
+
+      {backfillResult && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-800">{backfillResult}</div>
+      )}
 
       {/* Semantic Search Panel */}
       <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -236,6 +274,9 @@ export default function KnowledgeBasePage() {
             />
           </label>
         </div>
+        {searchError && (
+          <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{searchError}</div>
+        )}
         {semResults.length > 0 && (
           <div className="mt-3 space-y-2">
             {semResults.map(r => (
