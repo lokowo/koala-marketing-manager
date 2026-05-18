@@ -352,7 +352,7 @@ export interface DailyTask {
 
 export interface KnowledgeChunk {
   id: string;
-  sourceType: 'professor_paper' | 'arc_grant' | 'blog_post' | 'faq' | 'user_feedback';
+  sourceType: 'professor_paper' | 'arc_grant' | 'blog_post' | 'faq' | 'user_feedback' | 'guide' | 'professor_profile' | 'manual';
   sourceTitle: string;
   content: string;
   embedding?: number[];
