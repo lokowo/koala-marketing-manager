@@ -471,6 +471,16 @@ H指数：${prof.hIndex ?? '未知'}`;
 5=document_review 6=interview_prep 7=application_tracking 8=offer_celebration
 根据对话内容判断当前处于哪个阶段，每条回复都必须附加。`;
 
+    // Suggestion chips directive
+    extraContext += `\n\n## 快捷回复建议
+如果合适，在回复末尾（stage 标记之前）用 <suggestions>建议1|建议2|建议3</suggestions> 提供 2-3 个快捷回复选项。
+用户不可见此标记。根据对话阶段选择合适的建议，例如：
+- 初始阶段：找导师 | 了解申请流程 | 查看奖学金
+- 匹配后：写套磁信 | 换个教授 | 了解这所大学
+- 套磁后：审文书 | 模拟面试 | 再写一封
+- 通用：转人工咨询
+不要每条都加，只在自然合适时添加。`;
+
     // Build system prompt — use Ola persona as base, append mode-specific + extras
     const systemPrompt = getOlaPersonaPrompt() + '\n\n---\n\n' + buildSystemPrompt(mode, extraContext);
 
@@ -641,8 +651,20 @@ H指数：${prof.hIndex ?? '未知'}`;
       }).catch(() => {});
     }
 
+    // Extract and strip suggestions tag
+    let suggestions: string[] | undefined;
+    const suggestionsMatch = cleanedReply.match(/<suggestions>(.*?)<\/suggestions>/);
+    if (suggestionsMatch) {
+      suggestions = suggestionsMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+      cleanedReply = cleanedReply.replace(/<suggestions>.*?<\/suggestions>/g, '').trim();
+    }
+
     // 5. Build response
     const result: Record<string, unknown> = { reply: cleanedReply };
+
+    if (suggestions && suggestions.length > 0) {
+      result.suggestions = suggestions;
+    }
 
     if (blocks.scoreCard) {
       result.scoreCard = { totalScore: blocks.scoreCard.totalScore, dimensions: blocks.scoreCard.dimensions };

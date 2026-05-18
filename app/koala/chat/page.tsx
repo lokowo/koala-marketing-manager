@@ -19,6 +19,9 @@ import { ConfidenceBadge, type ConfidenceLevel } from '../components/ai/Confiden
 import { DontKnowResponse } from '../components/ai/DontKnowResponse';
 import { UserAvatar } from '../components/KoalaAvatar';
 import { OlaAvatar } from '../components/ola/OlaAvatar';
+import { OlaWelcome } from '../components/ola/OlaWelcome';
+import { OlaRatingPrompt } from '../components/ola/OlaRatingPrompt';
+import { Download } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,6 +52,7 @@ interface Message {
   confidence?: ConfidenceLevel;
   feedback?: FeedbackRating;
   emailPackage?: EmailPackageData;
+  suggestions?: string[];
   suggestConsultation?: boolean;
   noResults?: boolean;
   timestamp: Date;
@@ -421,6 +425,39 @@ function SettingsPanel({
   );
 }
 
+const THINKING_MESSAGES = [
+  '小欧正在思考…',
+  '让我想想…',
+  '正在查询教授数据库…',
+  '小欧正在翻阅资料…',
+  '认真分析中…',
+  '小欧打了个哈欠，但还在认真工作…',
+];
+
+function ThinkingBubble({ mode }: { mode: string }) {
+  const [msgIndex, setMsgIndex] = useState(0);
+  useEffect(() => {
+    if (mode === 'research') return;
+    const timer = setInterval(() => {
+      setMsgIndex(prev => (prev + 1) % THINKING_MESSAGES.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [mode]);
+
+  return (
+    <div className="flex justify-start mb-1">
+      <div className="mt-1 mr-2 flex-shrink-0">
+        <OlaAvatar state="thinking" size="sm" />
+      </div>
+      <div className="px-3.5 py-2.5 text-sm bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-[#8a8078]" style={{ borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+        <span className="animate-pulse">
+          {mode === 'research' ? '🔬 正在检索论文…' : THINKING_MESSAGES[msgIndex]}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function msgId() { return Math.random().toString(36).slice(2); }
 
 // ─── Persistence helpers ─────────────────────────────────────────────────────
@@ -561,15 +598,89 @@ function ChatPageInner() {
   const [langPref, setLangPref] = useState<LangPref>('zh');
   const [parsedFile, setParsedFile] = useState<string | null>(null);
   const [batchProfessors, setBatchProfessors] = useState<{ id: string; name: string; institution?: string; matchScore?: number }[] | null>(null);
+  const [showRating, setShowRating] = useState(false);
+  const [typewriterMsgId, setTypewriterMsgId] = useState<string | null>(null);
+  const [typewriterText, setTypewriterText] = useState('');
+  const [exportingPdf, setExportingPdf] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autoSentRef = useRef(false);
+  const ratingShownRef = useRef(false);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentMode = MODES.find(m => m.key === mode)!;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, typewriterText]);
+
+  // Rating idle timer: show after 5+ messages and 30s idle
+  useEffect(() => {
+    if (ratingShownRef.current || loading) return;
+    const userMsgCount = messages.filter(m => m.role === 'user').length;
+    if (userMsgCount < 5) return;
+
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      if (!ratingShownRef.current) {
+        ratingShownRef.current = true;
+        setShowRating(true);
+      }
+    }, 30000);
+
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, [messages, loading]);
+
+  // Typewriter effect for the latest assistant message
+  useEffect(() => {
+    if (!typewriterMsgId) return;
+    const msg = messages.find(m => m.id === typewriterMsgId);
+    if (!msg) { setTypewriterMsgId(null); return; }
+
+    const fullText = msg.content;
+    let charIndex = 0;
+    setTypewriterText('');
+
+    function tick() {
+      charIndex += 1;
+      if (charIndex <= fullText.length) {
+        setTypewriterText(fullText.slice(0, charIndex));
+        requestAnimationFrame(tick);
+      } else {
+        setTypewriterMsgId(null);
+      }
+    }
+    requestAnimationFrame(tick);
+  }, [typewriterMsgId]);
+
+  // PDF export handler
+  async function handleExportPdf() {
+    if (exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      const res = await fetch('/api/ola/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+        }),
+      });
+      if (!res.ok) throw new Error('PDF export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ola-chat-${new Date().toISOString().slice(0, 10)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silently fail
+    } finally {
+      setExportingPdf(false);
+    }
+  }
 
   // Load history from remote DB when user is logged in
   useEffect(() => {
@@ -695,11 +806,13 @@ function ChatPageInner() {
         scoreCard: data.scoreCard,
         confidence,
         quickReplies: data.quickReplies,
+        suggestions: data.suggestions,
         emailPackage: data.emailPackage,
         suggestConsultation: data.suggestConsultation,
         noResults: mode === 'research' && (!data.citations || data.citations.length === 0),
         timestamp: new Date(),
       };
+      setTypewriterMsgId(assistantMsg.id);
       setMessages(prev => {
         const updated = [...prev, assistantMsg];
         setLocalHistory(mode, updated);
@@ -875,9 +988,14 @@ function ChatPageInner() {
             </span>
           </div>
         </div>
-        <button onClick={() => setShowSettings(true)}>
-          <Settings className="size-5 text-gray-500 dark:text-[#D4A843]" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={handleExportPdf} disabled={exportingPdf || messages.length <= 1} title="导出对话 PDF">
+            <Download className={`size-5 ${exportingPdf ? 'animate-pulse' : ''} ${messages.length <= 1 ? 'text-gray-300 dark:text-gray-600' : 'text-gray-500 dark:text-[#D4A843]'}`} />
+          </button>
+          <button onClick={() => setShowSettings(true)}>
+            <Settings className="size-5 text-gray-500 dark:text-[#D4A843]" />
+          </button>
+        </div>
       </div>
 
       {/* Mode tabs — horizontally scrollable for 6 modes on mobile */}
@@ -904,6 +1022,11 @@ function ChatPageInner() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-0.5">
+        {/* Welcome screen when no conversation yet */}
+        {messages.length === 1 && messages[0].role === 'assistant' && !loading ? (
+          <OlaWelcome onSend={(msg) => sendMessage(msg)} />
+        ) : (
+        <>
         <div className="flex items-center gap-2 py-2 mb-1">
           <div className="flex-1 h-px bg-gray-200 dark:bg-white/[0.08]" />
           <span className="text-[11px] flex-shrink-0 text-gray-400 dark:text-[#5a5550]">今天 {formatTime(messages[0]?.timestamp ?? new Date())}</span>
@@ -926,8 +1049,12 @@ function ChatPageInner() {
                     : { borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }
                   }
                 >
-                  {msg.content}
-                  {msg.role === 'assistant' && msg.confidence && (
+                  {msg.role === 'assistant' && typewriterMsgId === msg.id ? (
+                    <>{typewriterText}<span className="animate-pulse">|</span></>
+                  ) : (
+                    msg.content
+                  )}
+                  {msg.role === 'assistant' && msg.confidence && typewriterMsgId !== msg.id && (
                     <ConfidenceBadgeInline level={msg.confidence} count={msg.citations?.length} />
                   )}
                 </div>
@@ -992,6 +1119,17 @@ function ChatPageInner() {
                     ))}
                   </div>
                 )}
+                {msg.role === 'assistant' && msg.suggestions && msg.suggestions.length > 0 && typewriterMsgId !== msg.id && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {msg.suggestions.map(s => (
+                      <button key={s} onClick={() => sendMessage(s)} disabled={loading}
+                        className="text-xs px-3 py-1.5 rounded-full border transition-colors bg-white dark:bg-white/[0.08] border-[#D4A843]/30 dark:border-[#D4A843]/20 text-[#8a6c30] dark:text-[#D4A843] hover:bg-[#D4A843]/10"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               {msg.role === 'user' && (
                 <div className="mt-1 ml-2 flex-shrink-0">
@@ -1005,19 +1143,6 @@ function ChatPageInner() {
             )}
           </div>
         ))}
-
-        {/* Initial quick replies */}
-        {!loading && messages.length === 1 && messages[0].role === 'assistant' && currentMode.initialReplies && (
-          <div className="flex flex-wrap gap-1.5 mt-1 ml-9">
-            {currentMode.initialReplies.map(qr => (
-              <button key={qr} onClick={() => sendMessage(qr)}
-                className="text-xs px-3 py-1.5 rounded-full border bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/[0.12] text-gray-500 dark:text-[#a09888]"
-              >
-                {qr}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* Batch email flow */}
         {batchProfessors && (
@@ -1037,21 +1162,19 @@ function ChatPageInner() {
           </div>
         )}
 
-        {loading && (
-          <div className="flex justify-start mb-1">
-            <div className="mt-1 mr-2 flex-shrink-0">
-              <OlaAvatar state="thinking" size="sm" />
-            </div>
-            <div className="px-3.5 py-2.5 text-sm bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-[#8a8078]" style={{ borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-              {mode === 'research' ? (
-                <span className="animate-pulse">🔬 正在检索论文…</span>
-              ) : (
-                <span className="animate-pulse">小欧正在思考…</span>
-              )}
-            </div>
-          </div>
+        {loading && <ThinkingBubble mode={mode} />}
+
+        {/* Rating prompt */}
+        {showRating && (
+          <OlaRatingPrompt
+            sessionId={`session_${messages[0]?.timestamp?.getTime() ?? Date.now()}`}
+            onClose={() => setShowRating(false)}
+          />
         )}
+
         <div ref={bottomRef} />
+        </>
+        )}
       </div>
 
       {/* Profile guidance hint */}
