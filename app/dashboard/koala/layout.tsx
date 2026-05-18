@@ -94,6 +94,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
       { icon: '📚', label: '知识库', href: '/dashboard/koala/knowledge-base' },
       { icon: '❓', label: 'FAQ 管理', href: '/dashboard/koala/faq' },
       { icon: '🎯', label: 'Ola 触发', href: '/dashboard/koala/ola-triggers' },
+      { icon: '📈', label: 'Ola 分析', href: '/dashboard/koala/ola-analytics' },
       { icon: '🤝', label: 'Handoff 队列', href: '/dashboard/koala/handoff' },
       { icon: '⚙️', label: '系统设置', href: '/dashboard/koala/settings' },
     ];

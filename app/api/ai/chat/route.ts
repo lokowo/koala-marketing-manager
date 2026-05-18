@@ -16,6 +16,7 @@ import { upsertSession } from '../../../lib/ola/ola-session';
 import { recordEvent } from '../../../lib/ola/ola-events';
 import { detectEmotion, getEmotionPromptSuffix } from '../../../lib/ola/ola-emotion';
 import { getOlaPersonaPrompt } from '../../../lib/prompts/ola-persona';
+import { getDeadlineContext } from '../../../lib/ola/ola-deadlines';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -470,6 +471,12 @@ H指数：${prof.hIndex ?? '未知'}`;
 1=greeting 2=needs_discovery 3=professor_matching 4=letter_generation
 5=document_review 6=interview_prep 7=application_tracking 8=offer_celebration
 根据对话内容判断当前处于哪个阶段，每条回复都必须附加。`;
+
+    // Inject university deadline context if user has target universities
+    if (studentCtx?.targetUniversities) {
+      const deadlineCtx = await getDeadlineContext(studentCtx.targetUniversities);
+      if (deadlineCtx) extraContext += deadlineCtx;
+    }
 
     // Suggestion chips directive
     extraContext += `\n\n## 快捷回复建议
