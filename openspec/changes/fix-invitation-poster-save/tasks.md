@@ -1,16 +1,23 @@
-## 1. SharePoster 组件重写保存逻辑
+## Tasks
 
-- [x] 1.1 新增 `generatedImageUrl` state（`string | null`，默认 null）
-- [x] 1.2 重写 `handleSave`：html2canvas 成功后，桌面端走 `<a download>` 下载；移动端走 `setGeneratedImageUrl(dataUrl)`
-- [x] 1.3 桌面端下载失败 fallback：catch 后也走 `setGeneratedImageUrl`
-- [x] 1.4 html2canvas 失败时显示 toast「截图失败，请手动截屏或复制链接」，不设置 generatedImageUrl
+### Task 1: Fix html2canvas options and download flow
 
-## 2. Modal UI 状态切换
+**File**: `app/components/SharePoster.tsx`
 
-- [x] 2.1 当 `generatedImageUrl` 非空时，替换海报 DOM 为 `<img src={generatedImageUrl}>` + 「长按图片保存到相册」提示
-- [x] 2.2 在图片显示模式下增加「重新生成」按钮，点击重置 `generatedImageUrl` 为 null
-- [x] 2.3 Modal `onClose` 时重置 `generatedImageUrl` 为 null
+- Change `allowTaint: true` → `allowTaint: false`
+- Add `await document.fonts.ready` before html2canvas call
+- Fix desktop download: `document.body.appendChild(link)` before `link.click()`
 
-## 3. 验证
+### Task 2: Add Canvas API fallback
 
-- [x] 3.1 `npm run build` 编译通过
+**File**: `app/components/SharePoster.tsx`
+
+- Add `drawPosterFallback()` function that renders poster via Canvas 2D API
+- Call fallback in catch block when html2canvas fails
+- Fallback renders: header, display name, QR code, referral code, remaining invites, footer
+
+### Verification
+
+- `npm run build` passes
+- Desktop: click 保存海报 → downloads PNG
+- Mobile: click 保存海报 → shows full image for long-press save
