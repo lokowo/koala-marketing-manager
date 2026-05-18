@@ -1,6 +1,8 @@
 import { ImageResponse } from 'next/og';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import QRCode from 'qrcode';
+import { join } from 'path';
+import { readFile } from 'fs/promises';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -9,18 +11,32 @@ export const runtime = 'nodejs';
 
 let fontCache: ArrayBuffer | null = null;
 
-async function loadFont(): Promise<ArrayBuffer> {
+async function loadFont(): Promise<ArrayBuffer | null> {
   if (fontCache) return fontCache;
-  const res = await fetch(
-    'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap',
-  );
-  const css = await res.text();
-  const urls = css.match(/url\(([^)]+)\)/g);
-  if (!urls || urls.length === 0) throw new Error('No font URL found');
-  const fontUrl = urls[0].replace(/url\(|\)/g, '');
-  const fontRes = await fetch(fontUrl);
-  fontCache = await fontRes.arrayBuffer();
-  return fontCache;
+  // Try bundled local font first, then Google Fonts as fallback
+  try {
+    const localPath = join(process.cwd(), 'public', 'fonts', 'NotoSansSC-Regular.ttf');
+    const buf = await readFile(localPath);
+    fontCache = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+    return fontCache;
+  } catch {
+    // Local font not found, try Google Fonts
+  }
+  try {
+    const res = await fetch(
+      'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap',
+      { signal: AbortSignal.timeout(5000) },
+    );
+    const css = await res.text();
+    const urls = css.match(/url\(([^)]+)\)/g);
+    if (!urls || urls.length === 0) return null;
+    const fontUrl = urls[0].replace(/url\(|\)/g, '');
+    const fontRes = await fetch(fontUrl, { signal: AbortSignal.timeout(5000) });
+    fontCache = await fontRes.arrayBuffer();
+    return fontCache;
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(req: Request) {
@@ -47,7 +63,7 @@ export async function GET(req: Request) {
     .eq('id', codeRecord.user_id)
     .single();
 
-  const displayName = profile?.display_name || profile?.full_name || 'Koala 用户';
+  const displayName = profile?.display_name || profile?.full_name || 'Koala User';
   const avatarUrl = profile?.avatar_url || null;
 
   const referralUrl = `https://www.koalaphd.com/koala/auth?ref=${code}`;
@@ -65,7 +81,7 @@ export async function GET(req: Request) {
   let avatarSrc: string | null = null;
   if (avatarUrl) {
     try {
-      const avatarRes = await fetch(avatarUrl);
+      const avatarRes = await fetch(avatarUrl, { signal: AbortSignal.timeout(5000) });
       if (avatarRes.ok) {
         const buf = await avatarRes.arrayBuffer();
         const ct = avatarRes.headers.get('content-type') || 'image/png';
@@ -78,6 +94,10 @@ export async function GET(req: Request) {
 
   const initial = (displayName[0] || 'K').toUpperCase();
 
+  const fontConfig = fontData
+    ? [{ name: 'Noto Sans SC', data: fontData, style: 'normal' as const, weight: 400 as const }]
+    : [];
+
   return new ImageResponse(
     (
       <div
@@ -89,7 +109,7 @@ export async function GET(req: Request) {
           alignItems: 'center',
           justifyContent: 'space-between',
           background: 'linear-gradient(180deg, #0D7C5F 0%, #085544 100%)',
-          fontFamily: '"Noto Sans SC", sans-serif',
+          fontFamily: fontData ? '"Noto Sans SC", sans-serif' : 'sans-serif',
           padding: '60px 50px',
         }}
       >
@@ -200,14 +220,7 @@ export async function GET(req: Request) {
     {
       width: 750,
       height: 1334,
-      fonts: [
-        {
-          name: 'Noto Sans SC',
-          data: fontData,
-          style: 'normal',
-          weight: 400,
-        },
-      ],
+      fonts: fontConfig,
     },
   );
 }
