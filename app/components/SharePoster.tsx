@@ -4,6 +4,70 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { X } from 'lucide-react';
 import QRCode from 'qrcode';
 
+async function drawPosterFallback(
+  displayName: string, referralCode: string, qrDataUrl: string,
+  remainingInvites: number, isUnlimited: boolean, isExhausted: boolean,
+): Promise<string> {
+  const W = 600, H = 800;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  // Header
+  ctx.fillStyle = '#1A1A2E';
+  ctx.fillRect(0, 0, W, 200);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 32px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🐨 Koala PhD', W / 2, 110);
+  ctx.font = '14px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText('AI 智能博士申请平台', W / 2, 150);
+
+  // Body
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 200, W, 520);
+
+  ctx.fillStyle = '#1A1A2E';
+  ctx.font = '16px sans-serif';
+  ctx.fillText(`${displayName} 邀请你加入`, W / 2, 250);
+  ctx.fillStyle = '#888';
+  ctx.font = '13px sans-serif';
+  ctx.fillText('扫码注册即送 35 积分 + 额外 5 积分奖励', W / 2, 280);
+
+  // QR code
+  if (qrDataUrl) {
+    const img = new Image();
+    img.src = qrDataUrl;
+    await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = rej; });
+    ctx.drawImage(img, (W - 200) / 2, 310, 200, 200);
+  }
+
+  // Referral code
+  ctx.fillStyle = '#999';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('邀请码', W / 2, 550);
+  ctx.fillStyle = '#1A1A2E';
+  ctx.font = 'bold 28px monospace';
+  ctx.fillText(referralCode, W / 2, 585);
+
+  // Remaining
+  ctx.fillStyle = '#999';
+  ctx.font = '13px sans-serif';
+  const remainText = isExhausted ? '邀请名额已用完' : isUnlimited ? '无限邀请名额' : `剩余 ${remainingInvites} 个邀请名额`;
+  ctx.fillText(remainText, W / 2, 620);
+
+  // Footer
+  ctx.fillStyle = '#F9FAFB';
+  ctx.fillRect(0, 660, W, 140);
+  ctx.fillStyle = '#999';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('koalaphd.com · AI 匹配 4,200+ 位澳洲教授', W / 2, 700);
+
+  return canvas.toDataURL('image/png');
+}
+
 interface SharePosterProps {
   open: boolean;
   onClose: () => void;
@@ -39,12 +103,14 @@ export default function SharePoster({ open, onClose, referralCode, referralUrl, 
     if (!posterRef.current) return;
     setSaving(true);
     try {
+      await document.fonts.ready;
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const html2canvas = (await import('html2canvas' as any)).default;
       const canvas = await html2canvas(posterRef.current, {
         scale: 2,
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         backgroundColor: '#FFFFFF',
         logging: false,
       });
@@ -55,20 +121,35 @@ export default function SharePoster({ open, onClose, referralCode, referralUrl, 
         setGeneratedImageUrl(dataUrl);
         showToast('长按图片保存到相册');
       } else {
-        try {
-          const link = document.createElement('a');
-          link.download = `koala-invite-${referralCode}.png`;
-          link.href = dataUrl;
-          link.click();
-          showToast('海报已保存');
-        } catch {
-          setGeneratedImageUrl(dataUrl);
-          showToast('长按图片保存到相册');
-        }
+        const link = document.createElement('a');
+        link.download = `koala-invite-${referralCode}.png`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('海报已保存');
       }
     } catch (err) {
       console.error('[SharePoster] html2canvas failed:', err);
-      showToast('截图失败，请手动截屏或复制链接');
+      // Fallback: draw poster with Canvas API directly
+      try {
+        const fallbackDataUrl = await drawPosterFallback(displayName, referralCode, qrDataUrl, remainingInvites, isUnlimited, isExhausted);
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          setGeneratedImageUrl(fallbackDataUrl);
+          showToast('长按图片保存到相册');
+        } else {
+          const link = document.createElement('a');
+          link.download = `koala-invite-${referralCode}.png`;
+          link.href = fallbackDataUrl;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          showToast('海报已保存');
+        }
+      } catch {
+        showToast('截图失败，请手动截屏或复制链接');
+      }
     } finally {
       setSaving(false);
     }
