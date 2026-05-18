@@ -32,7 +32,7 @@ export default function SharePoster({ open, onClose, referralCode, referralUrl }
     if (saving) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/og/invite?code=${encodeURIComponent(referralCode)}`);
+      const res = await fetch(`/api/invite-poster?code=${encodeURIComponent(referralCode)}`);
       if (!res.ok) throw new Error('fetch failed');
       const blob = await res.blob();
 
@@ -75,7 +75,7 @@ export default function SharePoster({ open, onClose, referralCode, referralUrl }
 
   if (!open) return null;
 
-  const posterSrc = `/api/og/invite?code=${encodeURIComponent(referralCode)}`;
+  const posterSrc = `/api/invite-poster?code=${encodeURIComponent(referralCode)}`;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={handleClose}>
