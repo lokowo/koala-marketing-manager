@@ -2,18 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Compass, Users, BookOpen, Heart } from 'lucide-react';
+import { Compass, Users, UserCircle } from 'lucide-react';
 import { APP_VERSION } from '../../lib/version';
 import { useTheme } from '../../lib/theme';
 import { OlaAvatar } from './ola/OlaAvatar';
 const LEFT_TABS = [
-  { href: '/koala/discover', icon: Compass, label: '发现' },
-  { href: '/koala/professors', icon: Users, label: '教授' },
+  { href: '/koala/discover', icon: Compass, label: '首页' },
 ] as const;
 
 const RIGHT_TABS = [
-  { href: '/koala/blog', icon: BookOpen, label: '博客' },
-  { href: '/koala/matches', icon: Heart, label: '匹配' },
+  { href: '/koala/professors', icon: Users, label: '教授库' },
+  { href: '/koala/my-profile', icon: UserCircle, label: '我的' },
 ] as const;
 
 export default function BottomTabBar() {

@@ -78,6 +78,7 @@ export default function SalesDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [updatingStage, setUpdatingStage] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -155,10 +156,22 @@ export default function SalesDashboard() {
   }
 
   function downloadQR(code: string) { window.open(getQrImageUrl(code), '_blank'); }
-  function shareQR(code: string, label: string | null) {
+  async function shareQR(code: string, label: string | null) {
+    if (isSharing) return;
     const url = getQrUrl(code);
-    if (navigator.share) { navigator.share({ title: label || 'Koala PhD 推广链接', url }); }
-    else { navigator.clipboard.writeText(url); alert('链接已复制到剪贴板'); }
+    if (navigator.share) {
+      setIsSharing(true);
+      try {
+        await navigator.share({ title: label || 'Koala PhD 推广链接', url });
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name !== 'AbortError') console.error(e);
+      } finally {
+        setIsSharing(false);
+      }
+    } else {
+      navigator.clipboard.writeText(url);
+      alert('链接已复制到剪贴板');
+    }
   }
 
   if (loading) {
