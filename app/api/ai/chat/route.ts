@@ -14,6 +14,8 @@ import { aiLimiter, safeLimit } from '../../../lib/ratelimit';
 import { matchFAQ } from '../../../lib/ola/ola-faq';
 import { upsertSession } from '../../../lib/ola/ola-session';
 import { recordEvent } from '../../../lib/ola/ola-events';
+import { detectEmotion, getEmotionPromptSuffix } from '../../../lib/ola/ola-emotion';
+import { getOlaPersonaPrompt } from '../../../lib/prompts/ola-persona';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -240,8 +242,20 @@ export async function POST(request: NextRequest) {
     const currentIntent = messages.length > 0 ? detectIntent(messages[messages.length - 1].content) : 'general';
     recordEvent(sessionId, 'llm_call', { mode, intent: currentIntent }, trackingUserId).catch(() => {});
 
-    // 1. Build base system prompt
+    // 1. Build system prompt — standard assembly order:
+    //    persona → emotion → user context → RAG → stage tracking → professor rules
     let extraContext = '';
+
+    // Emotion detection
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.role === 'user') {
+        const emotion = detectEmotion(lastMsg.content);
+        if (emotion) {
+          extraContext += `\n\n## 情绪检测\n${getEmotionPromptSuffix(emotion)}`;
+        }
+      }
+    }
 
     if (userStyleProfile) {
       const styleDesc = describeUserStyle(userStyleProfile);
@@ -450,7 +464,15 @@ H指数：${prof.hIndex ?? '未知'}`;
 同时在回复末尾输出 professorMatches JSON 块，professorId 必须使用工具返回的真实 id。`;
     }
 
-    const systemPrompt = buildSystemPrompt(mode, extraContext);
+    // Stage tracking instruction (funnel tracking)
+    extraContext += `\n\n## 对话阶段标记
+在每条回复的最末尾，附加 <stage>N</stage> 标记当前对话阶段（1-8），不要向用户展示此标记。
+1=greeting 2=needs_discovery 3=professor_matching 4=letter_generation
+5=document_review 6=interview_prep 7=application_tracking 8=offer_celebration
+根据对话内容判断当前处于哪个阶段，每条回复都必须附加。`;
+
+    // Build system prompt — use Ola persona as base, append mode-specific + extras
+    const systemPrompt = getOlaPersonaPrompt() + '\n\n---\n\n' + buildSystemPrompt(mode, extraContext);
 
     // 3. Call Claude — with tool use for professor search
     const useTools = mode === 'path' || mode === 'chat' || mode === 'write' || mode === 'rp' || mode === 'interview';
@@ -599,7 +621,25 @@ H指数：${prof.hIndex ?? '未知'}`;
     // 4. Filter + extract
     const { filtered } = filterSensitiveContent(rawReply);
     const blocks = extractAllBlocks(filtered);
-    const cleanedReply = cleanReply(filtered);
+    let cleanedReply = cleanReply(filtered);
+
+    // Extract and strip stage tag for funnel tracking
+    const stageMatch = cleanedReply.match(/<stage>(\d)<\/stage>/);
+    if (stageMatch) {
+      const stage = parseInt(stageMatch[1], 10);
+      cleanedReply = cleanedReply.replace(/<stage>\d<\/stage>/g, '').trim();
+
+      // Update session conversation_stage (fire-and-forget)
+      import('../../../lib/supabase/server').then(({ supabaseAdmin }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabaseAdmin as any)
+          .from('ola_sessions')
+          .update({ metadata: { conversation_stage: stage } })
+          .eq('session_id', sessionId)
+          .then(() => {})
+          .catch((err: unknown) => console.error('[stage update]', err));
+      }).catch(() => {});
+    }
 
     // 5. Build response
     const result: Record<string, unknown> = { reply: cleanedReply };
