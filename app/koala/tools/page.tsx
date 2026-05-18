@@ -10,7 +10,7 @@ const FREE_TOOLS_GRID = [
   { icon: '🛂', title: 'NIV 签证预评',   desc: '评估签证申请条件',          href: '/koala/tools/niv' },
   { icon: '🔬', title: 'ARC 项目浏览',   desc: '查看最新澳洲研究经费项目',   href: '/koala/chat?mode=research' },
   { icon: '🎯', title: 'PhD 路径自评',   desc: '评估申请竞争力与准备程度',   href: '/koala/chat?mode=path' },
-  { icon: '👨‍🏫', title: '教授 Top 10 匹配', desc: '免费获取最匹配的 10 位导师', href: '/koala/chat?mode=research' },
+  { icon: '👨‍🏫', title: '教授 Top 10 匹配', desc: '免费获取最匹配的 10 位学者', href: '/koala/chat?mode=research' },
   { icon: '✉️', title: '免费申请信',     desc: '免费生成第 1 封定制申请信',  href: '/koala/chat?mode=write' },
 ];
 

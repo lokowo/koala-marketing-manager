@@ -138,7 +138,7 @@ export async function GET(req: Request) {
         <div style={{ display: 'flex', gap: 30, justifyContent: 'center' }}>
           {[
             { emoji: '🎯', label: 'AI 匹配导师' },
-            { emoji: '📚', label: '24,000+ 教授库' },
+            { emoji: '📚', label: '24,000+ 学者库' },
             { emoji: '✉️', label: '一站式申请' },
           ].map((item) => (
             <div

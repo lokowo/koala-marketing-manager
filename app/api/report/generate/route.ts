@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const prompt = `${GLOBAL_SYSTEM_PROMPT}
 
-你是 KSA 的学术路径分析系统。请根据以下学生信息和教授数据库，生成一份教授匹配报告。
+你是 KSA 的学术路径分析系统。请根据以下学生信息和学者数据库，生成一份教授匹配报告。
 
 ## 学生信息
 ${studentContext}
@@ -47,7 +47,7 @@ ${stage1Score ?? '未评分'}
 ## 用户目标
 ${userGoal ?? '攻读 PhD'}
 
-## 教授数据库（已预筛选）
+## 学者数据库（已预筛选）
 ${profContext}
 
 ## 匹配逻辑权重

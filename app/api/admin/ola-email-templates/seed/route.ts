@@ -13,7 +13,7 @@ const SEED_TEMPLATES = [
   <img src="https://koalaphd.com/images/ola/ola-welcome.svg" alt="Ola" width="80" style="margin-bottom: 16px;" />
   <h2 style="color: #1a2332;">嗨，小欧在等你！</h2>
   <p style="color: #584838; line-height: 1.8;">你注册已经3天了，但还没有搜索过教授。</p>
-  <p style="color: #584838; line-height: 1.8;">澳洲有超过5000位教授在招PhD学生，让小欧帮你找到最匹配的导师吧！</p>
+  <p style="color: #584838; line-height: 1.8;">澳洲有超过5000位学者在招PhD学生，让小欧帮你找到最匹配的导师吧！</p>
   <a href="https://koalaphd.com/koala/professors" style="display: inline-block; background: #1A1A2E; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px;">开始搜索教授 →</a>
   <hr style="margin-top: 32px; border: none; border-top: 1px solid #e5e5e5;" />
   <p style="font-size: 12px; color: #907858;">如不想收到此类邮件，请<a href="https://koalaphd.com/koala/settings?unsubscribe=ola" style="color: #907858;">点击退订</a></p>

@@ -192,7 +192,7 @@ export default function QualityPage() {
           {/* Issues list */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 text-xs text-slate-500">
-              {totalIssues} 位教授有数据问题
+              {totalIssues} 位学者有数据问题
             </div>
             {issues.length === 0 ? (
               <div className="p-8 text-center">

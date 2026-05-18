@@ -406,7 +406,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
           <h1 className="font-bold text-lg leading-7 text-gray-900 dark:text-[#e8e4dc]">教授&学者库</h1>
           {total !== null && (
             <span className="text-xs text-gray-500 dark:text-[#6a7a7e]">
-              {debouncedSearch ? `找到 ${total.toLocaleString()} 位匹配导师` : `共 ${total.toLocaleString()} 位导师`}
+              {debouncedSearch ? `找到 ${total.toLocaleString()} 位匹配学者` : `共 ${total.toLocaleString()} 位学者`}
             </span>
           )}
         </div>
@@ -427,7 +427,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
       {/* Desktop title */}
       <div className="hidden lg:flex items-baseline gap-3 pt-6 pb-2">
         <h1 className="font-bold text-2xl text-gray-900 dark:text-[#e8e4dc]">教授&学者库</h1>
-        {total !== null && <span className="text-sm text-gray-500 dark:text-[#6a7a7e]">{debouncedSearch ? `找到 ${total.toLocaleString()} 位匹配导师` : `共 ${total.toLocaleString()} 位导师`}</span>}
+        {total !== null && <span className="text-sm text-gray-500 dark:text-[#6a7a7e]">{debouncedSearch ? `找到 ${total.toLocaleString()} 位匹配学者` : `共 ${total.toLocaleString()} 位学者`}</span>}
       </div>
 
       {/* Desktop layout: sidebar + list */}
@@ -994,7 +994,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
       {!loading && !hasMore && professors.length > 0 && (
         <div className="px-4 pb-4 lg:px-0 space-y-3">
           <p className="text-center text-xs py-2 text-gray-500 dark:text-[#6a7a7e]">
-            已加载全部 {professors.length.toLocaleString()} 位导师
+            已加载全部 {professors.length.toLocaleString()} 位学者
           </p>
           <Link href="/koala/chat"
             className="mx-auto block text-center text-sm font-medium py-3 px-6 rounded-2xl no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"

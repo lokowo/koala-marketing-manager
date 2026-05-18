@@ -144,7 +144,7 @@ export default function ProfessorsPage() {
         <div>
           <h2 className="text-xl font-bold text-slate-900">教授库管理</h2>
           <p className="text-sm text-slate-500 mt-0.5">
-            共 {total} 位教授
+            共 {total} 位学者
             {missingEmailCount > 0 && <span className="text-amber-600 ml-2">· {missingEmailCount} 缺邮箱</span>}
             {missingFacultyCount > 0 && <span className="text-amber-600 ml-2">· {missingFacultyCount} 缺学院</span>}
           </p>
@@ -217,7 +217,7 @@ export default function ProfessorsPage() {
       <div className="text-xs text-slate-400">
         {loading ? '加载中...' : (
           <>
-            第 {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} 条，共 {total} 位教授
+            第 {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} 条，共 {total} 位学者
           </>
         )}
       </div>
