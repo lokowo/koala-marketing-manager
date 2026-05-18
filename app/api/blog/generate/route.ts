@@ -153,14 +153,16 @@ export async function POST(req: NextRequest) {
     const readingTimeEn = Math.max(2, Math.ceil(wordCount / 200));
 
     const status = publishMode === 'publish' ? 'published' : 'draft';
-    const slugSource = enData.titleEn || zhData.titleZh;
-    const slug = slugSource
+    const slugSource = enData.titleEn || zhData.titleZh || 'post';
+    let slugBase = slugSource
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .slice(0, 80)
-      .replace(/^-|-$/g, '') + '-' + Date.now();
+      .replace(/^-|-$/g, '');
+    if (!slugBase) slugBase = (category || 'post');
+    const slug = slugBase + '-' + Date.now();
 
     const row = {
       slug,
