@@ -335,8 +335,8 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
               },
               {
                 icon: '🎯', step: '02', title: 'AI 匹配',
-                desc: `从 ${profCount} 位导师/学者中，根据你的背景和研究兴趣精准推荐最佳导师`,
-                features: [`${profCount} 导师库`, '实时招生状态'],
+                desc: `从 ${profCount} 位学者中，根据你的背景和研究兴趣精准推荐最佳导师`,
+                features: [`${profCount} 学者库`, '实时招生状态'],
                 extra: '⚡ 30 秒出结果',
                 primary: false,
                 iconBg: 'bg-[#4ECDC4]/15 dark:bg-[#4ECDC4]/20',
