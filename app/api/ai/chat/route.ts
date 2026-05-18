@@ -11,6 +11,9 @@ import { findOrCreateProfessor } from '../../../lib/services/professorAutoAdd';
 import type { Professor } from '../../../lib/types';
 import { getStudentContext, buildStudentContextPrompt } from '../../../lib/server/student-context';
 import { aiLimiter, safeLimit } from '../../../lib/ratelimit';
+import { matchFAQ } from '../../../lib/ola/ola-faq';
+import { upsertSession } from '../../../lib/ola/ola-session';
+import { recordEvent } from '../../../lib/ola/ola-events';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -184,6 +187,58 @@ export async function POST(request: NextRequest) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     const allowed = await safeLimit(aiLimiter, ip);
     if (!allowed) return Response.json({ error: '请求过于频繁，请稍后再试' }, { status: 429 });
+
+    // Resolve user ID early for session/event tracking
+    let trackingUserId: string | null = (body.userId as string) || null;
+    if (!trackingUserId) {
+      try {
+        const { getServerUser: getUser } = await import('../../../lib/auth');
+        const u = await getUser();
+        if (u) trackingUserId = u.id;
+      } catch { /* anonymous */ }
+    }
+
+    const sessionId = (body.sessionId as string) || `session_${Date.now()}`;
+
+    // Session tracking (fire-and-forget)
+    upsertSession(sessionId, { userId: trackingUserId ?? undefined, mode }).catch(err =>
+      console.error('[ola-session]', err)
+    );
+
+    // FAQ matching — intercept before LLM if hit
+    if (messages.length > 0) {
+      const lastUserMsg = messages[messages.length - 1];
+      if (lastUserMsg.role === 'user') {
+        try {
+          const faqMatch = await matchFAQ(lastUserMsg.content);
+          if (faqMatch) {
+            recordEvent(sessionId, 'faq_hit', {
+              faq_id: faqMatch.id,
+              category: faqMatch.category,
+              score: faqMatch.score,
+            }, trackingUserId).catch(() => {});
+
+            return Response.json({
+              reply: faqMatch.answer_zh,
+              reply_en: faqMatch.answer_en,
+              faqMatch: {
+                id: faqMatch.id,
+                category: faqMatch.category,
+                score: faqMatch.score,
+                rich_card_type: faqMatch.rich_card_type,
+                rich_card_data: faqMatch.rich_card_data,
+              },
+            });
+          }
+        } catch (err) {
+          console.error('[FAQ match]', err);
+        }
+      }
+    }
+
+    // Record LLM call event (FAQ missed, proceeding to LLM)
+    const currentIntent = messages.length > 0 ? detectIntent(messages[messages.length - 1].content) : 'general';
+    recordEvent(sessionId, 'llm_call', { mode, intent: currentIntent }, trackingUserId).catch(() => {});
 
     // 1. Build base system prompt
     let extraContext = '';
@@ -409,8 +464,6 @@ H指数：${prof.hIndex ?? '未知'}`;
     let toolSearchedProfessors: Professor[] = [];
 
     // Determine max tokens: research mode and academic-intent get more room for deep answers
-    const lastUserMsg = messages.length > 0 ? messages[messages.length - 1].content : '';
-    const currentIntent = detectIntent(lastUserMsg);
     const maxTokens = (mode === 'research' || currentIntent === 'academic') ? 4000 : 2000;
 
     if (useTools) {
@@ -465,6 +518,12 @@ H指数：${prof.hIndex ?? '未知'}`;
               const interactionUserId = userId || (studentCtx as { userId?: string } | null)?.userId || null;
               const profIds = searchResults.map(r => r.professor.id);
               recordProfessorInteractions(interactionUserId, profIds, 'searched').catch(() => {});
+
+              recordEvent(sessionId, 'professor_match', {
+                count: searchResults.length,
+                query: toolInput.researchArea,
+                university: toolInput.university ?? null,
+              }, trackingUserId).catch(() => {});
             }
 
             if (searchResults.length === 0) {
