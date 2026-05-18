@@ -290,7 +290,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                   AI 导师匹配 · 免费使用
                 </div>
                 <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold leading-snug mb-3 text-[#1A1A2E] dark:text-[#e8e4dc]">
-                  {profCount} 位澳洲导师<br />AI 帮你找最匹配的那个
+                  {profCount} 位澳洲教授·学者·研究员<br />AI 帮你找最匹配的那个
                 </h1>
                 <p className="text-xs lg:text-sm leading-relaxed mb-6 text-gray-500 dark:text-[#6a7a7e]">
                   告诉 Koala 你的背景和兴趣，30 秒内获得个性化导师推荐
