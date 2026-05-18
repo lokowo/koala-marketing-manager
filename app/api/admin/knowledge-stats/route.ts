@@ -11,9 +11,10 @@ export async function GET() {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
   try {
-    const [chunksRes, lastChunkRes] = await Promise.all([
+    const [chunksRes, lastChunkRes, missingRes] = await Promise.all([
       db.from('knowledge_chunks').select('*', { count: 'exact', head: true }),
       db.from('knowledge_chunks').select('created_at').order('created_at', { ascending: false }).limit(1),
+      db.from('knowledge_chunks').select('*', { count: 'exact', head: true }).is('embedding', null),
     ]);
 
     const professorsRes = await db.from('professors').select('*', { count: 'exact', head: true });
@@ -21,6 +22,7 @@ export async function GET() {
     return Response.json({
       totalChunks: chunksRes.count ?? 0,
       professorCount: professorsRes.count ?? 0,
+      missingEmbeddings: missingRes.count ?? 0,
       lastUpdated: lastChunkRes.data?.[0]?.created_at ?? null,
     });
   } catch (error) {

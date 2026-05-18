@@ -21,7 +21,8 @@ import { UserAvatar } from '../components/KoalaAvatar';
 import { OlaAvatar } from '../components/ola/OlaAvatar';
 import { OlaWelcome } from '../components/ola/OlaWelcome';
 import { OlaRatingPrompt } from '../components/ola/OlaRatingPrompt';
-import { Download } from 'lucide-react';
+import { ChatHistorySidebar } from '../components/ola/ChatHistorySidebar';
+import { Download, History } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -602,6 +603,8 @@ function ChatPageInner() {
   const [typewriterMsgId, setTypewriterMsgId] = useState<string | null>(null);
   const [typewriterText, setTypewriterText] = useState('');
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<{ file: File; type: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autoSentRef = useRef(false);
@@ -880,8 +883,43 @@ function ChatPageInner() {
     }
 
     setInput('');
+
+    // Handle file attachment — upload + extract text + prepend to message
+    if (attachedFile) {
+      const file = attachedFile.file;
+      const fileType = attachedFile.type;
+      setAttachedFile(null);
+
+      // Upload file
+      const uploadFd = new FormData();
+      uploadFd.append('file', file);
+      uploadFd.append('fileType', fileType);
+      fetch('/api/user/files', { method: 'POST', body: uploadFd }).catch(() => {});
+
+      // For PDFs/docs, try to extract text via resume parser
+      if (file.name.endsWith('.pdf') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+        try {
+          const parseFd = new FormData();
+          parseFd.append('file', file);
+          const parseRes = await fetch('/api/user/profile/parse', { method: 'POST', body: parseFd });
+          if (parseRes.ok) {
+            const parseData = await parseRes.json();
+            const extractedText = parseData.rawText || JSON.stringify(parseData.profile || {});
+            const enrichedMsg = `[用户上传了文件：${file.name}]\n以下是文件内容：\n${extractedText.slice(0, 3000)}\n\n用户的问题：${txt}`;
+            await callApi(enrichedMsg, messages, pendingProfessorId ?? undefined);
+            return;
+          }
+        } catch { /* fall through */ }
+      }
+
+      // For images or failed extraction, just note the file
+      const enrichedMsg = `[用户上传了文件：${file.name}（${fileType}）]\n\n${txt}`;
+      await callApi(enrichedMsg, messages, pendingProfessorId ?? undefined);
+      return;
+    }
+
     await callApi(txt, messages, pendingProfessorId ?? undefined);
-  }, [input, loading, messages, mode, callApi, pendingProfessorId]);
+  }, [input, loading, messages, mode, callApi, pendingProfessorId, attachedFile]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -989,6 +1027,9 @@ function ChatPageInner() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={() => setSidebarOpen(true)} title="对话历史">
+            <History className="size-5 text-gray-500 dark:text-[#D4A843]" />
+          </button>
           <button onClick={handleExportPdf} disabled={exportingPdf || messages.length <= 1} title="导出对话 PDF">
             <Download className={`size-5 ${exportingPdf ? 'animate-pulse' : ''} ${messages.length <= 1 ? 'text-gray-300 dark:text-gray-600' : 'text-gray-500 dark:text-[#D4A843]'}`} />
           </button>
@@ -1196,6 +1237,15 @@ function ChatPageInner() {
 
       {/* Input bar */}
       <div className="flex-shrink-0 border-t border-gray-200 dark:border-white/[0.08] bg-gray-50 dark:bg-[#0d1520]">
+        {/* Attached file preview */}
+        {attachedFile && (
+          <div className="flex items-center gap-2 mx-4 mt-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+            <span className="text-xs">📎</span>
+            <span className="text-xs text-gray-700 dark:text-[#e8e4dc] flex-1 truncate">{attachedFile.file.name}</span>
+            <span className="text-[10px] text-gray-400">{(attachedFile.file.size / 1024).toFixed(0)}KB</span>
+            <button onClick={() => setAttachedFile(null)} className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+          </div>
+        )}
         <div className="flex p-4 items-center gap-2">
           <button
             onClick={() => setShowUpload(true)}
@@ -1236,7 +1286,18 @@ function ChatPageInner() {
         </p>
       </div>
 
-      {showUpload && <FileUploadSheet onClose={() => setShowUpload(false)} onFile={handleFile} />}
+      {/* History sidebar */}
+      <ChatHistorySidebar
+        currentMode={mode}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onSwitchMode={(m) => switchMode(m as typeof mode)}
+        onNewConversation={clearConversation}
+      />
+
+      {showUpload && <FileUploadSheet onClose={() => setShowUpload(false)} onFile={(f, t) => {
+        setAttachedFile({ file: f, type: t });
+      }} />}
       {showCreditConfirm && (
         <CreditConfirmDialog
           remaining={credits}
