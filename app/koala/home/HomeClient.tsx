@@ -326,7 +326,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
               {
                 icon: '💬', step: '01', title: '聊背景',
                 desc: '告诉 Koala 你的专业方向、学术经历和兴趣，AI 帮你评估申请竞争力',
-                features: ['覆盖 8 所 Go8 大学', '中英文双语支持'],
+                features: ['覆盖全澳 30+ 所大学', '中英文双语支持'],
                 extra: '⏱ 约 2 分钟',
                 primary: true,
                 iconBg: 'bg-[#D4A843]/20',
@@ -335,7 +335,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
               },
               {
                 icon: '🎯', step: '02', title: 'AI 匹配',
-                desc: `从 ${profCount} 位导师中，根据你的背景和研究兴趣精准推荐最佳导师`,
+                desc: `从 ${profCount} 位导师/学者中，根据你的背景和研究兴趣精准推荐最佳导师`,
                 features: [`${profCount} 导师库`, '实时招生状态'],
                 extra: '⚡ 30 秒出结果',
                 primary: false,
@@ -624,11 +624,11 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
             <div className="hidden md:flex gap-5">
               <div className="text-center px-5 py-4 bg-white/5 rounded-xl min-w-[100px]">
                 <div className="text-2xl lg:text-3xl font-bold text-[#D4A843]">{profCount}</div>
-                <div className="text-xs text-gray-400 mt-1">认证导师</div>
+                <div className="text-xs text-gray-400 mt-1">教授·学者·研究员</div>
               </div>
               <div className="text-center px-5 py-4 bg-white/5 rounded-xl min-w-[100px]">
-                <div className="text-2xl lg:text-3xl font-bold text-[#4ECDC4]">8</div>
-                <div className="text-xs text-gray-400 mt-1">Go8 大学</div>
+                <div className="text-2xl lg:text-3xl font-bold text-[#4ECDC4]">30+</div>
+                <div className="text-xs text-gray-400 mt-1">澳洲大学</div>
               </div>
               <div className="text-center px-5 py-4 bg-white/5 rounded-xl min-w-[100px]">
                 <div className="text-2xl lg:text-3xl font-bold text-white">30s</div>
