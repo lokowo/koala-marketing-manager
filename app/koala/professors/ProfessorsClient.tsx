@@ -345,14 +345,12 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
     }
   }, [importUrl]);
 
-  // Category counts once on mount
+  // Category counts once on mount — single batch request
   useEffect(() => {
-    Promise.all(
-      ['health', 'physics', 'bio', 'earth', 'neuro', 'cs', 'eng', 'soc'].map(c =>
-        fetch(`/api/professors?category=${c}&limit=1`)
-          .then(r => r.json()).then(d => [c, d.total ?? 0] as [string, number]).catch(() => [c, 0] as [string, number])
-      )
-    ).then(results => setCategoryCounts(Object.fromEntries(results)));
+    fetch('/api/professors/counts')
+      .then(r => r.json())
+      .then(d => { if (d.counts) setCategoryCounts(d.counts); })
+      .catch(() => {});
   }, []);
 
   // Load more
