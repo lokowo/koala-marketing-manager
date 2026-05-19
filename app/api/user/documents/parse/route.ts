@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
     await db
       .from('user_documents')
-      .update({ ai_parsed: false, updated_at: new Date().toISOString() })
+      .update({ ai_parsed: false })
       .eq('id', document_id);
 
     const storagePath = doc.file_url?.includes('user-documents/')
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     if (!storagePath) {
       await db
         .from('user_documents')
-        .update({ ai_summary: JSON.stringify({ error: 'Invalid file path' }), updated_at: new Date().toISOString() })
+        .update({ ai_summary: JSON.stringify({ error: 'Invalid file path' }) })
         .eq('id', document_id);
       return Response.json({ error: 'Invalid file path' }, { status: 500 });
     }
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     if (dlError || !fileData) {
       await db
         .from('user_documents')
-        .update({ ai_summary: JSON.stringify({ error: 'Failed to download file' }), updated_at: new Date().toISOString() })
+        .update({ ai_summary: JSON.stringify({ error: 'Failed to download file' }) })
         .eq('id', document_id);
       return Response.json({ error: 'Failed to download file' }, { status: 500 });
     }
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     if (isDoc) {
       await db
         .from('user_documents')
-        .update({ ai_summary: JSON.stringify({ error: '不支持 .doc 格式，请转换为 .docx 后重新上传' }), updated_at: new Date().toISOString() })
+        .update({ ai_summary: JSON.stringify({ error: '不支持 .doc 格式，请转换为 .docx 后重新上传' }) })
         .eq('id', document_id);
       return Response.json({ error: '不支持 .doc 格式，请转换为 .docx 后重新上传' }, { status: 400 });
     }
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     if (!isImage && !isPdf && !isDocx) {
       await db
         .from('user_documents')
-        .update({ ai_summary: JSON.stringify({ error: '不支持的文件格式' }), updated_at: new Date().toISOString() })
+        .update({ ai_summary: JSON.stringify({ error: '不支持的文件格式' }) })
         .eq('id', document_id);
       return Response.json({ error: '不支持的文件格式，请上传 PDF、图片或 DOCX 文件' }, { status: 400 });
     }
@@ -170,26 +170,45 @@ export async function POST(req: Request) {
     if (!jsonMatch) {
       await db
         .from('user_documents')
-        .update({ ai_summary: JSON.stringify({ error: 'Failed to parse AI response' }), updated_at: new Date().toISOString() })
+        .update({ ai_summary: JSON.stringify({ error: 'Failed to parse AI response' }) })
         .eq('id', document_id);
       return Response.json({ error: 'Failed to parse AI response' }, { status: 500 });
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
 
-    await db
+    const { error: docUpdateErr } = await db
       .from('user_documents')
       .update({
         ai_parsed: true,
         ai_summary: JSON.stringify(parsed),
-        updated_at: new Date().toISOString(),
       })
       .eq('id', document_id);
 
+    if (docUpdateErr) {
+      console.error('[parse] Failed to update document status:', docUpdateErr.message);
+      return Response.json({ error: 'Failed to save parse result' }, { status: 500 });
+    }
+
+    const warnings: string[] = [];
+
     if (parsed.education && Array.isArray(parsed.education)) {
+      const { data: existingEdu } = await db
+        .from('education_history')
+        .select('institution, degree_type, major')
+        .eq('user_id', user.id);
+      const eduKeys = new Set(
+        (existingEdu ?? []).map((r: Record<string, string>) =>
+          `${(r.institution || '').toLowerCase()}|${(r.degree_type || '').toLowerCase()}|${(r.major || '').toLowerCase()}`
+        )
+      );
+
       for (const edu of parsed.education) {
         if (!edu.school) continue;
-        await db.from('education_history').insert({
+        const key = `${edu.school.toLowerCase()}|${(edu.degree || 'Other').toLowerCase()}|${(edu.major || '').toLowerCase()}`;
+        if (eduKeys.has(key)) continue;
+
+        const { error: eduErr } = await db.from('education_history').insert({
           user_id: user.id,
           institution: edu.school,
           major: edu.major || null,
@@ -201,13 +220,32 @@ export async function POST(req: Request) {
           status: edu.is_current ? 'current' : 'completed',
           description: edu.description || null,
         });
+        if (eduErr) {
+          console.error('[parse] education_history insert failed:', eduErr.message);
+          warnings.push(`Education insert failed for "${edu.school}": ${eduErr.message}`);
+        } else {
+          eduKeys.add(key);
+        }
       }
     }
 
     if (parsed.work && Array.isArray(parsed.work)) {
+      const { data: existingWork } = await db
+        .from('work_history')
+        .select('company, position')
+        .eq('user_id', user.id);
+      const workKeys = new Set(
+        (existingWork ?? []).map((r: Record<string, string>) =>
+          `${(r.company || '').toLowerCase()}|${(r.position || '').toLowerCase()}`
+        )
+      );
+
       for (const w of parsed.work) {
         if (!w.company) continue;
-        await db.from('work_history').insert({
+        const key = `${w.company.toLowerCase()}|${(w.position || '未填写').toLowerCase()}`;
+        if (workKeys.has(key)) continue;
+
+        const { error: workErr } = await db.from('work_history').insert({
           user_id: user.id,
           company: w.company,
           position: w.position || '未填写',
@@ -217,6 +255,12 @@ export async function POST(req: Request) {
           status: w.is_current ? 'current' : 'completed',
           description: w.description || null,
         });
+        if (workErr) {
+          console.error('[parse] work_history insert failed:', workErr.message);
+          warnings.push(`Work insert failed for "${w.company}": ${workErr.message}`);
+        } else {
+          workKeys.add(key);
+        }
       }
     }
 
@@ -246,6 +290,7 @@ export async function POST(req: Request) {
       parsed,
       education_count: parsed.education?.length ?? 0,
       work_count: parsed.work?.length ?? 0,
+      warnings: warnings.length > 0 ? warnings : undefined,
     });
   } catch (error) {
     const err = error as Error;

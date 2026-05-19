@@ -1,5 +1,6 @@
 -- Koala PhD — Education History, Work History, User Documents
--- Run this in Supabase SQL Editor: Dashboard → SQL Editor → New Query
+-- NOTE: This file reflects the PRODUCTION schema as of 2026-05-19.
+-- Do NOT run this in production — it is documentation only.
 
 -- ─────────────────────────────────────────────
 -- education_history (multiple education entries per user)
@@ -8,21 +9,23 @@
 CREATE TABLE IF NOT EXISTS education_history (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  school          TEXT NOT NULL,
+  institution     TEXT NOT NULL,
+  institution_short TEXT,
+  degree_type     TEXT NOT NULL,
+  degree_name     TEXT,
   major           TEXT,
-  degree          TEXT CHECK (degree IN (
-    '高中', '大专', '本科', '硕士', '博士', '博士后', '其他'
-  )),
-  gpa             DECIMAL(5,2),
-  gpa_scale       TEXT CHECK (gpa_scale IN ('4.0', '5.0', '7.0', '100')),
-  start_date      TEXT,
-  end_date        TEXT,
-  is_current       BOOLEAN DEFAULT FALSE,
+  major_code      TEXT,
+  start_year      INTEGER,
+  end_year        INTEGER,
+  status          TEXT DEFAULT 'completed',
+  gpa             NUMERIC,
+  gpa_scale       TEXT,
+  country         TEXT,
+  city            TEXT,
+  sort_order      INTEGER DEFAULT 0,
   description     TEXT,
-  source          TEXT DEFAULT 'manual' CHECK (source IN ('manual', 'ai_parsed')),
-  source_document_id UUID,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS education_history_user_idx ON education_history (user_id);
@@ -35,15 +38,16 @@ CREATE TABLE IF NOT EXISTS work_history (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   company         TEXT NOT NULL,
-  position        TEXT,
-  start_date      TEXT,
-  end_date        TEXT,
-  is_current       BOOLEAN DEFAULT FALSE,
+  position        TEXT NOT NULL,
   description     TEXT,
-  source          TEXT DEFAULT 'manual' CHECK (source IN ('manual', 'ai_parsed')),
-  source_document_id UUID,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  start_year      INTEGER,
+  end_year        INTEGER,
+  status          TEXT DEFAULT 'completed',
+  industry        TEXT,
+  sort_order      INTEGER DEFAULT 0,
+  is_current      BOOLEAN DEFAULT FALSE,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS work_history_user_idx ON work_history (user_id);
@@ -56,30 +60,16 @@ CREATE TABLE IF NOT EXISTS user_documents (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   file_name       TEXT NOT NULL,
+  file_url        TEXT NOT NULL,
   file_type       TEXT NOT NULL,
-  file_size       INTEGER NOT NULL,
-  storage_path    TEXT NOT NULL,
-  public_url      TEXT,
-  parse_status    TEXT DEFAULT 'pending' CHECK (parse_status IN ('pending', 'parsing', 'done', 'failed')),
-  parsed_data     JSONB,
-  parse_error     TEXT,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  file_size       INTEGER,
+  institution     TEXT,
+  ai_parsed       BOOLEAN DEFAULT FALSE,
+  ai_summary      TEXT,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS user_documents_user_idx ON user_documents (user_id);
-
--- ─────────────────────────────────────────────
--- Foreign keys for source_document_id
--- ─────────────────────────────────────────────
-
-ALTER TABLE education_history
-  ADD CONSTRAINT fk_education_source_doc
-  FOREIGN KEY (source_document_id) REFERENCES user_documents(id) ON DELETE SET NULL;
-
-ALTER TABLE work_history
-  ADD CONSTRAINT fk_work_source_doc
-  FOREIGN KEY (source_document_id) REFERENCES user_documents(id) ON DELETE SET NULL;
 
 -- ─────────────────────────────────────────────
 -- RLS Policies
