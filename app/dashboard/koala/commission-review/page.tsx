@@ -17,12 +17,19 @@ interface Commission {
 }
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  pending: { label: '待确认', color: '#CA8A04', bg: '#FEF9C3' },
-  confirmed: { label: '已确认', color: '#2563EB', bg: '#DBEAFE' },
-  paid_out: { label: '已发放', color: '#16A34A', bg: '#DCFCE7' },
-  rejected: { label: '已拒绝', color: '#DC2626', bg: '#FEE2E2' },
-  refunded: { label: '已退款', color: '#6B7280', bg: '#F3F4F6' },
+  pending:   { label: '待确认', color: '#92400E', bg: '#FEF3C7' },
+  confirmed: { label: '已确认', color: '#166534', bg: '#DCFCE7' },
+  paid_out:  { label: '已发放', color: '#1E40AF', bg: '#DBEAFE' },
+  rejected:  { label: '已拒绝', color: '#991B1B', bg: '#FEE2E2' },
+  refunded:  { label: '已退款', color: '#6B7280', bg: '#F3F4F6' },
 };
+
+const TABS = [
+  { key: 'confirmed', label: '待发放' },
+  { key: 'pending', label: '待确认' },
+  { key: 'paid_out', label: '已发放' },
+  { key: 'all', label: '全部' },
+];
 
 export default function CommissionReviewPage() {
   const [commissions, setCommissions] = useState<Commission[]>([]);
@@ -53,11 +60,8 @@ export default function CommissionReviewPage() {
   }
 
   function toggleAll() {
-    if (selected.size === commissions.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(commissions.map(c => c.id)));
-    }
+    if (selected.size === commissions.length) setSelected(new Set());
+    else setSelected(new Set(commissions.map(c => c.id)));
   }
 
   async function batchPayout() {
@@ -69,11 +73,8 @@ export default function CommissionReviewPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ commission_ids: Array.from(selected) }),
     });
-    if (res.ok) {
-      loadData(statusFilter);
-    } else {
-      alert('发放失败');
-    }
+    if (res.ok) loadData(statusFilter);
+    else alert('发放失败');
     setPaying(false);
   }
 
@@ -82,52 +83,64 @@ export default function CommissionReviewPage() {
     .reduce((s, c) => s + c.commission_amount, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-800">佣金审核发放</h1>
+        <h1 className="text-xl font-bold text-[#111827]">佣金审核发放</h1>
         {statusFilter === 'confirmed' && selected.size > 0 && (
           <button
             onClick={batchPayout}
             disabled={paying}
-            className="text-xs px-4 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-50"
+            className="text-xs px-4 py-2 rounded-lg bg-[#166534] text-white font-medium hover:opacity-90 transition disabled:opacity-50"
           >
-            {paying ? '发放中...' : `发放 ${selected.size} 笔 ($${selectedTotal.toFixed(2)})`}
+            {paying ? '发放中...' : `批量发放 ${selected.size} 笔 ($${selectedTotal.toFixed(2)})`}
           </button>
         )}
       </div>
 
-      {/* Pending total */}
-      <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-        <div className="text-xs text-amber-700 mb-1">待发放总额</div>
-        <div className="text-2xl font-bold text-amber-700">${pendingTotal.toFixed(2)}</div>
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl p-4 border border-[#E5E7EB] bg-[#FEF3C7]">
+          <div className="text-[10px] text-[#92400E] font-medium mb-0.5">待发放总额</div>
+          <div className="text-2xl font-bold text-[#92400E]">${pendingTotal.toFixed(2)}</div>
+        </div>
+        <div className="rounded-xl p-4 border border-[#E5E7EB] bg-[#DCFCE7]">
+          <div className="text-[10px] text-[#166534] font-medium mb-0.5">已选金额</div>
+          <div className="text-2xl font-bold text-[#166534]">
+            {selected.size > 0 ? `$${selectedTotal.toFixed(2)}` : '$0.00'}
+          </div>
+        </div>
       </div>
 
-      {/* Status filter */}
-      <div className="flex gap-1.5">
-        {['confirmed', 'paid_out', 'pending', 'all'].map(s => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            className={`text-[10px] px-3 py-1.5 rounded-lg transition ${
-              statusFilter === s ? 'bg-slate-800 text-white font-medium' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-            }`}
-          >
-            {s === 'all' ? '全部' : STATUS_CFG[s]?.label || s}
-          </button>
-        ))}
+      {/* Tab filter */}
+      <div className="border-b border-[#E5E7EB]">
+        <div className="flex gap-0 -mb-px">
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setStatusFilter(tab.key)}
+              className={`px-4 py-2.5 text-xs font-medium border-b-2 transition ${
+                statusFilter === tab.key
+                  ? 'border-[#F59E0B] text-[#111827]'
+                  : 'border-transparent text-[#6B7280] hover:text-[#374151]'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-400 py-8 text-center">加载中...</p>
+        <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-slate-50 text-slate-500">
+                <tr className="bg-[#F9FAFB] text-[#6B7280]">
                   {statusFilter === 'confirmed' && (
                     <th className="px-3 py-2.5 w-10">
-                      <input type="checkbox" checked={selected.size === commissions.length && commissions.length > 0} onChange={toggleAll} className="accent-amber-500" />
+                      <input type="checkbox" checked={selected.size === commissions.length && commissions.length > 0} onChange={toggleAll} className="accent-[#F59E0B]" />
                     </th>
                   )}
                   <th className="text-left px-3 py-2.5 font-medium">日期</th>
@@ -140,23 +153,23 @@ export default function CommissionReviewPage() {
                   <th className="text-center px-3 py-2.5 font-medium">状态</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#F3F4F6]">
                 {commissions.map(c => {
                   const cfg = STATUS_CFG[c.status] || STATUS_CFG.pending;
                   return (
-                    <tr key={c.id} className={`hover:bg-slate-50 ${selected.has(c.id) ? 'bg-amber-50/50' : ''}`}>
+                    <tr key={c.id} className={`hover:bg-[#F9FAFB] ${selected.has(c.id) ? 'bg-[#FFFBEB]' : ''}`}>
                       {statusFilter === 'confirmed' && (
                         <td className="px-3 py-2.5">
-                          <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} className="accent-amber-500" />
+                          <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} className="accent-[#F59E0B]" />
                         </td>
                       )}
-                      <td className="px-3 py-2.5 text-slate-500">{new Date(c.created_at).toLocaleDateString('zh-CN')}</td>
-                      <td className="px-3 py-2.5 font-medium text-slate-700">{c.agent_name}</td>
-                      <td className="px-3 py-2.5 text-slate-600">{c.user_name}</td>
-                      <td className="px-3 py-2.5 text-slate-600">{c.product_name || c.product_type}</td>
-                      <td className="px-3 py-2.5 text-center text-slate-600">${c.payment_amount.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 text-center text-slate-500">{(c.commission_rate * 100).toFixed(0)}%</td>
-                      <td className="px-3 py-2.5 text-center font-bold text-amber-600">${c.commission_amount.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-[#6B7280]">{new Date(c.created_at).toLocaleDateString('zh-CN')}</td>
+                      <td className="px-3 py-2.5 font-medium text-[#111827]">{c.agent_name}</td>
+                      <td className="px-3 py-2.5 text-[#374151]">{c.user_name}</td>
+                      <td className="px-3 py-2.5 text-[#374151]">{c.product_name || c.product_type}</td>
+                      <td className="px-3 py-2.5 text-center text-[#374151]">${c.payment_amount.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-center text-[#6B7280]">{(c.commission_rate * 100).toFixed(0)}%</td>
+                      <td className="px-3 py-2.5 text-center font-bold text-[#D4A843]">${c.commission_amount.toFixed(2)}</td>
                       <td className="px-3 py-2.5 text-center">
                         <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: cfg.bg, color: cfg.color }}>
                           {cfg.label}
@@ -166,7 +179,7 @@ export default function CommissionReviewPage() {
                   );
                 })}
                 {commissions.length === 0 && (
-                  <tr><td colSpan={9} className="px-3 py-8 text-center text-slate-400">暂无记录</td></tr>
+                  <tr><td colSpan={9} className="px-3 py-8 text-center text-[#6B7280]">暂无记录</td></tr>
                 )}
               </tbody>
             </table>
