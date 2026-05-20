@@ -9,16 +9,18 @@ interface NavItem {
   icon: string;
   label: string;
   href: string;
+  group?: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { icon: '📊', label: '仪表盘', href: '/dashboard/sales' },
+  { icon: '📢', label: '推广中心', href: '/dashboard/sales/promo-center', group: '推广' },
   { icon: '📋', label: '问卷管理', href: '/dashboard/sales/surveys' },
+  { icon: '👥', label: '我的客户', href: '/dashboard/sales/referral-users', group: '客户' },
   { icon: '📈', label: '渠道分析', href: '/dashboard/sales/channel-analytics' },
-  { icon: '👥', label: '推荐用户', href: '/dashboard/sales/referral-users' },
-  { icon: '💰', label: '佣金明细', href: '/dashboard/sales/my-commissions' },
-  { icon: '🔗', label: '推广工具', href: '/dashboard/sales/promo-tools' },
-  { icon: '📝', label: '操作记录', href: '/dashboard/sales/my-logs' },
+  { icon: '💰', label: '佣金明细', href: '/dashboard/sales/my-commissions', group: '收入' },
+  { icon: '📝', label: '操作记录', href: '/dashboard/sales/my-logs', group: '个人' },
+  { icon: '⚙️', label: '个人设置', href: '/dashboard/sales/settings' },
 ];
 
 export default function SalesLayout({ children }: { children: ReactNode }) {
@@ -101,6 +103,11 @@ export default function SalesLayout({ children }: { children: ReactNode }) {
             const showLabel = mobile || !collapsed;
             return (
               <li key={item.href}>
+                {item.group && showLabel && (
+                  <div className="px-3 pt-5 pb-1.5">
+                    <span className="text-[11px] font-medium tracking-widest text-[#9CA3AF] uppercase">{item.group}</span>
+                  </div>
+                )}
                 <Link
                   href={item.href}
                   onClick={() => mobile && setSidebarOpen(false)}
