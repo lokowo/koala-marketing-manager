@@ -647,14 +647,16 @@ Koala PhD is an AI-first platform where users chat with "考拉学长" to get fr
 
 ## 强制使用 OpenSpec 工作流
 
-所有代码变更必须通过 OpenSpec 流程执行，禁止直接改代码。
+所有代码修改任务必须使用 OpenSpec 流程，禁止直接改代码。
 
 标准流程：
-1. /opsx:new {需求} → 创建提案
-2. /opsx:ff → 生成完整文档
-3. /opsx:apply → 执行实施
-4. /opsx:verify → 验证结果
-5. /opsx:archive → 归档变更
+1. /opsx:new {需求} → 创建任务
+2. /opsx:ff → 调研 + 制定方案
+3. /opsx:apply → 实施修改
+4. /opsx:verify → 验证（npm run build + 功能测试）
+5. /opsx:archive → 归档
+
+不得跳过任何步骤，不得用简化格式替代。
 
 例外：一行代码的简单修复或紧急故障可跳过。
 
@@ -665,3 +667,7 @@ Koala PhD is an AI-first platform where users chat with "考拉学长" to get fr
 - **设计系统**: `docs/design-system/DESIGN.md` — 色彩、字体、间距、组件样式
 - **网页开发技能**: `docs/design-system/SKILL-web-page.md` — 页面开发流程与规范
 - **使用说明**: `docs/design-system/README.md` — 设计系统概览与引用方式
+
+## Sentry 错误检查
+修复 bug 前先查 Sentry 最新错误：
+curl -H "Authorization: Bearer $SENTRY_AUTH_TOKEN" "https://sentry.io/api/0/projects/assa-investment-group/javascript-nextjs/issues/?query=is:unresolved&sort=date&limit=10"
