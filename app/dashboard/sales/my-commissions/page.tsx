@@ -48,19 +48,24 @@ export default function MyCommissionsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
+  const [error, setError] = useState<string | null>(null);
+
   const fetchData = useCallback((s: string, p: number) => {
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams();
     if (s !== 'all') params.set('status', s);
     params.set('page', String(p));
     params.set('limit', String(PAGE_SIZE));
-    fetch(`/api/sales/my-commissions?${params}`).then(r => r.json()).then(d => {
+    fetch(`/api/sales/my-commissions?${params}`).then(r => {
+      if (!r.ok) throw new Error(r.status === 403 ? '你还不是活跃的销售人员' : '加载失败');
+      return r.json();
+    }).then(d => {
       setCommissions(d.data || []);
       setSummary(d.summary || null);
       setTotal(d.total || 0);
       setTotalPages(d.totalPages || 1);
-      setLoading(false);
-    });
+    }).catch(e => setError(e.message)).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { fetchData(statusFilter, page); }, [statusFilter, page, fetchData]);
@@ -96,6 +101,8 @@ export default function MyCommissionsPage() {
       URL.revokeObjectURL(url);
     });
   }
+
+  if (error) return <p className="text-sm text-[#991B1B] py-8 text-center">{error}</p>;
 
   return (
     <div className="space-y-5">

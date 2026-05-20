@@ -58,13 +58,28 @@ export default function SalesDashboard() {
   const [data, setData] = useState<DashData | null>(null);
   const [loading, setLoading] = useState(true);
   const [codeCopied, setCodeCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const res = await fetch('/api/sales/dashboard-stats');
-    if (res.ok) setData(await res.json());
+    setError(null);
+    try {
+      const res = await fetch('/api/sales/dashboard-stats');
+      if (res.ok) {
+        setData(await res.json());
+      } else if (res.status === 401) {
+        router.replace('/login');
+        return;
+      } else if (res.status === 403) {
+        setError('你还不是活跃的销售人员，请联系管理员开通权限。');
+      } else {
+        setError('加载仪表盘数据失败，请刷新页面重试。');
+      }
+    } catch {
+      setError('网络连接失败，请检查网络后重试。');
+    }
     setLoading(false);
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -73,8 +88,19 @@ export default function SalesDashboard() {
     });
   }, [router, loadData]);
 
-  if (loading || !data) {
-    return <div className="flex items-center justify-center py-20"><p className="text-sm text-[#6B7280]">加载中…</p></div>;
+  if (loading) {
+    return <div className="flex items-center justify-center py-20"><p className="text-sm text-[#6B7280]">加载中...</p></div>;
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <p className="text-sm text-[#991B1B]">{error || '加载失败'}</p>
+        <button onClick={loadData} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB] transition">
+          重试
+        </button>
+      </div>
+    );
   }
 
   const { agent, kpi, trend_30d, team_ranking, channel_breakdown, funnel, recent_commissions } = data;

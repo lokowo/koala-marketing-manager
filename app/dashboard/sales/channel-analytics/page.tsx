@@ -36,18 +36,23 @@ export default function ChannelAnalyticsPage() {
   const [channels, setChannels] = useState<ChannelData[]>([]);
   const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/sales/channel-analytics?days=${days}`).then(r => r.json()).then(d => {
+    setError(null);
+    fetch(`/api/sales/channel-analytics?days=${days}`).then(r => {
+      if (!r.ok) throw new Error(r.status === 403 ? '你还不是活跃的销售人员' : '加载失败');
+      return r.json();
+    }).then(d => {
       setChannels(d.channels || []);
       setFunnel(d.funnel || null);
-      setLoading(false);
-    });
+    }).catch(e => setError(e.message)).finally(() => setLoading(false));
   }, [days]);
 
   if (loading) return <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>;
+  if (error) return <p className="text-sm text-[#991B1B] py-8 text-center">{error}</p>;
 
   const pieData = channels.filter(c => c.visits > 0).map(c => ({
     name: CH_LABELS[c.channel] || c.channel,

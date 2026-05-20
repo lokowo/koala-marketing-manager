@@ -39,13 +39,13 @@ export default function SalesSettingsPage() {
       if (!user) { router.replace('/login'); return; }
       const { data: agent } = await (supabase as any)
         .from('sales_agents')
-        .select('display_name, referral_code, phone, payment_method, payment_account, payment_name, notify_registration, notify_commission, notify_weekly_report')
+        .select('name, referral_code, phone, payment_method, payment_account, payment_name, notify_registration, notify_commission, notify_weekly_report')
         .eq('user_id', user.id)
         .eq('status', 'active')
         .single();
       if (agent) {
         setSettings({
-          display_name: agent.display_name || '',
+          display_name: agent.name || '',
           email: user.email || '',
           referral_code: agent.referral_code || '',
           phone: agent.phone || '',

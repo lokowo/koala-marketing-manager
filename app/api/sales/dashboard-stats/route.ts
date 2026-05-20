@@ -11,7 +11,7 @@ export async function GET() {
 
     const { data: agent } = await db
       .from('sales_agents')
-      .select('id, display_name, referral_code, tier')
+      .select('id, name, referral_code')
       .eq('user_id', result.user.id)
       .eq('status', 'active')
       .single();
@@ -44,7 +44,7 @@ export async function GET() {
       db.from('sales_kpi_targets').select('*').eq('agent_id', agent.id).lte('period_start', now.toISOString().split('T')[0]).gte('period_end', now.toISOString().split('T')[0]).maybeSingle(),
       db.from('sales_visits').select('visited_at').eq('agent_id', agent.id).gte('visited_at', thirtyDaysAgo).order('visited_at', { ascending: true }),
       db.from('sales_referrals').select('created_at').eq('agent_id', agent.id).gte('created_at', thirtyDaysAgo).order('created_at', { ascending: true }),
-      db.from('sales_agents').select('id, display_name').eq('status', 'active'),
+      db.from('sales_agents').select('id, name').eq('status', 'active'),
       db.from('sales_visits').select('channel').eq('agent_id', agent.id).gte('visited_at', monthStart),
       db.from('sales_commissions').select('created_at, commission_amount, status, product_type, user_name').eq('agent_id', agent.id).order('created_at', { ascending: false }).limit(5),
       db.from('sales_commissions').select('id', { count: 'exact', head: true }).eq('agent_id', agent.id).gte('created_at', monthStart).neq('status', 'rejected'),
@@ -88,7 +88,7 @@ export async function GET() {
       for (const c of (allComms || [])) {
         byAgent[c.agent_id] = (byAgent[c.agent_id] || 0) + (c.commission_amount || 0);
       }
-      const agentMap = Object.fromEntries((allAgents.data || []).map((a: any) => [a.id, a.display_name || '未知']));
+      const agentMap = Object.fromEntries((allAgents.data || []).map((a: any) => [a.id, a.name || '未知']));
       teamRanking = Object.entries(byAgent)
         .map(([id, comm]) => ({ name: agentMap[id] || '未知', commission: Math.round(comm * 100) / 100, is_me: id === agent.id }))
         .sort((a, b) => b.commission - a.commission)
@@ -128,9 +128,9 @@ export async function GET() {
 
     return Response.json({
       agent: {
-        display_name: agent.display_name || result.user.email?.split('@')[0] || '',
+        display_name: agent.name || result.user.email?.split('@')[0] || '',
         referral_code: agent.referral_code,
-        tier: agent.tier || 'bronze',
+        tier: 'bronze',
       },
       kpi: {
         commission: {

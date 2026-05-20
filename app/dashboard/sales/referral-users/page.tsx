@@ -41,16 +41,20 @@ export default function ReferralUsersPage() {
   const [channelFilter, setChannelFilter] = useState('all');
   const [paidFilter, setPaidFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(() => {
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     params.set('sort', sort);
-    fetch(`/api/sales/my-referrals?${params}`).then(r => r.json()).then(d => {
+    fetch(`/api/sales/my-referrals?${params}`).then(r => {
+      if (!r.ok) throw new Error(r.status === 403 ? '你还不是活跃的销售人员' : '加载失败');
+      return r.json();
+    }).then(d => {
       setReferrals(d.data || []);
-      setLoading(false);
-    });
+    }).catch(e => setError(e.message)).finally(() => setLoading(false));
   }, [search, sort]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -74,6 +78,13 @@ export default function ReferralUsersPage() {
   function navigateToCustomer(referral: Referral) {
     router.push(`/dashboard/sales/customer/${referral.id}`);
   }
+
+  if (error) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-3">
+      <p className="text-sm text-[#991B1B]">{error}</p>
+      <button onClick={fetchData} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB] transition">重试</button>
+    </div>
+  );
 
   return (
     <div className="space-y-5">

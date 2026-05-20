@@ -43,12 +43,12 @@ export default function PromoCenterPage() {
       if (!user) { router.replace('/login'); return; }
       await fetch('/api/admin/me');
       const [agentRes, statsRes] = await Promise.all([
-        (supabase as any).from('sales_agents').select('referral_code, display_name').eq('user_id', user.id).eq('status', 'active').single(),
+        (supabase as any).from('sales_agents').select('referral_code, name').eq('user_id', user.id).eq('status', 'active').single(),
         fetch('/api/sales/channel-analytics?days=90').then(r => r.ok ? r.json() : null),
       ]);
       if (agentRes.data?.referral_code) {
         setReferralCode(agentRes.data.referral_code);
-        setDisplayName(agentRes.data.display_name || user.email?.split('@')[0] || '');
+        setDisplayName(agentRes.data.name || user.email?.split('@')[0] || '');
       }
       if (statsRes?.channels) {
         const map: Record<string, number> = {};
@@ -145,7 +145,14 @@ export default function PromoCenterPage() {
   }, [qrImageUrl, posterTemplate, posterTagline, referralCode, displayName]);
 
   if (loading) return <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>;
-  if (!referralCode) return <p className="text-sm text-[#6B7280] py-8 text-center">你还不是活跃的销售人员</p>;
+  if (!referralCode) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-3">
+      <p className="text-sm text-[#991B1B]">你还不是活跃的销售人员，请联系管理员开通权限。</p>
+      <button onClick={() => window.location.reload()} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB] transition">
+        重试
+      </button>
+    </div>
+  );
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
