@@ -23,10 +23,46 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  // ─── Sales Attribution (P2') ─────────────────────────────────────────────
+  const ref = request.nextUrl.searchParams.get('ref');
+  const ch = request.nextUrl.searchParams.get('ch') || 'unknown';
+  const existingRef = request.cookies.get('koala_ref')?.value;
+
+  if (ref && !existingRef) {
+    const refData = JSON.stringify({
+      ref, ch, ts: Date.now(), lp: request.nextUrl.pathname,
+    });
+    const cookieOpts = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      maxAge: 30 * 24 * 60 * 60,
+      path: '/',
+      domain: process.env.NODE_ENV === 'production' ? '.koalaphd.com' : undefined,
+    };
+    supabaseResponse.cookies.set('koala_ref', refData, cookieOpts);
+
+    if (!request.cookies.get('koala_visitor')?.value) {
+      supabaseResponse.cookies.set('koala_visitor', crypto.randomUUID(), {
+        ...cookieOpts, httpOnly: false,
+      });
+    }
+  }
+
+  if (!request.cookies.get('koala_visitor')?.value) {
+    supabaseResponse.cookies.set('koala_visitor', crypto.randomUUID(), {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      maxAge: 30 * 24 * 60 * 60,
+      path: '/',
+      domain: process.env.NODE_ENV === 'production' ? '.koalaphd.com' : undefined,
+    });
+  }
+
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
-  // Unauthenticated → redirect to /login
   if (pathname.startsWith('/dashboard') && !user) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
@@ -34,7 +70,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Already authenticated → skip login page
   if (pathname === '/login' && user) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard/koala';
@@ -46,5 +81,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard', '/dashboard/:path*', '/login'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/).*)'],
 };
