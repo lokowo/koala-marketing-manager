@@ -22,6 +22,8 @@ export async function GET(req: Request) {
     const status = searchParams.get('status');
     const from = searchParams.get('from');
     const to = searchParams.get('to');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')));
 
     let query = db
       .from('sales_commissions')
@@ -55,7 +57,11 @@ export async function GET(req: Request) {
       paid_total: items.filter((c: any) => c.status === 'paid_out').reduce((s: number, c: any) => s + c.commission_amount, 0),
     };
 
-    return Response.json({ data: items, summary });
+    const total = items.length;
+    const offset = (page - 1) * limit;
+    const paged = items.slice(offset, offset + limit);
+
+    return Response.json({ data: paged, summary, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     console.error('[sales/my-commissions]', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
