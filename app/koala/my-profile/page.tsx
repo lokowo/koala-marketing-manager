@@ -1022,6 +1022,12 @@ export default function MyProfilePage() {
             >
               查看积分明细 →
             </button>
+            <Link
+              href="/koala/pricing"
+              className="text-[10px] font-medium no-underline px-2 py-0.5 rounded-full bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
+            >
+              充值/订阅 →
+            </Link>
           </div>
           {showCreditRules && (
             <div className="mt-2 p-3 rounded-lg text-[10px] leading-relaxed bg-black/10 dark:bg-black/20 text-gray-500 dark:text-[#6a7a7e]">
