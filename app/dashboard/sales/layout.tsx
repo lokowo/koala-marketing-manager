@@ -20,6 +20,8 @@ import {
   IconX,
   IconChevronLeft,
   IconChevronRight,
+  IconSun,
+  IconMoon,
 } from '@tabler/icons-react';
 import type { Icon as TablerIcon } from '@tabler/icons-react';
 
@@ -70,6 +72,12 @@ export default function SalesLayout({ children }: { children: ReactNode }) {
       document.documentElement.classList.remove('dark');
     }
   }, [dark]);
+
+  function toggleTheme() {
+    const next = !dark;
+    setDark(next);
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+  }
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -211,11 +219,21 @@ export default function SalesLayout({ children }: { children: ReactNode }) {
       </div>
 
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile header */}
         <div className="bg-white dark:bg-[#1E293B] border-b border-[#E2E8F0] dark:border-[#334155] px-4 py-3 flex items-center gap-3 md:hidden">
           <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-lg hover:bg-[#F8FAFC] dark:hover:bg-[#334155] text-[#64748B]">
             <IconMenu2 size={20} strokeWidth={2} />
           </button>
-          <h1 className="text-sm font-bold text-[#111827] dark:text-[#F1F5F9]">Sales Center</h1>
+          <h1 className="text-sm font-bold text-[#111827] dark:text-[#F1F5F9] flex-1">Sales Center</h1>
+          <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-[#F3F4F6] dark:hover:bg-[#334155] transition-colors" title={dark ? '切换到浅色模式' : '切换到深色模式'}>
+            {dark ? <IconSun size={18} className="text-yellow-400" /> : <IconMoon size={18} className="text-[#64748B]" />}
+          </button>
+        </div>
+        {/* Desktop header */}
+        <div className="bg-white dark:bg-[#1E293B] border-b border-[#E2E8F0] dark:border-[#334155] px-6 py-3 hidden md:flex items-center justify-end">
+          <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-[#F3F4F6] dark:hover:bg-[#334155] transition-colors" title={dark ? '切换到浅色模式' : '切换到深色模式'}>
+            {dark ? <IconSun size={18} className="text-yellow-400" /> : <IconMoon size={18} className="text-[#64748B]" />}
+          </button>
         </div>
         <main className="flex-1 p-4 md:p-6 overflow-auto">
           {children}

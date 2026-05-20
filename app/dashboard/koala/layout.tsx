@@ -191,8 +191,8 @@ function SidebarGroup({
               href={item.href}
               className={`flex items-center justify-center py-2 rounded-lg text-sm transition-colors no-underline ${
                 active
-                  ? 'bg-[#FEF3C7] text-[#92400E]'
-                  : 'text-[#374151] hover:bg-[#F3F4F6]'
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
               }`}
               title={item.label}
             >
@@ -214,11 +214,11 @@ function SidebarGroup({
           className="w-1 h-4 rounded-full flex-shrink-0"
           style={{ backgroundColor: group.color }}
         />
-        <span className="flex-1 text-left text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wider">
+        <span className="flex-1 text-left text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
           {group.label}
         </span>
         <svg
-          className={`w-3 h-3 text-[#9CA3AF] transition-transform duration-200 ${
+          className={`w-3 h-3 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
             open ? 'rotate-90' : ''
           }`}
           fill="none"
@@ -246,8 +246,8 @@ function SidebarGroup({
                   onClick={onNavigate}
                   className={`flex items-center gap-2.5 pl-6 pr-3 py-1.5 rounded-lg text-[13px] transition-colors no-underline ${
                     active
-                      ? 'bg-[#FEF3C7] text-[#92400E] font-medium'
-                      : 'text-[#374151] hover:bg-[#F3F4F6] hover:text-[#111827]'
+                      ? 'bg-blue-50 text-blue-700 font-medium dark:bg-blue-950 dark:text-blue-300'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
                   }`}
                 >
                   {(() => { const Icon = item.icon; return <Icon {...ICON_PROPS} className="flex-shrink-0" />; })()}
@@ -269,10 +269,33 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
   const [authChecked, setAuthChecked] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
-    document.documentElement.classList.remove('dark');
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark' || saved === 'light') {
+      setTheme(saved);
+      document.documentElement.classList.toggle('dark', saved === 'dark');
+      return;
+    }
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const isDark = mq.matches;
+    setTheme(isDark ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', isDark);
+    const handler = (e: MediaQueryListEvent) => {
+      setTheme(e.matches ? 'dark' : 'light');
+      document.documentElement.classList.toggle('dark', e.matches);
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
+
+  const toggleTheme = useCallback(() => {
+    const next = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+    localStorage.setItem('theme', next);
+    document.documentElement.classList.toggle('dark', next === 'dark');
+  }, [theme]);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -300,8 +323,8 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
 
   if (!authChecked) {
     return (
-      <div className="flex h-screen bg-[#F9FAFB] items-center justify-center">
-        <p className="text-slate-400 text-sm">验证身份中...</p>
+      <div className="flex h-screen bg-[#F9FAFB] dark:bg-[#0F172A] items-center justify-center">
+        <p className="text-gray-400 dark:text-gray-500 text-sm">验证身份中...</p>
       </div>
     );
   }
@@ -323,14 +346,14 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
         <div
           className={`${
             collapsed && !mobile ? 'px-3 py-4' : 'px-5 py-5'
-          } border-b border-[#E5E7EB] flex items-center gap-3`}
+          } border-b border-gray-200 dark:border-gray-700 flex items-center gap-3`}
         >
           {showLabel && (
             <div className="flex-1 min-w-0">
-              <h1 className="text-base font-bold tracking-tight text-[#111827]">
+              <h1 className="text-base font-medium tracking-tight text-gray-900 dark:text-gray-100">
                 Koala PhD
               </h1>
-              <p className="text-[10px] text-[#9CA3AF] mt-0.5">
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
                 Admin Console
               </p>
             </div>
@@ -338,7 +361,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
           {mobile ? (
             <button
               onClick={closeMobile}
-              className="p-1.5 rounded-lg hover:bg-[#F3F4F6] text-[#9CA3AF] hover:text-[#374151] transition-colors flex-shrink-0"
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors flex-shrink-0"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 6L6 18M6 6l12 12" />
@@ -347,7 +370,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
           ) : (
             <button
               onClick={() => setCollapsed((v) => !v)}
-              className="p-1.5 rounded-lg hover:bg-[#F3F4F6] text-[#9CA3AF] hover:text-[#374151] transition-colors flex-shrink-0"
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors flex-shrink-0"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 {collapsed ? (
@@ -374,8 +397,8 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
                   onClick={mobile ? closeMobile : undefined}
                   className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors no-underline ${
                     active
-                      ? 'bg-[#FEF3C7] text-[#92400E] font-medium'
-                      : 'text-[#374151] hover:bg-[#F3F4F6] hover:text-[#111827]'
+                      ? 'bg-blue-50 text-blue-700 font-medium dark:bg-blue-950 dark:text-blue-300'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
                   }`}
                   title={!showLabel ? item.label : undefined}
                 >
@@ -405,10 +428,10 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
         <div
           className={`${
             collapsed && !mobile ? 'px-2' : 'px-4'
-          } py-3 border-t border-[#E5E7EB]`}
+          } py-3 border-t border-gray-200 dark:border-gray-700`}
         >
           {showLabel && (
-            <div className="text-[11px] text-[#9CA3AF] mb-2">
+            <div className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">
               {role === 'super_admin'
                 ? '超级管理员'
                 : role === 'admin'
@@ -421,7 +444,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
           <Link
             href="/koala/home"
             target="_blank"
-            className="flex items-center gap-2 w-full text-left text-[13px] text-[#6B7280] hover:text-[#111827] transition px-2 py-1.5 rounded hover:bg-[#F3F4F6] no-underline mb-0.5"
+            className="flex items-center gap-2 w-full text-left text-[13px] text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 transition px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 no-underline mb-0.5"
             title="前往前端"
           >
             <IconExternalLink {...ICON_PROPS} className="flex-shrink-0" />
@@ -429,7 +452,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
           </Link>
           <Link
             href="/koala/home"
-            className="flex items-center gap-2 w-full text-left text-[13px] text-[#6B7280] hover:text-[#111827] transition px-2 py-1.5 rounded hover:bg-[#F3F4F6] no-underline mb-0.5"
+            className="flex items-center gap-2 w-full text-left text-[13px] text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 transition px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 no-underline mb-0.5"
             title="返回主页"
           >
             <IconHome {...ICON_PROPS} className="flex-shrink-0" />
@@ -437,7 +460,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
           </Link>
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-2 w-full text-left text-[13px] text-[#6B7280] hover:text-[#111827] transition px-2 py-1.5 rounded hover:bg-[#F3F4F6]"
+            className="flex items-center gap-2 w-full text-left text-[13px] text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 transition px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
             title="退出登录"
           >
             <IconLogout {...ICON_PROPS} className="flex-shrink-0" />
@@ -449,7 +472,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="flex h-screen bg-[#F9FAFB]">
+    <div className="flex h-screen bg-gray-50 dark:bg-[#0F172A]">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
@@ -457,7 +480,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
             className="absolute inset-0 bg-black/30"
             onClick={closeMobile}
           />
-          <div className="absolute top-0 left-0 w-[280px] h-full bg-white flex flex-col z-10 shadow-lg">
+          <div className="absolute top-0 left-0 w-[280px] h-full bg-white dark:bg-[#1E293B] flex flex-col z-10 shadow-lg">
             {sidebarContent(true)}
           </div>
         </div>
@@ -467,14 +490,14 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
       <div
         className={`${
           collapsed ? 'w-16' : 'w-60'
-        } bg-white border-r border-[#E5E7EB] hidden md:flex flex-col shrink-0 transition-all duration-200`}
+        } bg-white dark:bg-[#1E293B] border-r border-gray-200 dark:border-gray-700 hidden md:flex flex-col shrink-0 transition-all duration-200`}
       >
         {sidebarContent()}
       </div>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <Header onMenuClick={() => setSidebarOpen(true)} theme={theme} onToggleTheme={toggleTheme} />
         <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>
       </div>
     </div>
