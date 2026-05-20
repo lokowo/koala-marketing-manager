@@ -34,6 +34,7 @@ export async function POST(req: Request) {
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         mode: 'subscription',
+        allow_promotion_codes: true,
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://koalaphd.com'}/koala/pricing?success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://koalaphd.com'}/koala/pricing?canceled=true`,
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         mode: 'payment',
+        allow_promotion_codes: true,
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://koalaphd.com'}/koala/pricing?success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://koalaphd.com'}/koala/pricing?canceled=true`,
