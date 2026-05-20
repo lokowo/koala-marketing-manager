@@ -28,6 +28,5 @@
       "path": "/api/cron/auto-confirm-commissions",
       "schedule": "0 2 * * *"
     }
-  ],
-  "_deploy_trigger": "2026-05-20T08:23:32.162Z"
+  ]
 }
