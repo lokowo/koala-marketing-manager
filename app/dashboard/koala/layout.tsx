@@ -105,6 +105,11 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
         { icon: '📋', label: '角色管理', href: '/dashboard/koala/roles', adminOnly: true },
         { icon: '📝', label: '工作日志', href: '/dashboard/koala/work-logs', adminOnly: true },
         { icon: '📈', label: 'Sales 管理', href: '/dashboard/koala/sales-overview', adminOnly: true },
+        { icon: '👤', label: '销售人员', href: '/dashboard/koala/sales-agents', adminOnly: true },
+        { icon: '💰', label: '佣金比例', href: '/dashboard/koala/commission-rates', adminOnly: true },
+        { icon: '🎯', label: '分销 KPI', href: '/dashboard/koala/kpi-targets', adminOnly: true },
+        { icon: '✅', label: '佣金审核', href: '/dashboard/koala/commission-review', adminOnly: true },
+        { icon: '📜', label: '审计日志', href: '/dashboard/koala/sales-audit', adminOnly: true },
         { icon: '🎯', label: 'Sales KPI', href: '/dashboard/koala/kpi-settings', adminOnly: true },
         { icon: '🔔', label: '站内信', href: '/dashboard/koala/notifications', adminOnly: true },
       );

@@ -8,11 +8,18 @@ export async function GET() {
   try {
     await requireSuperAdmin();
 
-    const [salesUsersRes, customersRes, qrcodesRes, reportsRes] = await Promise.all([
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const [salesUsersRes, customersRes, qrcodesRes, reportsRes, agentsRes, visitsRes, referralsRes, commissionsRes] = await Promise.all([
       db.from('user_roles').select('user_id, role, user_profiles(display_name, email, avatar_url)').in('role', ['sales', 'admin', 'super_admin']),
       db.from('sales_customers').select('sales_user_id, stage, created_at'),
       db.from('sales_qrcodes').select('sales_user_id, code, scan_count, created_at'),
       db.from('sales_weekly_reports').select('sales_user_id, week_start, summary').order('week_start', { ascending: false }).limit(50),
+      db.from('sales_agents').select('id, user_id, referral_code, status, user_profiles:user_id(display_name, email)').eq('status', 'active'),
+      db.from('sales_visits').select('agent_id, channel').gte('visited_at', monthStart),
+      db.from('sales_referrals').select('agent_id, channel').gte('created_at', monthStart),
+      db.from('sales_commissions').select('agent_id, commission_amount, status').gte('created_at', monthStart).neq('status', 'rejected'),
     ]);
 
     const salesUsers = salesUsersRes.data ?? [];
@@ -38,6 +45,45 @@ export async function GET() {
     const totalCustomers = allCustomers.length;
     const totalConverted = allCustomers.filter((c: { stage: string }) => c.stage === 'converted').length;
 
+    const agents = agentsRes.data || [];
+    const allVisits = visitsRes.data || [];
+    const allReferrals = referralsRes.data || [];
+    const allCommissions = commissionsRes.data || [];
+
+    const teamTotals = {
+      visits: allVisits.length,
+      registrations: allReferrals.length,
+      conversions: allCommissions.length,
+      commission: allCommissions.reduce((s: number, c: any) => s + (c.commission_amount || 0), 0),
+    };
+
+    const agentRankings = agents.map((a: any) => {
+      const visits = allVisits.filter((v: any) => v.agent_id === a.id).length;
+      const registrations = allReferrals.filter((r: any) => r.agent_id === a.id).length;
+      const agentComms = allCommissions.filter((c: any) => c.agent_id === a.id);
+      const commission = agentComms.reduce((s: number, c: any) => s + (c.commission_amount || 0), 0);
+      return {
+        agentId: a.id,
+        name: a.user_profiles?.display_name || a.user_profiles?.email || a.referral_code,
+        visits,
+        registrations,
+        conversions: agentComms.length,
+        commission: Math.round(commission * 100) / 100,
+      };
+    }).sort((a: any, b: any) => b.commission - a.commission);
+
+    const channelBreakdown: Record<string, { visits: number; registrations: number }> = {};
+    for (const v of allVisits) {
+      const ch = v.channel || 'unknown';
+      if (!channelBreakdown[ch]) channelBreakdown[ch] = { visits: 0, registrations: 0 };
+      channelBreakdown[ch].visits++;
+    }
+    for (const r of allReferrals) {
+      const ch = r.channel || 'unknown';
+      if (!channelBreakdown[ch]) channelBreakdown[ch] = { visits: 0, registrations: 0 };
+      channelBreakdown[ch].registrations++;
+    }
+
     return Response.json({
       summary: {
         totalSalesUsers: salesUsers.length,
@@ -47,6 +93,11 @@ export async function GET() {
         totalQrcodes: allQrcodes.length,
       },
       perSales,
+      distribution: {
+        teamTotals,
+        agentRankings,
+        channelBreakdown: Object.entries(channelBreakdown).map(([channel, data]) => ({ channel, ...data })),
+      },
     });
   } catch (e) {
     const msg = (e as Error).message;

@@ -24,6 +24,18 @@ interface Summary {
 interface EngagementEntry { userId: string; displayName: string; email: string; totalScore: number; level: 'high' | 'medium' | 'low' | 'dormant'; breakdown: { chatActivity: number; professorEngagement: number; profileCompleteness: number; outreachActivity: number; recency: number }; stats: { conversationCount: number; savedProfessors: number; emailsGenerated: number; profilePct: number; daysSinceLastActive: number; registeredDaysAgo: number } }
 interface EngagementSummary { high: number; medium: number; low: number; dormant: number; total: number; avgScore: number }
 
+interface DistributionData {
+  teamTotals: { visits: number; registrations: number; conversions: number; commission: number };
+  agentRankings: { agentId: string; name: string; visits: number; registrations: number; conversions: number; commission: number }[];
+  channelBreakdown: { channel: string; visits: number; registrations: number }[];
+}
+
+const CH_LABELS: Record<string, string> = {
+  wechat: '微信', xiaohongshu: '小红书', douyin: '抖音', weibo: '微博',
+  zhihu: '知乎', bilibili: 'Bilibili', email: '邮件', whatsapp: 'WhatsApp',
+  offline: '线下', survey: '调研', other: '其他', unknown: '未知',
+};
+
 const LEVEL_CONFIG = {
   high: { emoji: '🔥', label: '高活跃', color: '#16a34a', bg: '#dcfce7' },
   medium: { emoji: '🟡', label: '中等', color: '#ca8a04', bg: '#fef9c3' },
@@ -39,11 +51,13 @@ export default function SalesOverviewPage() {
   const [engData, setEngData] = useState<EngagementEntry[]>([]);
   const [engSummary, setEngSummary] = useState<EngagementSummary | null>(null);
   const [engLoading, setEngLoading] = useState(false);
+  const [dist, setDist] = useState<DistributionData | null>(null);
 
   useEffect(() => {
     fetch('/api/admin/sales-overview').then(r => r.json()).then(d => {
       setSummary(d.summary ?? null);
       setPerSales(d.perSales ?? []);
+      setDist(d.distribution ?? null);
       setLoading(false);
     });
   }, []);
@@ -223,6 +237,77 @@ export default function SalesOverviewPage() {
           </>
         )}
       </div>
+
+      {/* Distribution System: Team KPI + Rankings + Channel */}
+      {dist && (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: '本月总访问', value: dist.teamTotals.visits, icon: '👁' },
+              { label: '本月总注册', value: dist.teamTotals.registrations, icon: '📥' },
+              { label: '本月总转化', value: dist.teamTotals.conversions, icon: '🎯' },
+              { label: '本月总佣金', value: `$${dist.teamTotals.commission.toFixed(2)}`, icon: '💰' },
+            ].map(item => (
+              <div key={item.label} className="bg-white rounded-xl p-4 border border-slate-200">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-slate-500">{item.label}</span>
+                  <span>{item.icon}</span>
+                </div>
+                <div className="text-xl font-bold text-slate-800">{item.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {dist.agentRankings.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <h2 className="text-sm font-semibold text-slate-700 mb-3">本月销售排行榜（按佣金）</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500">
+                      <th className="text-center px-3 py-2 font-medium w-10">#</th>
+                      <th className="text-left px-3 py-2 font-medium">销售</th>
+                      <th className="text-center px-3 py-2 font-medium">访问</th>
+                      <th className="text-center px-3 py-2 font-medium">注册</th>
+                      <th className="text-center px-3 py-2 font-medium">转化</th>
+                      <th className="text-center px-3 py-2 font-medium">佣金</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {dist.agentRankings.map((a, i) => (
+                      <tr key={a.agentId} className={i === 0 ? 'bg-amber-50/50' : 'hover:bg-slate-50'}>
+                        <td className="text-center px-3 py-2.5 font-bold text-amber-600">{i + 1}</td>
+                        <td className="px-3 py-2.5 font-medium text-slate-700">{a.name}</td>
+                        <td className="text-center px-3 py-2.5 text-slate-600">{a.visits}</td>
+                        <td className="text-center px-3 py-2.5 text-slate-600">{a.registrations}</td>
+                        <td className="text-center px-3 py-2.5 text-slate-600">{a.conversions}</td>
+                        <td className="text-center px-3 py-2.5 font-bold text-amber-600">${a.commission.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {dist.channelBreakdown.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <h2 className="text-sm font-semibold text-slate-700 mb-3">本月渠道聚合</h2>
+              <div className="space-y-2">
+                {dist.channelBreakdown.sort((a, b) => b.visits - a.visits).map(ch => (
+                  <div key={ch.channel} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-50">
+                    <span className="text-xs font-medium text-slate-700 w-20">{CH_LABELS[ch.channel] || ch.channel}</span>
+                    <div className="flex-1 h-4 rounded bg-slate-100 overflow-hidden">
+                      <div className="h-full rounded bg-blue-200" style={{ width: `${(ch.visits / Math.max(...dist.channelBreakdown.map(c => c.visits), 1)) * 100}%` }} />
+                    </div>
+                    <span className="text-[10px] text-slate-500 w-20 text-right">访问 {ch.visits} · 注册 {ch.registrations}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

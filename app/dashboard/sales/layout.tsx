@@ -14,6 +14,10 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { icon: '📊', label: '仪表盘', href: '/dashboard/sales' },
   { icon: '📋', label: '问卷管理', href: '/dashboard/sales/surveys' },
+  { icon: '📈', label: '渠道分析', href: '/dashboard/sales/channel-analytics' },
+  { icon: '👥', label: '推荐用户', href: '/dashboard/sales/referral-users' },
+  { icon: '💰', label: '佣金明细', href: '/dashboard/sales/my-commissions' },
+  { icon: '🔗', label: '推广工具', href: '/dashboard/sales/promo-tools' },
   { icon: '📝', label: '操作记录', href: '/dashboard/sales/my-logs' },
 ];
 

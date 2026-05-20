@@ -21,6 +21,13 @@ interface WorkLog { id: string; action: string; target_type: string; target_id: 
 interface EngagementEntry { userId: string; displayName: string; email: string; totalScore: number; level: 'high' | 'medium' | 'low' | 'dormant'; breakdown: { chatActivity: number; professorEngagement: number; profileCompleteness: number; outreachActivity: number; recency: number }; stats: { conversationCount: number; savedProfessors: number; emailsGenerated: number; profilePct: number; daysSinceLastActive: number; registeredDaysAgo: number } }
 interface EngagementSummary { high: number; medium: number; low: number; dormant: number; total: number; avgScore: number }
 
+interface DashboardStats {
+  visits: { current: number; lastMonth: number; target: number };
+  registrations: { current: number; lastMonth: number; target: number };
+  conversions: { current: number; lastMonth: number; target: number };
+  commission: { current: number; lastMonth: number; target: number };
+}
+
 interface PerfData {
   my_stats: { total_scans: number; total_registers: number; conversion_rate: string };
   my_by_category: {
@@ -69,6 +76,7 @@ export default function SalesDashboard() {
   const [engagement, setEngagement] = useState<EngagementEntry[]>([]);
   const [engSummary, setEngSummary] = useState<EngagementSummary | null>(null);
   const [perf, setPerf] = useState<PerfData | null>(null);
+  const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string | null>(null);
   const [newLabel, setNewLabel] = useState('');
@@ -82,7 +90,7 @@ export default function SalesDashboard() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [qr, cust, fn, kpiRes, logsRes, engRes, perfRes] = await Promise.all([
+    const [qr, cust, fn, kpiRes, logsRes, engRes, perfRes, dashStatsRes] = await Promise.all([
       fetch('/api/sales/qrcode').then(r => r.json()),
       fetch('/api/sales/customers').then(r => r.json()),
       fetch('/api/sales/funnel').then(r => r.json()),
@@ -90,6 +98,7 @@ export default function SalesDashboard() {
       fetch('/api/sales/my-logs?limit=10').then(r => r.ok ? r.json() : { data: [] }),
       fetch('/api/sales/customer-engagement').then(r => r.ok ? r.json() : { data: [], summary: null }),
       fetch('/api/sales/performance').then(r => r.ok ? r.json() : null),
+      fetch('/api/sales/dashboard-stats').then(r => r.ok ? r.json() : null),
     ]);
     setQrcodes(qr.data ?? []);
     setClients(cust.data ?? []);
@@ -99,6 +108,7 @@ export default function SalesDashboard() {
     setEngagement(engRes.data ?? []);
     setEngSummary(engRes.summary ?? null);
     setPerf(perfRes);
+    setDashStats(dashStatsRes);
     setLoading(false);
   }, []);
 
@@ -201,6 +211,50 @@ export default function SalesDashboard() {
   return (
     <div className="text-[#111827]">
       <div className="max-w-4xl mx-auto space-y-5">
+
+        {/* Distribution KPI Cards */}
+        {dashStats && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: '本月访问量', icon: '👁', ...dashStats.visits, unit: '' },
+              { label: '本月注册量', icon: '📥', ...dashStats.registrations, unit: '' },
+              { label: '本月付费转化', icon: '🎯', ...dashStats.conversions, unit: '' },
+              { label: '本月佣金', icon: '💰', ...dashStats.commission, unit: 'AUD' },
+            ].map(item => {
+              const pct = item.target > 0 ? Math.min((item.current / item.target) * 100, 100) : 0;
+              const trend = item.lastMonth > 0 ? ((item.current - item.lastMonth) / item.lastMonth * 100) : 0;
+              const trendUp = trend >= 0;
+              return (
+                <div key={item.label} className="rounded-xl p-4 bg-white border border-[#E5E7EB]">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] text-[#6B7280]">{item.icon} {item.label}</span>
+                    {item.lastMonth > 0 && (
+                      <span className={`text-[10px] font-medium ${trendUp ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                        {trendUp ? '↑' : '↓'} {Math.abs(trend).toFixed(0)}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-2xl font-bold text-[#111827]">
+                    {item.unit === 'AUD' ? `$${item.current.toFixed(2)}` : item.current}
+                  </div>
+                  {item.target > 0 && (
+                    <>
+                      <div className="mt-2 h-2 rounded-full overflow-hidden bg-[#F3F4F6]">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%`, background: pct >= 100 ? '#10B981' : pct > 60 ? '#D4A843' : '#EF4444' }}
+                        />
+                      </div>
+                      <div className="mt-1 text-[10px] text-[#6B7280]">
+                        {pct.toFixed(0)}% · 目标 {item.unit === 'AUD' ? `$${item.target}` : item.target}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Quick actions */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
