@@ -17,8 +17,11 @@ interface Commission {
 
 interface Summary {
   pending_total: number;
+  pending_count: number;
   confirmed_total: number;
+  confirmed_count: number;
   paid_total: number;
+  paid_count: number;
 }
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
@@ -28,14 +31,6 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> =
   rejected:  { label: '已拒绝', color: '#991B1B', bg: '#FEE2E2' },
   refunded:  { label: '已退款', color: '#6B7280', bg: '#F3F4F6' },
 };
-
-const TABS: { key: string; label: string }[] = [
-  { key: 'all', label: '全部' },
-  { key: 'pending', label: '待确认' },
-  { key: 'confirmed', label: '已确认' },
-  { key: 'paid_out', label: '已发放' },
-  { key: 'rejected', label: '已拒绝' },
-];
 
 const PAGE_SIZE = 20;
 
@@ -47,7 +42,6 @@ export default function MyCommissionsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback((s: string, p: number) => {
@@ -102,7 +96,23 @@ export default function MyCommissionsPage() {
     });
   }
 
-  if (error) return <p className="text-sm text-[#991B1B] py-8 text-center">{error}</p>;
+  if (error) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-3">
+      <p className="text-sm text-[#991B1B]">{error}</p>
+      <button onClick={() => fetchData(statusFilter, page)} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB] transition">重试</button>
+    </div>
+  );
+
+  const pendingCount = summary ? (summary as any).pending_count ?? 0 : 0;
+  const confirmedCount = summary ? (summary as any).confirmed_count ?? 0 : 0;
+  const paidCount = summary ? (summary as any).paid_count ?? 0 : 0;
+
+  const TABS: { key: string; label: string; count?: number }[] = [
+    { key: 'all', label: '全部', count: total },
+    { key: 'pending', label: '待确认', count: pendingCount },
+    { key: 'confirmed', label: '已确认', count: confirmedCount },
+    { key: 'paid_out', label: '已发放', count: paidCount },
+  ];
 
   return (
     <div className="space-y-5">
@@ -117,25 +127,26 @@ export default function MyCommissionsPage() {
         </button>
       </div>
 
-      {/* Summary cards */}
+      {/* Summary cards with left border */}
       {summary && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: '待确认', value: summary.pending_total, color: '#92400E', bg: '#FEF3C7' },
-            { label: '已确认', value: summary.confirmed_total, color: '#166534', bg: '#DCFCE7' },
-            { label: '已发放', value: summary.paid_total, color: '#1E40AF', bg: '#DBEAFE' },
+            { label: '待确认', value: summary.pending_total, count: pendingCount, borderColor: '#F59E0B', color: '#92400E' },
+            { label: '已确认', value: summary.confirmed_total, count: confirmedCount, borderColor: '#22C55E', color: '#166534' },
+            { label: '已发放', value: summary.paid_total, count: paidCount, borderColor: '#3B82F6', color: '#1E40AF' },
           ].map(item => (
-            <div key={item.label} className="rounded-xl p-4 border border-[#E5E7EB]" style={{ background: item.bg }}>
-              <div className="text-[10px] font-medium mb-1" style={{ color: item.color }}>{item.label}</div>
+            <div key={item.label} className="rounded-xl p-4 bg-white border border-[#E5E7EB] border-l-4" style={{ borderLeftColor: item.borderColor }}>
+              <div className="text-[10px] font-medium mb-1 text-[#6B7280]">{item.label}</div>
               <div className="text-xl font-bold" style={{ color: item.color }}>
                 ${item.value.toFixed(2)}
               </div>
+              <div className="text-[10px] text-[#9CA3AF] mt-0.5">{item.count} 笔</div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Tab filter */}
+      {/* Tab filter with counts */}
       <div className="border-b border-[#E5E7EB]">
         <div className="flex gap-0 -mb-px">
           {TABS.map(tab => (
@@ -148,7 +159,7 @@ export default function MyCommissionsPage() {
                   : 'border-transparent text-[#6B7280] hover:text-[#374151]'
               }`}
             >
-              {tab.label}
+              {tab.label}{tab.count != null ? ` (${tab.count})` : ''}
             </button>
           ))}
         </div>
@@ -180,11 +191,18 @@ export default function MyCommissionsPage() {
                       <td className="px-4 py-3 text-[#6B7280] border-l-2 border-transparent group-hover:border-[#F59E0B]">
                         {new Date(c.created_at).toLocaleDateString('zh-CN')}
                       </td>
-                      <td className="px-4 py-3 text-[#111827] font-medium">{c.user_name}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="size-6 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[10px] font-bold text-[#6B7280]">
+                            {(c.user_name || '?')[0].toUpperCase()}
+                          </div>
+                          <span className="text-[#111827] font-medium">{c.user_name}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-[#374151]">{c.product_name || c.product_type}</td>
                       <td className="px-4 py-3 text-center text-[#374151]">${c.payment_amount.toFixed(2)}</td>
                       <td className="px-4 py-3 text-center text-[#6B7280]">{(c.commission_rate * 100).toFixed(0)}%</td>
-                      <td className="px-4 py-3 text-center text-[#D4A843] font-bold">${c.commission_amount.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-center text-[#166534] font-bold">${c.commission_amount.toFixed(2)}</td>
                       <td className="px-4 py-3 text-center">
                         <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: cfg.bg, color: cfg.color }}>
                           {cfg.label}

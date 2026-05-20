@@ -3,17 +3,39 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import {
+  IconBrandWechat,
+  IconBook,
+  IconMusic,
+  IconFlame,
+  IconBulb,
+  IconPlayerPlay,
+  IconMail,
+  IconBrandWhatsapp,
+  IconLink,
+  IconCopy,
+  IconCheck,
+  IconDownload,
+} from '@tabler/icons-react';
+import type { Icon as TablerIcon } from '@tabler/icons-react';
 
-const CHANNELS = [
-  { value: 'wechat', label: '微信', icon: '📱', color: '#22C55E' },
-  { value: 'xiaohongshu', label: '小红书', icon: '📕', color: '#EF4444' },
-  { value: 'douyin', label: '抖音', icon: '🎵', color: '#1E293B' },
-  { value: 'weibo', label: '微博', icon: '🔥', color: '#EF4444' },
-  { value: 'zhihu', label: '知乎', icon: '💡', color: '#0066FF' },
-  { value: 'bilibili', label: 'Bilibili', icon: '📺', color: '#00A1D6' },
-  { value: 'email', label: '邮件', icon: '✉️', color: '#3B82F6' },
-  { value: 'whatsapp', label: 'WhatsApp', icon: '💬', color: '#22C55E' },
-  { value: 'other', label: '其他', icon: '🔗', color: '#6B7280' },
+interface ChannelDef {
+  value: string;
+  label: string;
+  icon: TablerIcon;
+  color: string;
+}
+
+const CHANNELS: ChannelDef[] = [
+  { value: 'wechat', label: '微信', icon: IconBrandWechat, color: '#22C55E' },
+  { value: 'xiaohongshu', label: '小红书', icon: IconBook, color: '#EF4444' },
+  { value: 'douyin', label: '抖音', icon: IconMusic, color: '#1E293B' },
+  { value: 'weibo', label: '微博', icon: IconFlame, color: '#FF6900' },
+  { value: 'zhihu', label: '知乎', icon: IconBulb, color: '#0066FF' },
+  { value: 'bilibili', label: 'Bilibili', icon: IconPlayerPlay, color: '#00A1D6' },
+  { value: 'email', label: '邮件', icon: IconMail, color: '#3B82F6' },
+  { value: 'whatsapp', label: 'WhatsApp', icon: IconBrandWhatsapp, color: '#25D366' },
+  { value: 'other', label: '其他', icon: IconLink, color: '#6B7280' },
 ];
 
 const TABS = ['推广链接', '推广二维码', '推广海报'] as const;
@@ -118,7 +140,7 @@ export default function PromoCenterPage() {
       ctx.roundRect((W - qrSize - 40) / 2, 500, qrSize + 40, qrSize + 40, 20);
       ctx.fill();
       ctx.drawImage(qrImg, (W - qrSize) / 2, 520, qrSize, qrSize);
-    } catch { /* QR load failed, skip */ }
+    } catch { /* QR load failed */ }
 
     ctx.fillStyle = tmpl.textColor;
     ctx.font = '28px sans-serif';
@@ -181,39 +203,48 @@ export default function PromoCenterPage() {
       {/* Tab 1: Links */}
       {tab === '推广链接' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
-            {CHANNELS.map(ch => (
-              <button
-                key={ch.value}
-                onClick={() => setSelectedChannel(ch.value)}
-                className={`rounded-xl p-3 text-xs text-center transition-all ${
-                  selectedChannel === ch.value
-                    ? 'bg-white border-2 shadow-sm font-medium'
-                    : 'bg-white border border-[#E5E7EB] hover:border-[#D1D5DB]'
-                }`}
-                style={selectedChannel === ch.value ? { borderColor: ch.color, color: ch.color } : {}}
-              >
-                <div className="text-xl mb-1">{ch.icon}</div>
-                <div className={selectedChannel === ch.value ? '' : 'text-[#374151]'}>{ch.label}</div>
-                {channelStats[ch.value] != null && (
-                  <div className="text-[10px] mt-0.5 text-[#9CA3AF]">{channelStats[ch.value]} 点击</div>
-                )}
-              </button>
-            ))}
+          <div className="rounded-xl bg-white border border-[#E5E7EB] divide-y divide-[#F3F4F6]">
+            {CHANNELS.map(ch => {
+              const Icon = ch.icon;
+              const isSelected = selectedChannel === ch.value;
+              const link = `https://koalaphd.com/?ref=${referralCode}&ch=${ch.value}`;
+              const copyKey = `link-${ch.value}`;
+              return (
+                <div
+                  key={ch.value}
+                  onClick={() => setSelectedChannel(ch.value)}
+                  className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition ${
+                    isSelected ? 'bg-[#FFFBEB]' : 'hover:bg-[#F9FAFB]'
+                  }`}
+                >
+                  <div
+                    className="size-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: ch.color + '15' }}
+                  >
+                    <Icon size={18} strokeWidth={1.5} style={{ color: ch.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-medium text-[#111827]">{ch.label}</div>
+                    {channelStats[ch.value] != null && (
+                      <div className="text-[10px] text-[#9CA3AF]">{channelStats[ch.value]} 次访问</div>
+                    )}
+                  </div>
+                  <button
+                    onClick={e => { e.stopPropagation(); copyText(link, copyKey); }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition ${
+                      copied === copyKey ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB]'
+                    }`}
+                  >
+                    {copied === copyKey ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                    {copied === copyKey ? '已复制' : '复制'}
+                  </button>
+                </div>
+              );
+            })}
           </div>
-          <div className="rounded-xl p-4 bg-white border border-[#E5E7EB]">
-            <div className="text-[11px] text-[#6B7280] mb-2">当前渠道推广链接</div>
-            <div className="flex items-center gap-2">
-              <input readOnly value={promoLink} className="flex-1 rounded-lg px-3 py-2.5 text-xs font-mono bg-[#F9FAFB] border border-[#E5E7EB] text-[#374151] focus:outline-none" />
-              <button
-                onClick={() => copyText(promoLink, 'link')}
-                className={`px-4 py-2.5 rounded-lg text-xs font-medium transition whitespace-nowrap ${
-                  copied === 'link' ? 'bg-[#22C55E] text-white' : 'bg-[#111827] text-white hover:opacity-90'
-                }`}
-              >
-                {copied === 'link' ? '已复制 ✓' : '复制链接'}
-              </button>
-            </div>
+          <div className="rounded-xl p-4 bg-[#F9FAFB] border border-[#E5E7EB]">
+            <div className="text-[11px] text-[#6B7280] mb-1.5">当前选中链接预览</div>
+            <div className="text-xs font-mono text-[#374151] break-all">{promoLink}</div>
           </div>
         </div>
       )}
@@ -230,29 +261,34 @@ export default function PromoCenterPage() {
               {CHANNELS.find(c => c.value === selectedChannel)?.label} · {referralCode}
             </div>
             <div className="flex gap-2">
-              <button onClick={downloadQR} className="px-4 py-2 rounded-lg text-xs font-medium bg-[#111827] text-white hover:opacity-90 transition">
+              <button onClick={downloadQR} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-[#111827] text-white hover:opacity-90 transition">
+                <IconDownload size={14} />
                 下载 PNG
               </button>
-              <button onClick={() => copyText(promoLink, 'qr-link')} className={`px-4 py-2 rounded-lg text-xs font-medium transition ${copied === 'qr-link' ? 'bg-[#22C55E] text-white' : 'bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB]'}`}>
-                {copied === 'qr-link' ? '已复制 ✓' : '复制链接'}
+              <button onClick={() => copyText(promoLink, 'qr-link')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition ${copied === 'qr-link' ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB]'}`}>
+                {copied === 'qr-link' ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                {copied === 'qr-link' ? '已复制' : '复制链接'}
               </button>
             </div>
           </div>
           <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
             <h3 className="text-sm font-semibold text-[#374151] mb-3">选择渠道</h3>
-            <div className="space-y-1.5">
-              {CHANNELS.map(ch => (
-                <button
-                  key={ch.value}
-                  onClick={() => setSelectedChannel(ch.value)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition ${
-                    selectedChannel === ch.value ? 'bg-[#FEF3C7] text-[#92400E] font-medium' : 'text-[#374151] hover:bg-[#F3F4F6]'
-                  }`}
-                >
-                  <span>{ch.icon}</span>
-                  <span>{ch.label}</span>
-                </button>
-              ))}
+            <div className="space-y-1">
+              {CHANNELS.map(ch => {
+                const Icon = ch.icon;
+                return (
+                  <button
+                    key={ch.value}
+                    onClick={() => setSelectedChannel(ch.value)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition ${
+                      selectedChannel === ch.value ? 'bg-[#FFFBEB] text-[#F59E0B] font-medium' : 'text-[#374151] hover:bg-[#F9FAFB]'
+                    }`}
+                  >
+                    <Icon size={16} strokeWidth={1.5} style={{ color: selectedChannel === ch.value ? '#F59E0B' : ch.color }} />
+                    <span>{ch.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -295,7 +331,7 @@ export default function PromoCenterPage() {
                 onChange={e => setSelectedChannel(e.target.value)}
                 className="w-full rounded-lg px-3 py-2.5 text-sm bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] focus:outline-none"
               >
-                {CHANNELS.map(ch => <option key={ch.value} value={ch.value}>{ch.icon} {ch.label}</option>)}
+                {CHANNELS.map(ch => <option key={ch.value} value={ch.value}>{ch.label}</option>)}
               </select>
             </div>
             <button

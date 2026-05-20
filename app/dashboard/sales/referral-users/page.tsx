@@ -88,17 +88,17 @@ export default function ReferralUsersPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-bold text-[#111827]">推荐用户</h1>
+      <h1 className="text-xl font-bold text-[#111827]">我的客户</h1>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: '总推荐', value: String(referrals.length), color: '#3B82F6', bg: '#EFF6FF' },
+          { label: '总客户', value: String(referrals.length), color: '#3B82F6', bg: '#EFF6FF' },
           { label: '已付费', value: String(paidCount), color: '#10B981', bg: '#F0FDF4' },
           { label: '总消费', value: `$${totalRevenue.toFixed(2)}`, color: '#F59E0B', bg: '#FFFBEB' },
           { label: '总佣金', value: `$${totalCommission.toFixed(2)}`, color: '#D4A843', bg: '#FEF3C7' },
         ].map(item => (
-          <div key={item.label} className="rounded-xl p-4 border border-[#E5E7EB]" style={{ background: item.bg }}>
+          <div key={item.label} className="rounded-xl p-4 bg-white border border-[#E5E7EB]" style={{ background: item.bg }}>
             <div className="text-[10px] font-medium mb-0.5" style={{ color: item.color }}>{item.label}</div>
             <div className="text-xl font-bold" style={{ color: item.color }}>{item.value}</div>
           </div>
@@ -144,7 +144,10 @@ export default function ReferralUsersPage() {
       {loading ? (
         <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-[#6B7280] py-8 text-center">暂无推荐用户</p>
+        <div className="flex flex-col items-center justify-center py-16 gap-2">
+          <div className="size-12 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[#9CA3AF] text-xl">👥</div>
+          <p className="text-sm text-[#6B7280]">暂无推荐用户</p>
+        </div>
       ) : (
         <>
           <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden">

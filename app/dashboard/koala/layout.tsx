@@ -1,23 +1,64 @@
 'use client';
 
 import Link from 'next/link';
-import { ReactNode, useEffect, useState, useCallback } from 'react';
+import { ReactNode, useEffect, useState, useCallback, ComponentType } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Header from './Header';
 import { supabase } from '../../lib/supabase/client';
 import type { UserRole } from '../../lib/auth';
+import {
+  IconLayoutDashboard,
+  IconChartBar,
+  IconUser,
+  IconCoin,
+  IconTarget,
+  IconCircleCheck,
+  IconFileText,
+  IconUsers,
+  IconTag,
+  IconTrendingUp,
+  IconChartPie,
+  IconCash,
+  IconBell,
+  IconArticle,
+  IconBulb,
+  IconRobot,
+  IconPhoto,
+  IconClipboardList,
+  IconSchool,
+  IconAward,
+  IconBooks,
+  IconQuestionMark,
+  IconBolt,
+  IconChartLine,
+  IconArrowsTransferDown,
+  IconSettings,
+  IconNotebook,
+  IconTool,
+  IconExternalLink,
+  IconHome,
+  IconLogout,
+} from '@tabler/icons-react';
+
+const ICON_PROPS = { size: 18, strokeWidth: 1.5 } as const;
+
+interface NavItem {
+  icon: ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  label: string;
+  href: string;
+}
 
 interface NavGroup {
   key: string;
   label: string;
   color: string;
-  items: { icon: string; label: string; href: string }[];
+  items: NavItem[];
   superAdminOnly?: boolean;
 }
 
-function buildNavGroups(role: UserRole | null): { standalone: { icon: string; label: string; href: string }[]; groups: NavGroup[] } {
-  const standalone = [
-    { icon: '📊', label: '仪表盘', href: '/dashboard/koala' },
+function buildNavGroups(role: UserRole | null): { standalone: NavItem[]; groups: NavGroup[] } {
+  const standalone: NavItem[] = [
+    { icon: IconLayoutDashboard, label: '仪表盘', href: '/dashboard/koala' },
   ];
 
   const groups: NavGroup[] = [];
@@ -29,12 +70,12 @@ function buildNavGroups(role: UserRole | null): { standalone: { icon: string; la
       color: '#F59E0B',
       superAdminOnly: true,
       items: [
-        { icon: '📊', label: '分销总览', href: '/dashboard/koala/sales-overview' },
-        { icon: '👤', label: '销售人员', href: '/dashboard/koala/sales-agents' },
-        { icon: '💲', label: '佣金比例', href: '/dashboard/koala/commission-rates' },
-        { icon: '🎯', label: 'KPI 目标', href: '/dashboard/koala/kpi-targets' },
-        { icon: '✅', label: '佣金审核', href: '/dashboard/koala/commission-review' },
-        { icon: '📋', label: '审计日志', href: '/dashboard/koala/sales-audit' },
+        { icon: IconChartBar, label: '分销总览', href: '/dashboard/koala/sales-overview' },
+        { icon: IconUser, label: '销售人员', href: '/dashboard/koala/sales-agents' },
+        { icon: IconCoin, label: '佣金比例', href: '/dashboard/koala/commission-rates' },
+        { icon: IconTarget, label: 'KPI 目标', href: '/dashboard/koala/kpi-targets' },
+        { icon: IconCircleCheck, label: '佣金审核', href: '/dashboard/koala/commission-review' },
+        { icon: IconFileText, label: '审计日志', href: '/dashboard/koala/sales-audit' },
       ],
     });
   }
@@ -44,12 +85,12 @@ function buildNavGroups(role: UserRole | null): { standalone: { icon: string; la
     label: '用户与增长',
     color: '#3B82F6',
     items: [
-      { icon: '👥', label: '用户管理', href: '/dashboard/koala/users' },
-      ...(role === 'super_admin' ? [{ icon: '🏷', label: '角色管理', href: '/dashboard/koala/roles' }] : []),
-      { icon: '📈', label: '用户增长', href: '/dashboard/koala/growth' },
-      { icon: '📊', label: '数据分析', href: '/dashboard/koala/analytics' },
-      { icon: '💰', label: '收入分析', href: '/dashboard/koala/revenue' },
-      ...(role === 'super_admin' ? [{ icon: '🔔', label: '站内信', href: '/dashboard/koala/notifications' }] : []),
+      { icon: IconUsers, label: '用户管理', href: '/dashboard/koala/users' },
+      ...(role === 'super_admin' ? [{ icon: IconTag, label: '角色管理', href: '/dashboard/koala/roles' }] : []),
+      { icon: IconTrendingUp, label: '用户增长', href: '/dashboard/koala/growth' },
+      { icon: IconChartPie, label: '数据分析', href: '/dashboard/koala/analytics' },
+      { icon: IconCash, label: '收入分析', href: '/dashboard/koala/revenue' },
+      ...(role === 'super_admin' ? [{ icon: IconBell, label: '站内信', href: '/dashboard/koala/notifications' }] : []),
     ],
   });
 
@@ -58,11 +99,11 @@ function buildNavGroups(role: UserRole | null): { standalone: { icon: string; la
     label: '内容管理',
     color: '#22C55E',
     items: [
-      { icon: '📰', label: '博客管理', href: '/dashboard/koala/blog' },
-      { icon: '💡', label: '话题管理', href: '/dashboard/koala/topics' },
-      { icon: '🤖', label: 'AI 内容', href: '/dashboard/koala/ai-content' },
-      { icon: '🖼', label: 'Banner', href: '/dashboard/koala/banners' },
-      { icon: '📋', label: '问卷管理', href: '/dashboard/koala/surveys' },
+      { icon: IconArticle, label: '博客管理', href: '/dashboard/koala/blog' },
+      { icon: IconBulb, label: '话题管理', href: '/dashboard/koala/topics' },
+      { icon: IconRobot, label: 'AI 内容', href: '/dashboard/koala/ai-content' },
+      { icon: IconPhoto, label: 'Banner', href: '/dashboard/koala/banners' },
+      { icon: IconClipboardList, label: '问卷管理', href: '/dashboard/koala/surveys' },
     ],
   });
 
@@ -71,10 +112,10 @@ function buildNavGroups(role: UserRole | null): { standalone: { icon: string; la
     label: '教授库',
     color: '#8B5CF6',
     items: [
-      { icon: '🎓', label: '教授管理', href: '/dashboard/koala/professors' },
-      { icon: '💰', label: 'Grants', href: '/dashboard/koala/grants' },
-      { icon: '📚', label: '知识库', href: '/dashboard/koala/knowledge-base' },
-      { icon: '❓', label: 'FAQ', href: '/dashboard/koala/faq' },
+      { icon: IconSchool, label: '教授管理', href: '/dashboard/koala/professors' },
+      { icon: IconAward, label: 'Grants', href: '/dashboard/koala/grants' },
+      { icon: IconBooks, label: '知识库', href: '/dashboard/koala/knowledge-base' },
+      { icon: IconQuestionMark, label: 'FAQ', href: '/dashboard/koala/faq' },
     ],
   });
 
@@ -83,9 +124,9 @@ function buildNavGroups(role: UserRole | null): { standalone: { icon: string; la
     label: 'Ola 智能助手',
     color: '#EC4899',
     items: [
-      { icon: '⚡', label: '触发器', href: '/dashboard/koala/ola-triggers' },
-      { icon: '📈', label: 'Ola 分析', href: '/dashboard/koala/ola-analytics' },
-      { icon: '🤝', label: 'Handoff 队列', href: '/dashboard/koala/handoff' },
+      { icon: IconBolt, label: '触发器', href: '/dashboard/koala/ola-triggers' },
+      { icon: IconChartLine, label: 'Ola 分析', href: '/dashboard/koala/ola-analytics' },
+      { icon: IconArrowsTransferDown, label: 'Handoff 队列', href: '/dashboard/koala/handoff' },
     ],
   });
 
@@ -94,9 +135,9 @@ function buildNavGroups(role: UserRole | null): { standalone: { icon: string; la
     label: '系统',
     color: '#64748B',
     items: [
-      { icon: '⚙️', label: '系统设置', href: '/dashboard/koala/settings' },
-      { icon: '📝', label: '工作日志', href: '/dashboard/koala/work-logs' },
-      { icon: '🔧', label: '营销工具', href: '/dashboard/koala/marketing-tools' },
+      { icon: IconSettings, label: '系统设置', href: '/dashboard/koala/settings' },
+      { icon: IconNotebook, label: '工作日志', href: '/dashboard/koala/work-logs' },
+      { icon: IconTool, label: '营销工具', href: '/dashboard/koala/marketing-tools' },
     ],
   });
 
@@ -143,6 +184,7 @@ function SidebarGroup({
       <div className="space-y-0.5">
         {group.items.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + '/');
+          const Icon = item.icon;
           return (
             <Link
               key={item.href}
@@ -154,7 +196,7 @@ function SidebarGroup({
               }`}
               title={item.label}
             >
-              <span className="flex-shrink-0">{item.icon}</span>
+              <Icon {...ICON_PROPS} className="flex-shrink-0" />
             </Link>
           );
         })}
@@ -208,7 +250,7 @@ function SidebarGroup({
                       : 'text-[#374151] hover:bg-[#F3F4F6] hover:text-[#111827]'
                   }`}
                 >
-                  <span className="text-sm flex-shrink-0">{item.icon}</span>
+                  {(() => { const Icon = item.icon; return <Icon {...ICON_PROPS} className="flex-shrink-0" />; })()}
                   <span>{item.label}</span>
                 </Link>
               </li>
@@ -324,6 +366,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
           <div className="space-y-0.5 mb-2">
             {standalone.map((item) => {
               const active = isStandaloneActive(item.href);
+              const Icon = item.icon;
               return (
                 <Link
                   key={item.href}
@@ -336,7 +379,7 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
                   }`}
                   title={!showLabel ? item.label : undefined}
                 >
-                  <span className="text-sm flex-shrink-0">{item.icon}</span>
+                  <Icon {...ICON_PROPS} className="flex-shrink-0" />
                   {showLabel && <span>{item.label}</span>}
                 </Link>
               );
@@ -381,21 +424,24 @@ export default function KoalaLayout({ children }: { children: ReactNode }) {
             className="flex items-center gap-2 w-full text-left text-[13px] text-[#6B7280] hover:text-[#111827] transition px-2 py-1.5 rounded hover:bg-[#F3F4F6] no-underline mb-0.5"
             title="前往前端"
           >
-            {collapsed && !mobile ? '🔗' : '🔗 前往前端'}
+            <IconExternalLink {...ICON_PROPS} className="flex-shrink-0" />
+            {showLabel && <span>前往前端</span>}
           </Link>
           <Link
             href="/koala/home"
             className="flex items-center gap-2 w-full text-left text-[13px] text-[#6B7280] hover:text-[#111827] transition px-2 py-1.5 rounded hover:bg-[#F3F4F6] no-underline mb-0.5"
             title="返回主页"
           >
-            {collapsed && !mobile ? '🏠' : '🏠 返回主页'}
+            <IconHome {...ICON_PROPS} className="flex-shrink-0" />
+            {showLabel && <span>返回主页</span>}
           </Link>
           <button
             onClick={handleSignOut}
-            className="w-full text-left text-[13px] text-[#6B7280] hover:text-[#111827] transition px-2 py-1.5 rounded hover:bg-[#F3F4F6]"
+            className="flex items-center gap-2 w-full text-left text-[13px] text-[#6B7280] hover:text-[#111827] transition px-2 py-1.5 rounded hover:bg-[#F3F4F6]"
             title="退出登录"
           >
-            {collapsed && !mobile ? '🚪' : '🚪 退出登录'}
+            <IconLogout {...ICON_PROPS} className="flex-shrink-0" />
+            {showLabel && <span>退出登录</span>}
           </button>
         </div>
       </>
