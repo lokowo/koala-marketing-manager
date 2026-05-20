@@ -31,16 +31,16 @@ export default async function HomePage() {
           .eq('status', 'published')
           .eq('is_pinned', true)
           .order('published_at', { ascending: false })
-          .limit(4);
+          .limit(8);
         const posts = pinned || [];
-        if (posts.length < 4) {
+        if (posts.length < 8) {
           const pinnedIds = posts.map((p: Record<string, unknown>) => p.id as string);
           let q = db
             .from('blog_posts')
             .select('id, slug, title_zh, title_en, excerpt_zh, excerpt_en, category, published_at, created_at, view_count')
             .eq('status', 'published')
             .order('published_at', { ascending: false })
-            .limit(4 - posts.length);
+            .limit(8 - posts.length);
           if (pinnedIds.length > 0) {
             q = q.not('id', 'in', `(${pinnedIds.join(',')})`);
           }

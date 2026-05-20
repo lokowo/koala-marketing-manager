@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Bell, ChevronRight, X } from 'lucide-react';
+import { ArrowRight, Bell, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import BannerCarousel from '../../components/BannerCarousel';
 import type { Professor } from '../../lib/types';
 import { useAuth } from '../components/AuthContext';
@@ -95,6 +95,9 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<{ id: string; title: string; body: string; read: boolean; created_at: string }[]>([]);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const blogScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const displayMatchCount = useCountUp(matchCount);
 
   useEffect(() => {
@@ -126,6 +129,34 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
         .catch(() => {});
     }
   }, [user]);
+
+  function updateBlogScrollState() {
+    const el = blogScrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 1);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }
+
+  useEffect(() => {
+    const el = blogScrollRef.current;
+    if (!el) return;
+    updateBlogScrollState();
+    el.addEventListener('scroll', updateBlogScrollState, { passive: true });
+    const ro = new ResizeObserver(updateBlogScrollState);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', updateBlogScrollState);
+      ro.disconnect();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function scrollBlog(direction: 'left' | 'right') {
+    const el = blogScrollRef.current;
+    if (!el) return;
+    const distance = direction === 'right' ? 336 : -336;
+    el.scrollBy({ left: distance, behavior: 'smooth' });
+  }
 
   const blogPosts = initialBlogPosts;
 
@@ -543,44 +574,49 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
           </div>
         </section>
 
-        {/* ── Blog ── */}
+        {/* ── Blog Carousel ── */}
         <section>
           <div className="flex justify-between items-center mb-3">
             <h2 className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">最新博客</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {displayPosts.slice(0, 2).map(b => (
-              <Link
-                key={b.id}
-                href={`/koala/blog/${b.slug || b.id}`}
-                className="rounded-2xl p-4 flex flex-col gap-2 no-underline bg-white dark:bg-white/5 border border-gray-200 dark:border-[#c9a96e]/[0.06] shadow-sm dark:shadow-[0_4px_16px_rgba(196,160,80,0.08)]"
+          <div className="relative group">
+            {canScrollLeft && (
+              <button
+                onClick={() => scrollBlog('left')}
+                className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 w-9 h-9 items-center justify-center rounded-full bg-white/90 dark:bg-[#1a1a2e]/90 shadow-lg border border-gray-200 dark:border-[#c9a96e]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white dark:hover:bg-[#1a1a2e] cursor-pointer"
               >
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843] text-amber-700 dark:text-white border border-amber-200 dark:border-transparent">
-                    {b.tag}
-                  </span>
-                  <span className="text-[10px] text-gray-400 dark:text-[#b0b0b0]">{b.date}{b.viewCount ? ` · 👁 ${b.viewCount}` : ''}</span>
-                </div>
-                <h3 className="text-sm font-bold leading-snug text-gray-900 dark:text-[#e8e4dc]">{b.title}</h3>
-                <p className="text-xs leading-relaxed text-gray-500 dark:text-[#8a8a8a]">{b.excerpt}</p>
-              </Link>
-            ))}
-            {displayPosts.slice(2, 4).map(b => (
-              <Link
-                key={b.id}
-                href={`/koala/blog/${b.slug || b.id}`}
-                className="hidden md:flex rounded-2xl p-4 flex-col gap-2 no-underline bg-white dark:bg-white/5 border border-gray-200 dark:border-[#c9a96e]/[0.06] shadow-sm dark:shadow-[0_4px_16px_rgba(196,160,80,0.08)]"
+                <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-[#e8e4dc]" />
+              </button>
+            )}
+            {canScrollRight && (
+              <button
+                onClick={() => scrollBlog('right')}
+                className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 w-9 h-9 items-center justify-center rounded-full bg-white/90 dark:bg-[#1a1a2e]/90 shadow-lg border border-gray-200 dark:border-[#c9a96e]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white dark:hover:bg-[#1a1a2e] cursor-pointer"
               >
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843] text-amber-700 dark:text-white border border-amber-200 dark:border-transparent">
-                    {b.tag}
-                  </span>
-                  <span className="text-[10px] text-gray-400 dark:text-[#b0b0b0]">{b.date}{b.viewCount ? ` · 👁 ${b.viewCount}` : ''}</span>
-                </div>
-                <h3 className="text-sm font-bold leading-snug text-gray-900 dark:text-[#e8e4dc]">{b.title}</h3>
-                <p className="text-xs leading-relaxed text-gray-500 dark:text-[#8a8a8a]">{b.excerpt}</p>
-              </Link>
-            ))}
+                <ChevronRight className="w-5 h-5 text-gray-600 dark:text-[#e8e4dc]" />
+              </button>
+            )}
+            <div
+              ref={blogScrollRef}
+              className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide"
+            >
+              {displayPosts.map(b => (
+                <Link
+                  key={b.id}
+                  href={`/koala/blog/${b.slug || b.id}`}
+                  className="w-[280px] md:w-[320px] flex-shrink-0 snap-start rounded-2xl p-4 flex flex-col gap-2 no-underline bg-white dark:bg-white/5 border border-gray-200 dark:border-[#c9a96e]/[0.06] shadow-sm dark:shadow-[0_4px_16px_rgba(196,160,80,0.08)]"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843] text-amber-700 dark:text-white border border-amber-200 dark:border-transparent">
+                      {b.tag}
+                    </span>
+                    <span className="text-[10px] text-gray-400 dark:text-[#b0b0b0]">{b.date}{b.viewCount ? ` · 👁 ${b.viewCount}` : ''}</span>
+                  </div>
+                  <h3 className="text-sm font-bold leading-snug text-gray-900 dark:text-[#e8e4dc]">{b.title}</h3>
+                  <p className="text-xs leading-relaxed text-gray-500 dark:text-[#8a8a8a]">{b.excerpt}</p>
+                </Link>
+              ))}
+            </div>
           </div>
           <div className="text-center mt-6">
             <Link
