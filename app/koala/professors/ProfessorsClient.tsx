@@ -1148,6 +1148,7 @@ function ProfCard({ p }: { p: Professor }) {
   const hasStats = p.hIndex || p.paperCount || p.citationCount;
   const posStyle = getPositionStyle(p.positionTitle);
   const isVerified = p.verificationStatus === 'Verified';
+  const isUserContributed = p.verificationStatus === 'user_contributed';
 
   return (
     <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#0F1419] border border-gray-100 dark:border-white/10 hover:shadow-md hover:border-gray-200 dark:hover:border-[#D4A843]/30 transition-all duration-300 hover:-translate-y-0.5 group relative">
@@ -1158,6 +1159,12 @@ function ProfCard({ p }: { p: Professor }) {
           <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
             style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>
             ✅ 已认证
+          </span>
+        )}
+        {isUserContributed && (
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: 'rgba(96,165,250,0.15)', color: '#60a5fa' }}>
+            👤 用户贡献
           </span>
         )}
         {statusBadge && (
