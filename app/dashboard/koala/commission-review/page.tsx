@@ -25,9 +25,9 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> =
 };
 
 const TABS = [
-  { key: 'confirmed', label: '待发放' },
-  { key: 'pending', label: '待确认' },
+  { key: 'confirmed', label: '已确认(待发放)' },
   { key: 'paid_out', label: '已发放' },
+  { key: 'pending', label: '待确认' },
   { key: 'all', label: '全部' },
 ];
 
@@ -84,29 +84,17 @@ export default function CommissionReviewPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-[#111827]">佣金审核发放</h1>
-        {statusFilter === 'confirmed' && selected.size > 0 && (
-          <button
-            onClick={batchPayout}
-            disabled={paying}
-            className="text-xs px-4 py-2 rounded-lg bg-[#166534] text-white font-medium hover:opacity-90 transition disabled:opacity-50"
-          >
-            {paying ? '发放中...' : `批量发放 ${selected.size} 笔 ($${selectedTotal.toFixed(2)})`}
-          </button>
-        )}
-      </div>
+      <h1 className="text-xl font-bold text-[#111827]">佣金审核发放</h1>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl p-4 border border-[#E5E7EB] bg-[#FEF3C7]">
-          <div className="text-[10px] text-[#92400E] font-medium mb-0.5">待发放总额</div>
-          <div className="text-2xl font-bold text-[#92400E]">${pendingTotal.toFixed(2)}</div>
-        </div>
-        <div className="rounded-xl p-4 border border-[#E5E7EB] bg-[#DCFCE7]">
-          <div className="text-[10px] text-[#166534] font-medium mb-0.5">已选金额</div>
-          <div className="text-2xl font-bold text-[#166534]">
-            {selected.size > 0 ? `$${selectedTotal.toFixed(2)}` : '$0.00'}
+      {/* Top summary card */}
+      <div className="rounded-xl p-4 border border-amber-200 bg-amber-50">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[11px] text-amber-700 font-medium mb-0.5">待发放总额</div>
+            <div className="text-2xl font-bold text-amber-800">${pendingTotal.toFixed(2)}</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[11px] text-amber-600">{commissions.filter(c => c.status === 'confirmed').length} 笔待发放</div>
           </div>
         </div>
       </div>
@@ -183,6 +171,23 @@ export default function CommissionReviewPage() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+      {/* Bottom sticky action bar */}
+      {statusFilter === 'confirmed' && selected.size > 0 && (
+        <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between shadow-lg rounded-b-xl -mx-4 -mb-4">
+          <span className="text-sm text-slate-600">
+            已选 <strong>{selected.size}</strong> 笔 共 <strong className="text-amber-600">${selectedTotal.toFixed(2)}</strong>
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={batchPayout}
+              disabled={paying}
+              className="text-xs px-4 py-2 rounded-lg bg-[#166534] text-white font-medium hover:opacity-90 transition disabled:opacity-50"
+            >
+              {paying ? '发放中...' : '批量标记已发放'}
+            </button>
           </div>
         </div>
       )}

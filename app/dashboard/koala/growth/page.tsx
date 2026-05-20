@@ -148,7 +148,12 @@ export default function GrowthPage() {
                     <td className="px-3 py-2 text-center text-slate-700 font-medium">{c.total}</td>
                     <td className="px-3 py-2 text-center text-slate-700">{c.retained}</td>
                     <td className="px-3 py-2 text-center">
-                      <span className={`font-medium ${parseInt(c.rate) >= 30 ? 'text-green-600' : parseInt(c.rate) >= 15 ? 'text-amber-600' : 'text-red-500'}`}>
+                      <span className={`inline-block w-12 py-0.5 rounded text-center text-[11px] font-medium ${
+                        parseInt(c.rate) >= 40 ? 'bg-emerald-100 text-emerald-800' :
+                        parseInt(c.rate) >= 20 ? 'bg-emerald-50 text-emerald-700' :
+                        parseInt(c.rate) >= 10 ? 'bg-amber-50 text-amber-700' :
+                        'bg-red-50 text-red-600'
+                      }`}>
                         {c.rate}%
                       </span>
                     </td>
