@@ -1,14 +1,33 @@
 {
   "functions": {
-    "app/api/user/documents/parse/route.ts": { "maxDuration": 60 },
-    "app/api/blog/generate/route.ts": { "maxDuration": 120 },
-    "app/api/blog/generate-cover/route.ts": { "maxDuration": 180 },
-    "app/api/blog/generate-images/route.ts": { "maxDuration": 120 },
-    "app/api/blog/generate-single-image/route.ts": { "maxDuration": 120 },
-    "app/api/webhooks/stripe/route.ts": { "maxDuration": 30 }
+    "app/api/user/documents/parse/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/blog/generate/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/blog/generate-cover/route.ts": {
+      "maxDuration": 180
+    },
+    "app/api/blog/generate-images/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/blog/generate-single-image/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/webhooks/stripe/route.ts": {
+      "maxDuration": 30
+    }
   },
   "crons": [
-    { "path": "/api/cron/weekly-sales-report", "schedule": "0 0 * * 1" },
-    { "path": "/api/cron/auto-confirm-commissions", "schedule": "0 2 * * *" }
-  ]
+    {
+      "path": "/api/cron/weekly-sales-report",
+      "schedule": "0 0 * * 1"
+    },
+    {
+      "path": "/api/cron/auto-confirm-commissions",
+      "schedule": "0 2 * * *"
+    }
+  ],
+  "_deploy_trigger": "2026-05-20T08:23:32.162Z"
 }
