@@ -17,10 +17,10 @@ interface Survey {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: '草稿', color: '#94a3b8', bg: '#f1f5f9' },
-  active: { label: '进行中', color: '#22c55e', bg: '#f0fdf4' },
-  paused: { label: '已暂停', color: '#f59e0b', bg: '#fffbeb' },
-  closed: { label: '已关闭', color: '#ef4444', bg: '#fef2f2' },
+  draft:  { label: '草稿',   color: '#6B7280', bg: '#F3F4F6' },
+  active: { label: '进行中', color: '#166534', bg: '#DCFCE7' },
+  paused: { label: '已暂停', color: '#92400E', bg: '#FEF3C7' },
+  closed: { label: '已关闭', color: '#991B1B', bg: '#FEE2E2' },
 };
 
 type Tab = 'mine' | 'plaza' | 'promote';
@@ -94,55 +94,57 @@ function SurveysContent() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-800">问卷管理</h1>
-          <p className="text-sm text-slate-500 mt-0.5">创建、编辑和推广调研问卷</p>
+          <h1 className="text-xl font-bold text-[#111827]">问卷管理</h1>
+          <p className="text-xs text-[#6B7280] mt-0.5">创建、编辑和推广调研问卷</p>
         </div>
         <Link
           href="/dashboard/sales/surveys/create"
-          className="px-4 py-2 rounded-lg text-sm font-medium text-white no-underline"
-          style={{ backgroundColor: '#D4A843' }}
+          className="px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#111827] no-underline hover:opacity-90 transition"
         >
           + 新建问卷
         </Link>
       </div>
 
-      <div className="flex items-center gap-1 border-b border-slate-200">
-        {tabs.map(t => (
-          <button
-            key={t.key}
-            onClick={() => { setTab(t.key); setPage(1); }}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === t.key
-                ? 'text-amber-600 border-amber-500'
-                : 'text-slate-500 border-transparent hover:text-slate-700'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      {/* Tabs */}
+      <div className="border-b border-[#E5E7EB]">
+        <div className="flex gap-0 -mb-px">
+          {tabs.map(t => (
+            <button
+              key={t.key}
+              onClick={() => { setTab(t.key); setPage(1); }}
+              className={`px-4 py-2.5 text-xs font-medium border-b-2 transition ${
+                tab === t.key
+                  ? 'border-[#F59E0B] text-[#111827]'
+                  : 'border-transparent text-[#6B7280] hover:text-[#374151]'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {tab === 'promote' && (
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <h3 className="text-sm font-medium text-slate-700 mb-3">我推广的问卷</h3>
-          <p className="text-xs text-slate-400 mb-4">查看您的推广二维码效果和客户详情</p>
+        <div className="bg-white rounded-xl border border-[#E5E7EB] p-5">
+          <h3 className="text-sm font-semibold text-[#374151] mb-2">我推广的问卷</h3>
+          <p className="text-[10px] text-[#9CA3AF] mb-4">查看您的推广二维码效果和客户详情</p>
           {surveys.filter(s => s.status === 'active').length === 0 ? (
-            <p className="text-sm text-slate-400">暂无可推广的问卷。请在「问卷广场」中选择问卷生成推广码。</p>
+            <p className="text-xs text-[#6B7280]">暂无可推广的问卷。请在「问卷广场」中选择问卷生成推广码。</p>
           ) : (
             <div className="space-y-2">
               {surveys.filter(s => s.status === 'active').map(s => (
-                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50">
-                  <span className="text-sm text-slate-700">{s.title}</span>
+                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border border-[#E5E7EB] hover:bg-[#F9FAFB] transition">
+                  <span className="text-xs font-medium text-[#111827]">{s.title}</span>
                   <div className="flex gap-2">
                     <Link
                       href={`/dashboard/sales/surveys/${s.id}/share`}
-                      className="px-3 py-1 text-xs rounded-lg font-medium text-teal-600 bg-teal-50 no-underline"
+                      className="px-3 py-1 text-[10px] rounded-lg font-medium text-[#166534] bg-[#DCFCE7] no-underline"
                     >
                       推广码
                     </Link>
                     <Link
                       href={`/dashboard/sales/surveys/${s.id}/clients`}
-                      className="px-3 py-1 text-xs rounded-lg font-medium text-slate-600 bg-slate-100 no-underline"
+                      className="px-3 py-1 text-[10px] rounded-lg font-medium text-[#374151] bg-[#F3F4F6] no-underline"
                     >
                       客户详情
                     </Link>
@@ -156,19 +158,20 @@ function SurveysContent() {
 
       {(tab === 'mine' || tab === 'plaza') && (
         <>
+          {/* Search + filter */}
           <div className="flex items-center gap-3">
             <input
               type="text"
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
               placeholder="搜索问卷名称..."
-              className="flex-1 max-w-xs border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+              className="flex-1 max-w-xs border border-[#E5E7EB] rounded-lg px-3 py-2.5 text-xs text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#F59E0B]"
             />
             {tab === 'mine' && (
               <select
                 value={statusFilter}
                 onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-                className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+                className="border border-[#E5E7EB] rounded-lg px-3 py-2.5 text-xs bg-white text-[#374151] focus:outline-none"
               >
                 <option value="">全部状态</option>
                 <option value="draft">草稿</option>
@@ -177,128 +180,128 @@ function SurveysContent() {
                 <option value="closed">已关闭</option>
               </select>
             )}
-            <span className="text-sm text-slate-400">共 {total} 份</span>
+            <span className="text-[10px] text-[#9CA3AF]">共 {total} 份</span>
           </div>
 
           {loading ? (
-            <div className="text-center py-12 text-slate-400 text-sm">加载中...</div>
+            <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>
           ) : surveys.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
-              <div className="text-4xl mb-3">📋</div>
-              <p className="text-slate-500 text-sm mb-4">{tab === 'plaza' ? '暂无已发布的问卷' : '还没有问卷'}</p>
+            <div className="text-center py-12 bg-white rounded-xl border border-[#E5E7EB]">
+              <p className="text-xs text-[#6B7280] mb-4">{tab === 'plaza' ? '暂无已发布的问卷' : '还没有问卷'}</p>
               {tab === 'mine' && (
                 <Link
                   href="/dashboard/sales/surveys/create"
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-white no-underline"
-                  style={{ backgroundColor: '#D4A843' }}
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#111827] no-underline"
                 >
                   创建第一份问卷
                 </Link>
               )}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 text-left">
-                    <th className="px-4 py-3 text-slate-500 font-medium">问卷名称</th>
-                    <th className="px-4 py-3 text-slate-500 font-medium w-24">状态</th>
-                    <th className="px-4 py-3 text-slate-500 font-medium w-20 text-center">回复数</th>
-                    <th className="px-4 py-3 text-slate-500 font-medium w-32">创建时间</th>
-                    <th className="px-4 py-3 text-slate-500 font-medium w-56 text-right">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {surveys.map(s => {
-                    const st = STATUS_MAP[s.status] || STATUS_MAP.draft;
-                    const isOwner = s.created_by === userId;
-                    return (
-                      <tr key={s.id} className="border-t border-slate-100 hover:bg-slate-50/50">
-                        <td className="px-4 py-3">
-                          <Link href={`/dashboard/sales/surveys/${s.id}/edit`} className="text-slate-800 hover:text-amber-600 no-underline font-medium">
-                            {s.title}
-                          </Link>
-                          {s.description && <p className="text-xs text-slate-400 mt-0.5 truncate max-w-xs">{s.description}</p>}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 rounded-full text-xs" style={{ color: st.color, backgroundColor: st.bg }}>
-                            {st.label}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-center text-slate-600">{s.response_count ?? '—'}</td>
-                        <td className="px-4 py-3 text-slate-400 text-xs">{new Date(s.created_at).toLocaleDateString('zh-CN')}</td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center gap-1 justify-end flex-wrap">
-                            <Link
-                              href={`/dashboard/sales/surveys/${s.id}/responses`}
-                              className="px-2 py-1 text-xs rounded hover:bg-amber-50 text-amber-600 no-underline font-medium"
-                            >
-                              回复
+            <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-[#F9FAFB] text-[#6B7280]">
+                      <th className="text-left px-4 py-2.5 font-medium">问卷名称</th>
+                      <th className="text-center px-4 py-2.5 font-medium w-24">状态</th>
+                      <th className="text-center px-4 py-2.5 font-medium w-20">回复</th>
+                      <th className="text-left px-4 py-2.5 font-medium w-28">创建时间</th>
+                      <th className="text-right px-4 py-2.5 font-medium w-56">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#F3F4F6]">
+                    {surveys.map(s => {
+                      const st = STATUS_MAP[s.status] || STATUS_MAP.draft;
+                      const isOwner = s.created_by === userId;
+                      return (
+                        <tr key={s.id} className="hover:bg-[#F9FAFB]">
+                          <td className="px-4 py-3">
+                            <Link href={`/dashboard/sales/surveys/${s.id}/edit`} className="text-[#111827] hover:text-[#F59E0B] no-underline font-medium text-xs">
+                              {s.title}
                             </Link>
-                            {(isOwner || (tab === 'plaza' && s.status === 'active')) && (
+                            {s.description && <p className="text-[10px] text-[#9CA3AF] mt-0.5 truncate max-w-xs">{s.description}</p>}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: st.color, backgroundColor: st.bg }}>
+                              {st.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center text-[#374151]">{s.response_count ?? '—'}</td>
+                          <td className="px-4 py-3 text-[#6B7280]">{new Date(s.created_at).toLocaleDateString('zh-CN')}</td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center gap-1 justify-end flex-wrap">
                               <Link
-                                href={`/dashboard/sales/surveys/${s.id}/edit`}
-                                className="px-2 py-1 text-xs rounded hover:bg-slate-100 text-slate-500 no-underline"
+                                href={`/dashboard/sales/surveys/${s.id}/responses`}
+                                className="px-2 py-1 text-[10px] rounded-lg hover:bg-[#FFFBEB] text-[#F59E0B] no-underline font-medium"
                               >
-                                编辑
+                                回复
                               </Link>
-                            )}
-                            {s.status === 'active' && (
-                              <Link
-                                href={`/dashboard/sales/surveys/${s.id}/share`}
-                                className="px-2 py-1 text-xs rounded hover:bg-teal-50 text-teal-600 no-underline font-medium"
-                              >
-                                推广
-                              </Link>
-                            )}
-                            {isOwner && s.status === 'draft' && (
-                              <button onClick={() => handleStatusChange(s.id, 'active')} className="px-2 py-1 text-xs rounded hover:bg-green-50 text-green-600">
-                                发布
+                              {(isOwner || (tab === 'plaza' && s.status === 'active')) && (
+                                <Link
+                                  href={`/dashboard/sales/surveys/${s.id}/edit`}
+                                  className="px-2 py-1 text-[10px] rounded-lg hover:bg-[#F3F4F6] text-[#6B7280] no-underline"
+                                >
+                                  编辑
+                                </Link>
+                              )}
+                              {s.status === 'active' && (
+                                <Link
+                                  href={`/dashboard/sales/surveys/${s.id}/share`}
+                                  className="px-2 py-1 text-[10px] rounded-lg hover:bg-[#F0FDF4] text-[#166534] no-underline font-medium"
+                                >
+                                  推广
+                                </Link>
+                              )}
+                              {isOwner && s.status === 'draft' && (
+                                <button onClick={() => handleStatusChange(s.id, 'active')} className="px-2 py-1 text-[10px] rounded-lg hover:bg-[#F0FDF4] text-[#166534]">
+                                  发布
+                                </button>
+                              )}
+                              {s.status === 'draft' && tab !== 'plaza' && (
+                                <span className="px-2 py-1 text-[10px] text-[#D1D5DB]">请先发布</span>
+                              )}
+                              {isOwner && s.status === 'active' && (
+                                <button onClick={() => handleStatusChange(s.id, 'paused')} className="px-2 py-1 text-[10px] rounded-lg hover:bg-[#FFFBEB] text-[#F59E0B]">
+                                  暂停
+                                </button>
+                              )}
+                              {isOwner && s.status === 'paused' && (
+                                <button onClick={() => handleStatusChange(s.id, 'active')} className="px-2 py-1 text-[10px] rounded-lg hover:bg-[#F0FDF4] text-[#166534]">
+                                  恢复
+                                </button>
+                              )}
+                              {isOwner && (s.status === 'active' || s.status === 'paused') && (
+                                <button onClick={() => { if (confirm('确定要结束这份问卷吗？结束后将无法继续收集回复。')) handleStatusChange(s.id, 'closed'); }} className="px-2 py-1 text-[10px] rounded-lg hover:bg-[#FEF2F2] text-[#991B1B]">
+                                  结束
+                                </button>
+                              )}
+                              <button onClick={() => handleDuplicate(s.id)} className="px-2 py-1 text-[10px] rounded-lg hover:bg-[#F3F4F6] text-[#6B7280]">
+                                复制
                               </button>
-                            )}
-                            {s.status === 'draft' && tab !== 'plaza' && (
-                              <span className="px-2 py-1 text-xs text-slate-300">请先发布</span>
-                            )}
-                            {isOwner && s.status === 'active' && (
-                              <button onClick={() => handleStatusChange(s.id, 'paused')} className="px-2 py-1 text-xs rounded hover:bg-amber-50 text-amber-600">
-                                暂停
-                              </button>
-                            )}
-                            {isOwner && s.status === 'paused' && (
-                              <button onClick={() => handleStatusChange(s.id, 'active')} className="px-2 py-1 text-xs rounded hover:bg-green-50 text-green-600">
-                                恢复
-                              </button>
-                            )}
-                            {isOwner && (s.status === 'active' || s.status === 'paused') && (
-                              <button onClick={() => { if (confirm('确定要结束这份问卷吗？结束后将无法继续收集回复。')) handleStatusChange(s.id, 'closed'); }} className="px-2 py-1 text-xs rounded hover:bg-red-50 text-red-500">
-                                结束
-                              </button>
-                            )}
-                            <button onClick={() => handleDuplicate(s.id)} className="px-2 py-1 text-xs rounded hover:bg-slate-100 text-slate-500">
-                              复制
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
               {total > 20 && (
-                <div className="flex items-center justify-center gap-2 py-3 border-t border-slate-100">
+                <div className="flex items-center justify-center gap-2 py-3 border-t border-[#F3F4F6]">
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page <= 1}
-                    className="px-3 py-1 rounded text-sm text-slate-500 hover:bg-slate-100 disabled:opacity-40"
+                    className="px-3 py-1.5 rounded-lg text-xs bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB] disabled:opacity-40"
                   >
                     上一页
                   </button>
-                  <span className="text-sm text-slate-400">{page} / {Math.ceil(total / 20)}</span>
+                  <span className="text-xs text-[#9CA3AF]">{page} / {Math.ceil(total / 20)}</span>
                   <button
                     onClick={() => setPage(p => p + 1)}
                     disabled={page >= Math.ceil(total / 20)}
-                    className="px-3 py-1 rounded text-sm text-slate-500 hover:bg-slate-100 disabled:opacity-40"
+                    className="px-3 py-1.5 rounded-lg text-xs bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB] disabled:opacity-40"
                   >
                     下一页
                   </button>
@@ -313,5 +316,5 @@ function SurveysContent() {
 }
 
 export default function SalesSurveysPage() {
-  return <Suspense fallback={<div className="text-center py-20 text-slate-400 text-sm">加载中...</div>}><SurveysContent /></Suspense>;
+  return <Suspense fallback={<p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>}><SurveysContent /></Suspense>;
 }
