@@ -8,7 +8,7 @@ import { ArrowRight, Bell, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import BannerCarousel from '../../components/BannerCarousel';
 import type { Professor } from '../../lib/types';
 import { useAuth } from '../components/AuthContext';
-import { getUniBadge, parseUniversity } from '../../lib/constants';
+import { BRAND, getUniBadge, parseUniversity } from '../../lib/constants';
 
 function useCountUp(target: number, duration = 1500) {
   const [count, setCount] = useState(0);
@@ -75,6 +75,21 @@ const STEP_LINKS = [
   { href: '/koala/chat?mode=path', label: '聊背景' },
   { href: '/koala/discover',       label: 'AI匹配' },
   { href: '/koala/chat?mode=write', label: '写申请信' },
+];
+
+const AI_TOOLS = [
+  { emoji: '🎯', title: 'AI 选校', desc: '智能匹配最适合你的学校和项目', href: '/koala/chat?mode=path' },
+  { emoji: '🔬', title: '科研助手', desc: '文献检索、课题分析、方法论指导', href: '/koala/chat?mode=research' },
+  { emoji: '💬', title: 'AI 聊天', desc: '自由提问，PhD 申请百科全书', href: '/koala/chat' },
+  { emoji: '✉️', title: '套磁信生成', desc: '针对教授方向定制高回复率邮件', href: '/koala/chat?mode=write' },
+  { emoji: '📝', title: 'RP 助手', desc: '研究计划撰写与优化建议', href: '/koala/chat?mode=research' },
+  { emoji: '🎤', title: '模拟面试', desc: '模拟 PhD 面试场景和常见问题', href: '/koala/chat?mode=chat' },
+];
+
+const PRICING_PREVIEW = [
+  { name: '入门包', credits: 50, price: 'AUD 4.99' },
+  { name: '标准包', credits: 120, price: 'AUD 9.99' },
+  { name: '专业包', credits: 280, price: 'AUD 19.99' },
 ];
 
 interface HomeClientProps {
@@ -321,7 +336,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                   AI 导师匹配 · 免费使用
                 </div>
                 <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold leading-snug mb-3 text-[#1A1A2E] dark:text-[#e8e4dc]">
-                  {profCount} 位澳洲教授·学者·研究员<br />AI 帮你找最匹配的那个
+                  {profCount} 位澳洲导师与学者<br />AI 帮你找最匹配的那个
                 </h1>
                 <p className="text-xs lg:text-sm leading-relaxed mb-6 text-gray-500 dark:text-[#6a7a7e]">
                   告诉 Koala 你的背景和兴趣，30 秒内获得个性化导师推荐
@@ -366,8 +381,8 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
               },
               {
                 icon: '🎯', step: '02', title: 'AI 匹配',
-                desc: `从 ${profCount} 位学者中，根据你的背景和研究兴趣精准推荐最佳导师`,
-                features: [`${profCount} 学者库`, '实时招生状态'],
+                desc: `从 ${profCount} 位导师与学者中，根据你的背景和研究兴趣精准推荐最佳导师`,
+                features: [`${profCount} 导师与学者`, '实时招生状态'],
                 extra: '⚡ 30 秒出结果',
                 primary: false,
                 iconBg: 'bg-[#4ECDC4]/15 dark:bg-[#4ECDC4]/20',
@@ -434,6 +449,46 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                   </div>
                 )}
               </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── AI Tools Grid ── */}
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-[10px] font-semibold tracking-widest uppercase px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30">AI Tools</span>
+            <h2 className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">AI 工具箱</h2>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            {AI_TOOLS.map(tool => (
+              <Link
+                key={tool.title}
+                href={tool.href}
+                className="rounded-2xl p-4 flex flex-col gap-2 no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10"
+              >
+                <span className="text-2xl">{tool.emoji}</span>
+                <div className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">{tool.title}</div>
+                <div className="text-[11px] leading-snug text-gray-500 dark:text-[#6a7a7e]">{tool.desc}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Research Areas ── */}
+        <section>
+          <h2 className="font-bold text-base mb-3 text-gray-900 dark:text-[#e8e4dc]">热门研究方向</h2>
+          <div className="grid grid-cols-4 lg:grid-cols-8 gap-2">
+            {RESEARCH_AREAS.map(area => (
+              <Link
+                key={area.value}
+                href={`/koala/professors?category=${area.value}`}
+                className="rounded-2xl p-2.5 flex flex-col items-center gap-1 no-underline bg-gray-50 dark:bg-[#c9a96e]/[0.06] border border-gray-200 dark:border-[#c9a96e]/10"
+              >
+                <span className="text-lg">{area.emoji}</span>
+                <span className="text-[10px] font-medium text-center leading-tight text-gray-500 dark:text-[#a8b8ac]">
+                  {area.label}
+                </span>
+              </Link>
             ))}
           </div>
         </section>
@@ -555,25 +610,6 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
           </div>
         </section>
 
-        {/* ── Research Areas ── */}
-        <section>
-          <h2 className="font-bold text-base mb-3 text-gray-900 dark:text-[#e8e4dc]">热门研究方向</h2>
-          <div className="grid grid-cols-4 lg:grid-cols-8 gap-2">
-            {RESEARCH_AREAS.map(area => (
-              <Link
-                key={area.value}
-                href={`/koala/professors?category=${area.value}`}
-                className="rounded-2xl p-2.5 flex flex-col items-center gap-1 no-underline bg-gray-50 dark:bg-[#c9a96e]/[0.06] border border-gray-200 dark:border-[#c9a96e]/10"
-              >
-                <span className="text-lg">{area.emoji}</span>
-                <span className="text-[10px] font-medium text-center leading-tight text-gray-500 dark:text-[#a8b8ac]">
-                  {area.label}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-
         {/* ── Blog Carousel ── */}
         <section>
           <div className="flex justify-between items-center mb-3">
@@ -628,6 +664,35 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
           </div>
         </section>
 
+        {/* ── Pricing Preview ── */}
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-[10px] font-semibold tracking-widest uppercase px-2.5 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] border border-amber-200 dark:border-[#D4A843]/20">Credits</span>
+            <h2 className="font-bold text-base text-gray-900 dark:text-[#e8e4dc]">注册即送积分，免费体验</h2>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {PRICING_PREVIEW.map(pack => (
+              <div
+                key={pack.name}
+                className="rounded-2xl p-4 text-center bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10"
+              >
+                <div className="text-lg font-bold text-[#1A1A2E] dark:text-[#D4A843]">{pack.credits}</div>
+                <div className="text-[10px] text-gray-500 dark:text-[#6a7a7e] mt-0.5">积分</div>
+                <div className="text-xs font-bold mt-2 text-gray-900 dark:text-[#e8e4dc]">{pack.name}</div>
+                <div className="text-[11px] mt-1 text-gray-500 dark:text-[#6a7a7e]">{pack.price}</div>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-4">
+            <Link
+              href="/koala/pricing"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gray-50 dark:bg-white/5 text-[#1A1A2E] dark:text-[#D4A843] font-medium rounded-xl hover:bg-[#1A1A2E] hover:text-white dark:hover:bg-[#D4A843] dark:hover:text-[#080C10] transition-all duration-200 no-underline"
+            >
+              查看完整定价 →
+            </Link>
+          </div>
+        </section>
+
         {/* ── Bottom CTA ── */}
         <section className="bg-gradient-to-br from-[#1A1A2E] to-[#2D2D4A] dark:from-[#0F1419] dark:to-[#1A1A2E] rounded-2xl p-8 md:p-12 text-white relative overflow-hidden dark:border dark:border-[#D4A843]/20">
           <div className="absolute -top-20 -right-20 w-60 h-60 bg-[#D4A843]/5 rounded-full" />
@@ -660,7 +725,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
             <div className="hidden md:flex gap-5">
               <div className="text-center px-5 py-4 bg-white/5 rounded-xl min-w-[100px]">
                 <div className="text-2xl lg:text-3xl font-bold text-[#D4A843]">{profCount}</div>
-                <div className="text-xs text-gray-400 mt-1">教授·学者·研究员</div>
+                <div className="text-xs text-gray-400 mt-1">导师与学者</div>
               </div>
               <div className="text-center px-5 py-4 bg-white/5 rounded-xl min-w-[100px]">
                 <div className="text-2xl lg:text-3xl font-bold text-[#4ECDC4]">30+</div>
@@ -675,6 +740,25 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
         </section>
 
       </main>
+
+      {/* ── Footer ── */}
+      <footer className="px-4 lg:px-0 py-8 border-t border-gray-200 dark:border-[#c9a96e]/10">
+        <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:justify-between md:items-center gap-4 text-center md:text-left">
+          <div>
+            <div className="text-sm font-bold text-gray-900 dark:text-[#e8e4dc]">Koala PhD 考拉博士</div>
+            <div className="text-[11px] mt-1 text-gray-500 dark:text-[#6a7a7e]">{BRAND.positioning}</div>
+          </div>
+          <div className="flex flex-wrap justify-center md:justify-end gap-x-4 gap-y-1 text-[11px] text-gray-400 dark:text-[#6a7a7e]">
+            <span>{BRAND.email}</span>
+            <span>WeChat: {BRAND.wechat}</span>
+            <Link href="/terms" className="no-underline hover:underline text-gray-400 dark:text-[#6a7a7e]">使用条款</Link>
+            <Link href="/privacy" className="no-underline hover:underline text-gray-400 dark:text-[#6a7a7e]">隐私政策</Link>
+          </div>
+        </div>
+        <div className="text-center text-[10px] mt-4 text-gray-300 dark:text-[#6a7a7e]/60">
+          &copy; 2026 Koala PhD 考拉博士 &middot; {BRAND.address}
+        </div>
+      </footer>
     </div>
   );
 }

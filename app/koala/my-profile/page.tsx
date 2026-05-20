@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth, type UserProfile } from '../components/AuthContext';
 import { supabase } from '../../lib/supabase/client';
 import { shareToWechat } from '../../lib/share';
+import { useTheme } from '../../lib/theme';
 import VoiceInputButton from '../../components/VoiceInputButton';
 import SharePoster from '../../components/SharePoster';
 import { OlaAchievements } from '../components/ola/OlaAchievements';
@@ -301,6 +302,7 @@ const SELECT_CLS = INPUT_CLS;
 export default function MyProfilePage() {
   const { user, profile, authLoading, showLogin, signOut, refreshProfile } = useAuth();
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
 
   // Education, work, documents
   const [education, setEducation] = useState<EducationEntry[]>([]);
@@ -1749,6 +1751,24 @@ export default function MyProfilePage() {
                       </button>
                     </div>
                   )}
+                </div>
+                <div className="flex items-center justify-between px-4 py-2.5">
+                  <span className="text-xs text-gray-500 dark:text-[#a8b8ac]">🎨 主题</span>
+                  <div className="flex rounded-full overflow-hidden border border-gray-200 dark:border-[#D4A843]/20">
+                    {([['light', '☀️'], ['dark', '🌙'], ['system', '💻']] as const).map(([val, icon]) => (
+                      <button
+                        key={val}
+                        onClick={() => setTheme(val)}
+                        className={`px-3 py-1 text-[11px] transition-colors ${
+                          theme === val
+                            ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] font-medium'
+                            : 'text-gray-500 dark:text-[#6a7a7e] hover:bg-gray-100 dark:hover:bg-white/5'
+                        }`}
+                      >
+                        {icon}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <Link href="/koala/tools" className="flex items-center px-4 py-2.5 text-xs no-underline text-gray-500 dark:text-[#a8b8ac]">
                   🔧 更多工具

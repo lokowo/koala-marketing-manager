@@ -7,7 +7,7 @@ import { APP_VERSION } from '../../lib/version';
 import { useTheme } from '../../lib/theme';
 import { OlaAvatar } from './ola/OlaAvatar';
 const LEFT_TABS = [
-  { href: '/koala/discover', icon: Compass, label: '首页' },
+  { href: '/koala/home', icon: Compass, label: '首页' },
 ] as const;
 
 const RIGHT_TABS = [
@@ -21,12 +21,12 @@ export default function BottomTabBar() {
   const isDark = themeMode === 'dark';
 
   function isActive(href: string) {
-    if (href === '/koala/discover') return pathname === '/koala/discover' || pathname === '/koala/home' || pathname === '/koala';
+    if (href === '/koala/home') return pathname === '/koala/home' || pathname === '/koala';
     return pathname.startsWith(href);
   }
 
-  const koalaHref = (pathname === '/koala/home' || pathname === '/koala') ? '/koala/chat' : '/koala/home';
-  const koalaActive = pathname.startsWith('/koala/chat') || pathname === '/koala/home' || pathname === '/koala';
+  const koalaHref = pathname.startsWith('/koala/chat') ? '/koala/home' : '/koala/chat';
+  const koalaActive = pathname.startsWith('/koala/chat');
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 bg-white dark:bg-[#0a0e14] border-t border-gray-200 dark:border-[rgba(201,169,110,0.12)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>

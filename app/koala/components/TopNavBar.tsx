@@ -3,25 +3,22 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, MessageCircle, CreditCard, UserCircle } from 'lucide-react';
+import { Home, Users, MessageCircle, CreditCard, BookOpen, UserCircle } from 'lucide-react';
 import { useAuth } from './AuthContext';
-import { useTheme } from '../../lib/theme';
 import { OlaAvatar } from './ola/OlaAvatar';
 
 const NAV_ITEMS: { href: string; icon: React.ElementType; label: string; highlight?: boolean }[] = [
-  { href: '/koala/discover', icon: Home, label: '首页' },
+  { href: '/koala/home', icon: Home, label: '首页' },
   { href: '/koala/chat', icon: MessageCircle, label: 'Ola AI', highlight: true },
   { href: '/koala/professors', icon: Users, label: '教授库' },
   { href: '/koala/pricing', icon: CreditCard, label: '定价' },
+  { href: '/koala/blog', icon: BookOpen, label: '博客' },
   { href: '/koala/my-profile', icon: UserCircle, label: '我的' },
 ];
 
 export default function TopNavBar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
-  const themeIcons: Record<string, string> = { light: '☀️', dark: '🌙', system: '💻' };
-  const themeLabels: Record<string, string> = { light: '浅色', dark: '深色', system: '系统' };
 
   function isActive(href: string) {
     return pathname.startsWith(href);
@@ -35,17 +32,6 @@ export default function TopNavBar() {
       </Link>
 
       <div className="flex items-center gap-1">
-        <button
-          onClick={() => {
-            const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
-            setTheme(next);
-          }}
-          className="flex items-center gap-1 px-3 py-2 rounded-full text-xs transition-colors mr-1 text-gray-500 dark:text-[#6a7a7e] hover:text-gray-700 dark:hover:text-[#9CA3AF]"
-          title={`当前: ${themeLabels[theme]}`}
-        >
-          <span>{themeIcons[theme]}</span>
-          <span className="hidden xl:inline">{themeLabels[theme]}</span>
-        </button>
         {NAV_ITEMS.map(item => {
           const active = isActive(item.href);
           const Icon = item.icon;
