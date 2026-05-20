@@ -88,11 +88,11 @@ export default function SalesOverviewPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-800">分销总览</h1>
+        <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">分销总览</h1>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-200">
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">
         {[
           { key: 'team' as Tab, label: '团队总览' },
           { key: 'kpi' as Tab, label: 'Sales KPI' },
@@ -101,7 +101,7 @@ export default function SalesOverviewPage() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition -mb-px ${
-              tab === t.key ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'
+              tab === t.key ? 'border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300'
             }`}
           >
             {t.label}
@@ -113,7 +113,7 @@ export default function SalesOverviewPage() {
       {tab === 'team' && (
         <>
           {loading ? (
-            <p className="text-sm text-slate-400 py-8 text-center">加载中…</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">加载中…</p>
           ) : (
             <>
               {/* 4 KPI cards */}
@@ -125,12 +125,12 @@ export default function SalesOverviewPage() {
                     { label: '总访问', value: dist.teamTotals.visits, icon: '👁' },
                     { label: '平均转化率', value: `${dist.teamTotals.registrations > 0 ? ((dist.teamTotals.conversions / dist.teamTotals.registrations) * 100).toFixed(1) : '0'}%`, icon: '📈' },
                   ].map(item => (
-                    <div key={item.label} className="bg-white rounded-xl p-4 border border-slate-200">
+                    <div key={item.label} className="bg-white rounded-xl p-4 border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] text-slate-500">{item.label}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400">{item.label}</span>
                         <span>{item.icon}</span>
                       </div>
-                      <div className="text-xl font-bold text-slate-800">{item.value}</div>
+                      <div className="text-xl font-bold text-gray-800 dark:text-gray-200">{item.value}</div>
                     </div>
                   ))}
                 </div>
@@ -139,12 +139,12 @@ export default function SalesOverviewPage() {
               {/* 2-column: Rankings + Channel */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {dist && dist.agentRankings.length > 0 && (
-                  <div className="bg-white rounded-xl border border-slate-200 p-5">
-                    <h2 className="text-sm font-semibold text-slate-700 mb-3">成员业绩对比</h2>
+                  <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">成员业绩对比</h2>
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
                         <thead>
-                          <tr className="bg-slate-50 text-slate-500">
+                          <tr className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
                             <th className="text-center px-3 py-2 font-medium w-8">#</th>
                             <th className="text-left px-3 py-2 font-medium">销售</th>
                             <th className="text-center px-3 py-2 font-medium">注册</th>
@@ -152,13 +152,13 @@ export default function SalesOverviewPage() {
                             <th className="text-center px-3 py-2 font-medium">佣金</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                           {dist.agentRankings.map((a, i) => (
-                            <tr key={a.agentId} className={i === 0 ? 'bg-amber-50/50' : 'hover:bg-slate-50'}>
+                            <tr key={a.agentId} className={i === 0 ? 'bg-amber-50/50' : 'hover:bg-gray-50 dark:bg-gray-800/50'}>
                               <td className="text-center px-3 py-2.5 font-bold text-amber-600">{i + 1}</td>
-                              <td className="px-3 py-2.5 font-medium text-slate-700">{a.name}</td>
-                              <td className="text-center px-3 py-2.5 text-slate-600">{a.registrations}</td>
-                              <td className="text-center px-3 py-2.5 text-slate-600">{a.conversions}</td>
+                              <td className="px-3 py-2.5 font-medium text-gray-700 dark:text-gray-300">{a.name}</td>
+                              <td className="text-center px-3 py-2.5 text-gray-600 dark:text-gray-400">{a.registrations}</td>
+                              <td className="text-center px-3 py-2.5 text-gray-600 dark:text-gray-400">{a.conversions}</td>
                               <td className="text-center px-3 py-2.5 font-bold text-amber-600">${a.commission.toFixed(2)}</td>
                             </tr>
                           ))}
@@ -169,16 +169,16 @@ export default function SalesOverviewPage() {
                 )}
 
                 {dist && dist.channelBreakdown.length > 0 && (
-                  <div className="bg-white rounded-xl border border-slate-200 p-5">
-                    <h2 className="text-sm font-semibold text-slate-700 mb-3">渠道效率排名</h2>
+                  <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">渠道效率排名</h2>
                     <div className="space-y-2">
                       {dist.channelBreakdown.sort((a, b) => b.visits - a.visits).map(ch => (
-                        <div key={ch.channel} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-50">
-                          <span className="text-xs font-medium text-slate-700 w-16">{CH_LABELS[ch.channel] || ch.channel}</span>
-                          <div className="flex-1 h-4 rounded bg-slate-100 overflow-hidden">
+                        <div key={ch.channel} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 w-16">{CH_LABELS[ch.channel] || ch.channel}</span>
+                          <div className="flex-1 h-4 rounded bg-gray-100 dark:bg-gray-700 overflow-hidden">
                             <div className="h-full rounded bg-blue-200" style={{ width: `${(ch.visits / Math.max(...dist.channelBreakdown.map(c => c.visits), 1)) * 100}%` }} />
                           </div>
-                          <span className="text-[10px] text-slate-500 w-20 text-right">访问{ch.visits} 注册{ch.registrations}</span>
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 w-20 text-right">访问{ch.visits} 注册{ch.registrations}</span>
                         </div>
                       ))}
                     </div>
@@ -187,17 +187,17 @@ export default function SalesOverviewPage() {
               </div>
 
               {/* Per-sales table */}
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <h2 className="text-sm font-semibold text-slate-700 px-4 py-3 border-b border-slate-100">
-                  汇总表 <span className="font-normal text-slate-400">（点击查看客户活跃度）</span>
+              <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                  汇总表 <span className="font-normal text-gray-400 dark:text-gray-500">（点击查看客户活跃度）</span>
                 </h2>
                 {perSales.length === 0 ? (
-                  <p className="text-xs text-slate-400 px-4 py-6 text-center">暂无销售数据</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 px-4 py-6 text-center">暂无销售数据</p>
                 ) : (
                   <>
                     <table className="w-full text-xs">
                       <thead>
-                        <tr className="bg-slate-50 text-slate-500">
+                        <tr className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
                           <th className="text-left px-4 py-2 font-medium">销售</th>
                           <th className="text-center px-4 py-2 font-medium">客户</th>
                           <th className="text-center px-4 py-2 font-medium">转化</th>
@@ -207,26 +207,26 @@ export default function SalesOverviewPage() {
                           <th className="text-center px-4 py-2 font-medium"></th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                         {perSales.map(s => (
                           <tr
                             key={s.userId}
-                            className={`hover:bg-slate-50 cursor-pointer ${selectedSales === s.userId ? 'bg-amber-50' : ''}`}
+                            className={`hover:bg-gray-50 dark:bg-gray-800/50 cursor-pointer ${selectedSales === s.userId ? 'bg-amber-50' : ''}`}
                             onClick={() => loadEngagement(s.userId)}
                           >
                             <td className="px-4 py-2.5">
                               <div className="flex items-center gap-2">
-                                <div className="size-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                                <div className="size-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-600 dark:text-gray-400">
                                   {(s.profile.display_name || s.profile.email || '?')[0].toUpperCase()}
                                 </div>
-                                <span className="text-slate-700 font-medium">{s.profile.display_name || s.profile.email}</span>
+                                <span className="text-gray-700 dark:text-gray-300 font-medium">{s.profile.display_name || s.profile.email}</span>
                               </div>
                             </td>
-                            <td className="px-4 py-2.5 text-center text-slate-600">{s.totalCustomers}</td>
+                            <td className="px-4 py-2.5 text-center text-gray-600 dark:text-gray-400">{s.totalCustomers}</td>
                             <td className="px-4 py-2.5 text-center text-green-600 font-medium">{s.converted}</td>
-                            <td className="px-4 py-2.5 text-center text-slate-600">{s.conversionRate}%</td>
-                            <td className="px-4 py-2.5 text-center text-slate-600">{s.qrcodeCount}</td>
-                            <td className="px-4 py-2.5 text-center text-slate-600">{s.totalScans}</td>
+                            <td className="px-4 py-2.5 text-center text-gray-600 dark:text-gray-400">{s.conversionRate}%</td>
+                            <td className="px-4 py-2.5 text-center text-gray-600 dark:text-gray-400">{s.qrcodeCount}</td>
+                            <td className="px-4 py-2.5 text-center text-gray-600 dark:text-gray-400">{s.totalScans}</td>
                             <td className="px-4 py-2.5 text-center">
                               <span className="text-xs text-amber-600">{selectedSales === s.userId ? '▲' : '▶'}</span>
                             </td>
@@ -239,12 +239,12 @@ export default function SalesOverviewPage() {
                     {selectedSales && (
                       <div className="border-t-2 border-amber-200 px-4 py-4 bg-amber-50/50">
                         {engLoading ? (
-                          <p className="text-xs text-slate-400 text-center py-4">加载客户活跃度…</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">加载客户活跃度…</p>
                         ) : (
                           <>
                             {engSummary && (
                               <div className="flex flex-wrap gap-2 mb-4">
-                                <span className="text-xs px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-600">
+                                <span className="text-xs px-2.5 py-1 rounded-full bg-white border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400">
                                   📊 平均分 <strong>{engSummary.avgScore}</strong>
                                 </span>
                                 {Object.entries(LEVEL_CONFIG).map(([key, cfg]) => (
@@ -255,24 +255,24 @@ export default function SalesOverviewPage() {
                               </div>
                             )}
                             {engData.length === 0 ? (
-                              <p className="text-xs text-slate-400 text-center">该销售暂无客户数据</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500 text-center">该销售暂无客户数据</p>
                             ) : (
                               <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
                                 {engData.map(e => {
                                   const cfg = LEVEL_CONFIG[e.level];
                                   return (
-                                    <div key={e.userId} className="flex items-center gap-3 bg-white rounded-lg px-3 py-2.5 border border-slate-100">
+                                    <div key={e.userId} className="flex items-center gap-3 bg-white rounded-lg px-3 py-2.5 border border-gray-100 dark:border-gray-700">
                                       <div className="size-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: cfg.bg, color: cfg.color }}>
                                         {e.totalScore}
                                       </div>
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-1.5">
-                                          <span className="text-xs font-medium text-slate-800 truncate">{e.displayName || e.email || '未知'}</span>
+                                          <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{e.displayName || e.email || '未知'}</span>
                                           <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: cfg.bg, color: cfg.color }}>
                                             {cfg.emoji} {cfg.label}
                                           </span>
                                         </div>
-                                        <div className="flex gap-3 mt-0.5 text-[10px] text-slate-500">
+                                        <div className="flex gap-3 mt-0.5 text-[10px] text-gray-500 dark:text-gray-400">
                                           <span>💬 {e.stats.conversationCount}</span>
                                           <span>📌 {e.stats.savedProfessors}</span>
                                           <span>✉️ {e.stats.emailsGenerated}</span>
@@ -286,8 +286,8 @@ export default function SalesOverviewPage() {
                                           { label: '套磁', val: e.breakdown.outreachActivity, max: 20 },
                                         ].map(bar => (
                                           <div key={bar.label} className="flex items-center gap-1">
-                                            <span className="text-[8px] text-slate-400 w-5">{bar.label}</span>
-                                            <div className="flex-1 h-1.5 rounded-full bg-slate-100">
+                                            <span className="text-[8px] text-gray-400 dark:text-gray-500 w-5">{bar.label}</span>
+                                            <div className="flex-1 h-1.5 rounded-full bg-gray-100 dark:bg-gray-700">
                                               <div className="h-full rounded-full" style={{ width: `${(bar.val / bar.max) * 100}%`, background: cfg.color }} />
                                             </div>
                                           </div>
@@ -323,19 +323,19 @@ export default function SalesOverviewPage() {
       {tab === 'kpi' && (
         <>
           {kpiLoading ? (
-            <p className="text-sm text-slate-400 py-8 text-center">加载中…</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">加载中…</p>
           ) : (
             <>
               {/* KPI achievement table */}
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
-                <h2 className="text-sm font-semibold text-slate-700 mb-4">本周达标情况</h2>
+              <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">本周达标情况</h2>
                 {kpiPerSales.length === 0 ? (
-                  <p className="text-xs text-slate-400 py-4 text-center">暂无销售数据</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 py-4 text-center">暂无销售数据</p>
                 ) : (
                   <div className="overflow-auto">
                     <table className="w-full text-xs">
                       <thead>
-                        <tr className="bg-slate-50 text-slate-500">
+                        <tr className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
                           <th className="text-left px-4 py-2.5 font-medium">销售</th>
                           <th className="text-center px-4 py-2.5 font-medium">状态</th>
                           <th className="text-center px-4 py-2.5 font-medium">注册</th>
@@ -345,7 +345,7 @@ export default function SalesOverviewPage() {
                           <th className="text-center px-4 py-2.5 font-medium">总转化率</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                         {[...kpiPerSales].sort((a, b) => {
                           if (a.conversionsMet !== b.conversionsMet) return a.conversionsMet ? -1 : 1;
                           return b.weeklyConversions - a.weeklyConversions;
@@ -354,8 +354,8 @@ export default function SalesOverviewPage() {
                           const noneMet = !s.leadsMet && !s.followupsMet && !s.conversionsMet;
                           const statusIcon = allMet ? '🌟' : noneMet ? '🔴' : '⚠️';
                           return (
-                            <tr key={s.userId} className="hover:bg-slate-50">
-                              <td className="px-4 py-2.5 text-slate-700 font-medium">{s.name}</td>
+                            <tr key={s.userId} className="hover:bg-gray-50 dark:bg-gray-800/50">
+                              <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300 font-medium">{s.name}</td>
                               <td className="px-4 py-2.5 text-center text-base">{statusIcon}</td>
                               <td className="px-4 py-2.5 text-center">
                                 <span className={`font-medium ${s.leadsMet ? 'text-green-600' : 'text-red-500'}`}>{s.weeklyLeads}/{s.leadsTarget}</span>
@@ -369,9 +369,9 @@ export default function SalesOverviewPage() {
                               <td className="px-4 py-2.5 text-center">
                                 <span className={`font-medium ${s.conversionsMet ? 'text-green-600' : 'text-red-500'}`}>{s.weeklyConversions}/{s.conversionsTarget}</span>
                               </td>
-                              <td className="px-4 py-2.5 text-center text-slate-600">
+                              <td className="px-4 py-2.5 text-center text-gray-600 dark:text-gray-400">
                                 {s.conversionRate}%
-                                <div className="text-[9px] text-slate-400">{s.totalConverted}/{s.totalCustomers}</div>
+                                <div className="text-[9px] text-gray-400 dark:text-gray-500">{s.totalConverted}/{s.totalCustomers}</div>
                               </td>
                             </tr>
                           );
@@ -383,15 +383,15 @@ export default function SalesOverviewPage() {
               </div>
 
               {/* Weekly trend chart */}
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-slate-700">过去 12 周趋势</h2>
-                  <span className="text-xs text-slate-400">
+                  <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">过去 12 周趋势</h2>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
                     达标率 {kpiHistory.length > 0 ? ((kpiHistory.filter(h => h.total_conversions >= kpi.weekly_conversions).length / kpiHistory.length) * 100).toFixed(0) : '—'}%
                   </span>
                 </div>
                 {kpiHistory.length === 0 ? (
-                  <p className="text-xs text-slate-400 py-8 text-center">暂无历史数据 — 周报将在每周一自动生成</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 py-8 text-center">暂无历史数据 — 周报将在每周一自动生成</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={280}>
                     <BarChart data={kpiHistory.map(h => ({ week: h.week_start.slice(5), leads: h.total_leads, conversions: h.total_conversions }))}>

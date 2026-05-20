@@ -58,7 +58,7 @@ const TYPE_COLORS: Record<string, string> = {
   weekly_report_summary: 'bg-blue-100 text-blue-700',
   admin_message: 'bg-amber-100 text-amber-700',
   broadcast: 'bg-indigo-100 text-indigo-700',
-  info: 'bg-slate-100 text-slate-700',
+  info: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
 };
 
 export default function NotificationsPage() {
@@ -66,18 +66,18 @@ export default function NotificationsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-slate-800 mb-4">站内信</h1>
+      <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100 mb-4">站内信</h1>
 
-      <div className="flex gap-2 mb-6 border-b border-slate-200 pb-3">
+      <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 pb-3">
         <button
           onClick={() => setMainTab('system')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${mainTab === 'system' ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${mainTab === 'system' ? 'bg-gray-800 dark:bg-gray-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
         >
           📋 系统通知
         </button>
         <button
           onClick={() => setMainTab('messages')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${mainTab === 'messages' ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${mainTab === 'messages' ? 'bg-gray-800 dark:bg-gray-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
         >
           💬 对话消息
         </button>
@@ -151,47 +151,47 @@ function SystemNotifications() {
           placeholder="搜索标题或内容…"
           value={search}
           onChange={e => doSearch(e.target.value)}
-          className="flex-1 min-w-[200px] rounded-lg px-3 py-2 text-sm border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300"
+          className="flex-1 min-w-[200px] rounded-lg px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-500"
         />
         <select
           value={typeFilter}
           onChange={e => { setTypeFilter(e.target.value); setPage(1); }}
-          className="rounded-lg px-3 py-2 text-sm border border-slate-200 bg-white"
+          className="rounded-lg px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
         >
           <option value="">全部类型</option>
           {allTypes.map(t => <option key={t} value={t}>{TYPE_LABELS[t] || t}</option>)}
         </select>
         <button
           onClick={markAllRead}
-          className="px-3 py-2 rounded-lg text-xs font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50"
+          className="px-3 py-2 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-400 bg-white border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800/50"
         >
           全部已读
         </button>
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-400 py-8 text-center">加载中…</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">加载中…</p>
       ) : notifs.length === 0 ? (
-        <p className="text-sm text-slate-400 py-8 text-center">暂无通知</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">暂无通知</p>
       ) : (
         <div className="space-y-2">
           {notifs.map(n => (
             <div
               key={n.id}
               onClick={() => !n.is_read && markRead(n.id)}
-              className={`bg-white rounded-xl p-4 border cursor-pointer transition ${n.is_read ? 'border-slate-100' : 'border-blue-200 bg-blue-50/30 hover:bg-blue-50/50'}`}
+              className={`bg-white dark:bg-gray-800 rounded-xl p-4 border cursor-pointer transition ${n.is_read ? 'border-gray-100 dark:border-gray-700' : 'border-blue-200 bg-blue-50/30 hover:bg-blue-50/50'}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[n.type] || 'bg-slate-100 text-slate-600'}`}>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[n.type] || 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
                       {TYPE_LABELS[n.type] || n.type}
                     </span>
                     {!n.is_read && <span className="w-2 h-2 rounded-full bg-blue-500" />}
                   </div>
-                  <p className="text-sm font-semibold text-slate-800">{n.title}</p>
-                  {n.content && <p className="text-xs text-slate-600 mt-1 line-clamp-2">{n.content}</p>}
-                  <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-400">
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{n.title}</p>
+                  {n.content && <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{n.content}</p>}
+                  <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400 dark:text-gray-500">
                     <span>{new Date(n.created_at).toLocaleString('zh-CN')}</span>
                     {n.user_profiles?.display_name && <span>用户: {n.user_profiles.display_name}</span>}
                     {n.user_profiles?.email && <span>{n.user_profiles.email}</span>}
@@ -205,9 +205,9 @@ function SystemNotifications() {
 
       {total > 30 && (
         <div className="flex items-center justify-center gap-3 mt-4">
-          <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1.5 rounded-lg text-xs bg-white border border-slate-200 disabled:opacity-40">上一页</button>
-          <span className="text-xs text-slate-500">{page} / {Math.ceil(total / 30)}</span>
-          <button disabled={page >= Math.ceil(total / 30)} onClick={() => setPage(p => p + 1)} className="px-3 py-1.5 rounded-lg text-xs bg-white border border-slate-200 disabled:opacity-40">下一页</button>
+          <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1.5 rounded-lg text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 disabled:opacity-40">上一页</button>
+          <span className="text-xs text-gray-500 dark:text-gray-400">{page} / {Math.ceil(total / 30)}</span>
+          <button disabled={page >= Math.ceil(total / 30)} onClick={() => setPage(p => p + 1)} className="px-3 py-1.5 rounded-lg text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 disabled:opacity-40">下一页</button>
         </div>
       )}
     </div>
@@ -298,18 +298,18 @@ function MessagesPanel() {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-3 mb-2">
-          <button onClick={() => setShowNewTicket(false)} className="text-sm text-slate-500 hover:text-slate-800">← 返回</button>
-          <h3 className="text-sm font-semibold text-slate-800">新建工单</h3>
+          <button onClick={() => setShowNewTicket(false)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:text-gray-200">← 返回</button>
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">新建工单</h3>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-2">问题类型</label>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">问题类型</label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {TICKET_CATEGORIES.map(cat => (
               <button
                 key={cat.key}
                 onClick={() => setNewCategory(cat.key)}
-                className={`p-2.5 rounded-xl text-xs text-center border transition ${newCategory === cat.key ? 'border-slate-800 bg-slate-50 font-medium text-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+                className={`p-2.5 rounded-xl text-xs text-center border transition ${newCategory === cat.key ? 'border-gray-800 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 font-medium text-gray-800 dark:text-gray-200' : 'border-gray-200 dark:border-gray-700 bg-white text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-800/50'}`}
               >
                 <span className="text-lg block mb-0.5">{cat.emoji}</span>
                 {cat.label}
@@ -319,20 +319,20 @@ function MessagesPanel() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1.5">详细描述</label>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">详细描述</label>
           <textarea
             value={newContent}
             onChange={e => setNewContent(e.target.value)}
             placeholder="请描述您的问题或建议…"
             rows={5}
-            className="w-full rounded-xl px-4 py-3 text-sm border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 resize-none"
+            className="w-full rounded-xl px-4 py-3 text-sm border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-500 resize-none"
           />
         </div>
 
         <button
           onClick={createTicket}
           disabled={creating || !newContent.trim()}
-          className="w-full py-2.5 rounded-xl text-sm font-medium bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50"
+          className="w-full py-2.5 rounded-xl text-sm font-medium bg-gray-800 dark:bg-gray-600 text-white hover:bg-gray-700 dark:hover:bg-gray-500 disabled:opacity-50"
         >
           {creating ? '提交中…' : '提交工单'}
         </button>
@@ -343,12 +343,12 @@ function MessagesPanel() {
   if (selectedThread) {
     return (
       <div className="flex flex-col h-[calc(100vh-220px)]">
-        <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-200">
+        <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <button onClick={() => setSelectedThread(null)} className="text-sm text-slate-500 hover:text-slate-800">← 返回</button>
+            <button onClick={() => setSelectedThread(null)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:text-gray-200">← 返回</button>
             <div>
-              <p className="text-sm font-semibold text-slate-800">{selectedThread.subject}</p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{selectedThread.subject}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500">
                 {selectedThread.status === 'closed' ? '已关闭' : '进行中'}
               </p>
             </div>
@@ -363,8 +363,8 @@ function MessagesPanel() {
               <div key={m.id} className={`flex ${isStaff || isSystem ? 'justify-start' : 'justify-end'}`}>
                 <div className={`max-w-[80%] rounded-xl px-4 py-2.5 ${
                   isSystem ? 'bg-blue-50 border border-blue-200 text-blue-800' :
-                  isStaff ? 'bg-white border border-slate-200 text-slate-800' :
-                  'bg-slate-800 text-white'
+                  isStaff ? 'bg-white border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200' :
+                  'bg-gray-800 dark:bg-gray-600 text-white'
                 }`}>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] opacity-70">
@@ -372,7 +372,7 @@ function MessagesPanel() {
                     </span>
                   </div>
                   <p className="text-sm whitespace-pre-wrap">{m.content}</p>
-                  <p className={`text-[10px] mt-1 ${isStaff || isSystem ? 'text-slate-400' : 'opacity-50'}`}>
+                  <p className={`text-[10px] mt-1 ${isStaff || isSystem ? 'text-gray-400 dark:text-gray-500' : 'opacity-50'}`}>
                     {new Date(m.created_at).toLocaleString('zh-CN')}
                   </p>
                 </div>
@@ -383,18 +383,18 @@ function MessagesPanel() {
         </div>
 
         {selectedThread.status === 'open' && (
-          <div className="flex gap-2 pt-3 border-t border-slate-200">
+          <div className="flex gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
             <input
               value={reply}
               onChange={e => setReply(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendReply()}
               placeholder="输入回复…"
-              className="flex-1 rounded-lg px-3 py-2 text-sm border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="flex-1 rounded-lg px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-500"
             />
             <button
               disabled={sending || !reply.trim()}
               onClick={sendReply}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50"
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-800 dark:bg-gray-600 text-white hover:bg-gray-700 dark:hover:bg-gray-500 disabled:opacity-50"
             >
               发送
             </button>
@@ -412,7 +412,7 @@ function MessagesPanel() {
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === s ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === s ? 'bg-gray-800 dark:bg-gray-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
               {{ open: '进行中', closed: '已关闭', all: '全部' }[s]}
             </button>
@@ -427,14 +427,14 @@ function MessagesPanel() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-400 py-8 text-center">加载中…</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">加载中…</p>
       ) : threads.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-slate-400 text-3xl mb-2">💬</p>
-          <p className="text-sm text-slate-400 mb-4">暂无对话</p>
+          <p className="text-gray-400 dark:text-gray-500 text-3xl mb-2">💬</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">暂无对话</p>
           <button
             onClick={() => setShowNewTicket(true)}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-white hover:bg-slate-700"
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-800 dark:bg-gray-600 text-white hover:bg-gray-700 dark:hover:bg-gray-500"
           >
             联系客服
           </button>
@@ -445,19 +445,19 @@ function MessagesPanel() {
             <button
               key={t.id}
               onClick={() => setSelectedThread(t)}
-              className="w-full text-left bg-white rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition"
+              className="w-full text-left bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:border-gray-600 transition"
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">{t.subject}</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{t.subject}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${t.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${t.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
                     {t.status === 'open' ? '进行中' : '已关闭'}
                   </span>
                 </div>
               </div>
-              <p className="text-[10px] text-slate-400 mt-2">
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2">
                 最后消息: {new Date(t.last_message_at).toLocaleString('zh-CN')}
               </p>
             </button>

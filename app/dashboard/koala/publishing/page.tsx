@@ -55,27 +55,27 @@ export default function PublishingPage() {
     setSaving(false);
   };
 
-  if (loading) return <div className="p-6 text-slate-500">Loading publishing records...</div>;
+  if (loading) return <div className="p-6 text-gray-500 dark:text-gray-400">Loading publishing records...</div>;
 
   return (
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-slate-600 text-sm">{tp.totalViews}</p>
-          <p className="text-3xl font-bold text-slate-900">{stats?.totalViews.toLocaleString()}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+          <p className="text-gray-600 dark:text-gray-400 text-sm">{tp.totalViews}</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats?.totalViews.toLocaleString()}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-slate-600 text-sm">{tp.totalDMs}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+          <p className="text-gray-600 dark:text-gray-400 text-sm">{tp.totalDMs}</p>
           <p className="text-3xl font-bold text-blue-600">{stats?.totalDMs}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-slate-600 text-sm">{tp.totalConsultations}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+          <p className="text-gray-600 dark:text-gray-400 text-sm">{tp.totalConsultations}</p>
           <p className="text-3xl font-bold text-green-600">{stats?.totalConsultations}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-slate-600 text-sm">{tp.bestPlatform}</p>
-          <p className="text-2xl font-bold text-purple-600">{stats?.bestPlatform}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+          <p className="text-gray-600 dark:text-gray-400 text-sm">{tp.bestPlatform}</p>
+          <p className="text-2xl font-medium text-purple-600">{stats?.bestPlatform}</p>
         </div>
       </div>
 
@@ -87,7 +87,7 @@ export default function PublishingPage() {
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
           <h4 className="text-lg font-semibold mb-4">{tp.addHeading}</h4>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -106,7 +106,7 @@ export default function PublishingPage() {
               <button type="submit" disabled={saving} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50">
                 {saving ? '…' : t.common.saveRecord}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="bg-slate-600 text-white px-4 py-2 rounded hover:bg-slate-700">
+              <button type="button" onClick={() => setShowForm(false)} className="bg-gray-600 dark:bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700 dark:hover:bg-gray-400">
                 {t.common.cancel}
               </button>
             </div>
@@ -114,30 +114,30 @@ export default function PublishingPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-slate-50">
+            <thead className="bg-gray-50 dark:bg-gray-800/50">
               <tr>
                 {Object.values(tp.tableHeaders).map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {records.map((record) => (
-                <tr key={record.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-900">{record.platform}</td>
-                  <td className="px-4 py-3 text-sm text-slate-700">{record.contentTitle}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500">{record.publishDate}</td>
+                <tr key={record.id} className="hover:bg-gray-50 dark:bg-gray-800/50">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{record.platform}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{record.contentTitle}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{record.publishDate}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold">{record.views.toLocaleString()}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500">{record.likes}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500">{record.saves}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500">{record.comments}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{record.likes}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{record.saves}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{record.comments}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-blue-600 font-medium">{record.dms}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500">{record.wechatAdds}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{record.wechatAdds}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-green-600 font-medium">{record.consultations}</td>
-                  <td className="px-4 py-3 text-sm text-slate-600">{record.conversionNotes}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{record.conversionNotes}</td>
                 </tr>
               ))}
             </tbody>

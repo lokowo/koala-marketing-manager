@@ -148,7 +148,7 @@ export default function OlaAnalyticsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-4">Ola 分析</h1>
+      <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100 mb-4">Ola 分析</h1>
 
       <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
         {tabs.map(t => (
@@ -156,7 +156,7 @@ export default function OlaAnalyticsPage() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              tab === t.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              tab === t.key ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             {t.label}
@@ -191,7 +191,7 @@ function OverviewTab({ kpi, funnel, ratings }: { kpi: KPIData | null; funnel: Fu
       )}
 
       {/* Funnel Chart */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
         <h2 className="text-sm font-semibold text-gray-900 mb-4">对话漏斗</h2>
         {funnel.length === 0 ? (
           <p className="text-gray-400 text-sm">暂无数据</p>
@@ -223,7 +223,7 @@ function OverviewTab({ kpi, funnel, ratings }: { kpi: KPIData | null; funnel: Fu
 
       {/* Rating Distribution */}
       {ratings && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">评分分布 (30天)</h2>
           <div className="flex items-end gap-3 h-32 mb-4">
             {[1, 2, 3, 4, 5].map(star => {
@@ -232,14 +232,14 @@ function OverviewTab({ kpi, funnel, ratings }: { kpi: KPIData | null; funnel: Fu
               const height = Math.max((count / maxCount) * 100, 4);
               return (
                 <div key={star} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-xs text-gray-500">{count}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{count}</span>
                   <div className="w-full flex items-end" style={{ height: '100px' }}>
                     <div
                       className={`w-full rounded-t transition-all duration-500 ${star <= 2 ? 'bg-red-400' : star === 3 ? 'bg-amber-400' : 'bg-green-400'}`}
                       style={{ height: `${height}%` }}
                     />
                   </div>
-                  <span className="text-xs text-gray-600">{star}★</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500">{star}★</span>
                 </div>
               );
             })}
@@ -267,10 +267,10 @@ function OverviewTab({ kpi, funnel, ratings }: { kpi: KPIData | null; funnel: Fu
 
 function KPICard({ label, value, suffix }: { label: string; value: number; suffix?: string }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
       <p className="text-xs text-gray-500 mb-1">{label}</p>
-      <p className="text-2xl font-bold text-gray-900">
-        {value}{suffix && <span className="text-sm font-normal text-gray-400">{suffix}</span>}
+      <p className="text-2xl font-medium text-gray-900 dark:text-gray-100">
+        {value}{suffix && <span className="text-sm font-normal text-gray-400 dark:text-gray-500">{suffix}</span>}
       </p>
     </div>
   );
@@ -280,7 +280,7 @@ function DetailsTab({ triggers }: { triggers: TriggerItem[] }) {
   return (
     <div className="space-y-6">
       {/* Trigger Effectiveness */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
         <h2 className="text-sm font-semibold text-gray-900 mb-4">触发规则效果</h2>
         {triggers.length === 0 ? (
           <p className="text-gray-400 text-sm">暂无触发数据</p>
@@ -288,7 +288,7 @@ function DetailsTab({ triggers }: { triggers: TriggerItem[] }) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
+                <tr className="border-b border-gray-100 dark:border-gray-700">
                   <th className="text-left py-2 px-3 text-gray-500 font-medium">触发规则</th>
                   <th className="text-right py-2 px-3 text-gray-500 font-medium">展示</th>
                   <th className="text-right py-2 px-3 text-gray-500 font-medium">点击</th>
@@ -298,11 +298,11 @@ function DetailsTab({ triggers }: { triggers: TriggerItem[] }) {
               </thead>
               <tbody>
                 {triggers.map(t => (
-                  <tr key={t.triggerKey} className="border-b border-gray-50 hover:bg-gray-50">
+                  <tr key={t.triggerKey} className="border-b border-gray-50 hover:bg-gray-50 dark:bg-gray-800/50">
                     <td className="py-2 px-3 text-gray-900 font-mono text-xs">{t.triggerKey}</td>
-                    <td className="py-2 px-3 text-right text-gray-600">{t.shown}</td>
-                    <td className="py-2 px-3 text-right text-gray-600">{t.clicked}</td>
-                    <td className="py-2 px-3 text-right text-gray-600">{t.dismissed}</td>
+                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400 dark:text-gray-500">{t.shown}</td>
+                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400 dark:text-gray-500">{t.clicked}</td>
+                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400 dark:text-gray-500">{t.dismissed}</td>
                     <td className="py-2 px-3 text-right">
                       <span className={`font-medium ${t.clickRate > 10 ? 'text-green-600' : t.clickRate > 5 ? 'text-amber-600' : 'text-gray-600'}`}>
                         {t.clickRate}%
@@ -317,13 +317,13 @@ function DetailsTab({ triggers }: { triggers: TriggerItem[] }) {
       </div>
 
       {/* Tool Stats Placeholder */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
         <h2 className="text-sm font-semibold text-gray-900 mb-2">Tool 使用统计</h2>
         <p className="text-gray-400 text-sm">暂无数据 — 需要 ola_events 埋点后启用</p>
       </div>
 
       {/* Knowledge Gaps Placeholder */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
         <h2 className="text-sm font-semibold text-gray-900 mb-2">知识盲区 Top 10</h2>
         <p className="text-gray-400 text-sm">功能开发中 — 需要 RAG 引擎记录 miss 事件</p>
       </div>
@@ -342,7 +342,7 @@ function EmailsTab({
 }) {
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
         <h2 className="text-sm font-semibold text-gray-900 mb-4">再激活邮件模板</h2>
         {templates.length === 0 ? (
           <p className="text-gray-400 text-sm">暂无模板 — 请先运行 seed API</p>
@@ -360,7 +360,7 @@ function EmailsTab({
                 </button>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {TEMPLATE_LABELS[t.template_key] || t.template_key}
                   </p>
                   <p className="text-xs text-gray-500 truncate">{t.subject_zh}</p>

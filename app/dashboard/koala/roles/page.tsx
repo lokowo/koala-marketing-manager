@@ -61,14 +61,14 @@ export default function RolesPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-slate-800 mb-4">角色管理</h1>
+      <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100 mb-4">角色管理</h1>
 
       <div className="flex gap-2 mb-4">
         {(['pending', 'approved', 'rejected', 'all'] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${tab === t ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${tab === t ? 'bg-gray-800 dark:bg-gray-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
           >
             {{ pending: '待审核', approved: '已通过', rejected: '已拒绝', all: '全部' }[t]}
           </button>
@@ -76,19 +76,19 @@ export default function RolesPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-400 py-8 text-center">加载中…</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">加载中…</p>
       ) : apps.length === 0 ? (
-        <p className="text-sm text-slate-400 py-8 text-center">暂无申请</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">暂无申请</p>
       ) : (
         <div className="space-y-3">
           {apps.map(app => (
-            <div key={app.id} className="bg-white rounded-xl p-4 border border-slate-200">
+            <div key={app.id} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">{app.full_name || app.user_profiles?.display_name || app.email || app.user_profiles?.email || app.user_id.slice(0, 8)}</p>
-                  <p className="text-xs text-slate-500">{app.email || app.user_profiles?.email}</p>
-                  {(app.phone || app.user_profiles?.phone) && <p className="text-xs text-slate-500">Tel: {app.phone || app.user_profiles?.phone}</p>}
-                  {app.company && <p className="text-xs text-slate-500">公司: {app.company}</p>}
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{app.full_name || app.user_profiles?.display_name || app.email || app.user_profiles?.email || app.user_id.slice(0, 8)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{app.email || app.user_profiles?.email}</p>
+                  {(app.phone || app.user_profiles?.phone) && <p className="text-xs text-gray-500 dark:text-gray-400">Tel: {app.phone || app.user_profiles?.phone}</p>}
+                  {app.company && <p className="text-xs text-gray-500 dark:text-gray-400">公司: {app.company}</p>}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
@@ -105,8 +105,8 @@ export default function RolesPage() {
                   </span>
                 </div>
               </div>
-              <p className="text-xs text-slate-600 mt-2 bg-slate-50 rounded-lg p-2">{app.reason}</p>
-              <p className="text-[10px] text-slate-400 mt-2">{new Date(app.created_at).toLocaleString('zh-CN')}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2">{app.reason}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2">{new Date(app.created_at).toLocaleString('zh-CN')}</p>
 
               {app.status === 'pending' && (
                 <div className="flex items-center gap-2 mt-3">
@@ -123,7 +123,7 @@ export default function RolesPage() {
                         placeholder="拒绝理由（选填）"
                         value={rejectReason}
                         onChange={e => setRejectReason(e.target.value)}
-                        className="flex-1 rounded-lg px-2 py-1.5 text-xs border border-slate-200 focus:outline-none"
+                        className="flex-1 rounded-lg px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-700 focus:outline-none"
                       />
                       <button
                         disabled={actionLoading === app.id}
@@ -136,7 +136,7 @@ export default function RolesPage() {
                   ) : (
                     <button
                       onClick={() => handleAction(app.id, 'reject')}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-red-600 border border-red-200 hover:bg-red-50"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50"
                     >
                       拒绝
                     </button>
@@ -146,7 +146,7 @@ export default function RolesPage() {
               {app.status === 'approved' && (
                 <button
                   onClick={() => handleRevoke(app.user_id)}
-                  className="mt-3 px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-red-600 border border-red-200 hover:bg-red-50"
+                  className="mt-3 px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50"
                 >
                   撤销角色
                 </button>

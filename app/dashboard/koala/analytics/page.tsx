@@ -41,10 +41,10 @@ export default function AnalyticsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">数据分析</h2>
-          <p className="text-sm text-slate-500 mt-0.5">平台运营数据概览</p>
+          <h2 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">数据分析</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">平台运营数据概览</p>
         </div>
-        <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
           {[
             { days: 7, label: '7天' },
             { days: 30, label: '30天' },
@@ -54,7 +54,7 @@ export default function AnalyticsPage() {
               key={o.days}
               onClick={() => setRange(o.days)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                range === o.days ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'
+                range === o.days ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400'
               }`}
             >
               {o.label}
@@ -64,7 +64,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-200">
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">
         {[
           { key: 'overview' as Tab, label: '概览' },
           { key: 'ai' as Tab, label: 'AI 使用' },
@@ -74,7 +74,7 @@ export default function AnalyticsPage() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition -mb-px ${
-              tab === t.key ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'
+              tab === t.key ? 'border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             {t.label}
@@ -83,7 +83,20 @@ export default function AnalyticsPage() {
       </div>
 
       {loading ? (
-        <div className="text-sm text-slate-400 py-12 text-center">加载中...</div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+                <div className="h-3 w-16 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-2" />
+                <div className="h-7 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+            <div className="h-4 w-28 bg-gray-100 dark:bg-gray-700 rounded animate-pulse mb-4" />
+            <div className="h-[260px] bg-gray-50 dark:bg-gray-700/30 rounded animate-pulse" />
+          </div>
+        </div>
       ) : (
         <>
           {/* Tab 1: Overview */}
@@ -98,8 +111,8 @@ export default function AnalyticsPage() {
                 </div>
               )}
 
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
-                <h3 className="text-sm font-semibold text-slate-700 mb-4">用户增长趋势</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">用户增长趋势</h3>
                 {(data?.userGrowth || []).length > 0 ? (
                   <ResponsiveContainer width="100%" height={260}>
                     <AreaChart data={data?.userGrowth}>
@@ -119,12 +132,12 @@ export default function AnalyticsPage() {
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[240px] flex items-center justify-center text-sm text-slate-300">暂无数据</div>
+                  <div className="h-[240px] flex items-center justify-center text-sm text-gray-300 dark:text-gray-600">暂无数据</div>
                 )}
               </div>
 
-              <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
-                <h3 className="text-sm font-semibold text-slate-700 mb-4">日活跃度</h3>
+              <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">日活跃度</h3>
                 {(data?.dailyActivity || []).length > 0 ? (
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={data?.dailyActivity}>
@@ -138,7 +151,7 @@ export default function AnalyticsPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[220px] flex items-center justify-center text-sm text-slate-300">暂无数据</div>
+                  <div className="h-[220px] flex items-center justify-center text-sm text-gray-300 dark:text-gray-600">暂无数据</div>
                 )}
               </div>
             </>
@@ -148,8 +161,8 @@ export default function AnalyticsPage() {
           {tab === 'ai' && (
             <>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-4">AI 模式分布</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">AI 模式分布</h3>
                   {(data?.chatModeDistribution || []).length > 0 ? (
                     <>
                       <ResponsiveContainer width="100%" height={200}>
@@ -176,20 +189,20 @@ export default function AnalyticsPage() {
                           <div key={m.mode} className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-2">
                               <span className="w-2.5 h-2.5 rounded-sm" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                              <span className="text-slate-600">{m.mode}</span>
+                              <span className="text-gray-600 dark:text-gray-400">{m.mode}</span>
                             </div>
-                            <span className="font-medium text-slate-700">{m.count}</span>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">{m.count}</span>
                           </div>
                         ))}
                       </div>
                     </>
                   ) : (
-                    <div className="h-[250px] flex items-center justify-center text-sm text-slate-300">暂无数据</div>
+                    <div className="h-[250px] flex items-center justify-center text-sm text-gray-300 dark:text-gray-600">暂无数据</div>
                   )}
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-4">日均 AI 对话趋势</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">日均 AI 对话趋势</h3>
                   {(data?.dailyActivity || []).length > 0 ? (
                     <ResponsiveContainer width="100%" height={250}>
                       <AreaChart data={data?.dailyActivity}>
@@ -207,7 +220,7 @@ export default function AnalyticsPage() {
                       </AreaChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-[250px] flex items-center justify-center text-sm text-slate-300">暂无数据</div>
+                    <div className="h-[250px] flex items-center justify-center text-sm text-gray-300 dark:text-gray-600">暂无数据</div>
                   )}
                 </div>
               </div>
@@ -218,8 +231,8 @@ export default function AnalyticsPage() {
           {tab === 'features' && (
             <>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-4">销售漏斗</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">销售漏斗</h3>
                   {Object.keys(data?.salesFunnel || {}).length > 0 ? (
                     <div className="space-y-2.5">
                       {(() => {
@@ -230,28 +243,28 @@ export default function AnalyticsPage() {
                           const pct = (count / total) * 100;
                           return (
                             <div key={stage.key} className="flex items-center gap-3">
-                              <span className="text-[10px] w-14 text-right text-slate-500">{stage.label}</span>
-                              <div className="flex-1 h-7 rounded-lg overflow-hidden bg-slate-50 relative">
+                              <span className="text-[10px] w-14 text-right text-gray-500 dark:text-gray-400">{stage.label}</span>
+                              <div className="flex-1 h-7 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-700/50 relative">
                                 <div
                                   className="h-full rounded-lg flex items-center justify-end pr-2 transition-all"
                                   style={{ width: `${Math.max(pct, 6)}%`, background: `${stage.color}25`, borderRight: `3px solid ${stage.color}` }}
                                 >
-                                  <span className="text-[10px] font-bold" style={{ color: stage.color }}>{count}</span>
+                                  <span className="text-[10px] font-medium" style={{ color: stage.color }}>{count}</span>
                                 </div>
                               </div>
-                              <span className="text-[10px] text-slate-400 w-10">{pct.toFixed(0)}%</span>
+                              <span className="text-[10px] text-gray-400 dark:text-gray-500 w-10">{pct.toFixed(0)}%</span>
                             </div>
                           );
                         });
                       })()}
                     </div>
                   ) : (
-                    <div className="h-[200px] flex items-center justify-center text-sm text-slate-300">暂无数据</div>
+                    <div className="h-[200px] flex items-center justify-center text-sm text-gray-300 dark:text-gray-600">暂无数据</div>
                   )}
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-4">教授大学分布 Top 15</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">教授大学分布 Top 15</h3>
                   {(data?.universityDistribution || []).length > 0 ? (
                     <ResponsiveContainer width="100%" height={260}>
                       <BarChart data={data?.universityDistribution} layout="vertical">
@@ -263,51 +276,51 @@ export default function AnalyticsPage() {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-[260px] flex items-center justify-center text-sm text-slate-300">暂无数据</div>
+                    <div className="h-[260px] flex items-center justify-center text-sm text-gray-300 dark:text-gray-600">暂无数据</div>
                   )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-4">热门教授 (被收藏最多)</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">热门教授 (被收藏最多)</h3>
                   {(data?.topProfessors || []).length > 0 ? (
                     <div className="space-y-2">
                       {data!.topProfessors.map((p: AnyObj, i: number) => (
-                        <div key={p.id} className="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
-                          <span className="text-xs text-slate-400 w-5">{i + 1}.</span>
+                        <div key={p.id} className="flex items-center gap-3 py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                          <span className="text-xs text-gray-400 dark:text-gray-500 w-5">{i + 1}.</span>
                           <div className="flex-1 min-w-0">
-                            <Link href={`/dashboard/koala/professors/${p.id}`} className="text-sm text-slate-800 hover:text-blue-600 no-underline">
+                            <Link href={`/dashboard/koala/professors/${p.id}`} className="text-sm text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 no-underline">
                               {p.name}
                             </Link>
-                            <p className="text-xs text-slate-400">{p.university}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">{p.university}</p>
                           </div>
-                          <span className="text-xs font-medium text-amber-600">{p.savedCount} 收藏</span>
+                          <span className="text-xs font-medium text-amber-600 dark:text-amber-400">{p.savedCount} 收藏</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-300 py-8 text-center">暂无数据</p>
+                    <p className="text-sm text-gray-300 dark:text-gray-600 py-8 text-center">暂无数据</p>
                   )}
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-4">博客热门文章</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">博客热门文章</h3>
                   {(data?.topBlogs || []).length > 0 ? (
                     <div className="space-y-2">
                       {data!.topBlogs.map((b: AnyObj, i: number) => (
-                        <div key={b.id} className="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
-                          <span className="text-xs text-slate-400 w-5">{i + 1}.</span>
+                        <div key={b.id} className="flex items-center gap-3 py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                          <span className="text-xs text-gray-400 dark:text-gray-500 w-5">{i + 1}.</span>
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm text-slate-800 truncate block">{b.title_zh || 'Untitled'}</span>
-                            <span className="text-xs text-slate-400">{b.category}</span>
+                            <span className="text-sm text-gray-800 dark:text-gray-200 truncate block">{b.title_zh || 'Untitled'}</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">{b.category}</span>
                           </div>
-                          <span className="text-xs font-medium text-blue-600">{b.view_count ?? 0} 浏览</span>
+                          <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{b.view_count ?? 0} 浏览</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-300 py-8 text-center">暂无数据</p>
+                    <p className="text-sm text-gray-300 dark:text-gray-600 py-8 text-center">暂无数据</p>
                   )}
                 </div>
               </div>
@@ -321,9 +334,9 @@ export default function AnalyticsPage() {
 
 function MetricCard({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
-      <div className="text-[10px] text-slate-400 mb-1">{label}</div>
-      <div className={`text-2xl font-bold ${accent ? 'text-blue-600' : 'text-slate-800'}`}>{value.toLocaleString()}</div>
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className="text-[10px] text-gray-400 dark:text-gray-500 mb-1">{label}</div>
+      <div className={`text-2xl font-medium ${accent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-gray-100'}`}>{value.toLocaleString()}</div>
     </div>
   );
 }

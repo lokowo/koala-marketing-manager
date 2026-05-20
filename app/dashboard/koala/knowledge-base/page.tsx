@@ -212,14 +212,14 @@ export default function KnowledgeBasePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">知识库管理</h1>
-          <p className="text-sm text-slate-500 mt-1">管理 AI 的知识库内容和向量索引 · 共 {total} 条</p>
+          <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">知识库管理</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">管理 AI 的知识库内容和向量索引 · 共 {total} 条</p>
         </div>
         <div className="flex gap-2">
           <button onClick={handleBackfill} disabled={backfilling} className="px-3 py-2 border border-orange-300 text-orange-700 text-sm rounded-lg hover:bg-orange-50 transition disabled:opacity-50">
             {backfilling ? '重建中...' : '重建索引'}
           </button>
-          <button onClick={() => setShowBatch(true)} className="px-3 py-2 border border-slate-300 text-slate-700 text-sm rounded-lg hover:bg-slate-50 transition">
+          <button onClick={() => setShowBatch(true)} className="px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:bg-gray-800/50 transition">
             批量导入
           </button>
           <button onClick={openCreate} className="px-3 py-2 bg-[#1A1A2E] text-white text-sm rounded-lg hover:bg-[#2A2A3E] transition">
@@ -233,8 +233,8 @@ export default function KnowledgeBasePage() {
       )}
 
       {/* Semantic Search Panel */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4">
-        <h2 className="text-sm font-semibold text-slate-700 mb-3">语义搜索测试</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">语义搜索测试</h2>
         <div className="flex gap-2 mb-3">
           <input
             type="text"
@@ -242,7 +242,7 @@ export default function KnowledgeBasePage() {
             onChange={e => setSemQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
             placeholder="输入查询文本..."
-            className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-500"
           />
           <button
             onClick={handleSearch}
@@ -252,7 +252,7 @@ export default function KnowledgeBasePage() {
             {searching ? '搜索中...' : '测试'}
           </button>
         </div>
-        <div className="flex gap-4 text-sm text-slate-600">
+        <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400">
           <label className="flex items-center gap-2">
             阈值:
             <input
@@ -260,7 +260,7 @@ export default function KnowledgeBasePage() {
               min={0} max={1} step={0.05}
               value={semThreshold}
               onChange={e => setSemThreshold(parseFloat(e.target.value))}
-              className="w-20 border border-slate-300 rounded px-2 py-1 text-sm"
+              className="w-20 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm"
             />
           </label>
           <label className="flex items-center gap-2">
@@ -270,7 +270,7 @@ export default function KnowledgeBasePage() {
               min={1} max={50}
               value={semLimit}
               onChange={e => setSemLimit(parseInt(e.target.value))}
-              className="w-20 border border-slate-300 rounded px-2 py-1 text-sm"
+              className="w-20 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm"
             />
           </label>
         </div>
@@ -280,15 +280,15 @@ export default function KnowledgeBasePage() {
         {semResults.length > 0 && (
           <div className="mt-3 space-y-2">
             {semResults.map(r => (
-              <div key={r.id} className="bg-slate-50 rounded-lg p-3">
+              <div key={r.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-mono">
                     {(r.similarity * 100).toFixed(1)}%
                   </span>
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{r.source_type}</span>
-                  <span className="text-sm font-medium text-slate-700">{r.source_title}</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{r.source_title}</span>
                 </div>
-                <p className="text-sm text-slate-500 line-clamp-2">{r.content}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{r.content}</p>
               </div>
             ))}
           </div>
@@ -296,21 +296,21 @@ export default function KnowledgeBasePage() {
       </div>
 
       {/* Chunk List */}
-      <div className="bg-white rounded-xl border border-slate-200">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-slate-700 shrink-0">知识库内容</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 shrink-0">知识库内容</h2>
           <div className="flex gap-2 flex-1 justify-end">
             <input
               type="text"
               value={searchKw}
               onChange={e => { setSearchKw(e.target.value); setPage(1); }}
               placeholder="搜索标题/内容..."
-              className="max-w-[200px] text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-400"
+              className="max-w-[200px] text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-500"
             />
             <select
               value={filterType}
               onChange={e => { setFilterType(e.target.value); setPage(1); }}
-              className="text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:outline-none"
+              className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 focus:outline-none"
             >
               <option value="">所有来源</option>
               {SOURCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
@@ -318,30 +318,30 @@ export default function KnowledgeBasePage() {
           </div>
         </div>
         {loading ? (
-          <div className="p-8 text-center text-slate-400">加载中...</div>
+          <div className="p-8 text-center text-gray-400 dark:text-gray-500">加载中...</div>
         ) : chunks.length === 0 ? (
           <div className="p-12 text-center">
             <div className="text-4xl mb-3">📭</div>
-            <p className="text-slate-500">暂无知识条目</p>
-            <p className="text-sm text-slate-400 mt-1">点击「添加知识」或「批量导入」开始</p>
+            <p className="text-gray-500 dark:text-gray-400">暂无知识条目</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">点击「添加知识」或「批量导入」开始</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {chunks.map(chunk => (
-              <div key={chunk.id} className="p-4 hover:bg-slate-50 group">
+              <div key={chunk.id} className="p-4 hover:bg-gray-50 dark:bg-gray-800/50 group">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{chunk.source_type}</span>
-                      <span className="text-sm font-medium text-slate-700 truncate">{chunk.source_title}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{chunk.source_title}</span>
                     </div>
-                    <p className="text-sm text-slate-500 line-clamp-2">{chunk.content}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{chunk.content}</p>
                     {chunk.created_at && (
-                      <p className="text-xs text-slate-400 mt-1">{new Date(chunk.created_at).toLocaleDateString('zh-CN')}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{new Date(chunk.created_at).toLocaleDateString('zh-CN')}</p>
                     )}
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
-                    <button onClick={() => openEdit(chunk)} className="text-xs px-2 py-1 text-slate-600 hover:bg-slate-200 rounded">编辑</button>
+                    <button onClick={() => openEdit(chunk)} className="text-xs px-2 py-1 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded">编辑</button>
                     <button onClick={() => setDeleteTarget(chunk)} className="text-xs px-2 py-1 text-red-600 hover:bg-red-50 rounded">删除</button>
                   </div>
                 </div>
@@ -350,11 +350,11 @@ export default function KnowledgeBasePage() {
           </div>
         )}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-slate-200 flex items-center justify-between text-sm">
-            <span className="text-slate-500">第 {page}/{totalPages} 页</span>
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-sm">
+            <span className="text-gray-500 dark:text-gray-400">第 {page}/{totalPages} 页</span>
             <div className="flex gap-2">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-30">上一页</button>
-              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-30">下一页</button>
+              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:bg-gray-800/50 disabled:opacity-30">上一页</button>
+              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:bg-gray-800/50 disabled:opacity-30">下一页</button>
             </div>
           </div>
         )}
@@ -363,45 +363,45 @@ export default function KnowledgeBasePage() {
       {/* Create/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-lg shadow-xl">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="font-semibold text-slate-900">{editingChunk ? '编辑知识' : '添加知识'}</h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-lg shadow-xl">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">{editingChunk ? '编辑知识' : '添加知识'}</h3>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 text-xl leading-none">&times;</button>
             </div>
             <div className="p-4 space-y-4">
               <div>
-                <label className="text-sm font-medium text-slate-700 block mb-1">标题</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">标题</label>
                 <input
                   type="text"
                   value={formTitle}
                   onChange={e => setFormTitle(e.target.value)}
                   placeholder="知识条目标题"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-500"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-700 block mb-1">来源类型</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">来源类型</label>
                 <select
                   value={formType}
                   onChange={e => setFormType(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none"
                 >
                   {SOURCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-700 block mb-1">内容</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">内容</label>
                 <textarea
                   value={formContent}
                   onChange={e => setFormContent(e.target.value)}
                   rows={8}
                   placeholder="知识内容..."
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 resize-none"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-500 resize-none"
                 />
               </div>
             </div>
-            <div className="p-4 border-t border-slate-200 flex justify-end gap-2">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 rounded-lg">取消</button>
               <button
                 onClick={handleSave}
                 disabled={saving || !formTitle.trim() || !formContent.trim()}
@@ -417,13 +417,13 @@ export default function KnowledgeBasePage() {
       {/* Delete Confirmation */}
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl p-6">
-            <h3 className="font-semibold text-slate-900 mb-2">确认删除</h3>
-            <p className="text-sm text-slate-600 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-sm shadow-xl p-6">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">确认删除</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               确定要删除「{deleteTarget.source_title}」吗？此操作不可撤销。
             </p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
+              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 rounded-lg">取消</button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
@@ -439,26 +439,26 @@ export default function KnowledgeBasePage() {
       {/* Batch Import Modal */}
       {showBatch && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-lg shadow-xl">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="font-semibold text-slate-900">批量导入</h3>
-              <button onClick={() => { setShowBatch(false); setBatchResult(''); }} className="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-lg shadow-xl">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">批量导入</h3>
+              <button onClick={() => { setShowBatch(false); setBatchResult(''); }} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 text-xl leading-none">&times;</button>
             </div>
             <div className="p-4 space-y-3">
-              <p className="text-sm text-slate-600">输入 JSON 数组，每项包含 source_title、content、source_type（最多 20 条）</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">输入 JSON 数组，每项包含 source_title、content、source_type（最多 20 条）</p>
               <textarea
                 value={batchJson}
                 onChange={e => setBatchJson(e.target.value)}
                 rows={10}
                 placeholder={`[\n  {\n    "source_title": "标题",\n    "content": "内容...",\n    "source_type": "manual"\n  }\n]`}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-500 resize-none"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-500 resize-none"
               />
               {batchResult && (
-                <pre className="bg-slate-50 p-3 rounded text-xs whitespace-pre-wrap">{batchResult}</pre>
+                <pre className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded text-xs whitespace-pre-wrap">{batchResult}</pre>
               )}
             </div>
-            <div className="p-4 border-t border-slate-200 flex justify-end gap-2">
-              <button onClick={() => { setShowBatch(false); setBatchResult(''); }} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">关闭</button>
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <button onClick={() => { setShowBatch(false); setBatchResult(''); }} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 rounded-lg">关闭</button>
               <button
                 onClick={handleBatchImport}
                 disabled={importing || !batchJson.trim()}

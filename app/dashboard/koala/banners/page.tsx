@@ -102,15 +102,15 @@ function OverlayEditor({ config, onChange, imageUrl }: { config: OverlayConfig; 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-[#374151]">文字图层</label>
-        <button onClick={addLayer} disabled={config.layers.length >= 5} className="text-[11px] px-2.5 py-1 rounded-lg border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB] disabled:opacity-40">+ 添加文字</button>
+        <label className="text-xs font-medium text-gray-700 dark:text-gray-300">文字图层</label>
+        <button onClick={addLayer} disabled={config.layers.length >= 5} className="text-[11px] px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 disabled:opacity-40">+ 添加文字</button>
       </div>
 
       {/* Preview */}
       {imageUrl && (
         <div
           ref={previewRef}
-          className="relative w-full aspect-square rounded-xl overflow-hidden bg-[#F3F4F6] select-none"
+          className="relative w-full aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 select-none"
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
         >
@@ -145,35 +145,35 @@ function OverlayEditor({ config, onChange, imageUrl }: { config: OverlayConfig; 
 
       {/* Layer controls */}
       {config.layers.map((layer, idx) => (
-        <div key={layer.id} className="rounded-xl border border-[#E5E7EB] p-3 space-y-2.5 bg-[#FAFAFA]">
+        <div key={layer.id} className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-2.5 bg-gray-50 dark:bg-gray-800/50">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-[#6B7280]">图层 {idx + 1}</span>
+            <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">图层 {idx + 1}</span>
             <button onClick={() => removeLayer(layer.id)} className="text-[10px] text-red-500 hover:text-red-700">删除</button>
           </div>
           <input
             type="text" value={layer.text} onChange={e => updateLayer(layer.id, { text: e.target.value })}
             placeholder="输入文字"
-            className="w-full px-2.5 py-1.5 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] focus:outline-none focus:border-[#c9a96e]"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#c9a96e]"
           />
           <div className="flex items-center gap-3">
             <div className="flex-1">
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-[10px] text-[#9CA3AF]">字号</span>
-                <span className="text-[10px] font-medium text-[#374151]">{layer.fontSize}px</span>
+                <span className="text-[10px] text-gray-400 dark:text-gray-500">字号</span>
+                <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300">{layer.fontSize}px</span>
               </div>
               <input type="range" min={12} max={60} value={layer.fontSize} onChange={e => updateLayer(layer.id, { fontSize: Number(e.target.value) })} className="w-full accent-[#c9a96e] h-1" />
             </div>
             <div className="flex gap-0.5">
-              <button onClick={() => updateLayer(layer.id, { fontWeight: 'normal' })} className={`px-2 py-1 rounded text-[10px] border ${layer.fontWeight === 'normal' ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E]' : 'border-[#E5E7EB] text-[#9CA3AF]'}`}>细</button>
-              <button onClick={() => updateLayer(layer.id, { fontWeight: 'bold' })} className={`px-2 py-1 rounded text-[10px] font-bold border ${layer.fontWeight === 'bold' ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E]' : 'border-[#E5E7EB] text-[#9CA3AF]'}`}>粗</button>
+              <button onClick={() => updateLayer(layer.id, { fontWeight: 'normal' })} className={`px-2 py-1 rounded text-[10px] border ${layer.fontWeight === 'normal' ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E]' : 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}`}>细</button>
+              <button onClick={() => updateLayer(layer.id, { fontWeight: 'bold' })} className={`px-2 py-1 rounded text-[10px] font-bold border ${layer.fontWeight === 'bold' ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E]' : 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}`}>粗</button>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-[#9CA3AF] shrink-0">颜色</span>
+            <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">颜色</span>
             <div className="flex gap-1">
               {PRESET_COLORS.map(c => (
                 <button key={c.value} onClick={() => updateLayer(layer.id, { color: c.value })}
-                  className={`size-6 rounded-full border-2 ${layer.color === c.value ? 'border-[#c9a96e] ring-2 ring-[#c9a96e]/30' : 'border-[#E5E7EB]'}`}
+                  className={`size-6 rounded-full border-2 ${layer.color === c.value ? 'border-[#c9a96e] ring-2 ring-[#c9a96e]/30' : 'border-gray-200 dark:border-gray-700'}`}
                   style={{ background: c.value }}
                   title={c.label}
                 />
@@ -181,8 +181,8 @@ function OverlayEditor({ config, onChange, imageUrl }: { config: OverlayConfig; 
               <input type="color" value={layer.color} onChange={e => updateLayer(layer.id, { color: e.target.value })} className="size-6 rounded cursor-pointer border-0 p-0" title="自定义" />
             </div>
             <div className="flex gap-0.5 ml-auto">
-              <button onClick={() => updateLayer(layer.id, { direction: 'horizontal' })} className={`px-2 py-1 rounded text-[10px] border ${layer.direction === 'horizontal' ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E]' : 'border-[#E5E7EB] text-[#9CA3AF]'}`}>横</button>
-              <button onClick={() => updateLayer(layer.id, { direction: 'vertical' })} className={`px-2 py-1 rounded text-[10px] border ${layer.direction === 'vertical' ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E]' : 'border-[#E5E7EB] text-[#9CA3AF]'}`}>竖</button>
+              <button onClick={() => updateLayer(layer.id, { direction: 'horizontal' })} className={`px-2 py-1 rounded text-[10px] border ${layer.direction === 'horizontal' ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E]' : 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}`}>横</button>
+              <button onClick={() => updateLayer(layer.id, { direction: 'vertical' })} className={`px-2 py-1 rounded text-[10px] border ${layer.direction === 'vertical' ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E]' : 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'}`}>竖</button>
             </div>
           </div>
         </div>
@@ -192,8 +192,8 @@ function OverlayEditor({ config, onChange, imageUrl }: { config: OverlayConfig; 
       {config.layers.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-0.5">
-            <span className="text-[10px] text-[#9CA3AF]">背景遮罩</span>
-            <span className="text-[10px] font-medium text-[#374151]">{config.backdropOpacity}%</span>
+            <span className="text-[10px] text-gray-400 dark:text-gray-500">背景遮罩</span>
+            <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300">{config.backdropOpacity}%</span>
           </div>
           <input type="range" min={0} max={80} value={config.backdropOpacity} onChange={e => onChange({ ...config, backdropOpacity: Number(e.target.value) })} className="w-full accent-[#c9a96e] h-1" />
         </div>
@@ -508,7 +508,7 @@ export default function BannersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="text-sm text-[#9CA3AF]">加载中...</div>
+        <div className="text-sm text-gray-400 dark:text-gray-500">加载中...</div>
       </div>
     );
   }
@@ -517,7 +517,7 @@ export default function BannersPage() {
     <div className="max-w-5xl mx-auto">
       {/* Toast */}
       {toast && (
-        <div className="fixed top-4 right-4 z-50 px-4 py-2.5 bg-[#111827] text-white text-sm rounded-lg shadow-lg">
+        <div className="fixed top-4 right-4 z-50 px-4 py-2.5 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg shadow-lg">
           {toast}
         </div>
       )}
@@ -525,13 +525,13 @@ export default function BannersPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-[#111827]">Banner 管理</h1>
-          <p className="text-sm text-[#6B7280] mt-0.5">管理首页轮播 Banner 图</p>
+          <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">Banner 管理</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">管理首页轮播 Banner 图</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowSettings(true)}
-            className="px-3 py-2 text-sm rounded-lg border border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6] transition-colors"
+            className="px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             ⚙️ 轮播设置
           </button>
@@ -547,9 +547,9 @@ export default function BannersPage() {
 
       {/* Banner list */}
       {banners.length === 0 ? (
-        <div className="text-center py-16 rounded-xl border border-dashed border-[#E5E7EB]">
+        <div className="text-center py-16 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
           <div className="text-3xl mb-2">🖼️</div>
-          <p className="text-sm text-[#9CA3AF]">暂无 Banner</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">暂无 Banner</p>
           <button
             onClick={() => { resetCreateForm(); setShowCreate(true); }}
             className="mt-3 text-sm font-medium"
@@ -563,8 +563,8 @@ export default function BannersPage() {
           {banners.map((b, i) => (
             <div
               key={b.id}
-              className={`flex items-center gap-4 p-3 rounded-xl border transition-all ${
-                b.is_active ? 'border-[#E5E7EB] bg-white' : 'border-[#E5E7EB] bg-[#F9FAFB] opacity-60'
+              className={`flex items-center gap-4 p-3 rounded-xl border shadow-sm transition-all ${
+                b.is_active ? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-60'
               }`}
             >
               {/* Sort controls */}
@@ -572,21 +572,21 @@ export default function BannersPage() {
                 <button
                   onClick={() => handleMoveUp(i)}
                   disabled={i === 0}
-                  className="text-xs text-[#9CA3AF] hover:text-[#374151] disabled:opacity-30 px-1"
+                  className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-30 px-1"
                 >
                   ▲
                 </button>
                 <button
                   onClick={() => handleMoveDown(i)}
                   disabled={i === banners.length - 1}
-                  className="text-xs text-[#9CA3AF] hover:text-[#374151] disabled:opacity-30 px-1"
+                  className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-30 px-1"
                 >
                   ▼
                 </button>
               </div>
 
               {/* Image preview */}
-              <div className="relative w-36 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-[#F3F4F6]">
+              <div className="relative w-36 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-700">
                 <Image
                   src={b.image_url}
                   alt={b.image_alt || 'Banner'}
@@ -604,18 +604,18 @@ export default function BannersPage() {
                   }`}>
                     {b.is_active ? '🟢 启用' : '⚪ 停用'}
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#6B7280]">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                     {ACTION_LABELS[b.click_action]}
                   </span>
-                  <span className="text-[10px] text-[#9CA3AF]">#{i + 1}</span>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500">#{i + 1}</span>
                 </div>
                 {b.image_alt && (
-                  <p className="text-xs text-[#374151] truncate">{b.image_alt}</p>
+                  <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{b.image_alt}</p>
                 )}
                 {b.click_url && (
-                  <p className="text-[10px] text-[#9CA3AF] truncate mt-0.5">{b.click_url}</p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5">{b.click_url}</p>
                 )}
-                <div className="text-[10px] text-[#9CA3AF] mt-1">
+                <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
                   {b.start_date && `开始: ${b.start_date.slice(0, 10)}`}
                   {b.start_date && b.end_date && ' · '}
                   {b.end_date && `结束: ${b.end_date.slice(0, 10)}`}
@@ -627,13 +627,13 @@ export default function BannersPage() {
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button
                   onClick={() => handleToggleActive(b)}
-                  className="px-2.5 py-1.5 text-[11px] rounded-lg border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6] transition-colors"
+                  className="px-2.5 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   {b.is_active ? '停用' : '启用'}
                 </button>
                 <button
                   onClick={() => openEdit(b)}
-                  className="px-2.5 py-1.5 text-[11px] rounded-lg border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6] transition-colors"
+                  className="px-2.5 py-1.5 text-[11px] rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   编辑
                 </button>
@@ -654,22 +654,22 @@ export default function BannersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowCreate(false)}>
           <div className="absolute inset-0 bg-black/30" />
           <div
-            className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-auto max-h-[90vh]"
+            className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-auto max-h-[90vh]"
             onClick={e => e.stopPropagation()}
           >
-            <div className="px-5 py-4 border-b border-[#E5E7EB] flex items-center justify-between">
-              <h2 className="text-base font-bold text-[#111827]">添加 Banner</h2>
-              <button onClick={() => setShowCreate(false)} className="text-[#9CA3AF] hover:text-[#374151]">✕</button>
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h2 className="text-base font-medium text-gray-900 dark:text-gray-100">添加 Banner</h2>
+              <button onClick={() => setShowCreate(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">✕</button>
             </div>
             <div className="p-5 space-y-4">
               {/* Image source tabs */}
               <div>
-                <label className="block text-xs font-medium text-[#374151] mb-1.5">Banner 图片 *</label>
-                <div className="flex gap-1 mb-3 bg-[#F3F4F6] rounded-lg p-1">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Banner 图片 *</label>
+                <div className="flex gap-1 mb-3 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                   <button
                     onClick={() => setImageTab('upload')}
                     className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                      imageTab === 'upload' ? 'bg-white text-[#111827] shadow-sm' : 'text-[#6B7280] hover:text-[#374151]'
+                      imageTab === 'upload' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
                     上传图片
@@ -677,7 +677,7 @@ export default function BannersPage() {
                   <button
                     onClick={() => setImageTab('ai')}
                     className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                      imageTab === 'ai' ? 'bg-white text-[#111827] shadow-sm' : 'text-[#6B7280] hover:text-[#374151]'
+                      imageTab === 'ai' ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
                     AI 生成
@@ -690,7 +690,7 @@ export default function BannersPage() {
                       📐 推荐尺寸：1536×1024 像素（3:2 横版）· 支持 JPG/PNG/WebP · 最大 5MB
                     </div>
                     {newImagePreview ? (
-                      <div className="relative w-full h-40 rounded-xl overflow-hidden bg-[#F3F4F6] mb-2">
+                      <div className="relative w-full h-40 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 mb-2">
                         <Image src={newImagePreview} alt="Preview" fill className="object-cover" sizes="100vw" />
                         <button
                           onClick={() => { setNewImage(null); setNewImagePreview(''); }}
@@ -700,11 +700,11 @@ export default function BannersPage() {
                         </button>
                       </div>
                     ) : (
-                      <label className="block w-full h-32 rounded-xl border-2 border-dashed border-[#D1D5DB] flex items-center justify-center cursor-pointer hover:border-[#c9a96e] transition-colors">
+                      <label className="block w-full h-32 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center cursor-pointer hover:border-[#c9a96e] transition-colors">
                         <div className="text-center">
                           <div className="text-2xl mb-1">📷</div>
-                          <div className="text-xs text-[#9CA3AF]">点击上传图片</div>
-                          <div className="text-[10px] text-[#D1D5DB] mt-0.5">推荐 1536×1024（3:2 横版）· 最大 5MB</div>
+                          <div className="text-xs text-gray-400 dark:text-gray-500">点击上传图片</div>
+                          <div className="text-[10px] text-gray-300 dark:text-gray-600 mt-0.5">推荐 1536×1024（3:2 横版）· 最大 5MB</div>
                         </div>
                         <input type="file" accept="image/*" className="hidden" onChange={e => handleFileSelect(e, 'create')} />
                       </label>
@@ -717,13 +717,13 @@ export default function BannersPage() {
                     <div className="bg-blue-50 text-blue-700 text-xs px-3 py-2 rounded-lg">
                       📐 AI 自动生成 1536×1024 像素（3:2 横版）· 图片不含任何文字
                     </div>
-                    <p className="text-xs text-[#6B7280]">描述你想要的图片内容，AI 自动生成专业 Banner</p>
-                    <p className="text-xs text-[#9CA3AF] italic">🎬 AI 将生成真实摄影风格的图片（柯达胶片色调 · 自然光 · 浅景深）</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">描述你想要的图片内容，AI 自动生成专业 Banner</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 italic">🎬 AI 将生成真实摄影风格的图片（柯达胶片色调 · 自然光 · 浅景深）</p>
                     <textarea
                       placeholder="例：澳洲大学校园秋天的景色，几位中国留学生在讨论学术研究"
                       value={aiPrompt}
                       onChange={e => setAiPrompt(e.target.value)}
-                      className="w-full border border-[#D1D5DB] rounded-lg p-3 text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e] resize-none"
+                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#c9a96e] resize-none"
                       rows={3}
                     />
                     <div className="flex gap-1.5 flex-wrap">
@@ -751,7 +751,7 @@ export default function BannersPage() {
                             } catch { /* ignore */ }
                             setGeneratingPrompt(null);
                           }}
-                          className="px-2.5 py-1 rounded-lg text-[11px] border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB] hover:border-[#c9a96e] transition-colors disabled:opacity-40"
+                          className="px-2.5 py-1 rounded-lg text-[11px] border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:border-[#c9a96e] transition-colors disabled:opacity-40"
                         >
                           {generatingPrompt === item.category ? '⏳ 生成中...' : item.label}
                         </button>
@@ -766,11 +766,11 @@ export default function BannersPage() {
                       {generating ? '🎨 生成中...预计15秒' : '🎨 生成图片'}
                     </button>
                     {generatedImageUrl && (
-                      <div className="border border-[#E5E7EB] rounded-xl overflow-hidden">
-                        <div className="relative w-full h-40 bg-[#F3F4F6]">
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <div className="relative w-full h-40 bg-gray-100 dark:bg-gray-700">
                           <Image src={generatedImageUrl} alt="AI生成预览" fill className="object-cover" sizes="100vw" />
                         </div>
-                        <div className="flex gap-2 p-3 bg-[#F9FAFB]">
+                        <div className="flex gap-2 p-3 bg-gray-50 dark:bg-gray-800/50">
                           <button
                             onClick={() => {
                               flash('已选择 AI 生成的图片，点击下方"创建 Banner"保存');
@@ -782,7 +782,7 @@ export default function BannersPage() {
                           <button
                             onClick={handleGenerateImage}
                             disabled={generating}
-                            className="flex-1 py-2 rounded-lg text-xs bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB] transition-colors disabled:opacity-50"
+                            className="flex-1 py-2 rounded-lg text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
                           >
                             🔄 重新生成
                           </button>
@@ -798,16 +798,16 @@ export default function BannersPage() {
 
               {/* Alt text */}
               <div>
-                <label className="block text-xs font-medium text-[#374151] mb-1.5">图片描述 (Alt){newAlt ? ' · 已自动生成，可修改' : ''}</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">图片描述 (Alt){newAlt ? ' · 已自动生成，可修改' : ''}</label>
                 <input
                   type="text"
                   value={newAlt}
                   onChange={e => setNewAlt(e.target.value)}
                   maxLength={100}
                   placeholder="描述图片内容..."
-                  className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#c9a96e]"
                 />
-                <p className="text-xs text-[#9CA3AF] mt-1">建议 50-80 字符，简短描述图片内容用于 SEO</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">建议 50-80 字符，简短描述图片内容用于 SEO</p>
                 {newAlt.length > 80 && (
                   <p className="text-xs text-amber-500 mt-1">⚠️ 已 {newAlt.length}/100 字符，建议精简</p>
                 )}
@@ -822,7 +822,7 @@ export default function BannersPage() {
 
               {/* Click action */}
               <div>
-                <label className="block text-xs font-medium text-[#374151] mb-1.5">点击行为</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">点击行为</label>
                 <div className="grid grid-cols-4 gap-1.5">
                   {(['none', 'internal_link', 'external_link', 'modal'] as const).map(a => (
                     <button
@@ -831,7 +831,7 @@ export default function BannersPage() {
                       className={`px-2 py-2 rounded-lg text-[11px] border transition-all ${
                         newAction === a
                           ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E] font-medium'
-                          : 'border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                       }`}
                     >
                       {ACTION_LABELS[a]}
@@ -843,7 +843,7 @@ export default function BannersPage() {
               {/* Conditional fields */}
               {(newAction === 'internal_link' || newAction === 'external_link') && (
                 <div>
-                  <label className="block text-xs font-medium text-[#374151] mb-1.5">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                     {newAction === 'internal_link' ? '站内链接' : '外部链接'}
                   </label>
                   <input
@@ -851,7 +851,7 @@ export default function BannersPage() {
                     value={newUrl}
                     onChange={e => setNewUrl(e.target.value)}
                     placeholder={newAction === 'internal_link' ? '/koala/professors' : 'https://example.com'}
-                    className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#c9a96e]"
                   />
                 </div>
               )}
@@ -859,23 +859,23 @@ export default function BannersPage() {
               {newAction === 'modal' && (
                 <>
                   <div>
-                    <label className="block text-xs font-medium text-[#374151] mb-1.5">弹窗标题</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">弹窗标题</label>
                     <input
                       type="text"
                       value={newModalTitle}
                       onChange={e => setNewModalTitle(e.target.value)}
                       placeholder="活动标题..."
-                      className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e]"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#c9a96e]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#374151] mb-1.5">弹窗内容 (HTML)</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">弹窗内容 (HTML)</label>
                     <textarea
                       value={newModalContent}
                       onChange={e => setNewModalContent(e.target.value)}
                       rows={3}
                       placeholder="<p>活动详情...</p>"
-                      className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] placeholder-[#9CA3AF] focus:outline-none focus:border-[#c9a96e] resize-y"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#c9a96e] resize-y"
                     />
                   </div>
                 </>
@@ -884,30 +884,30 @@ export default function BannersPage() {
               {/* Date range */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#374151] mb-1.5">开始日期</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">开始日期</label>
                   <input
                     type="date"
                     value={newStartDate}
                     onChange={e => setNewStartDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] focus:outline-none focus:border-[#c9a96e]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#c9a96e]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#374151] mb-1.5">结束日期</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">结束日期</label>
                   <input
                     type="date"
                     value={newEndDate}
                     onChange={e => setNewEndDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] focus:outline-none focus:border-[#c9a96e]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#c9a96e]"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="px-5 py-4 border-t border-[#E5E7EB] flex justify-end gap-2">
+            <div className="px-5 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
               <button
                 onClick={() => setShowCreate(false)}
-                className="px-4 py-2 text-sm text-[#6B7280] rounded-lg border border-[#E5E7EB] hover:bg-[#F3F4F6]"
+                className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 取消
               </button>
@@ -929,27 +929,27 @@ export default function BannersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setEditBanner(null)}>
           <div className="absolute inset-0 bg-black/30" />
           <div
-            className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-auto max-h-[90vh]"
+            className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-auto max-h-[90vh]"
             onClick={e => e.stopPropagation()}
           >
-            <div className="px-5 py-4 border-b border-[#E5E7EB] flex items-center justify-between">
-              <h2 className="text-base font-bold text-[#111827]">编辑 Banner</h2>
-              <button onClick={() => setEditBanner(null)} className="text-[#9CA3AF] hover:text-[#374151]">✕</button>
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h2 className="text-base font-medium text-gray-900 dark:text-gray-100">编辑 Banner</h2>
+              <button onClick={() => setEditBanner(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">✕</button>
             </div>
             <div className="p-5 space-y-4">
               {/* Image preview (read-only for edit) */}
-              <div className="relative w-full h-40 rounded-xl overflow-hidden bg-[#F3F4F6]">
+              <div className="relative w-full h-40 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700">
                 <Image src={editBanner.image_url} alt={editBanner.image_alt || 'Banner'} fill className="object-cover" sizes="100vw" />
               </div>
 
               {/* Alt text */}
               <div>
-                <label className="block text-xs font-medium text-[#374151] mb-1.5">图片描述 (Alt)</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">图片描述 (Alt)</label>
                 <input
                   type="text"
                   value={editAlt}
                   onChange={e => setEditAlt(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] focus:outline-none focus:border-[#c9a96e]"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#c9a96e]"
                 />
               </div>
 
@@ -962,7 +962,7 @@ export default function BannersPage() {
 
               {/* Click action */}
               <div>
-                <label className="block text-xs font-medium text-[#374151] mb-1.5">点击行为</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">点击行为</label>
                 <div className="grid grid-cols-4 gap-1.5">
                   {(['none', 'internal_link', 'external_link', 'modal'] as const).map(a => (
                     <button
@@ -971,7 +971,7 @@ export default function BannersPage() {
                       className={`px-2 py-2 rounded-lg text-[11px] border transition-all ${
                         editAction === a
                           ? 'border-[#c9a96e] bg-[#FFFBEB] text-[#92400E] font-medium'
-                          : 'border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                       }`}
                     >
                       {ACTION_LABELS[a]}
@@ -982,14 +982,14 @@ export default function BannersPage() {
 
               {(editAction === 'internal_link' || editAction === 'external_link') && (
                 <div>
-                  <label className="block text-xs font-medium text-[#374151] mb-1.5">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                     {editAction === 'internal_link' ? '站内链接' : '外部链接'}
                   </label>
                   <input
                     type="text"
                     value={editUrl}
                     onChange={e => setEditUrl(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] focus:outline-none focus:border-[#c9a96e]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#c9a96e]"
                   />
                 </div>
               )}
@@ -997,21 +997,21 @@ export default function BannersPage() {
               {editAction === 'modal' && (
                 <>
                   <div>
-                    <label className="block text-xs font-medium text-[#374151] mb-1.5">弹窗标题</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">弹窗标题</label>
                     <input
                       type="text"
                       value={editModalTitle}
                       onChange={e => setEditModalTitle(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] focus:outline-none focus:border-[#c9a96e]"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#c9a96e]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#374151] mb-1.5">弹窗内容 (HTML)</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">弹窗内容 (HTML)</label>
                     <textarea
                       value={editModalContent}
                       onChange={e => setEditModalContent(e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] focus:outline-none focus:border-[#c9a96e] resize-y"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#c9a96e] resize-y"
                     />
                   </div>
                 </>
@@ -1019,30 +1019,30 @@ export default function BannersPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#374151] mb-1.5">开始日期</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">开始日期</label>
                   <input
                     type="date"
                     value={editStartDate}
                     onChange={e => setEditStartDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] focus:outline-none focus:border-[#c9a96e]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#c9a96e]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#374151] mb-1.5">结束日期</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">结束日期</label>
                   <input
                     type="date"
                     value={editEndDate}
                     onChange={e => setEditEndDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#D1D5DB] text-sm text-[#111827] focus:outline-none focus:border-[#c9a96e]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#c9a96e]"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="px-5 py-4 border-t border-[#E5E7EB] flex justify-end gap-2">
+            <div className="px-5 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
               <button
                 onClick={() => setEditBanner(null)}
-                className="px-4 py-2 text-sm text-[#6B7280] rounded-lg border border-[#E5E7EB] hover:bg-[#F3F4F6]"
+                className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 取消
               </button>
@@ -1064,21 +1064,21 @@ export default function BannersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowSettings(false)}>
           <div className="absolute inset-0 bg-black/30" />
           <div
-            className="relative w-full max-w-sm bg-white rounded-2xl shadow-xl"
+            className="relative w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-xl"
             onClick={e => e.stopPropagation()}
           >
-            <div className="px-5 py-4 border-b border-[#E5E7EB] flex items-center justify-between">
-              <h2 className="text-base font-bold text-[#111827]">轮播设置</h2>
-              <button onClick={() => setShowSettings(false)} className="text-[#9CA3AF] hover:text-[#374151]">✕</button>
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h2 className="text-base font-medium text-gray-900 dark:text-gray-100">轮播设置</h2>
+              <button onClick={() => setShowSettings(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">✕</button>
             </div>
             <div className="p-5 space-y-4">
               {/* Auto play */}
               <div className="flex items-center justify-between">
-                <label className="text-sm text-[#374151]">自动播放</label>
+                <label className="text-sm text-gray-700 dark:text-gray-300">自动播放</label>
                 <button
                   onClick={() => setSettings(s => ({ ...s, auto_play: !s.auto_play }))}
                   className={`relative w-11 h-6 rounded-full transition-colors ${
-                    settings.auto_play ? 'bg-[#c9a96e]' : 'bg-[#D1D5DB]'
+                    settings.auto_play ? 'bg-[#c9a96e]' : 'bg-gray-300 dark:bg-gray-600'
                   }`}
                 >
                   <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
@@ -1090,8 +1090,8 @@ export default function BannersPage() {
               {/* Interval */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-sm text-[#374151]">切换间隔</label>
-                  <span className="text-sm font-medium text-[#111827]">{settings.interval_seconds}s</span>
+                  <label className="text-sm text-gray-700 dark:text-gray-300">切换间隔</label>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{settings.interval_seconds}s</span>
                 </div>
                 <input
                   type="range"
@@ -1101,7 +1101,7 @@ export default function BannersPage() {
                   onChange={e => setSettings(s => ({ ...s, interval_seconds: Number(e.target.value) }))}
                   className="w-full accent-[#c9a96e]"
                 />
-                <div className="flex justify-between text-[10px] text-[#9CA3AF] mt-0.5">
+                <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
                   <span>2s</span><span>15s</span>
                 </div>
               </div>
@@ -1109,8 +1109,8 @@ export default function BannersPage() {
               {/* Transition speed */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-sm text-[#374151]">过渡速度</label>
-                  <span className="text-sm font-medium text-[#111827]">{settings.transition_speed}ms</span>
+                  <label className="text-sm text-gray-700 dark:text-gray-300">过渡速度</label>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{settings.transition_speed}ms</span>
                 </div>
                 <input
                   type="range"
@@ -1121,16 +1121,16 @@ export default function BannersPage() {
                   onChange={e => setSettings(s => ({ ...s, transition_speed: Number(e.target.value) }))}
                   className="w-full accent-[#c9a96e]"
                 />
-                <div className="flex justify-between text-[10px] text-[#9CA3AF] mt-0.5">
+                <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
                   <span>快 200ms</span><span>慢 1500ms</span>
                 </div>
               </div>
             </div>
 
-            <div className="px-5 py-4 border-t border-[#E5E7EB] flex justify-end gap-2">
+            <div className="px-5 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
               <button
                 onClick={() => setShowSettings(false)}
-                className="px-4 py-2 text-sm text-[#6B7280] rounded-lg border border-[#E5E7EB] hover:bg-[#F3F4F6]"
+                className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 取消
               </button>

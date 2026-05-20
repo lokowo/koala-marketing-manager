@@ -142,7 +142,7 @@ export default function UsersPage() {
   const activeCount = users.filter(u => u.last_sign_in_at && now.getTime() - new Date(u.last_sign_in_at).getTime() < 7 * 86400000).length;
   const isSuperAdmin = myRole === 'super_admin';
 
-  if (loading) return <div className="flex items-center justify-center h-64"><p className="text-slate-400 text-sm">加载中...</p></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><p className="text-gray-400 dark:text-gray-500 text-sm">加载中...</p></div>;
   if (error) return <p className="text-red-400 text-sm p-4">{error}</p>;
 
   return (
@@ -155,46 +155,46 @@ export default function UsersPage() {
       )}
 
       <div>
-        <h1 className="text-xl font-bold text-slate-900">用户管理</h1>
-        <p className="text-slate-500 text-sm mt-0.5">共 {users.length} 位用户</p>
+        <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">用户管理</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">共 {users.length} 位用户</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="text-2xl font-bold text-slate-900">{users.length}</div>
-          <div className="text-xs text-slate-400 mt-0.5">总用户 <span className="text-emerald-600">+{todayCount} 今日</span></div>
+        <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-2xl font-medium text-gray-900 dark:text-gray-100">{users.length}</div>
+          <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">总用户 <span className="text-emerald-600">+{todayCount} 今日</span></div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="text-2xl font-bold text-slate-900">{activeCount}</div>
-          <div className="text-xs text-slate-400 mt-0.5">7天活跃用户</div>
+        <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-2xl font-medium text-gray-900 dark:text-gray-100">{activeCount}</div>
+          <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">7天活跃用户</div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="text-2xl font-bold text-slate-900">—</div>
-          <div className="text-xs text-slate-400 mt-0.5">有画像用户</div>
+        <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-2xl font-medium text-gray-900 dark:text-gray-100">—</div>
+          <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">有画像用户</div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="text-2xl font-bold text-slate-900">—</div>
-          <div className="text-xs text-slate-400 mt-0.5">本月申请信</div>
+        <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div className="text-2xl font-medium text-gray-900 dark:text-gray-100">—</div>
+          <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">本月申请信</div>
         </div>
       </div>
 
       {/* Search + Filters */}
       <div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="搜索邮箱..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:border-gray-400 dark:focus:border-gray-500"
           />
         </div>
         <button
           onClick={() => setShowFilters(v => !v)}
           className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-lg transition-colors ${
-            showFilters ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+            showFilters ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-800/50'
           }`}
         >
           <Filter className="size-3.5" />
@@ -204,10 +204,10 @@ export default function UsersPage() {
       </div>
 
       {showFilters && (
-        <div className="flex gap-3 flex-wrap bg-slate-50 rounded-lg p-3">
+        <div className="flex gap-3 flex-wrap bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
           <div>
-            <label className="block text-[11px] text-slate-500 mb-1">注册时间</label>
-            <select value={timeFilter} onChange={e => setTimeFilter(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 bg-white">
+            <label className="block text-[11px] text-gray-500 dark:text-gray-400 mb-1">注册时间</label>
+            <select value={timeFilter} onChange={e => setTimeFilter(e.target.value)} className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white">
               <option value="all">全部</option>
               <option value="7d">最近7天</option>
               <option value="30d">最近30天</option>
@@ -217,7 +217,7 @@ export default function UsersPage() {
       )}
 
       <div className="flex items-center justify-between">
-        <div className="text-xs text-slate-400">显示 {filtered.length} / {users.length} 位用户</div>
+        <div className="text-xs text-gray-400 dark:text-gray-500">显示 {filtered.length} / {users.length} 位用户</div>
         {isSuperAdmin && selected.size > 0 && (
           <button
             onClick={handleBatchDelete}
@@ -231,15 +231,15 @@ export default function UsersPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
+          <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
             <tr>
               {isSuperAdmin && <th className="w-10 px-3 py-3" />}
-              <th className="text-left px-4 py-3 text-slate-600 font-medium text-xs">邮箱</th>
-              <th className="text-left px-4 py-3 text-slate-600 font-medium text-xs">注册时间</th>
-              <th className="text-left px-4 py-3 text-slate-600 font-medium text-xs hidden sm:table-cell">最后登录</th>
-              <th className="text-left px-4 py-3 text-slate-600 font-medium text-xs">权限</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium text-xs">邮箱</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium text-xs">注册时间</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium text-xs hidden sm:table-cell">最后登录</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium text-xs">权限</th>
               <th className="px-4 py-3 text-xs" />
             </tr>
           </thead>
@@ -253,7 +253,7 @@ export default function UsersPage() {
               return (
                 <tr
                   key={user.id}
-                  className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 cursor-pointer transition-colors"
+                  className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
                   onClick={() => router.push(`/dashboard/koala/users/${user.id}`)}
                 >
                   {isSuperAdmin && (
@@ -263,7 +263,7 @@ export default function UsersPage() {
                           type="checkbox"
                           checked={selected.has(user.id)}
                           onChange={() => toggleSelect(user.id)}
-                          className="size-3.5 rounded border-slate-300"
+                          className="size-3.5 rounded border-gray-300 dark:border-gray-600"
                         />
                       )}
                     </td>
@@ -274,22 +274,22 @@ export default function UsersPage() {
                         {(user.email || '?')[0].toUpperCase()}
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-slate-800">{user.email}</span>
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{user.email}</span>
                         {isSelf && <span className="ml-1.5 text-[10px] text-emerald-600">(你)</span>}
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-500">
+                  <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
                     {new Date(user.created_at).toLocaleDateString('zh-CN')}
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-500 hidden sm:table-cell">
+                  <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 hidden sm:table-cell">
                     {user.last_sign_in_at
                       ? new Date(user.last_sign_in_at).toLocaleDateString('zh-CN')
                       : '—'}
                   </td>
                   <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                     {locked ? (
-                      <span className="inline-block px-2 py-1 rounded text-[11px] bg-slate-100 text-slate-500">
+                      <span className="inline-block px-2 py-1 rounded text-[11px] bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                         {user.role ? ROLE_LABELS[user.role] || user.role : '无权限'}
                       </span>
                     ) : isSuperAdmin ? (
@@ -298,7 +298,7 @@ export default function UsersPage() {
                         disabled={saving === user.id}
                         onChange={e => updateRole(e as unknown as React.MouseEvent, user.id, e.target.value as UserRole)}
                         onClick={e => e.stopPropagation()}
-                        className="border border-slate-200 rounded px-2 py-1 text-[11px] text-slate-700 bg-white focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                        className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-[11px] text-gray-700 dark:text-gray-300 bg-white focus:outline-none focus:border-emerald-500 disabled:opacity-50"
                       >
                         <option value="">— 无权限 —</option>
                         <option value="viewer">只读</option>
@@ -307,7 +307,7 @@ export default function UsersPage() {
                         <option value="super_admin">超级管理员</option>
                       </select>
                     ) : (
-                      <span className="inline-block px-2 py-1 rounded text-[11px] bg-slate-100 text-slate-500">
+                      <span className="inline-block px-2 py-1 rounded text-[11px] bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                         {user.role ? ROLE_LABELS[user.role] || user.role : '无权限'}
                       </span>
                     )}

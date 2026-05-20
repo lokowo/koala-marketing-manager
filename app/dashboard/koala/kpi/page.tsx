@@ -61,7 +61,7 @@ export default function KpiPage() {
     setEditing(false);
   }
 
-  if (loading) return <p className="text-sm text-slate-400 py-8 text-center">加载中…</p>;
+  if (loading) return <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">加载中…</p>;
 
   const chartData = history.map(h => ({
     week: h.week_start.slice(5),
@@ -79,12 +79,12 @@ export default function KpiPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-slate-800">KPI 设置与追踪</h1>
+      <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">KPI 设置与追踪</h1>
 
       {/* KPI Targets */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
+      <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-slate-700">目标设置</h2>
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">目标设置</h2>
           <button
             onClick={() => editing ? saveKpi() : setEditing(true)}
             className="text-xs px-4 py-1.5 rounded-lg font-medium transition"
@@ -100,20 +100,20 @@ export default function KpiPage() {
             { key: 'weekly_conversions' as const, label: '周转化目标', icon: '🎯', unit: '个' },
             { key: 'monthly_revenue_target' as const, label: '周收入目标', icon: '💰', unit: '$' },
           ].map(item => (
-            <div key={item.key} className="rounded-xl p-4 border border-slate-100">
+            <div key={item.key} className="rounded-xl p-4 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center gap-2 mb-2">
                 <span>{item.icon}</span>
-                <span className="text-xs text-slate-500">{item.label}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{item.label}</span>
               </div>
               {editing ? (
                 <input
                   type="number"
                   value={kpi[item.key]}
                   onChange={e => setKpi(prev => ({ ...prev, [item.key]: parseInt(e.target.value) || 0 }))}
-                  className="w-full text-2xl font-bold text-slate-800 border-b-2 border-amber-300 focus:outline-none bg-transparent"
+                  className="w-full text-2xl font-bold text-gray-800 dark:text-gray-200 border-b-2 border-amber-300 focus:outline-none bg-transparent"
                 />
               ) : (
-                <div className="text-2xl font-bold text-slate-800">{kpi[item.key]} <span className="text-xs font-normal text-slate-400">{item.unit}</span></div>
+                <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{kpi[item.key]} <span className="text-xs font-normal text-gray-400 dark:text-gray-500">{item.unit}</span></div>
               )}
             </div>
           ))}
@@ -121,15 +121,15 @@ export default function KpiPage() {
       </div>
 
       {/* Achievement Table */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">本周达标情况</h2>
+      <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">本周达标情况</h2>
         {sortedSales.length === 0 ? (
-          <p className="text-xs text-slate-400 py-4 text-center">暂无销售数据</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 py-4 text-center">暂无销售数据</p>
         ) : (
           <div className="overflow-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-slate-50 text-slate-500">
+                <tr className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
                   <th className="text-left px-4 py-2.5 font-medium">销售</th>
                   <th className="text-center px-4 py-2.5 font-medium">状态</th>
                   <th className="text-center px-4 py-2.5 font-medium">注册</th>
@@ -139,15 +139,15 @@ export default function KpiPage() {
                   <th className="text-center px-4 py-2.5 font-medium">总转化率</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {sortedSales.map(s => {
                   const allMet = s.leadsMet && s.followupsMet && s.conversionsMet;
                   const noneMet = !s.leadsMet && !s.followupsMet && !s.conversionsMet;
                   const statusIcon = allMet ? '🌟' : noneMet ? '🔴' : '⚠️';
                   const methodIcons: Record<string, string> = { wechat: '💬', phone: '📞', email: '✉️', meeting: '🤝', other: '📝' };
                   return (
-                    <tr key={s.userId} className="hover:bg-slate-50">
-                      <td className="px-4 py-2.5 text-slate-700 font-medium">{s.name}</td>
+                    <tr key={s.userId} className="hover:bg-gray-50 dark:bg-gray-800/50">
+                      <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300 font-medium">{s.name}</td>
                       <td className="px-4 py-2.5 text-center text-base">{statusIcon}</td>
                       <td className="px-4 py-2.5 text-center">
                         <span className={`font-medium ${s.leadsMet ? 'text-green-600' : 'text-red-500'}`}>
@@ -177,8 +177,8 @@ export default function KpiPage() {
                         </span>
                       </td>
                       <td className="px-4 py-2.5 text-center">
-                        <span className="text-slate-600">{s.conversionRate}%</span>
-                        <div className="text-[9px] text-slate-400">{s.totalConverted}/{s.totalCustomers}</div>
+                        <span className="text-gray-600 dark:text-gray-400">{s.conversionRate}%</span>
+                        <div className="text-[9px] text-gray-400 dark:text-gray-500">{s.totalConverted}/{s.totalCustomers}</div>
                       </td>
                     </tr>
                   );
@@ -190,13 +190,13 @@ export default function KpiPage() {
       </div>
 
       {/* Trend Chart */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
+      <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-slate-700">过去 12 周趋势</h2>
-          <span className="text-xs text-slate-400">达标率 {achievementRate}%</span>
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">过去 12 周趋势</h2>
+          <span className="text-xs text-gray-400 dark:text-gray-500">达标率 {achievementRate}%</span>
         </div>
         {chartData.length === 0 ? (
-          <p className="text-xs text-slate-400 py-8 text-center">暂无历史数据 — 周报将在每周一自动生成</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 py-8 text-center">暂无历史数据 — 周报将在每周一自动生成</p>
         ) : (
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={chartData}>

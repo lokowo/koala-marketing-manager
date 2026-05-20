@@ -66,14 +66,14 @@ export default function SalesAuditPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-bold text-[#111827]">审计日志</h1>
+      <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">审计日志</h1>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <select
           value={actionFilter}
           onChange={e => { setActionFilter(e.target.value); setPage(1); }}
-          className="rounded-lg px-3 py-2 text-xs bg-white border border-[#E5E7EB] text-[#374151] focus:outline-none"
+          className="rounded-lg px-3 py-2 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none"
         >
           <option value="">全部操作</option>
           {Object.entries(ACTION_CFG).map(([key, cfg]) => (
@@ -83,25 +83,25 @@ export default function SalesAuditPage() {
         <select
           value={roleFilter}
           onChange={e => { setRoleFilter(e.target.value); setPage(1); }}
-          className="rounded-lg px-3 py-2 text-xs bg-white border border-[#E5E7EB] text-[#374151] focus:outline-none"
+          className="rounded-lg px-3 py-2 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none"
         >
           <option value="">全部角色</option>
           {Object.entries(ROLE_CFG).map(([key, cfg]) => (
             <option key={key} value={key}>{cfg.label}</option>
           ))}
         </select>
-        <span className="text-[10px] text-[#9CA3AF] self-center">共 {total} 条</span>
+        <span className="text-[10px] text-gray-400 dark:text-gray-500 self-center">共 {total} 条</span>
       </div>
 
       {loading ? (
-        <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">加载中...</p>
       ) : grouped.length === 0 ? (
-        <p className="text-sm text-[#6B7280] py-8 text-center">暂无审计日志</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">暂无审计日志</p>
       ) : (
         <div className="space-y-4">
           {grouped.map(group => (
             <div key={group.date}>
-              <div className="text-[10px] font-medium text-[#9CA3AF] mb-2 pl-1">{group.date}</div>
+              <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mb-2 pl-1">{group.date}</div>
               <div className="space-y-2">
                 {group.items.map(log => {
                   const actionCfg = ACTION_CFG[log.action] || { label: log.action, color: '#9CA3AF' };
@@ -110,7 +110,7 @@ export default function SalesAuditPage() {
                   return (
                     <div
                       key={log.id}
-                      className="bg-white rounded-lg border border-[#E5E7EB] hover:border-[#D1D5DB] transition cursor-pointer"
+                      className="bg-white rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition cursor-pointer"
                       onClick={() => setExpanded(isExpanded ? null : log.id)}
                     >
                       <div className="flex items-start gap-3 px-4 py-3">
@@ -126,24 +126,24 @@ export default function SalesAuditPage() {
                             >
                               {roleCfg.label}
                             </span>
-                            <span className="text-xs font-medium text-[#111827]">
+                            <span className="text-xs font-medium text-gray-900 dark:text-gray-100">
                               {actionCfg.label}
                             </span>
                             {log.target_type && (
-                              <span className="text-[10px] text-[#9CA3AF]">{log.target_type}</span>
+                              <span className="text-[10px] text-gray-400 dark:text-gray-500">{log.target_type}</span>
                             )}
                           </div>
-                          <div className="text-[10px] text-[#9CA3AF] mt-0.5">
+                          <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
                             {log.actor_email || log.actor_id.slice(0, 8)}
                           </div>
                         </div>
-                        <span className="text-[10px] text-[#9CA3AF] flex-shrink-0">
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">
                           {new Date(log.created_at).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </span>
                       </div>
                       {isExpanded && log.details && (
                         <div className="px-4 pb-3 border-t border-[#F3F4F6]">
-                          <pre className="text-[10px] text-[#6B7280] bg-[#F9FAFB] rounded-lg p-3 mt-2 overflow-x-auto">
+                          <pre className="text-[10px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 mt-2 overflow-x-auto">
                             {JSON.stringify(log.details, null, 2)}
                           </pre>
                         </div>
@@ -159,20 +159,20 @@ export default function SalesAuditPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-xs text-[#6B7280]">
+        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <span>第 {page}/{totalPages} 页</span>
           <div className="flex gap-1">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 rounded-lg bg-[#F3F4F6] hover:bg-[#E5E7EB] transition disabled:opacity-40"
+              className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-[#E5E7EB] transition disabled:opacity-40"
             >
               上一页
             </button>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1.5 rounded-lg bg-[#F3F4F6] hover:bg-[#E5E7EB] transition disabled:opacity-40"
+              className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-[#E5E7EB] transition disabled:opacity-40"
             >
               下一页
             </button>

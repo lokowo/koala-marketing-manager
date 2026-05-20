@@ -181,7 +181,7 @@ export default function FAQManagementPage() {
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">FAQ 管理</h1>
+          <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">FAQ 管理</h1>
           <p className="text-sm text-gray-500 mt-1">管理 Ola AI 常见问题自动回复（零 LLM 成本）</p>
         </div>
         <div className="flex gap-2">
@@ -199,7 +199,7 @@ export default function FAQManagementPage() {
       )}
 
       {/* Test Panel */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-5 mb-6">
         <h2 className="text-sm font-semibold text-gray-700 mb-3">FAQ 匹配测试</h2>
         <div className="flex gap-2">
           <input
@@ -231,7 +231,7 @@ export default function FAQManagementPage() {
       </div>
 
       {/* FAQ List */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-400 text-sm">加载中...</div>
         ) : faqs.length === 0 ? (
@@ -260,18 +260,18 @@ export default function FAQManagementPage() {
                         <span key={i} className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">{kw}</span>
                       ))}
                       {faq.keywords.length > 4 && (
-                        <span className="text-xs text-gray-400">+{faq.keywords.length - 4}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">+{faq.keywords.length - 4}</span>
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 max-w-[300px] truncate text-gray-600">{faq.answer_zh.slice(0, 80)}...</td>
-                  <td className="px-4 py-3 text-center text-gray-500">{faq.priority}</td>
+                  <td className="px-4 py-3 max-w-[300px] truncate text-gray-600 dark:text-gray-400 dark:text-gray-500">{faq.answer_zh.slice(0, 80)}...</td>
+                  <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">{faq.priority}</td>
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => handleToggle(faq)}
                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${faq.enabled ? 'bg-green-500' : 'bg-gray-300'}`}
                     >
-                      <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${faq.enabled ? 'translate-x-4.5' : 'translate-x-1'}`} />
+                      <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${faq.enabled ? 'translate-x-[18px]' : 'translate-x-1'}`} />
                     </button>
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -288,9 +288,9 @@ export default function FAQManagementPage() {
       {/* Create/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="font-semibold text-gray-900">{editingFaq ? '编辑 FAQ' : '新增 FAQ'}</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">{editingFaq ? '编辑 FAQ' : '新增 FAQ'}</h3>
             </div>
             <div className="px-6 py-4 space-y-4">
               <div>
@@ -321,7 +321,7 @@ export default function FAQManagementPage() {
               </div>
             </div>
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">取消</button>
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-200">取消</button>
               <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm bg-[#1A1A2E] text-white rounded-lg hover:bg-[#2A2A3E] disabled:opacity-50">
                 {saving ? '保存中...' : '保存'}
               </button>
@@ -333,11 +333,11 @@ export default function FAQManagementPage() {
       {/* Delete Confirmation */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm mx-4 p-6">
             <h3 className="font-semibold text-gray-900 mb-2">确认删除</h3>
             <p className="text-sm text-gray-600 mb-4">确定要删除分类为「{deleteTarget.category}」的 FAQ 条目吗？</p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">取消</button>
+              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-200">取消</button>
               <button onClick={handleDelete} disabled={deleting} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">
                 {deleting ? '删除中...' : '确认删除'}
               </button>

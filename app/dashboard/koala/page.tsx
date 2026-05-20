@@ -46,7 +46,7 @@ function timeAgo(dateStr: string) {
 }
 
 function ChangeTag({ value }: { value: number }) {
-  if (value === 0) return <span className="text-[11px] text-slate-400">—</span>;
+  if (value === 0) return <span className="text-[11px] text-gray-400 dark:text-gray-500">—</span>;
   const positive = value > 0;
   return (
     <span className={`text-[11px] font-medium ${positive ? 'text-emerald-600' : 'text-red-500'}`}>
@@ -112,8 +112,8 @@ export default function KoalaDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">管理总览</h2>
-        <p className="text-sm text-slate-500 mt-1">Koala PhD 运营概览</p>
+        <h2 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">管理总览</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Koala PhD 运营概览</p>
       </div>
 
       {/* Area A: 5 KPI cards */}
@@ -124,13 +124,13 @@ export default function KoalaDashboard() {
             href={card.href}
             className="no-underline group"
           >
-            <div className={`bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-all hover:-translate-y-0.5 ${
+            <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 ${
               card.change !== null && card.change < -10 ? 'border-t-2 border-t-red-400' : ''
             }`}>
-              <div className="text-[11px] font-medium text-slate-500 mb-1">{card.label}</div>
-              <div className="text-[22px] font-medium text-slate-900">{card.value}</div>
+              <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">{card.label}</div>
+              <div className="text-2xl font-medium text-gray-900 dark:text-gray-100">{card.value}</div>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[11px] text-slate-400">{card.sub}</span>
+                <span className="text-[11px] text-gray-400 dark:text-gray-500">{card.sub}</span>
                 {card.change !== null && <ChangeTag value={card.change} />}
               </div>
             </div>
@@ -140,16 +140,16 @@ export default function KoalaDashboard() {
 
       {/* Area B: Trend chart + Pending actions */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <div className="lg:col-span-3 bg-white rounded-xl border border-slate-200 p-5">
+        <div className="lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-slate-700">用户趋势</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">用户趋势</h3>
             <div className="flex gap-1">
               {TREND_RANGES.map(r => (
                 <button
                   key={r}
                   onClick={() => setTrendRange(r)}
                   className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
-                    trendRange === r ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                    trendRange === r ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   {r}天
@@ -157,6 +157,7 @@ export default function KoalaDashboard() {
               ))}
             </div>
           </div>
+          <div className="rounded-lg bg-gray-50 dark:bg-gray-900/50 p-2">
           {trendData.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={trendData}>
@@ -177,28 +178,28 @@ export default function KoalaDashboard() {
           ) : (
             <div className="h-[220px] flex items-center justify-center">
               <div className="animate-pulse flex flex-col items-center gap-2">
-                <div className="w-40 h-3 bg-slate-100 rounded" />
-                <div className="w-24 h-3 bg-slate-50 rounded" />
+                <div className="w-40 h-3 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="w-24 h-3 bg-gray-100 dark:bg-gray-700/50 rounded" />
               </div>
             </div>
           )}
+          </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">待处理事项</h3>
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">待处理事项</h3>
           {!data ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
                 <div key={i} className="animate-pulse flex gap-3 items-center">
-                  <div className="w-2 h-2 rounded-full bg-slate-100" />
-                  <div className="flex-1 h-4 bg-slate-50 rounded" />
+                  <div className="w-2 h-2 rounded-full bg-gray-200 dark:bg-gray-700" />
+                  <div className="flex-1 h-4 bg-gray-100 dark:bg-gray-700/50 rounded" />
                 </div>
               ))}
             </div>
           ) : !hasPending ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <span className="text-3xl mb-2">✅</span>
-              <p className="text-sm text-slate-500">暂无待处理事项</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">暂无待处理事项</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -206,14 +207,14 @@ export default function KoalaDashboard() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition no-underline group"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition no-underline group"
                 >
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                     item.color === 'red' ? 'bg-red-400' : item.color === 'yellow' ? 'bg-amber-400' : 'bg-emerald-400'
                   }`} />
-                  <span className="flex-1 text-sm text-slate-700">{item.label}</span>
-                  {item.sub && <span className="text-xs font-medium text-slate-500">{item.sub}</span>}
-                  <svg className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <span className="flex-1 text-sm text-gray-700 dark:text-gray-300">{item.label}</span>
+                  {item.sub && <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{item.sub}</span>}
+                  <svg className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>
@@ -225,22 +226,22 @@ export default function KoalaDashboard() {
 
       {/* Area C: Sales ranking + Revenue pie */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-slate-700">分销团队排行</h3>
-            <Link href="/dashboard/koala/sales-overview" className="text-[11px] text-amber-600 no-underline hover:underline">查看全部 →</Link>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">分销团队排行</h3>
+            <Link href="/dashboard/koala/sales-overview" className="text-[11px] text-amber-600 dark:text-amber-400 no-underline hover:underline">查看全部 →</Link>
           </div>
           {!data ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
                 <div key={i} className="animate-pulse flex gap-3 items-center">
-                  <div className="w-6 h-6 rounded-full bg-slate-100" />
-                  <div className="flex-1 h-4 bg-slate-50 rounded" />
+                  <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700" />
+                  <div className="flex-1 h-4 bg-gray-100 dark:bg-gray-700/50 rounded" />
                 </div>
               ))}
             </div>
           ) : data.sales_ranking.length === 0 ? (
-            <p className="text-xs text-slate-400 py-4 text-center">暂无销售数据</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 py-4 text-center">暂无销售数据</p>
           ) : (
             <div className="space-y-2">
               {data.sales_ranking.map((s, i) => {
@@ -248,10 +249,10 @@ export default function KoalaDashboard() {
                 return (
                   <div key={i} className="flex items-center gap-3 py-1.5">
                     <span className="w-6 text-center text-sm">
-                      {i < 3 ? medals[i] : <span className="text-[11px] font-medium text-slate-400">{i + 1}</span>}
+                      {i < 3 ? medals[i] : <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">{i + 1}</span>}
                     </span>
-                    <span className="flex-1 text-sm text-slate-700 truncate">{s.display_name}</span>
-                    <span className="text-sm font-medium text-slate-800">${s.commission.toFixed(2)}</span>
+                    <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">{s.display_name}</span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">${s.commission.toFixed(2)}</span>
                   </div>
                 );
               })}
@@ -259,19 +260,18 @@ export default function KoalaDashboard() {
           )}
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-3">收入来源</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">收入来源</h3>
           {!data ? (
             <div className="h-[200px] flex items-center justify-center">
-              <div className="animate-pulse w-32 h-32 rounded-full bg-slate-50" />
+              <div className="animate-pulse w-32 h-32 rounded-full bg-gray-100 dark:bg-gray-700" />
             </div>
           ) : pieData.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <span className="text-3xl mb-2">💰</span>
-              <p className="text-xs text-slate-400">暂无收入数据</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">暂无收入数据</p>
             </div>
           ) : (
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-900/50 p-2">
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
@@ -289,10 +289,10 @@ export default function KoalaDashboard() {
                     ))}
                   </Pie>
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <text x="50%" y="48%" textAnchor="middle" dominantBaseline="central" className="fill-slate-900 text-lg font-medium">
+                  <text x="50%" y="48%" textAnchor="middle" dominantBaseline="central" className="fill-gray-900 dark:fill-gray-100 text-lg font-medium">
                     ${data.revenue_breakdown.total.toFixed(0)}
                   </text>
-                  <text x="50%" y="58%" textAnchor="middle" dominantBaseline="central" className="fill-slate-400 text-[10px]">
+                  <text x="50%" y="58%" textAnchor="middle" dominantBaseline="central" className="fill-gray-400 dark:fill-gray-500 text-[10px]">
                     总收入
                   </text>
                 </PieChart>
@@ -303,37 +303,37 @@ export default function KoalaDashboard() {
       </div>
 
       {/* Area D: Recent activity timeline */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-slate-700">最近动态</h3>
-          <Link href="/dashboard/koala/work-logs" className="text-[11px] text-amber-600 no-underline hover:underline">查看全部 →</Link>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">最近动态</h3>
+          <Link href="/dashboard/koala/work-logs" className="text-[11px] text-amber-600 dark:text-amber-400 no-underline hover:underline">查看全部 →</Link>
         </div>
         {!data ? (
           <div className="space-y-3">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="animate-pulse flex gap-3 items-start">
-                <div className="mt-1.5 w-2 h-2 rounded-full bg-slate-100" />
+                <div className="mt-1.5 w-2 h-2 rounded-full bg-gray-200 dark:bg-gray-700" />
                 <div className="flex-1 space-y-1.5">
-                  <div className="w-48 h-3.5 bg-slate-50 rounded" />
-                  <div className="w-24 h-3 bg-slate-50 rounded" />
+                  <div className="w-48 h-3.5 bg-gray-100 dark:bg-gray-700/50 rounded" />
+                  <div className="w-24 h-3 bg-gray-100 dark:bg-gray-700/50 rounded" />
                 </div>
               </div>
             ))}
           </div>
         ) : data.recent_activity.length === 0 ? (
-          <p className="text-xs text-slate-400 py-4 text-center">暂无动态</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 py-4 text-center">暂无动态</p>
         ) : (
           <div className="space-y-0">
             {data.recent_activity.map(item => (
-              <div key={item.id} className="flex items-start gap-3 py-2.5 border-b border-slate-50 last:border-0">
-                <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${activityColorMap[item.action_type] || 'bg-slate-300'}`} />
+              <div key={item.id} className="flex items-start gap-3 py-2.5 border-b border-gray-100 dark:border-gray-700/50 last:border-0">
+                <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${activityColorMap[item.action_type] || 'bg-gray-300 dark:bg-gray-600'}`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-slate-700">{item.actor_name}</span>
-                    <span className="text-[11px] text-slate-500">{item.description}</span>
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{item.actor_name}</span>
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400">{item.description}</span>
                   </div>
                 </div>
-                <span className="text-[10px] text-slate-400 flex-shrink-0 whitespace-nowrap">{timeAgo(item.time)}</span>
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0 whitespace-nowrap">{timeAgo(item.time)}</span>
               </div>
             ))}
           </div>
@@ -350,10 +350,10 @@ export default function KoalaDashboard() {
           <Link
             key={action.href}
             href={action.href}
-            className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition no-underline"
+            className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-shadow no-underline"
           >
             <span className="text-xl">{action.icon}</span>
-            <span className="text-sm font-medium text-slate-700">{action.label}</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{action.label}</span>
           </Link>
         ))}
       </div>

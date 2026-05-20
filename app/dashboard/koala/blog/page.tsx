@@ -49,7 +49,7 @@ const CATEGORIES: Record<string, { zh: string; en: string }> = {
 };
 
 const STATUS_LABELS: Record<string, { label: string; class: string }> = {
-  draft: { label: '草稿', class: 'bg-slate-100 text-slate-700' },
+  draft: { label: '草稿', class: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' },
   published: { label: '已发布', class: 'bg-green-100 text-green-700' },
   scheduled: { label: '定时', class: 'bg-blue-100 text-blue-700' },
 };
@@ -140,7 +140,7 @@ export default function BlogPage() {
     <div className="space-y-6">
       {/* Toast */}
       {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-slate-800 text-white text-sm rounded-lg shadow-lg animate-pulse">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white text-sm rounded-lg shadow-lg animate-pulse">
           {toast}
         </div>
       )}
@@ -148,11 +148,11 @@ export default function BlogPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">博客管理 Blog CMS</h2>
-          <p className="text-sm text-slate-500 mt-1">AI生成文章自动保存到草稿箱，编辑确认后点击发布</p>
+          <h2 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">博客管理 Blog CMS</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">AI生成文章自动保存到草稿箱，编辑确认后点击发布</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/koala/blog" target="_blank" className="px-4 py-2 text-sm text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50">
+          <Link href="/koala/blog" target="_blank" className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50">
             🌐 查看博客
           </Link>
           <Link href="/dashboard/koala/ai-content/batch" className="px-4 py-2 text-sm border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50">
@@ -161,7 +161,7 @@ export default function BlogPage() {
           <button onClick={() => setShowProfModal(true)} className="px-4 py-2 text-sm border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50">
             🎓 教授推荐
           </button>
-          <Link href="/dashboard/koala/ai-content" className="px-4 py-2 text-sm text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50">
+          <Link href="/dashboard/koala/ai-content" className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50">
             ✏️ AI生成
           </Link>
           <Link href="/dashboard/koala/blog/edit" className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700">
@@ -171,7 +171,7 @@ export default function BlogPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex border-b border-gray-200 dark:border-gray-700">
         {tabs.map(t => (
           <button
             key={t.key}
@@ -179,7 +179,7 @@ export default function BlogPage() {
             className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               tab === t.key
                 ? 'border-amber-600 text-amber-700'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             {t.icon} {t.label} ({t.count})
@@ -194,12 +194,12 @@ export default function BlogPage() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="搜索文章标题..."
-          className="flex-1 max-w-xs border border-slate-300 rounded-lg px-3 py-2 text-sm"
+          className="flex-1 max-w-xs border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
         />
         <select
           value={category}
           onChange={e => setCategory(e.target.value)}
-          className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+          className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
         >
           <option value="all">全部分类</option>
           {Object.entries(CATEGORIES).map(([k, v]) => (
@@ -209,7 +209,7 @@ export default function BlogPage() {
         <select
           value={sort}
           onChange={e => setSort(e.target.value)}
-          className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+          className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
         >
           <option value="date">按日期排序</option>
           <option value="views">按浏览量排序</option>
@@ -219,7 +219,7 @@ export default function BlogPage() {
       {/* AI Quick Entry */}
       <div className="border-2 border-green-200 bg-green-50 rounded-lg p-4 flex items-center justify-between">
         <div>
-          <h4 className="font-semibold text-green-800">AI批量生成SEO文章</h4>
+          <h4 className="font-medium text-green-800">AI批量生成SEO文章</h4>
           <p className="text-sm text-green-700 mt-0.5">选择推荐主题，一键生成中英文双语文章并自动发布</p>
         </div>
         <Link href="/dashboard/koala/ai-content/batch" className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
@@ -231,22 +231,22 @@ export default function BlogPage() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white rounded-lg shadow p-4 animate-pulse">
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 animate-pulse">
               <div className="flex gap-3">
-                <div className="w-20 h-20 bg-slate-200 rounded-lg flex-shrink-0" />
+                <div className="w-20 h-20 bg-gray-200 dark:bg-gray-600 rounded-lg flex-shrink-0" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-slate-200 rounded w-2/3" />
-                  <div className="h-3 bg-slate-100 rounded w-1/2" />
-                  <div className="h-3 bg-slate-100 rounded w-1/3" />
+                  <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-2/3" />
+                  <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded w-1/2" />
+                  <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded w-1/3" />
                 </div>
               </div>
             </div>
           ))}
         </div>
       ) : posts.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
           <p className="text-4xl mb-4">📝</p>
-          <p className="text-slate-500">还没有文章，点击 AI生成 快速创建SEO优化文章</p>
+          <p className="text-gray-500 dark:text-gray-400">还没有文章，点击 AI生成 快速创建SEO优化文章</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -261,11 +261,11 @@ export default function BlogPage() {
             return (
               <div
                 key={post.id}
-                className={`bg-white rounded-lg shadow p-4 flex gap-3 ${post.is_pinned ? 'ring-2 ring-amber-200' : ''}`}
+                className={`bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex gap-3 ${post.is_pinned ? 'ring-2 ring-amber-200' : ''}`}
               >
                 {/* Thumbnail */}
                 <div
-                  className="w-20 h-20 rounded-lg flex-shrink-0 bg-slate-100"
+                  className="w-20 h-20 rounded-lg flex-shrink-0 bg-gray-100 dark:bg-gray-700"
                   style={{
                     background: post.cover_image_url
                       ? `url(${post.cover_image_url}) center/cover`
@@ -280,8 +280,8 @@ export default function BlogPage() {
                     {post.is_pinned && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">📌 置顶</span>
                     )}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusInfo.class}`}>{statusInfo.label}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${statusInfo.class}`}>{statusInfo.label}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
                       {cat.zh} / {cat.en}
                     </span>
                     {hasSeo && (
@@ -293,29 +293,29 @@ export default function BlogPage() {
                   </div>
 
                   {/* Chinese title */}
-                  <h4 className="font-semibold text-slate-900 text-sm truncate">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
                     {post.title_zh || post.title_en || '无标题'}
                   </h4>
 
                   {/* English title */}
                   {post.title_en && post.title_zh && (
-                    <p className="text-xs text-slate-400 truncate mt-0.5">{post.title_en}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">{post.title_en}</p>
                   )}
 
                   {/* Excerpt */}
                   {(post.excerpt_zh || post.excerpt_en) && (
-                    <p className="text-xs text-slate-500 truncate mt-1">{post.excerpt_zh || post.excerpt_en}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{post.excerpt_zh || post.excerpt_en}</p>
                   )}
 
                   {/* Tags + meta */}
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     {displayTags.map(tag => (
-                      <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">{tag}</span>
+                      <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">{tag}</span>
                     ))}
                     {extraTagCount > 0 && (
-                      <span className="text-[10px] text-slate-400">+{extraTagCount}</span>
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500">+{extraTagCount}</span>
                     )}
-                    <span className="text-[10px] text-slate-400 ml-auto">
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-auto">
                       {new Date(post.created_at).toLocaleDateString('zh-CN')} · 👁 {post.view_count}
                     </span>
                   </div>
@@ -326,24 +326,24 @@ export default function BlogPage() {
                   <button
                     onClick={() => handlePin(post.id, !!post.is_pinned)}
                     title={post.is_pinned ? '取消置顶' : '置顶'}
-                    className={`text-sm px-1.5 py-1 rounded hover:bg-slate-100 ${post.is_pinned ? 'text-amber-600' : 'text-slate-400'}`}
+                    className={`text-sm px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 ${post.is_pinned ? 'text-amber-600' : 'text-gray-400 dark:text-gray-500'}`}
                   >
                     📌
                   </button>
                   {post.status === 'draft' && (
-                    <button onClick={() => handlePublish(post.id)} title="发布" className="text-sm px-1.5 py-1 rounded hover:bg-slate-100 text-green-600">
+                    <button onClick={() => handlePublish(post.id)} title="发布" className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-green-600">
                       ✈️
                     </button>
                   )}
-                  <Link href={`/dashboard/koala/blog/edit?id=${post.id}`} title="编辑" className="text-sm px-1.5 py-1 rounded hover:bg-slate-100 text-slate-600">
+                  <Link href={`/dashboard/koala/blog/edit?id=${post.id}`} title="编辑" className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
                     ✏️
                   </Link>
-                  <Link href={`/dashboard/koala/blog/edit?id=${post.id}&mode=preview`} title="预览发布效果" className="text-sm px-1.5 py-1 rounded hover:bg-slate-100 text-green-500">
+                  <Link href={`/dashboard/koala/blog/edit?id=${post.id}&mode=preview`} title="预览发布效果" className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-green-500">
                     👁
                   </Link>
                   <CoverButton post={post} onDone={fetchPosts} showToast={showToast} />
                   <ImageManagerButton post={post} onDone={fetchPosts} showToast={showToast} />
-                  <button onClick={() => handleDelete(post.id)} title="删除" className="text-sm px-1.5 py-1 rounded hover:bg-slate-100 text-red-400">
+                  <button onClick={() => handleDelete(post.id)} title="删除" className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-red-400">
                     🗑️
                   </button>
                 </div>
@@ -354,7 +354,7 @@ export default function BlogPage() {
       )}
 
       {total > 20 && (
-        <p className="text-sm text-center text-slate-500">显示 {posts.length} / {total} 篇文章</p>
+        <p className="text-sm text-center text-gray-500 dark:text-gray-400">显示 {posts.length} / {total} 篇文章</p>
       )}
 
       {/* Professor Spotlight Modal */}
@@ -544,10 +544,10 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 min-h-[400px] max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-2xl mx-4 min-h-[400px] max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-slate-900">🎓 生成教授推荐文章</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">🎓 生成教授推荐文章</h3>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 text-xl">&times;</button>
         </div>
 
         {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
@@ -562,7 +562,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                   onChange={e => handleInputChange(e.target.value)}
                   onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
                   placeholder="输入教授英文全名（如 John Smith）"
-                  className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                  className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
                 />
                 <button
                   onClick={handleWebSearch}
@@ -578,7 +578,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                   value={universityHint}
                   onChange={e => setUniversityHint(e.target.value)}
                   placeholder="大学名称（可选，帮助精确匹配）"
-                  className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-600"
+                  className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400"
                 />
                 <button
                   onClick={fetchRandomProf}
@@ -588,18 +588,18 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                   {loadingRandom ? '加载中...' : '🎲 随机推荐'}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1.5">💡 输入自动搜索数据库 → 找不到可点「🌐 网络搜索」从 OpenAlex 查找</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">💡 输入自动搜索数据库 → 找不到可点「🌐 网络搜索」从 OpenAlex 查找</p>
 
               {showDropdown && (
-                <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-[50vh] overflow-y-auto">
+                <div className="absolute z-10 left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-[50vh] overflow-y-auto">
                   {suggestions.map(prof => (
                     <button
                       key={prof.id}
                       onClick={() => handleSelectProf(prof)}
-                      className="w-full text-left px-4 py-4 hover:bg-purple-50 border-b border-slate-100 last:border-0"
+                      className="w-full text-left px-4 py-4 hover:bg-purple-50 border-b border-gray-100 dark:border-gray-700 last:border-0"
                     >
-                      <p className="text-base font-semibold text-slate-900">{prof.name || prof.name_en}</p>
-                      <p className="text-sm text-slate-500 mt-0.5">{prof.university || prof.institution}</p>
+                      <p className="text-base font-semibold text-gray-900 dark:text-gray-100">{prof.name || prof.name_en}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{prof.university || prof.institution}</p>
                       {(prof.researchAreas || prof.research_tags || prof.research_areas || []).length > 0 && (
                         <p className="text-sm text-purple-600 mt-0.5">{(prof.researchAreas || prof.research_tags || prof.research_areas || []).slice(0, 3).join(', ')}</p>
                       )}
@@ -613,16 +613,16 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
               <div className="border border-purple-200 bg-purple-50 rounded-lg p-4 mb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <p className="font-medium text-slate-900">{selectedProf.name || selectedProf.name_en}</p>
-                    <p className="text-sm text-slate-600">{selectedProf.university || selectedProf.institution}</p>
-                    <div className="flex gap-3 mt-1.5 text-xs text-slate-600">
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{selectedProf.name || selectedProf.name_en}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{selectedProf.university || selectedProf.institution}</p>
+                    <div className="flex gap-3 mt-1.5 text-xs text-gray-600 dark:text-gray-400">
                       {selectedProf.hIndex && <span>H-index: {selectedProf.hIndex}</span>}
                       {selectedProf.paperCount && <span>论文: {selectedProf.paperCount}</span>}
                     </div>
                     {(selectedProf.researchAreas || selectedProf.research_tags || selectedProf.research_areas || []).length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {(selectedProf.researchAreas || selectedProf.research_tags || selectedProf.research_areas || []).slice(0, 5).map((tag, i) => (
-                          <span key={i} className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{tag}</span>
+                          <span key={i} className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">{tag}</span>
                         ))}
                       </div>
                     )}
@@ -660,7 +660,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
             <div className="border border-purple-200 bg-purple-50 rounded-lg px-3 py-2 mb-3 text-xs text-purple-700">
               ⚠️ 不是你要找的教授？返回重新搜索，输入更精确的教授全名和大学名
             </div>
-            <p className="text-sm text-slate-700 font-medium mb-3">
+            <p className="text-sm text-gray-700 dark:text-gray-300 font-medium mb-3">
               找到 {searchCandidates.length} 位候选人 — 请确认目标教授：
             </p>
             <div className="space-y-2 max-h-[50vh] overflow-y-auto">
@@ -675,28 +675,28 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
                     key={idx}
                     onClick={() => !c.universityMismatch && handleSelectCandidate(c)}
                     disabled={!!c.universityMismatch}
-                    className={`w-full text-left border rounded-lg p-3 transition ${c.universityMismatch ? 'border-red-200 bg-red-50/50 opacity-60 cursor-not-allowed' : 'border-slate-200 hover:border-purple-400 hover:bg-purple-50'}`}
+                    className={`w-full text-left border rounded-lg p-3 transition ${c.universityMismatch ? 'border-red-200 bg-red-50/50 opacity-60 cursor-not-allowed' : 'border-gray-200 dark:border-gray-700 hover:border-purple-400 hover:bg-purple-50'}`}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${sourceBadge.cls}`}>{sourceBadge.label}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${sourceBadge.cls}`}>{sourceBadge.label}</span>
                       {c.confidence === 'high' && <span className="text-[10px] text-green-600">高匹配</span>}
                       {c.confidence === 'medium' && <span className="text-[10px] text-amber-600">中匹配</span>}
-                      {c.universityMismatch && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-medium">大学不匹配 ⚠️</span>}
+                      {c.universityMismatch && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-600 font-medium">大学不匹配 ⚠️</span>}
                     </div>
-                    <p className="font-medium text-slate-900">{c.name}</p>
-                    <p className={`text-sm ${c.universityMismatch ? 'text-red-600' : 'text-slate-600'}`}>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{c.name}</p>
+                    <p className={`text-sm ${c.universityMismatch ? 'text-red-600' : 'text-gray-600 dark:text-gray-400'}`}>
                       {c.position ? `${c.position} — ` : ''}{c.university}
                       {c.universityMismatch && <span className="ml-1.5 font-semibold">[不推荐]</span>}
                     </p>
-                    {c.faculty && <p className="text-xs text-slate-500">{c.faculty}</p>}
+                    {c.faculty && <p className="text-xs text-gray-500 dark:text-gray-400">{c.faculty}</p>}
                     {c.researchAreas.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {c.researchAreas.slice(0, 5).map((tag, i) => (
-                          <span key={i} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{tag}</span>
+                          <span key={i} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">{tag}</span>
                         ))}
                       </div>
                     )}
-                    <div className="flex gap-3 mt-1.5 text-xs text-slate-500">
+                    <div className="flex gap-3 mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                       {c.hIndex != null && <span>H-index: {c.hIndex}</span>}
                       {c.paperCount != null && <span>论文: {c.paperCount}</span>}
                       {c.citationCount != null && <span>引用: {c.citationCount}</span>}
@@ -707,7 +707,7 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
             </div>
             <button
               onClick={() => { setStep('search'); setSearchCandidates([]); setError(''); }}
-              className="mt-3 text-sm text-slate-500 hover:text-slate-700"
+              className="mt-3 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             >
               ← 返回重新搜索
             </button>
@@ -717,8 +717,8 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
         {step === 'generating' && (
           <div className="text-center py-8">
             <div className="inline-block w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-sm text-slate-700 font-medium">{genStep}</p>
-            <div className="mt-4 space-y-2 text-xs text-slate-500">
+            <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{genStep}</p>
+            <div className="mt-4 space-y-2 text-xs text-gray-500 dark:text-gray-400">
               <p className={genStep.includes('读取') ? 'text-purple-600 font-medium' : ''}>1. 读取教授数据 + 论文 + 经费</p>
               <p className={genStep.includes('撰写') ? 'text-purple-600 font-medium' : ''}>2. 撰写中文文章 + 翻译 + SEO</p>
               <p className={genStep.includes('完成') ? 'text-purple-600 font-medium' : ''}>3. 保存到草稿箱</p>
@@ -729,8 +729,8 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
         {step === 'done' && (
           <div className="text-center py-8">
             <p className="text-3xl mb-3">✅</p>
-            <p className="text-sm font-medium text-slate-900">{generatedTitle}</p>
-            <p className="text-xs text-slate-500 mt-1">文章已保存到草稿箱</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{generatedTitle}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">文章已保存到草稿箱</p>
             <button
               onClick={onGenerated}
               className="mt-4 px-6 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700"
@@ -769,7 +769,7 @@ function CoverButton({ post, onDone, showToast }: { post: BlogPost; onDone: () =
       onClick={handleGenerate}
       disabled={generating}
       title={hasImage ? '重新生成封面' : '生成封面'}
-      className={`text-sm px-1.5 py-1 rounded hover:bg-slate-100 disabled:opacity-50 ${hasImage ? 'text-slate-400' : 'text-purple-500'}`}
+      className={`text-sm px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 ${hasImage ? 'text-gray-400 dark:text-gray-500' : 'text-purple-500'}`}
     >
       {generating ? '⏳' : hasImage ? '🔄' : '🎨'}
     </button>
@@ -802,7 +802,7 @@ function ImageManagerButton({ post, onDone, showToast }: { post: BlogPost; onDon
       <button
         onClick={() => setShowModal(true)}
         title="管理插图"
-        className="text-sm px-1.5 py-1 rounded hover:bg-slate-100 text-blue-500"
+        className="text-sm px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-blue-500"
       >
         📸
       </button>
@@ -1020,18 +1020,18 @@ function ImageManagerModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-6 py-4 rounded-t-2xl flex items-center justify-between">
+        <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 rounded-t-2xl flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold text-slate-900">📸 文章插图</h3>
-            <p className="text-xs text-slate-500 mt-0.5 truncate max-w-md">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">📸 文章插图</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate max-w-md">
               {post.title_zh || post.title_en || '未命名文章'}
             </p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 text-xl">&times;</button>
         </div>
 
         <div className="p-6">
@@ -1048,7 +1048,7 @@ function ImageManagerModal({
           {status === 'idle' && (
             <div className="text-center py-8">
               <p className="text-4xl mb-4">📸</p>
-              <p className="text-sm text-slate-600 mb-6">选择插图数量，AI 将分析文章内容生成适配插图</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">选择插图数量，AI 将分析文章内容生成适配插图</p>
               <div className="flex items-center justify-center gap-3 mb-6">
                 {[1, 3, 5].map(n => (
                   <button
@@ -1057,7 +1057,7 @@ function ImageManagerModal({
                     className={`px-5 py-2.5 text-sm rounded-lg border-2 transition font-medium ${
                       imageCount === n
                         ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-slate-200 text-slate-600 hover:border-blue-300'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-300'
                     }`}
                   >
                     {n} 张
@@ -1078,7 +1078,7 @@ function ImageManagerModal({
             <div className="py-6">
               <div className="text-center mb-6">
                 <div className="inline-block w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
-                <p className="text-sm font-medium text-slate-800">
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                   {status === 'generating_prompts'
                     ? '正在分析文章内容，生成图片描述...'
                     : `正在生成第 ${currentGenerating}/${totalGenerating} 张插图...`
@@ -1090,11 +1090,11 @@ function ImageManagerModal({
                 <>
                   {/* Progress bar */}
                   <div className="mb-6">
-                    <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
                       <span>进度</span>
                       <span>{progressPercent}%</span>
                     </div>
-                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-blue-500 rounded-full transition-all duration-500"
                         style={{ width: `${progressPercent}%` }}
@@ -1114,17 +1114,17 @@ function ImageManagerModal({
                           className={`flex items-center gap-3 p-3 rounded-lg border ${
                             generated ? 'border-green-200 bg-green-50' :
                             isActive ? 'border-blue-200 bg-blue-50' :
-                            'border-slate-100 bg-slate-50'
+                            'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
                           }`}
                         >
                           <span className="text-lg flex-shrink-0">
                             {generated ? '✅' : isActive ? '⏳' : isPending ? '⬜' : '⬜'}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-xs font-medium ${generated ? 'text-green-700' : isActive ? 'text-blue-700' : 'text-slate-400'}`}>
+                            <p className={`text-xs font-medium ${generated ? 'text-green-700' : isActive ? 'text-blue-700' : 'text-gray-400 dark:text-gray-500'}`}>
                               {generated ? `第 ${i + 1} 张已完成` : isActive ? `正在生成第 ${i + 1} 张...` : `第 ${i + 1} 张等待中`}
                             </p>
-                            <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5">
                               Prompt: {p.promptEn.slice(0, 80)}...
                             </p>
                           </div>
@@ -1144,13 +1144,13 @@ function ImageManagerModal({
           {status === 'done' && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-sm font-medium text-slate-800">
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                   📸 文章插图 ({images.length} 张)
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setStatus('editing')}
-                    className="px-3 py-1.5 text-xs border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                    className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50"
                   >
                     ✏️ 编辑图片
                   </button>
@@ -1165,10 +1165,10 @@ function ImageManagerModal({
 
               <div className="grid grid-cols-3 gap-3 mb-6">
                 {images.map(img => (
-                  <div key={img.index} className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div key={img.index} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                     <img src={img.url} alt="" className="w-full h-28 object-cover" />
                     <div className="p-2">
-                      <p className="text-[10px] text-slate-500 truncate">{img.suggestedHeading || img.prompt.slice(0, 30)}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{img.suggestedHeading || img.prompt.slice(0, 30)}</p>
                     </div>
                   </div>
                 ))}
@@ -1177,7 +1177,7 @@ function ImageManagerModal({
               <div className="flex gap-3">
                 <button
                   onClick={() => setStatus('editing')}
-                  className="flex-1 px-4 py-2.5 text-sm border border-slate-300 rounded-xl hover:bg-slate-50"
+                  className="flex-1 px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50"
                 >
                   ✏️ 编辑排列
                 </button>
@@ -1196,10 +1196,10 @@ function ImageManagerModal({
           {status === 'editing' && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-sm font-medium text-slate-800">📸 图片编辑器</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">📸 图片编辑器</p>
                 <button
                   onClick={() => setStatus('done')}
-                  className="text-xs text-slate-500 hover:text-slate-700"
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 >
                   ← 返回预览
                 </button>
@@ -1208,17 +1208,17 @@ function ImageManagerModal({
               {/* Sortable image list */}
               <div className="space-y-3 mb-6">
                 {images.map((img, idx) => (
-                  <div key={img.url} className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl bg-white">
+                  <div key={img.url} className="flex items-start gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800">
                     <img src={img.url} alt="" className="w-24 h-24 rounded-lg object-cover flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-700 mb-1">图片 {idx + 1}</p>
-                      <p className="text-[10px] text-slate-400 truncate mb-2">{img.prompt.slice(0, 60)}...</p>
+                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">图片 {idx + 1}</p>
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate mb-2">{img.prompt.slice(0, 60)}...</p>
 
                       {/* Position select */}
                       <select
                         value={img.position}
                         onChange={e => updatePosition(idx, e.target.value)}
-                        className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5"
+                        className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5"
                       >
                         <option value="auto">自动（AI 选择最佳位置）</option>
                         {headings.map(h => (
@@ -1232,14 +1232,14 @@ function ImageManagerModal({
                       <button
                         onClick={() => moveImage(idx, 'up')}
                         disabled={idx === 0}
-                        className="text-xs text-slate-400 hover:text-slate-700 px-1.5 py-1 rounded hover:bg-slate-100 disabled:opacity-30"
+                        className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30"
                       >
                         ▲
                       </button>
                       <button
                         onClick={() => moveImage(idx, 'down')}
                         disabled={idx === images.length - 1}
-                        className="text-xs text-slate-400 hover:text-slate-700 px-1.5 py-1 rounded hover:bg-slate-100 disabled:opacity-30"
+                        className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30"
                       >
                         ▼
                       </button>
@@ -1255,15 +1255,15 @@ function ImageManagerModal({
               </div>
 
               {/* Generate more */}
-              <div className="border border-dashed border-slate-300 rounded-xl p-4 mb-6">
-                <p className="text-xs font-medium text-slate-600 mb-2">➕ 生成更多图片</p>
+              <div className="border border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-4 mb-6">
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">➕ 生成更多图片</p>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={extraPromptInput}
                     onChange={e => setExtraPromptInput(e.target.value)}
                     placeholder="描述想要的图片（可选，留空则自动生成）"
-                    className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-xs"
+                    className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-xs"
                   />
                   <button
                     onClick={handleGenerateExtra}
@@ -1374,14 +1374,14 @@ function ArticlePreviewModal({
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-6 py-3 rounded-t-2xl flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3 rounded-t-2xl flex items-center justify-between">
           <span className="text-sm font-medium text-green-700">👁 文章预览</span>
           <div className="flex gap-2">
             <button onClick={onEdit} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700">
               ✏️ 进入编辑模式
             </button>
-            <button onClick={onClose} className="px-3 py-1.5 text-xs bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">
+            <button onClick={onClose} className="px-3 py-1.5 text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
               关闭
             </button>
           </div>
@@ -1398,12 +1398,12 @@ function ArticlePreviewModal({
           )}
 
           {/* Title */}
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
             {post.title_zh || post.title_en || '无标题'}
           </h1>
 
           {post.excerpt_zh && (
-            <p className="text-sm text-slate-500 mb-6">{post.excerpt_zh}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{post.excerpt_zh}</p>
           )}
 
           {/* Content */}
@@ -1411,9 +1411,9 @@ function ArticlePreviewModal({
             className="prose prose-lg max-w-none
               [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-8 [&_h2]:mb-3
               [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mt-6 [&_h3]:mb-2
-              [&_p]:text-sm [&_p]:text-slate-700 [&_p]:leading-relaxed [&_p]:mb-3
-              [&_li]:text-sm [&_li]:text-slate-700
-              [&_strong]:text-slate-900
+              [&_p]:text-sm [&_p]:text-gray-700 dark:text-gray-300 [&_p]:leading-relaxed [&_p]:mb-3
+              [&_li]:text-sm [&_li]:text-gray-700 dark:text-gray-300
+              [&_strong]:text-gray-900 dark:text-gray-100
               [&_a]:text-blue-600
               [&_img]:rounded-lg [&_img]:my-4"
             dangerouslySetInnerHTML={{ __html: previewContent }}

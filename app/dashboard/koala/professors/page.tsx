@@ -142,8 +142,8 @@ export default function ProfessorsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">教授库管理</h2>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h2 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">教授库管理</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             共 {total} 位学者
             {missingEmailCount > 0 && <span className="text-amber-600 ml-2">· {missingEmailCount} 缺邮箱</span>}
             {missingFacultyCount > 0 && <span className="text-amber-600 ml-2">· {missingFacultyCount} 缺学院</span>}
@@ -152,7 +152,7 @@ export default function ProfessorsPage() {
         <div className="flex gap-2">
           <Link
             href="/dashboard/koala/professors/quality"
-            className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 no-underline flex items-center gap-1.5"
+            className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 no-underline flex items-center gap-1.5"
           >
             🔍 数据质量
           </Link>
@@ -162,19 +162,19 @@ export default function ProfessorsPage() {
       {/* Search + filters */}
       <div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="搜索教授名、大学、研究方向..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:border-gray-400 dark:focus:border-gray-500"
           />
         </div>
         <button
           onClick={() => setShowFilters(v => !v)}
           className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-lg transition-colors ${
-            showFilters ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+            showFilters ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-800/50'
           }`}
         >
           <Filter className="size-3.5" />
@@ -184,16 +184,16 @@ export default function ProfessorsPage() {
       </div>
 
       {showFilters && (
-        <div className="flex gap-3 flex-wrap bg-slate-50 rounded-lg p-3">
+        <div className="flex gap-3 flex-wrap bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
           <div>
-            <label className="block text-[11px] text-slate-500 mb-1">大学</label>
-            <select value={university} onChange={e => setUniversity(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 bg-white">
+            <label className="block text-[11px] text-gray-500 dark:text-gray-400 mb-1">大学</label>
+            <select value={university} onChange={e => setUniversity(e.target.value)} className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800">
               {UNIVERSITIES.map(u => <option key={u} value={u}>{u === 'All' ? '全部' : u}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[11px] text-slate-500 mb-1">审核状态</label>
-            <select value={status} onChange={e => setStatus(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 bg-white">
+            <label className="block text-[11px] text-gray-500 dark:text-gray-400 mb-1">审核状态</label>
+            <select value={status} onChange={e => setStatus(e.target.value)} className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800">
               <option value="All">全部</option>
               <option value="Verified">已验证</option>
               <option value="Pending">待审核</option>
@@ -201,11 +201,11 @@ export default function ProfessorsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-[11px] text-slate-500 mb-1">每页显示</label>
+            <label className="block text-[11px] text-gray-500 dark:text-gray-400 mb-1">每页显示</label>
             <select
               value={pageSize}
               onChange={e => setPageSize(Number(e.target.value) as (typeof PAGE_SIZES)[number])}
-              className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 bg-white"
+              className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800"
             >
               {PAGE_SIZES.map(s => <option key={s} value={s}>{s} 条</option>)}
             </select>
@@ -214,7 +214,7 @@ export default function ProfessorsPage() {
       )}
 
       {/* Results count */}
-      <div className="text-xs text-slate-400">
+      <div className="text-xs text-gray-400 dark:text-gray-500">
         {loading ? '加载中...' : (
           <>
             第 {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} 条，共 {total} 位学者
@@ -223,53 +223,53 @@ export default function ProfessorsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
               <tr>
-                <th className="text-left px-4 py-3 text-slate-600 font-medium text-xs">教授</th>
-                <th className="text-left px-4 py-3 text-slate-600 font-medium text-xs">大学</th>
-                <th className="text-left px-4 py-3 text-slate-600 font-medium text-xs">研究方向</th>
-                <th className="text-left px-4 py-3 text-slate-600 font-medium text-xs">H-index</th>
-                <th className="text-left px-4 py-3 text-slate-600 font-medium text-xs">邮箱</th>
-                <th className="text-left px-4 py-3 text-slate-600 font-medium text-xs">状态</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium text-xs">教授</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium text-xs">大学</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium text-xs">研究方向</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium text-xs">H-index</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium text-xs">邮箱</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-400 font-medium text-xs">状态</th>
                 <th className="px-4 py-3 text-xs" />
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="text-center py-12 text-slate-400">加载中...</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-gray-400 dark:text-gray-500">加载中...</td></tr>
               ) : professors.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-12 text-slate-400">无匹配结果</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-gray-400 dark:text-gray-500">无匹配结果</td></tr>
               ) : (
                 professors.map(prof => {
                   const sc = STATUS_COLORS[prof.verificationStatus] || STATUS_COLORS.Pending;
                   return (
-                    <tr key={prof.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
+                    <tr key={prof.id} className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="px-4 py-3">
-                        <Link href={`/dashboard/koala/professors/${prof.id}`} className="text-sm font-medium text-slate-800 hover:text-blue-600 no-underline">
+                        <Link href={`/dashboard/koala/professors/${prof.id}`} className="text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 no-underline">
                           {prof.name}
                         </Link>
                         {prof.positionTitle && (
-                          <p className="text-[11px] text-slate-400 mt-0.5">{prof.positionTitle}</p>
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{prof.positionTitle}</p>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 text-xs">{prof.university}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">{prof.university}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1 flex-wrap">
                           {(prof.researchAreas || []).slice(0, 2).map(a => (
-                            <span key={a} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{a}</span>
+                            <span key={a} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">{a}</span>
                           ))}
                           {(prof.researchAreas || []).length > 2 && (
-                            <span className="text-[10px] text-slate-400">+{prof.researchAreas.length - 2}</span>
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500">+{prof.researchAreas.length - 2}</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-600">{prof.hIndex ?? '—'}</td>
+                      <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">{prof.hIndex ?? '—'}</td>
                       <td className="px-4 py-3 text-xs">
                         {prof.email ? (
-                          <span className="text-slate-600">{prof.email}</span>
+                          <span className="text-gray-600 dark:text-gray-400">{prof.email}</span>
                         ) : (
                           <span className="flex items-center gap-1 text-amber-600">
                             <AlertTriangle className="size-3" /> 缺失
@@ -301,14 +301,14 @@ export default function ProfessorsPage() {
       {/* Pagination controls */}
       {!loading && total > 0 && (
         <div className="flex items-center justify-between pt-2">
-          <div className="text-xs text-slate-400">
+          <div className="text-xs text-gray-400 dark:text-gray-500">
             共 {totalPages} 页
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-800/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               aria-label="上一页"
             >
               <ChevronLeft className="size-4" />
@@ -316,15 +316,15 @@ export default function ProfessorsPage() {
 
             {getPageNumbers().map((n, i) =>
               n === '...' ? (
-                <span key={`dots-${i}`} className="px-2 text-xs text-slate-400">...</span>
+                <span key={`dots-${i}`} className="px-2 text-xs text-gray-400 dark:text-gray-500">...</span>
               ) : (
                 <button
                   key={n}
                   onClick={() => setPage(n)}
                   className={`min-w-[32px] h-8 rounded-lg text-xs font-medium transition-colors ${
                     n === page
-                      ? 'bg-slate-800 text-white'
-                      : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+                      ? 'bg-gray-800 dark:bg-gray-600 text-white'
+                      : 'border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-800/50'
                   }`}
                 >
                   {n}
@@ -335,7 +335,7 @@ export default function ProfessorsPage() {
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-800/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               aria-label="下一页"
             >
               <ChevronRight className="size-4" />

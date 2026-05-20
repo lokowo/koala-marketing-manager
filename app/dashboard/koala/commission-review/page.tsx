@@ -84,10 +84,10 @@ export default function CommissionReviewPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-bold text-[#111827]">佣金审核发放</h1>
+      <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">佣金审核发放</h1>
 
       {/* Top summary card */}
-      <div className="rounded-xl p-4 border border-amber-200 bg-amber-50">
+      <div className="rounded-xl p-4 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
         <div className="flex items-center justify-between">
           <div>
             <div className="text-[11px] text-amber-700 font-medium mb-0.5">待发放总额</div>
@@ -100,7 +100,7 @@ export default function CommissionReviewPage() {
       </div>
 
       {/* Tab filter */}
-      <div className="border-b border-[#E5E7EB]">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <div className="flex gap-0 -mb-px">
           {TABS.map(tab => (
             <button
@@ -108,8 +108,8 @@ export default function CommissionReviewPage() {
               onClick={() => setStatusFilter(tab.key)}
               className={`px-4 py-2.5 text-xs font-medium border-b-2 transition ${
                 statusFilter === tab.key
-                  ? 'border-[#F59E0B] text-[#111827]'
-                  : 'border-transparent text-[#6B7280] hover:text-[#374151]'
+                  ? 'border-amber-500 text-gray-900 dark:text-gray-100'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300'
               }`}
             >
               {tab.label}
@@ -119,13 +119,13 @@ export default function CommissionReviewPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">加载中...</p>
       ) : (
-        <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-[#F9FAFB] text-[#6B7280]">
+                <tr className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
                   {statusFilter === 'confirmed' && (
                     <th className="px-3 py-2.5 w-10">
                       <input type="checkbox" checked={selected.size === commissions.length && commissions.length > 0} onChange={toggleAll} className="accent-[#F59E0B]" />
@@ -141,22 +141,22 @@ export default function CommissionReviewPage() {
                   <th className="text-center px-3 py-2.5 font-medium">状态</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#F3F4F6]">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {commissions.map(c => {
                   const cfg = STATUS_CFG[c.status] || STATUS_CFG.pending;
                   return (
-                    <tr key={c.id} className={`hover:bg-[#F9FAFB] ${selected.has(c.id) ? 'bg-[#FFFBEB]' : ''}`}>
+                    <tr key={c.id} className={`hover:bg-gray-50 dark:bg-gray-800/50 ${selected.has(c.id) ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}>
                       {statusFilter === 'confirmed' && (
                         <td className="px-3 py-2.5">
                           <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} className="accent-[#F59E0B]" />
                         </td>
                       )}
-                      <td className="px-3 py-2.5 text-[#6B7280]">{new Date(c.created_at).toLocaleDateString('zh-CN')}</td>
-                      <td className="px-3 py-2.5 font-medium text-[#111827]">{c.agent_name}</td>
-                      <td className="px-3 py-2.5 text-[#374151]">{c.user_name}</td>
-                      <td className="px-3 py-2.5 text-[#374151]">{c.product_name || c.product_type}</td>
-                      <td className="px-3 py-2.5 text-center text-[#374151]">${c.payment_amount.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 text-center text-[#6B7280]">{(c.commission_rate * 100).toFixed(0)}%</td>
+                      <td className="px-3 py-2.5 text-gray-500 dark:text-gray-400">{new Date(c.created_at).toLocaleDateString('zh-CN')}</td>
+                      <td className="px-3 py-2.5 font-medium text-gray-900 dark:text-gray-100">{c.agent_name}</td>
+                      <td className="px-3 py-2.5 text-gray-700 dark:text-gray-300">{c.user_name}</td>
+                      <td className="px-3 py-2.5 text-gray-700 dark:text-gray-300">{c.product_name || c.product_type}</td>
+                      <td className="px-3 py-2.5 text-center text-gray-700 dark:text-gray-300">${c.payment_amount.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-center text-gray-500 dark:text-gray-400">{(c.commission_rate * 100).toFixed(0)}%</td>
                       <td className="px-3 py-2.5 text-center font-bold text-[#D4A843]">${c.commission_amount.toFixed(2)}</td>
                       <td className="px-3 py-2.5 text-center">
                         <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: cfg.bg, color: cfg.color }}>
@@ -167,7 +167,7 @@ export default function CommissionReviewPage() {
                   );
                 })}
                 {commissions.length === 0 && (
-                  <tr><td colSpan={9} className="px-3 py-8 text-center text-[#6B7280]">暂无记录</td></tr>
+                  <tr><td colSpan={9} className="px-3 py-8 text-center text-gray-500 dark:text-gray-400">暂无记录</td></tr>
                 )}
               </tbody>
             </table>
@@ -176,8 +176,8 @@ export default function CommissionReviewPage() {
       )}
       {/* Bottom sticky action bar */}
       {statusFilter === 'confirmed' && selected.size > 0 && (
-        <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between shadow-lg rounded-b-xl -mx-4 -mb-4">
-          <span className="text-sm text-slate-600">
+        <div className="sticky bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between shadow-lg rounded-b-xl -mx-4 -mb-4">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
             已选 <strong>{selected.size}</strong> 笔 共 <strong className="text-amber-600">${selectedTotal.toFixed(2)}</strong>
           </span>
           <div className="flex gap-2">

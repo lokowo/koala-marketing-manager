@@ -52,12 +52,12 @@ export default function CommissionRatesPage() {
     setSaving(false);
   }
 
-  if (loading) return <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>;
+  if (loading) return <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">加载中...</p>;
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-bold text-[#111827]">佣金比例配置</h1>
-      <p className="text-xs text-[#6B7280]">调整各产品的分销佣金比例，点击卡片调整滑块即时修改</p>
+      <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">佣金比例配置</h1>
+      <p className="text-sm text-gray-500 dark:text-gray-400">调整各产品的分销佣金比例，点击卡片调整滑块即时修改</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {rates.map(rate => {
@@ -70,15 +70,15 @@ export default function CommissionRatesPage() {
           return (
             <div
               key={rate.product_type}
-              className="rounded-xl p-5 border border-[#E5E7EB] bg-white hover:shadow-sm transition"
+              className="rounded-xl p-5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md dark:shadow-gray-900/30 transition"
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[#111827]">{cfg.name}</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{cfg.name}</span>
                     {cfg.recurring && <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">🔄 订阅</span>}
                   </div>
-                  {cfg.price > 0 && <div className="text-xs text-[#6B7280] mt-0.5">${cfg.price.toFixed(2)}</div>}
+                  {cfg.price > 0 && <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${cfg.price.toFixed(2)}</div>}
                 </div>
                 <div
                   className="text-[10px] px-2 py-0.5 rounded-full font-medium"
@@ -93,11 +93,11 @@ export default function CommissionRatesPage() {
                   {isEditing ? editValue : pct}%
                 </div>
                 {cfg.price > 0 && (
-                  <div className="text-[11px] text-[#6B7280] mt-1">
+                  <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
                     ${cfg.price.toFixed(2)} × {isEditing ? editValue : pct}% = <strong>${(cfg.price * (isEditing ? editValue : pct) / 100).toFixed(2)}</strong>
                   </div>
                 )}
-                <div className="text-[10px] text-[#9CA3AF] mt-0.5">
+                <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
                   范围 {minPct}% — {maxPct}%
                 </div>
               </div>
@@ -125,7 +125,7 @@ export default function CommissionRatesPage() {
                     </button>
                     <button
                       onClick={() => setEditing(null)}
-                      className="px-4 py-2 rounded-lg text-xs text-[#6B7280] border border-[#E5E7EB] hover:bg-[#F9FAFB]"
+                      className="px-4 py-2 rounded-lg text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800/50"
                     >
                       取消
                     </button>
@@ -134,7 +134,7 @@ export default function CommissionRatesPage() {
               ) : (
                 <button
                   onClick={() => { setEditing(rate.product_type); setEditValue(pct); }}
-                  className="w-full py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB] transition"
+                  className="w-full py-2 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
                 >
                   调整比例
                 </button>

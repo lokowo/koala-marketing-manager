@@ -96,7 +96,7 @@ export default function SalesAgentsPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-[#111827]">销售人员管理</h1>
+        <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">销售人员管理</h1>
         <button
           onClick={() => setShowModal(true)}
           className="text-xs px-4 py-2 rounded-lg bg-[#111827] text-white font-medium hover:opacity-90 transition"
@@ -109,19 +109,19 @@ export default function SalesAgentsPage() {
         placeholder="搜索姓名、邮箱或推广码..."
         value={search}
         onChange={e => setSearch(e.target.value)}
-        className="w-full rounded-lg px-4 py-2.5 text-sm bg-white border border-[#E5E7EB] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#F59E0B]"
+        className="w-full rounded-lg px-4 py-2.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:text-gray-500 focus:outline-none focus:border-[#F59E0B]"
       />
 
       {loading ? (
-        <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">加载中...</p>
       ) : agents.length === 0 ? (
-        <p className="text-sm text-[#6B7280] py-8 text-center">暂无销售人员</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">暂无销售人员</p>
       ) : (
-        <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-[#F9FAFB] text-[#6B7280]">
+                <tr className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
                   <th className="text-left px-4 py-2.5 font-medium">销售人员</th>
                   <th className="text-left px-4 py-2.5 font-medium">推广码</th>
                   <th className="text-center px-4 py-2.5 font-medium">状态</th>
@@ -136,15 +136,15 @@ export default function SalesAgentsPage() {
                   const statusCfg = STATUS_CFG[agent.status] || STATUS_CFG.active;
                   const tierCfg = TIER_CFG[agent.tier] || TIER_CFG.standard;
                   return (
-                    <tr key={agent.id} className="hover:bg-[#F9FAFB]">
+                    <tr key={agent.id} className="hover:bg-gray-50 dark:bg-gray-800/50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="size-8 rounded-full bg-[#F3F4F6] flex items-center justify-center text-xs font-bold text-[#6B7280]">
+                          <div className="size-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-400">
                             {(profile?.display_name || profile?.email || '?')[0].toUpperCase()}
                           </div>
                           <div>
-                            <div className="font-medium text-[#111827]">{profile?.display_name || '未设置'}</div>
-                            <div className="text-[10px] text-[#9CA3AF]">{profile?.email}</div>
+                            <div className="font-medium text-gray-900 dark:text-gray-100">{profile?.display_name || '未设置'}</div>
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500">{profile?.email}</div>
                           </div>
                         </div>
                       </td>
@@ -175,11 +175,11 @@ export default function SalesAgentsPage() {
                           ))}
                         </select>
                       </td>
-                      <td className="px-4 py-3 text-[#6B7280]">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         {new Date(agent.created_at).toLocaleDateString('zh-CN')}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="text-[10px] text-[#9CA3AF] font-mono">{agent.id.slice(0, 8)}</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">{agent.id.slice(0, 8)}</span>
                       </td>
                     </tr>
                   );
@@ -194,28 +194,28 @@ export default function SalesAgentsPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowModal(false)} />
-          <div className="relative bg-white rounded-xl shadow-lg p-6 w-full max-w-md mx-4">
-            <h2 className="text-base font-bold text-[#111827] mb-4">添加销售人员</h2>
+          <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-4">添加销售人员</h2>
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs text-[#6B7280] mb-1 block">搜索用户（邮箱）</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">搜索用户（邮箱）</label>
                 <input
                   placeholder="输入邮箱搜索..."
                   value={userSearch}
                   onChange={e => searchUsers(e.target.value)}
-                  className="w-full rounded-lg px-3 py-2.5 text-sm bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#F59E0B]"
+                  className="w-full rounded-lg px-3 py-2.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:text-gray-500 focus:outline-none focus:border-[#F59E0B]"
                 />
                 {userResults.length > 0 && (
-                  <div className="mt-1 border border-[#E5E7EB] rounded-lg max-h-40 overflow-y-auto bg-white">
+                  <div className="mt-1 border border-gray-200 dark:border-gray-700 rounded-lg max-h-40 overflow-y-auto bg-white dark:bg-gray-800">
                     {userResults.map(u => (
                       <button
                         key={u.id}
                         onClick={() => { setSelectedUser({ id: u.id, email: u.email }); setUserResults([]); setUserSearch(u.email); }}
-                        className={`w-full text-left px-3 py-2 text-xs hover:bg-[#F9FAFB] transition ${selectedUser?.id === u.id ? 'bg-[#FFFBEB]' : ''}`}
+                        className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:bg-gray-800/50 transition ${selectedUser?.id === u.id ? 'bg-[#FFFBEB]' : ''}`}
                       >
-                        <span className="font-medium text-[#111827]">{u.display_name}</span>
-                        <span className="text-[#9CA3AF] ml-2">{u.email}</span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{u.display_name}</span>
+                        <span className="text-gray-400 dark:text-gray-500 ml-2">{u.email}</span>
                       </button>
                     ))}
                   </div>
@@ -226,11 +226,11 @@ export default function SalesAgentsPage() {
               </div>
 
               <div>
-                <label className="text-xs text-[#6B7280] mb-1 block">等级</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">等级</label>
                 <select
                   value={newTier}
                   onChange={e => setNewTier(e.target.value)}
-                  className="w-full rounded-lg px-3 py-2.5 text-sm bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] focus:outline-none"
+                  className="w-full rounded-lg px-3 py-2.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none"
                 >
                   {TIER_OPTIONS.map(t => (
                     <option key={t} value={t}>{TIER_CFG[t]?.label || t}</option>
@@ -242,7 +242,7 @@ export default function SalesAgentsPage() {
             <div className="flex justify-end gap-2 mt-6">
               <button
                 onClick={() => setShowModal(false)}
-                className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB] transition"
+                className="text-xs px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-[#E5E7EB] transition"
               >
                 取消
               </button>
