@@ -284,7 +284,7 @@ function AuthPageInner() {
             <span className="text-2xl">🐨</span>
           </div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-[#e8e4dc]">
-            {mode === 'register' ? '注册 Koala Study' : '登录 Koala Study'}
+            {mode === 'register' ? '注册 Koala PhD' : '登录 Koala PhD'}
           </h1>
           <p className="text-sm mt-1 text-gray-500 dark:text-[#6a7a7e]">
             {mode === 'register' ? '免费开始，发现你的理想导师' : '欢迎回来'}
@@ -399,7 +399,7 @@ function AuthPageInner() {
                   className="mt-0.5 rounded accent-[#D4A843]"
                 />
                 <span className="text-[11px] leading-relaxed text-gray-400 dark:text-[#8a8078]">
-                  我授权 Koala Study 使用我的个人资料、上传文件及对话内容，用于 AI 教授匹配和个性化申请信生成。我的数据将被安全存储，仅用于平台服务。
+                  我授权 Koala PhD 使用我的个人资料、上传文件及对话内容，用于 AI 教授匹配和个性化申请信生成。我的数据将被安全存储，仅用于平台服务。
                 </span>
               </label>
               <p className="text-[10px] text-center text-gray-500 dark:text-[#6a7a7e]">

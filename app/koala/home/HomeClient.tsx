@@ -190,7 +190,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
           <span className="hidden size-8 rounded-lg flex items-center justify-center text-base bg-[#e8e4dc]">🐨</span>
           <div className="flex flex-col">
             <span className="text-sm font-bold tracking-tight leading-none text-gray-900 dark:text-[#e8e4dc]">
-              Koala Study
+              Koala PhD
             </span>
             <span className="text-[10px] leading-tight mt-0.5 text-gray-500 dark:text-[#6a7a7e]">
               你的澳洲学术内线
