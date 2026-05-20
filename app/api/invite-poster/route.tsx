@@ -55,7 +55,7 @@ export async function GET(req: Request) {
     const [fontData, userInfo, qrDataUrl] = await Promise.all([
       loadFont(),
       getUserInfo(code),
-      QRCode.toDataURL(`https://www.koalaphd.com/koala/register?ref=${code}`, {
+      QRCode.toDataURL(`https://koalaphd.com/koala/auth?ref=${code}`, {
         width: 180, margin: 1,
         color: { dark: '#1a1a2e', light: '#ffffff' },
         errorCorrectionLevel: 'M',
