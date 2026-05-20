@@ -166,11 +166,11 @@ export default function PromoCenterPage() {
     link.click();
   }, [qrImageUrl, posterTemplate, posterTagline, referralCode, displayName]);
 
-  if (loading) return <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>;
+  if (loading) return <p className="text-sm text-[#6B7280] dark:text-[#94A3B8] py-8 text-center">加载中...</p>;
   if (!referralCode) return (
     <div className="flex flex-col items-center justify-center py-20 gap-3">
-      <p className="text-sm text-[#991B1B]">你还不是活跃的销售人员，请联系管理员开通权限。</p>
-      <button onClick={() => window.location.reload()} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB] transition">
+      <p className="text-sm text-[#991B1B] dark:text-[#F87171]">你还不是活跃的销售人员，请联系管理员开通权限。</p>
+      <button onClick={() => window.location.reload()} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition">
         重试
       </button>
     </div>
@@ -179,20 +179,20 @@ export default function PromoCenterPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-[#111827]">推广中心</h1>
-        <div className="flex items-center gap-2 text-xs text-[#6B7280]">
+        <h1 className="text-xl font-light tracking-tight text-[#111827] dark:text-[#F1F5F9]">推广中心</h1>
+        <div className="flex items-center gap-2 text-xs text-[#6B7280] dark:text-[#94A3B8]">
           推广码: <span className="font-mono font-bold text-[#F59E0B]">{referralCode}</span>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-lg bg-[#F3F4F6] p-1">
+      <div className="flex gap-1 rounded-lg bg-[#F3F4F6] dark:bg-[#1E293B] p-1">
         {TABS.map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 py-2 rounded-md text-[13px] font-medium transition ${
-              tab === t ? 'bg-white text-[#111827] shadow-sm' : 'text-[#6B7280] hover:text-[#374151]'
+              tab === t ? 'bg-white dark:bg-[#334155] text-[#111827] dark:text-[#F1F5F9] shadow-sm' : 'text-[#6B7280] dark:text-[#94A3B8] hover:text-[#374151] dark:hover:text-[#CBD5E1]'
             }`}
           >
             {t}
@@ -203,7 +203,7 @@ export default function PromoCenterPage() {
       {/* Tab 1: Links */}
       {tab === '推广链接' && (
         <div className="space-y-4">
-          <div className="rounded-xl bg-white border border-[#E5E7EB] divide-y divide-[#F3F4F6]">
+          <div className="rounded-xl bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] divide-y divide-[#F3F4F6] dark:divide-[#334155]">
             {CHANNELS.map(ch => {
               const Icon = ch.icon;
               const isSelected = selectedChannel === ch.value;
@@ -214,7 +214,7 @@ export default function PromoCenterPage() {
                   key={ch.value}
                   onClick={() => setSelectedChannel(ch.value)}
                   className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition ${
-                    isSelected ? 'bg-[#FFFBEB]' : 'hover:bg-[#F9FAFB]'
+                    isSelected ? 'bg-[#FFFBEB] dark:bg-[#F59E0B]/10' : 'hover:bg-[#F9FAFB] dark:hover:bg-[#334155]'
                   }`}
                 >
                   <div
@@ -224,15 +224,15 @@ export default function PromoCenterPage() {
                     <Icon size={18} strokeWidth={1.5} style={{ color: ch.color }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-[#111827]">{ch.label}</div>
+                    <div className="text-[13px] font-medium text-[#111827] dark:text-[#F1F5F9]">{ch.label}</div>
                     {channelStats[ch.value] != null && (
-                      <div className="text-[10px] text-[#9CA3AF]">{channelStats[ch.value]} 次访问</div>
+                      <div className="text-[10px] text-[#9CA3AF] dark:text-[#64748B]">{channelStats[ch.value]} 次访问</div>
                     )}
                   </div>
                   <button
                     onClick={e => { e.stopPropagation(); copyText(link, copyKey); }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition ${
-                      copied === copyKey ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB]'
+                      copied === copyKey ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569]'
                     }`}
                   >
                     {copied === copyKey ? <IconCheck size={14} /> : <IconCopy size={14} />}
@@ -242,9 +242,9 @@ export default function PromoCenterPage() {
               );
             })}
           </div>
-          <div className="rounded-xl p-4 bg-[#F9FAFB] border border-[#E5E7EB]">
-            <div className="text-[11px] text-[#6B7280] mb-1.5">当前选中链接预览</div>
-            <div className="text-xs font-mono text-[#374151] break-all">{promoLink}</div>
+          <div className="rounded-xl p-4 bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155]">
+            <div className="text-[11px] text-[#6B7280] dark:text-[#94A3B8] mb-1.5">当前选中链接预览</div>
+            <div className="text-xs font-mono text-[#374151] dark:text-[#CBD5E1] break-all">{promoLink}</div>
           </div>
         </div>
       )}
@@ -252,12 +252,12 @@ export default function PromoCenterPage() {
       {/* Tab 2: QR Code */}
       {tab === '推广二维码' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-xl p-6 bg-white border border-[#E5E7EB] flex flex-col items-center gap-4">
-            <div className="rounded-xl border border-[#E5E7EB] p-4 bg-white">
+          <div className="rounded-xl p-6 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] flex flex-col items-center gap-4">
+            <div className="rounded-xl border border-[#E5E7EB] dark:border-[#334155] p-4 bg-white dark:bg-[#1E293B]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={qrImageUrl} alt="推广二维码" width={240} height={240} className="rounded" />
             </div>
-            <div className="text-[10px] text-[#6B7280] text-center">
+            <div className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] text-center">
               {CHANNELS.find(c => c.value === selectedChannel)?.label} · {referralCode}
             </div>
             <div className="flex gap-2">
@@ -265,14 +265,14 @@ export default function PromoCenterPage() {
                 <IconDownload size={14} />
                 下载 PNG
               </button>
-              <button onClick={() => copyText(promoLink, 'qr-link')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition ${copied === 'qr-link' ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB]'}`}>
+              <button onClick={() => copyText(promoLink, 'qr-link')} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition ${copied === 'qr-link' ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569]'}`}>
                 {copied === 'qr-link' ? <IconCheck size={14} /> : <IconCopy size={14} />}
                 {copied === 'qr-link' ? '已复制' : '复制链接'}
               </button>
             </div>
           </div>
-          <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
-            <h3 className="text-sm font-semibold text-[#374151] mb-3">选择渠道</h3>
+          <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
+            <h3 className="text-sm font-semibold text-[#374151] dark:text-[#CBD5E1] mb-3">选择渠道</h3>
             <div className="space-y-1">
               {CHANNELS.map(ch => {
                 const Icon = ch.icon;
@@ -281,7 +281,7 @@ export default function PromoCenterPage() {
                     key={ch.value}
                     onClick={() => setSelectedChannel(ch.value)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition ${
-                      selectedChannel === ch.value ? 'bg-[#FFFBEB] text-[#F59E0B] font-medium' : 'text-[#374151] hover:bg-[#F9FAFB]'
+                      selectedChannel === ch.value ? 'bg-[#FFFBEB] dark:bg-[#F59E0B]/10 text-[#F59E0B] font-medium' : 'text-[#374151] dark:text-[#CBD5E1] hover:bg-[#F9FAFB] dark:hover:bg-[#334155]'
                     }`}
                   >
                     <Icon size={16} strokeWidth={1.5} style={{ color: selectedChannel === ch.value ? '#F59E0B' : ch.color }} />
@@ -304,32 +304,32 @@ export default function PromoCenterPage() {
                 onClick={() => setPosterTemplate(tmpl.id)}
                 className={`rounded-xl p-4 text-center transition-all ${
                   posterTemplate === tmpl.id
-                    ? 'ring-2 ring-[#F59E0B] bg-white shadow-sm'
-                    : 'bg-white border border-[#E5E7EB] hover:border-[#D1D5DB]'
+                    ? 'ring-2 ring-[#F59E0B] bg-white dark:bg-[#1E293B] shadow-sm'
+                    : 'bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] hover:border-[#D1D5DB] dark:hover:border-[#475569]'
                 }`}
               >
                 <div className="w-full h-16 rounded-lg mb-2" style={{ background: tmpl.bg }} />
-                <div className="text-sm font-medium text-[#111827]">{tmpl.label}</div>
-                <div className="text-[10px] text-[#6B7280]">{tmpl.desc}</div>
+                <div className="text-sm font-medium text-[#111827] dark:text-[#F1F5F9]">{tmpl.label}</div>
+                <div className="text-[10px] text-[#6B7280] dark:text-[#94A3B8]">{tmpl.desc}</div>
               </button>
             ))}
           </div>
-          <div className="rounded-xl p-5 bg-white border border-[#E5E7EB] space-y-3">
+          <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] space-y-3">
             <div>
-              <label className="text-xs text-[#6B7280] block mb-1">自定义标语</label>
+              <label className="text-xs text-[#6B7280] dark:text-[#94A3B8] block mb-1">自定义标语</label>
               <input
                 value={posterTagline}
                 onChange={e => setPosterTagline(e.target.value)}
                 maxLength={40}
-                className="w-full rounded-lg px-3 py-2.5 text-sm bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] focus:outline-none focus:border-[#F59E0B]"
+                className="w-full rounded-lg px-3 py-2.5 text-sm bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9] focus:outline-none focus:border-[#F59E0B]"
               />
             </div>
             <div>
-              <label className="text-xs text-[#6B7280] block mb-1">推广渠道</label>
+              <label className="text-xs text-[#6B7280] dark:text-[#94A3B8] block mb-1">推广渠道</label>
               <select
                 value={selectedChannel}
                 onChange={e => setSelectedChannel(e.target.value)}
-                className="w-full rounded-lg px-3 py-2.5 text-sm bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] focus:outline-none"
+                className="w-full rounded-lg px-3 py-2.5 text-sm bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9] focus:outline-none"
               >
                 {CHANNELS.map(ch => <option key={ch.value} value={ch.value}>{ch.label}</option>)}
               </select>

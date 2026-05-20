@@ -91,34 +91,34 @@ export default function SalesSettingsPage() {
     setSettings(prev => ({ ...prev, [key]: val }));
   }
 
-  if (loading) return <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>;
+  if (loading) return <p className="text-sm text-[#6B7280] dark:text-[#94A3B8] py-8 text-center">加载中...</p>;
 
-  const INPUT_CLS = 'w-full rounded-lg px-3 py-2.5 text-sm bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] focus:outline-none focus:border-[#F59E0B] disabled:text-[#9CA3AF] disabled:bg-[#F3F4F6]';
+  const INPUT_CLS = 'w-full rounded-lg px-3 py-2.5 text-sm bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9] focus:outline-none focus:border-[#F59E0B] disabled:text-[#9CA3AF] dark:disabled:text-[#64748B] disabled:bg-[#F3F4F6] dark:disabled:bg-[#334155]';
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
-      <h1 className="text-xl font-bold text-[#111827]">个人设置</h1>
+      <h1 className="text-xl font-light tracking-tight text-[#111827] dark:text-[#F1F5F9]">个人设置</h1>
 
       {toast && (
-        <div className={`rounded-lg px-4 py-2.5 text-sm ${toast.startsWith('✅') ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#FEE2E2] text-[#991B1B]'}`}>
+        <div className={`rounded-lg px-4 py-2.5 text-sm ${toast.startsWith('✅') ? 'bg-[#DCFCE7] dark:bg-[#22C55E]/20 text-[#166534]' : 'bg-[#FEE2E2] dark:bg-[#EF4444]/20 text-[#991B1B]'}`}>
           {toast}
         </div>
       )}
 
       {/* Personal Info */}
-      <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
-        <h2 className="text-sm font-semibold text-[#374151] mb-4">个人信息</h2>
+      <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
+        <h2 className="text-sm font-semibold text-[#374151] dark:text-[#CBD5E1] mb-4">个人信息</h2>
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-[#6B7280] block mb-1">姓名</label>
+            <label className="text-xs text-[#6B7280] dark:text-[#94A3B8] block mb-1">姓名</label>
             <input value={settings.display_name} disabled className={INPUT_CLS} />
           </div>
           <div>
-            <label className="text-xs text-[#6B7280] block mb-1">邮箱</label>
+            <label className="text-xs text-[#6B7280] dark:text-[#94A3B8] block mb-1">邮箱</label>
             <input value={settings.email} disabled className={INPUT_CLS} />
           </div>
           <div>
-            <label className="text-xs text-[#6B7280] block mb-1">手机号</label>
+            <label className="text-xs text-[#6B7280] dark:text-[#94A3B8] block mb-1">手机号</label>
             <input
               value={settings.phone}
               onChange={e => update('phone', e.target.value)}
@@ -127,18 +127,18 @@ export default function SalesSettingsPage() {
             />
           </div>
           <div>
-            <label className="text-xs text-[#6B7280] block mb-1">推广码</label>
+            <label className="text-xs text-[#6B7280] dark:text-[#94A3B8] block mb-1">推广码</label>
             <input value={settings.referral_code} disabled className={`${INPUT_CLS} font-mono font-bold text-[#F59E0B]`} />
           </div>
         </div>
       </div>
 
       {/* Payment Info */}
-      <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
-        <h2 className="text-sm font-semibold text-[#374151] mb-4">收款信息</h2>
+      <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
+        <h2 className="text-sm font-semibold text-[#374151] dark:text-[#CBD5E1] mb-4">收款信息</h2>
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-[#6B7280] block mb-1">收款方式</label>
+            <label className="text-xs text-[#6B7280] dark:text-[#94A3B8] block mb-1">收款方式</label>
             <select
               value={settings.payment_method}
               onChange={e => update('payment_method', e.target.value)}
@@ -148,7 +148,7 @@ export default function SalesSettingsPage() {
             </select>
           </div>
           <div>
-            <label className="text-xs text-[#6B7280] block mb-1">收款账号</label>
+            <label className="text-xs text-[#6B7280] dark:text-[#94A3B8] block mb-1">收款账号</label>
             <input
               value={settings.payment_account}
               onChange={e => update('payment_account', e.target.value)}
@@ -157,7 +157,7 @@ export default function SalesSettingsPage() {
             />
           </div>
           <div>
-            <label className="text-xs text-[#6B7280] block mb-1">账户名</label>
+            <label className="text-xs text-[#6B7280] dark:text-[#94A3B8] block mb-1">账户名</label>
             <input
               value={settings.payment_name}
               onChange={e => update('payment_name', e.target.value)}
@@ -169,8 +169,8 @@ export default function SalesSettingsPage() {
       </div>
 
       {/* Notification Settings */}
-      <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
-        <h2 className="text-sm font-semibold text-[#374151] mb-4">通知设置</h2>
+      <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
+        <h2 className="text-sm font-semibold text-[#374151] dark:text-[#CBD5E1] mb-4">通知设置</h2>
         <div className="space-y-3">
           {([
             { key: 'notify_registration' as const, label: '新客户注册通知', desc: '有用户通过你的推广链接注册时通知' },
@@ -179,8 +179,8 @@ export default function SalesSettingsPage() {
           ]).map(item => (
             <div key={item.key} className="flex items-center justify-between py-2">
               <div>
-                <div className="text-sm text-[#111827]">{item.label}</div>
-                <div className="text-[11px] text-[#6B7280]">{item.desc}</div>
+                <div className="text-sm text-[#111827] dark:text-[#F1F5F9]">{item.label}</div>
+                <div className="text-[11px] text-[#6B7280] dark:text-[#94A3B8]">{item.desc}</div>
               </div>
               <button
                 onClick={() => update(item.key, !settings[item.key])}
@@ -196,7 +196,7 @@ export default function SalesSettingsPage() {
       <button
         onClick={save}
         disabled={saving}
-        className="w-full py-3 rounded-xl text-sm font-medium bg-[#111827] text-white hover:opacity-90 transition disabled:opacity-50"
+        className="w-full py-3 rounded-xl text-sm font-medium bg-[#111827] dark:bg-[#F1F5F9] text-white dark:text-[#0F172A] hover:opacity-90 transition disabled:opacity-50"
       >
         {saving ? '保存中...' : '保存设置'}
       </button>

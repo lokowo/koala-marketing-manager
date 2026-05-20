@@ -122,7 +122,7 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
   }
 
   if (!customer) {
-    return <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>;
+    return <p className="text-sm text-[#6B7280] dark:text-[#94A3B8] py-8 text-center">加载中...</p>;
   }
 
   const stageIdx = STAGES.indexOf(customer.stage as typeof STAGES[number]);
@@ -132,23 +132,23 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       {/* Back button */}
-      <button onClick={() => router.back()} className="text-xs text-[#6B7280] hover:text-[#374151] transition">
+      <button onClick={() => router.back()} className="text-xs text-[#6B7280] dark:text-[#94A3B8] hover:text-[#374151] dark:hover:text-[#CBD5E1] transition">
         ← 返回列表
       </button>
 
       {/* Customer info card */}
-      <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
+      <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="size-12 rounded-full flex items-center justify-center text-lg font-bold bg-[#F59E0B] text-white">
               {(customer.user_profiles?.display_name || customer.user_profiles?.email || '?')[0].toUpperCase()}
             </div>
             <div>
-              <h1 className="text-lg font-bold text-[#111827]">
+              <h1 className="text-lg font-light tracking-tight text-[#111827] dark:text-[#F1F5F9]">
                 {customer.user_profiles?.display_name || '未设置昵称'}
               </h1>
-              <p className="text-xs text-[#6B7280]">{customer.user_profiles?.email}</p>
-              <p className="text-[10px] text-[#9CA3AF] mt-0.5">加入 {daysSinceJoin} 天前 · {new Date(customer.created_at).toLocaleDateString('zh-CN')}</p>
+              <p className="text-xs text-[#6B7280] dark:text-[#94A3B8]">{customer.user_profiles?.email}</p>
+              <p className="text-[10px] text-[#9CA3AF] dark:text-[#64748B] mt-0.5">加入 {daysSinceJoin} 天前 · {new Date(customer.created_at).toLocaleDateString('zh-CN')}</p>
             </div>
           </div>
           <span
@@ -167,10 +167,10 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
             return (
               <div key={s} className="flex-1 flex flex-col items-center gap-1">
                 <div
-                  className="w-full h-1.5 rounded-full transition-colors"
-                  style={{ background: active ? cfg.color : '#E5E7EB' }}
+                  className={`w-full h-1.5 rounded-full transition-colors ${!active ? 'bg-[#E5E7EB] dark:bg-[#334155]' : ''}`}
+                  style={active ? { background: cfg.color } : undefined}
                 />
-                <span className="text-[9px]" style={{ color: active ? cfg.color : '#9CA3AF' }}>
+                <span className={`text-[9px] ${!active ? 'text-[#9CA3AF] dark:text-[#64748B]' : ''}`} style={active ? { color: cfg.color } : undefined}>
                   {cfg.label}
                 </span>
               </div>
@@ -180,9 +180,9 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
       </div>
 
       {/* Quick contact buttons + contact form */}
-      <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
+      <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-[#374151]">记录联系</h2>
+          <h2 className="text-sm font-semibold text-[#374151] dark:text-[#CBD5E1]">记录联系</h2>
           {!showContact && (
             <button
               onClick={() => setShowContact(true)}
@@ -202,8 +202,8 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
                   onClick={() => setContactMethod(m.key)}
                   className={`px-3 py-1.5 rounded-lg text-xs transition border ${
                     contactMethod === m.key
-                      ? 'bg-[#FEF3C7] border-[#F59E0B]/30 text-[#92400E]'
-                      : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]'
+                      ? 'bg-[#FEF3C7] dark:bg-[#F59E0B]/20 border-[#F59E0B]/30 text-[#92400E] dark:text-[#FCD34D]'
+                      : 'bg-white dark:bg-[#1E293B] border-[#E5E7EB] dark:border-[#334155] text-[#6B7280] dark:text-[#94A3B8] hover:bg-[#F9FAFB] dark:hover:bg-[#334155]'
                   }`}
                 >
                   {m.emoji} {m.label}
@@ -215,25 +215,25 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
               value={contactSummary}
               onChange={e => setContactSummary(e.target.value)}
               rows={2}
-              className="w-full rounded-lg px-3 py-2 text-xs focus:outline-none resize-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#F59E0B]"
+              className="w-full rounded-lg px-3 py-2 text-xs focus:outline-none resize-none bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9] placeholder:text-[#9CA3AF] dark:placeholder:text-[#64748B] focus:border-[#F59E0B]"
             />
             <input
               placeholder="结果（如：已添加微信、已约定下次沟通）"
               value={contactOutcome}
               onChange={e => setContactOutcome(e.target.value)}
-              className="w-full rounded-lg px-3 py-2 text-xs focus:outline-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#F59E0B]"
+              className="w-full rounded-lg px-3 py-2 text-xs focus:outline-none bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9] placeholder:text-[#9CA3AF] dark:placeholder:text-[#64748B] focus:border-[#F59E0B]"
             />
             <div className="flex gap-2">
               <button
                 onClick={handleLogContact}
                 disabled={logging || !contactSummary.trim()}
-                className="flex-1 py-2 rounded-lg text-xs font-medium disabled:opacity-50 bg-[#111827] text-white hover:opacity-90 transition"
+                className="flex-1 py-2 rounded-lg text-xs font-medium disabled:opacity-50 bg-[#111827] dark:bg-[#F1F5F9] text-white dark:text-[#0F172A] hover:opacity-90 transition"
               >
                 {logging ? '记录中...' : '保存联系记录'}
               </button>
               <button
                 onClick={() => setShowContact(false)}
-                className="px-4 py-2 rounded-lg text-xs text-[#6B7280] border border-[#E5E7EB] hover:bg-[#F9FAFB]"
+                className="px-4 py-2 rounded-lg text-xs text-[#6B7280] dark:text-[#94A3B8] border border-[#E5E7EB] dark:border-[#334155] hover:bg-[#F9FAFB] dark:hover:bg-[#334155]"
               >
                 取消
               </button>
@@ -245,10 +245,10 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
               <button
                 key={m.key}
                 onClick={() => { setContactMethod(m.key); setShowContact(true); }}
-                className="flex-1 py-2.5 rounded-lg text-center bg-[#F9FAFB] border border-[#E5E7EB] hover:bg-[#FEF3C7] hover:border-[#F59E0B]/30 transition"
+                className="flex-1 py-2.5 rounded-lg text-center bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] hover:bg-[#FEF3C7] dark:hover:bg-[#F59E0B]/20 hover:border-[#F59E0B]/30 transition"
               >
                 <span className="text-base block">{m.emoji}</span>
-                <span className="text-[9px] text-[#6B7280]">{m.label}</span>
+                <span className="text-[9px] text-[#6B7280] dark:text-[#94A3B8]">{m.label}</span>
               </button>
             ))}
           </div>
@@ -256,8 +256,8 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
       </div>
 
       {/* Edit stage + note */}
-      <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
-        <label className="block text-xs font-medium mb-2 text-[#374151]">更新阶段</label>
+      <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
+        <label className="block text-xs font-medium mb-2 text-[#374151] dark:text-[#CBD5E1]">更新阶段</label>
         <div className="flex flex-wrap gap-2 mb-4">
           {STAGES.map(s => {
             const cfg = STAGE_LABELS[s];
@@ -266,12 +266,12 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
               <button
                 key={s}
                 onClick={() => setStage(s)}
-                className="px-3 py-1.5 rounded-lg text-xs transition border"
-                style={{
-                  background: active ? cfg.bg : 'transparent',
-                  color: active ? cfg.color : '#6B7280',
-                  borderColor: active ? cfg.color + '40' : '#E5E7EB',
-                }}
+                className={`px-3 py-1.5 rounded-lg text-xs transition border ${!active ? 'border-[#E5E7EB] dark:border-[#334155] text-[#6B7280] dark:text-[#94A3B8]' : ''}`}
+                style={active ? {
+                  background: cfg.bg,
+                  color: cfg.color,
+                  borderColor: cfg.color + '40',
+                } : undefined}
               >
                 {cfg.label}
               </button>
@@ -279,36 +279,36 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
           })}
         </div>
 
-        <label className="block text-xs font-medium mb-2 text-[#374151]">备注</label>
+        <label className="block text-xs font-medium mb-2 text-[#374151] dark:text-[#CBD5E1]">备注</label>
         <textarea
           value={note}
           onChange={e => setNote(e.target.value)}
           rows={3}
-          className="w-full rounded-lg px-3 py-2 text-xs mb-4 focus:outline-none resize-none bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] focus:border-[#F59E0B]"
+          className="w-full rounded-lg px-3 py-2 text-xs mb-4 focus:outline-none resize-none bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9] focus:border-[#F59E0B]"
         />
 
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full py-2.5 rounded-lg text-xs font-medium disabled:opacity-50 bg-[#111827] text-white hover:opacity-90 transition"
+          className="w-full py-2.5 rounded-lg text-xs font-medium disabled:opacity-50 bg-[#111827] dark:bg-[#F1F5F9] text-white dark:text-[#0F172A] hover:opacity-90 transition"
         >
           {saving ? '保存中...' : '保存更改'}
         </button>
       </div>
 
       {/* Timeline */}
-      <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
-        <h2 className="text-sm font-semibold mb-4 text-[#374151]">行为轨迹</h2>
+      <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
+        <h2 className="text-sm font-semibold mb-4 text-[#374151] dark:text-[#CBD5E1]">行为轨迹</h2>
         {timeline.length > 0 ? (
           <div className="relative pl-5">
-            <div className="absolute left-[7px] top-2 bottom-2 w-px bg-[#E5E7EB]" />
+            <div className="absolute left-[7px] top-2 bottom-2 w-px bg-[#E5E7EB] dark:bg-[#334155]" />
             {timeline.map((item, idx) => {
               const dotColor = TIMELINE_COLORS[item.action] || '#9CA3AF';
               const isLast = idx === timeline.length - 1;
               return (
                 <div key={item.id} className={`relative ${isLast ? '' : 'pb-4'}`}>
                   <div
-                    className="absolute -left-[13px] top-1.5 size-3 rounded-full border-2 border-white"
+                    className="absolute -left-[13px] top-1.5 size-3 rounded-full border-2 border-white dark:border-[#1E293B]"
                     style={{ background: dotColor, boxShadow: `0 0 0 2px ${dotColor}30` }}
                   />
                   <div className="flex items-start justify-between gap-3">
@@ -322,7 +322,7 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
                          item.action === 'customer_create' ? '创建' : item.action}
                       </span>
                       {item.details && (
-                        <p className="text-[10px] mt-1 text-[#6B7280] leading-relaxed">
+                        <p className="text-[10px] mt-1 text-[#6B7280] dark:text-[#94A3B8] leading-relaxed">
                           {item.action === 'customer_contact' ? (
                             <>
                               {typeof item.details.summary === 'string' && <span>{item.details.summary}</span>}
@@ -343,7 +343,7 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
                         </p>
                       )}
                     </div>
-                    <span className="text-[10px] flex-shrink-0 text-[#9CA3AF]">
+                    <span className="text-[10px] flex-shrink-0 text-[#9CA3AF] dark:text-[#64748B]">
                       {new Date(item.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -352,7 +352,7 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
             })}
           </div>
         ) : (
-          <p className="text-xs py-4 text-center text-[#6B7280]">暂无行为记录</p>
+          <p className="text-xs py-4 text-center text-[#6B7280] dark:text-[#94A3B8]">暂无行为记录</p>
         )}
       </div>
     </div>

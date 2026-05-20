@@ -49,19 +49,19 @@ export default function SalesMyLogsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-[#111827]">操作记录</h1>
-        <p className="text-xs text-[#6B7280] mt-0.5">最近 50 条操作记录</p>
+        <h1 className="text-xl font-light tracking-tight text-[#111827] dark:text-[#F1F5F9]">操作记录</h1>
+        <p className="text-xs text-[#6B7280] dark:text-[#94A3B8] mt-0.5">最近 50 条操作记录</p>
       </div>
 
       {loading ? (
-        <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>
+        <p className="text-sm text-[#6B7280] dark:text-[#94A3B8] py-8 text-center">加载中...</p>
       ) : grouped.length === 0 ? (
-        <p className="text-sm text-[#6B7280] py-8 text-center">暂无操作记录</p>
+        <p className="text-sm text-[#6B7280] dark:text-[#94A3B8] py-8 text-center">暂无操作记录</p>
       ) : (
         <div className="space-y-4">
           {grouped.map(group => (
             <div key={group.date}>
-              <div className="text-[10px] font-medium text-[#9CA3AF] mb-2 pl-1">{group.date}</div>
+              <div className="text-[10px] font-medium text-[#9CA3AF] dark:text-[#64748B] mb-2 pl-1">{group.date}</div>
               <div className="space-y-2">
                 {group.items.map(log => {
                   const cat = CAT_CFG[log.action_category] || { label: log.action_category, color: '#9CA3AF' };
@@ -69,7 +69,7 @@ export default function SalesMyLogsPage() {
                   return (
                     <div
                       key={log.id}
-                      className="bg-white rounded-lg border border-[#E5E7EB] hover:border-[#D1D5DB] transition cursor-pointer"
+                      className="bg-white dark:bg-[#1E293B] rounded-lg border border-[#E5E7EB] dark:border-[#334155] hover:border-[#D1D5DB] dark:hover:border-[#475569] transition cursor-pointer"
                       onClick={() => setExpanded(isExpanded ? null : log.id)}
                     >
                       <div className="flex items-start gap-3 px-4 py-3">
@@ -85,21 +85,21 @@ export default function SalesMyLogsPage() {
                             >
                               {cat.label}
                             </span>
-                            <span className="text-xs font-medium text-[#111827]">{log.action}</span>
+                            <span className="text-xs font-medium text-[#111827] dark:text-[#F1F5F9]">{log.action}</span>
                           </div>
                           {(log.target_name || log.target_type) && (
-                            <div className="text-[10px] text-[#9CA3AF] mt-0.5">
+                            <div className="text-[10px] text-[#9CA3AF] dark:text-[#64748B] mt-0.5">
                               {log.target_name || log.target_type}
                             </div>
                           )}
                         </div>
-                        <span className="text-[10px] text-[#9CA3AF] flex-shrink-0">
+                        <span className="text-[10px] text-[#9CA3AF] dark:text-[#64748B] flex-shrink-0">
                           {new Date(log.created_at).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                       {isExpanded && log.details && (
-                        <div className="px-4 pb-3 border-t border-[#F3F4F6]">
-                          <pre className="text-[10px] text-[#6B7280] bg-[#F9FAFB] rounded-lg p-3 mt-2 overflow-x-auto">
+                        <div className="px-4 pb-3 border-t border-[#F3F4F6] dark:border-[#334155]">
+                          <pre className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] bg-[#F9FAFB] dark:bg-[#0F172A] rounded-lg p-3 mt-2 overflow-x-auto">
                             {JSON.stringify(log.details, null, 2)}
                           </pre>
                         </div>

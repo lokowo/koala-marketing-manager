@@ -98,8 +98,8 @@ export default function MyCommissionsPage() {
 
   if (error) return (
     <div className="flex flex-col items-center justify-center py-20 gap-3">
-      <p className="text-sm text-[#991B1B]">{error}</p>
-      <button onClick={() => fetchData(statusFilter, page)} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB] transition">重试</button>
+      <p className="text-sm text-[#991B1B] dark:text-[#F87171]">{error}</p>
+      <button onClick={() => fetchData(statusFilter, page)} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition">重试</button>
     </div>
   );
 
@@ -118,10 +118,10 @@ export default function MyCommissionsPage() {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-[#111827]">佣金明细</h1>
+        <h1 className="text-xl font-light tracking-tight text-[#111827] dark:text-[#F1F5F9]">佣金明细</h1>
         <button
           onClick={exportCSV}
-          className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB] transition font-medium"
+          className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition font-medium"
         >
           导出 CSV
         </button>
@@ -135,19 +135,19 @@ export default function MyCommissionsPage() {
             { label: '已确认', value: summary.confirmed_total, count: confirmedCount, borderColor: '#22C55E', color: '#166534' },
             { label: '已发放', value: summary.paid_total, count: paidCount, borderColor: '#3B82F6', color: '#1E40AF' },
           ].map(item => (
-            <div key={item.label} className="rounded-xl p-4 bg-white border border-[#E5E7EB] border-l-4" style={{ borderLeftColor: item.borderColor }}>
-              <div className="text-[10px] font-medium mb-1 text-[#6B7280]">{item.label}</div>
+            <div key={item.label} className="rounded-xl p-4 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] border-l-4" style={{ borderLeftColor: item.borderColor }}>
+              <div className="text-[10px] font-medium mb-1 text-[#6B7280] dark:text-[#94A3B8]">{item.label}</div>
               <div className="text-xl font-bold" style={{ color: item.color }}>
                 ${item.value.toFixed(2)}
               </div>
-              <div className="text-[10px] text-[#9CA3AF] mt-0.5">{item.count} 笔</div>
+              <div className="text-[10px] text-[#9CA3AF] dark:text-[#64748B] mt-0.5">{item.count} 笔</div>
             </div>
           ))}
         </div>
       )}
 
       {/* Tab filter with counts */}
-      <div className="border-b border-[#E5E7EB]">
+      <div className="border-b border-[#E5E7EB] dark:border-[#334155]">
         <div className="flex gap-0 -mb-px">
           {TABS.map(tab => (
             <button
@@ -155,8 +155,8 @@ export default function MyCommissionsPage() {
               onClick={() => changeTab(tab.key)}
               className={`px-4 py-2.5 text-xs font-medium border-b-2 transition ${
                 statusFilter === tab.key
-                  ? 'border-[#F59E0B] text-[#111827]'
-                  : 'border-transparent text-[#6B7280] hover:text-[#374151]'
+                  ? 'border-[#F59E0B] text-[#111827] dark:text-[#F1F5F9]'
+                  : 'border-transparent text-[#6B7280] dark:text-[#94A3B8] hover:text-[#374151] dark:hover:text-[#CBD5E1]'
               }`}
             >
               {tab.label}{tab.count != null ? ` (${tab.count})` : ''}
@@ -166,14 +166,14 @@ export default function MyCommissionsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden">
+      <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-[#E5E7EB] dark:border-[#334155] overflow-hidden">
         {loading ? (
-          <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>
+          <p className="text-sm text-[#6B7280] dark:text-[#94A3B8] py-8 text-center">加载中...</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-[#F9FAFB] text-[#6B7280]">
+                <tr className="bg-[#F9FAFB] dark:bg-[#0F172A] text-[#6B7280] dark:text-[#94A3B8]">
                   <th className="text-left px-4 py-2.5 font-medium">日期</th>
                   <th className="text-left px-4 py-2.5 font-medium">用户</th>
                   <th className="text-left px-4 py-2.5 font-medium">产品</th>
@@ -183,26 +183,26 @@ export default function MyCommissionsPage() {
                   <th className="text-center px-4 py-2.5 font-medium">状态</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#F3F4F6]">
+              <tbody className="divide-y divide-[#F3F4F6] dark:divide-[#334155]">
                 {commissions.map(c => {
                   const cfg = STATUS_CFG[c.status] || STATUS_CFG.pending;
                   return (
-                    <tr key={c.id} className="hover:bg-[#FFFBEB] group relative">
-                      <td className="px-4 py-3 text-[#6B7280] border-l-2 border-transparent group-hover:border-[#F59E0B]">
+                    <tr key={c.id} className="hover:bg-[#FFFBEB] dark:hover:bg-[#F59E0B]/5 group relative">
+                      <td className="px-4 py-3 text-[#6B7280] dark:text-[#94A3B8] border-l-2 border-transparent group-hover:border-[#F59E0B]">
                         {new Date(c.created_at).toLocaleDateString('zh-CN')}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="size-6 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[10px] font-bold text-[#6B7280]">
+                          <div className="size-6 rounded-full bg-[#F3F4F6] dark:bg-[#334155] flex items-center justify-center text-[10px] font-bold text-[#6B7280] dark:text-[#94A3B8]">
                             {(c.user_name || '?')[0].toUpperCase()}
                           </div>
-                          <span className="text-[#111827] font-medium">{c.user_name}</span>
+                          <span className="text-[#111827] dark:text-[#F1F5F9] font-medium">{c.user_name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-[#374151]">{c.product_name || c.product_type}</td>
-                      <td className="px-4 py-3 text-center text-[#374151]">${c.payment_amount.toFixed(2)}</td>
-                      <td className="px-4 py-3 text-center text-[#6B7280]">{(c.commission_rate * 100).toFixed(0)}%</td>
-                      <td className="px-4 py-3 text-center text-[#166534] font-bold">${c.commission_amount.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-[#374151] dark:text-[#CBD5E1]">{c.product_name || c.product_type}</td>
+                      <td className="px-4 py-3 text-center text-[#374151] dark:text-[#CBD5E1]">${c.payment_amount.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-center text-[#6B7280] dark:text-[#94A3B8]">{(c.commission_rate * 100).toFixed(0)}%</td>
+                      <td className="px-4 py-3 text-center text-[#059669] dark:text-[#34D399] font-bold">${c.commission_amount.toFixed(2)}</td>
                       <td className="px-4 py-3 text-center">
                         <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: cfg.bg, color: cfg.color }}>
                           {cfg.label}
@@ -212,7 +212,7 @@ export default function MyCommissionsPage() {
                   );
                 })}
                 {commissions.length === 0 && (
-                  <tr><td colSpan={7} className="px-4 py-8 text-center text-[#6B7280]">暂无佣金记录</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-[#6B7280] dark:text-[#94A3B8]">暂无佣金记录</td></tr>
                 )}
               </tbody>
             </table>
@@ -222,13 +222,13 @@ export default function MyCommissionsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-xs text-[#6B7280]">
+        <div className="flex items-center justify-between text-xs text-[#6B7280] dark:text-[#94A3B8]">
           <span>共 {total} 条，第 {page}/{totalPages} 页</span>
           <div className="flex gap-1">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-3 py-1.5 rounded-lg bg-[#F3F4F6] hover:bg-[#E5E7EB] transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 rounded-lg bg-[#F3F4F6] dark:bg-[#334155] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               上一页
             </button>
@@ -249,8 +249,8 @@ export default function MyCommissionsPage() {
                   onClick={() => setPage(p)}
                   className={`w-8 h-8 rounded-lg transition ${
                     page === p
-                      ? 'bg-[#111827] text-white font-medium'
-                      : 'bg-[#F3F4F6] hover:bg-[#E5E7EB]'
+                      ? 'bg-[#111827] dark:bg-[#F1F5F9] text-white dark:text-[#0F172A] font-medium'
+                      : 'bg-[#F3F4F6] dark:bg-[#334155] hover:bg-[#E5E7EB] dark:hover:bg-[#475569]'
                   }`}
                 >
                   {p}
@@ -260,7 +260,7 @@ export default function MyCommissionsPage() {
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="px-3 py-1.5 rounded-lg bg-[#F3F4F6] hover:bg-[#E5E7EB] transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 rounded-lg bg-[#F3F4F6] dark:bg-[#334155] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               下一页
             </button>

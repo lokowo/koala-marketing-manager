@@ -81,14 +81,14 @@ export default function ReferralUsersPage() {
 
   if (error) return (
     <div className="flex flex-col items-center justify-center py-20 gap-3">
-      <p className="text-sm text-[#991B1B]">{error}</p>
-      <button onClick={fetchData} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB] transition">重试</button>
+      <p className="text-sm text-[#991B1B] dark:text-[#F87171]">{error}</p>
+      <button onClick={fetchData} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition">重试</button>
     </div>
   );
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-bold text-[#111827]">我的客户</h1>
+      <h1 className="text-xl font-light tracking-tight text-[#111827] dark:text-[#F1F5F9]">我的客户</h1>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -98,7 +98,7 @@ export default function ReferralUsersPage() {
           { label: '总消费', value: `$${totalRevenue.toFixed(2)}`, color: '#F59E0B', bg: '#FFFBEB' },
           { label: '总佣金', value: `$${totalCommission.toFixed(2)}`, color: '#D4A843', bg: '#FEF3C7' },
         ].map(item => (
-          <div key={item.label} className="rounded-xl p-4 bg-white border border-[#E5E7EB]" style={{ background: item.bg }}>
+          <div key={item.label} className="rounded-xl p-4 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]" style={{ background: item.bg }}>
             <div className="text-[10px] font-medium mb-0.5" style={{ color: item.color }}>{item.label}</div>
             <div className="text-xl font-bold" style={{ color: item.color }}>{item.value}</div>
           </div>
@@ -111,12 +111,12 @@ export default function ReferralUsersPage() {
           placeholder="搜索用户名或邮箱..."
           value={search}
           onChange={e => { setSearch(e.target.value); setPage(1); }}
-          className="flex-1 min-w-[200px] rounded-lg px-4 py-2.5 text-sm bg-white border border-[#E5E7EB] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#F59E0B]"
+          className="flex-1 min-w-[200px] rounded-lg px-4 py-2.5 text-sm bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9] placeholder:text-[#9CA3AF] dark:placeholder:text-[#64748B] focus:outline-none focus:border-[#F59E0B]"
         />
         <select
           value={channelFilter}
           onChange={e => { setChannelFilter(e.target.value); setPage(1); }}
-          className="rounded-lg px-3 py-2.5 text-xs bg-white border border-[#E5E7EB] text-[#374151] focus:outline-none"
+          className="rounded-lg px-3 py-2.5 text-xs bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] text-[#374151] dark:text-[#CBD5E1] focus:outline-none"
         >
           {channelOptions.map(ch => (
             <option key={ch} value={ch}>{ch === 'all' ? '全部渠道' : CH_LABELS[ch] || ch}</option>
@@ -125,7 +125,7 @@ export default function ReferralUsersPage() {
         <select
           value={paidFilter}
           onChange={e => { setPaidFilter(e.target.value); setPage(1); }}
-          className="rounded-lg px-3 py-2.5 text-xs bg-white border border-[#E5E7EB] text-[#374151] focus:outline-none"
+          className="rounded-lg px-3 py-2.5 text-xs bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] text-[#374151] dark:text-[#CBD5E1] focus:outline-none"
         >
           <option value="all">全部状态</option>
           <option value="paid">已付费</option>
@@ -134,7 +134,7 @@ export default function ReferralUsersPage() {
         <select
           value={sort}
           onChange={e => setSort(e.target.value)}
-          className="rounded-lg px-3 py-2.5 text-xs bg-white border border-[#E5E7EB] text-[#374151] focus:outline-none"
+          className="rounded-lg px-3 py-2.5 text-xs bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] text-[#374151] dark:text-[#CBD5E1] focus:outline-none"
         >
           <option value="created_at">按时间</option>
           <option value="revenue">按消费</option>
@@ -142,19 +142,19 @@ export default function ReferralUsersPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>
+        <p className="text-sm text-[#6B7280] dark:text-[#94A3B8] py-8 text-center">加载中...</p>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 gap-2">
-          <div className="size-12 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[#9CA3AF] text-xl">👥</div>
-          <p className="text-sm text-[#6B7280]">暂无推荐用户</p>
+          <div className="size-12 rounded-full bg-[#F3F4F6] dark:bg-[#334155] flex items-center justify-center text-[#9CA3AF] dark:text-[#64748B] text-xl">👥</div>
+          <p className="text-sm text-[#6B7280] dark:text-[#94A3B8]">暂无推荐用户</p>
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden">
+          <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-[#E5E7EB] dark:border-[#334155] overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="bg-[#F9FAFB] text-[#6B7280]">
+                  <tr className="bg-[#F9FAFB] dark:bg-[#0F172A] text-[#6B7280] dark:text-[#94A3B8]">
                     <th className="text-left px-4 py-2.5 font-medium">用户</th>
                     <th className="text-left px-4 py-2.5 font-medium">渠道</th>
                     <th className="text-left px-4 py-2.5 font-medium">注册时间</th>
@@ -163,21 +163,21 @@ export default function ReferralUsersPage() {
                     <th className="text-center px-4 py-2.5 font-medium">佣金</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F3F4F6]">
+                <tbody className="divide-y divide-[#F3F4F6] dark:divide-[#334155]">
                   {paged.map(r => (
                     <tr
                       key={r.id}
                       onClick={() => navigateToCustomer(r)}
-                      className="hover:bg-[#FFFBEB] cursor-pointer group"
+                      className="hover:bg-[#FFFBEB] dark:hover:bg-[#F59E0B]/5 cursor-pointer group"
                     >
                       <td className="px-4 py-3 border-l-2 border-transparent group-hover:border-[#F59E0B]">
                         <div className="flex items-center gap-2.5">
-                          <div className="size-8 rounded-full bg-[#F3F4F6] flex items-center justify-center text-xs font-bold text-[#6B7280]">
+                          <div className="size-8 rounded-full bg-[#F3F4F6] dark:bg-[#334155] flex items-center justify-center text-xs font-bold text-[#6B7280] dark:text-[#94A3B8]">
                             {(r.display_name || r.email || '?')[0].toUpperCase()}
                           </div>
                           <div>
-                            <div className="font-medium text-[#111827]">{r.display_name || '未设置'}</div>
-                            <div className="text-[10px] text-[#9CA3AF]">{r.email}</div>
+                            <div className="font-medium text-[#111827] dark:text-[#F1F5F9]">{r.display_name || '未设置'}</div>
+                            <div className="text-[10px] text-[#9CA3AF] dark:text-[#64748B]">{r.email}</div>
                           </div>
                         </div>
                       </td>
@@ -189,17 +189,17 @@ export default function ReferralUsersPage() {
                           {CH_LABELS[r.channel] || r.channel}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-[#6B7280]">
+                      <td className="px-4 py-3 text-[#6B7280] dark:text-[#94A3B8]">
                         {new Date(r.created_at).toLocaleDateString('zh-CN')}
                       </td>
                       <td className="px-4 py-3 text-center">
                         {r.has_paid ? (
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#DCFCE7] text-[#166534] font-medium">已付费</span>
                         ) : (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#9CA3AF]">未付费</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F3F4F6] dark:bg-[#334155] text-[#9CA3AF] dark:text-[#64748B]">未付费</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-center text-[#374151] font-medium">${r.total_revenue.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-center text-[#374151] dark:text-[#CBD5E1] font-medium">${r.total_revenue.toFixed(2)}</td>
                       <td className="px-4 py-3 text-center text-[#D4A843] font-bold">${r.total_commission.toFixed(2)}</td>
                     </tr>
                   ))}
@@ -210,13 +210,13 @@ export default function ReferralUsersPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between text-xs text-[#6B7280]">
+            <div className="flex items-center justify-between text-xs text-[#6B7280] dark:text-[#94A3B8]">
               <span>共 {filtered.length} 位用户，第 {page}/{totalPages} 页</span>
               <div className="flex gap-1">
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="px-3 py-1.5 rounded-lg bg-[#F3F4F6] hover:bg-[#E5E7EB] transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 rounded-lg bg-[#F3F4F6] dark:bg-[#334155] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   上一页
                 </button>
@@ -231,7 +231,7 @@ export default function ReferralUsersPage() {
                       key={p}
                       onClick={() => setPage(p)}
                       className={`w-8 h-8 rounded-lg transition ${
-                        page === p ? 'bg-[#111827] text-white font-medium' : 'bg-[#F3F4F6] hover:bg-[#E5E7EB]'
+                        page === p ? 'bg-[#111827] dark:bg-[#F1F5F9] text-white dark:text-[#0F172A] font-medium' : 'bg-[#F3F4F6] dark:bg-[#334155] hover:bg-[#E5E7EB] dark:hover:bg-[#475569]'
                       }`}
                     >
                       {p}
@@ -241,7 +241,7 @@ export default function ReferralUsersPage() {
                 <button
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  className="px-3 py-1.5 rounded-lg bg-[#F3F4F6] hover:bg-[#E5E7EB] transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 rounded-lg bg-[#F3F4F6] dark:bg-[#334155] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   下一页
                 </button>

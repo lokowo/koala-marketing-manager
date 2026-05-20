@@ -51,8 +51,8 @@ export default function ChannelAnalyticsPage() {
     }).catch(e => setError(e.message)).finally(() => setLoading(false));
   }, [days]);
 
-  if (loading) return <p className="text-sm text-[#6B7280] py-8 text-center">加载中...</p>;
-  if (error) return <p className="text-sm text-[#991B1B] py-8 text-center">{error}</p>;
+  if (loading) return <p className="text-sm text-[#6B7280] dark:text-[#94A3B8] py-8 text-center">加载中...</p>;
+  if (error) return <p className="text-sm text-[#991B1B] dark:text-[#F87171] py-8 text-center">{error}</p>;
 
   const pieData = channels.filter(c => c.visits > 0).map(c => ({
     name: CH_LABELS[c.channel] || c.channel,
@@ -83,14 +83,14 @@ export default function ChannelAnalyticsPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-[#111827]">渠道分析</h1>
+        <h1 className="text-xl font-light tracking-tight text-[#111827] dark:text-[#F1F5F9]">渠道分析</h1>
         <div className="flex gap-1.5">
           {[7, 30, 90].map(d => (
             <button
               key={d}
               onClick={() => setDays(d)}
               className={`text-[10px] px-3 py-1.5 rounded-lg transition ${
-                days === d ? 'bg-[#FEF3C7] text-[#92400E] font-medium' : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]'
+                days === d ? 'bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#92400E] font-medium' : 'bg-[#F3F4F6] dark:bg-[#334155] text-[#6B7280] dark:text-[#94A3B8] hover:bg-[#E5E7EB] dark:hover:bg-[#475569]'
               }`}
             >
               {d}天
@@ -107,8 +107,8 @@ export default function ChannelAnalyticsPage() {
           { label: '总转化', value: totalConversions, color: '#10B981' },
           { label: '总佣金', value: `$${totalRevenue.toFixed(2)}`, color: '#D4A843' },
         ].map(item => (
-          <div key={item.label} className="rounded-xl p-3 bg-white border border-[#E5E7EB]">
-            <div className="text-[10px] text-[#6B7280] mb-0.5">{item.label}</div>
+          <div key={item.label} className="rounded-xl p-3 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
+            <div className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] mb-0.5">{item.label}</div>
             <div className="text-lg font-bold" style={{ color: item.color }}>{item.value}</div>
           </div>
         ))}
@@ -116,8 +116,8 @@ export default function ChannelAnalyticsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Pie chart */}
-        <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
-          <h2 className="text-sm font-semibold text-[#374151] mb-4">访问量分布</h2>
+        <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
+          <h2 className="text-sm font-medium text-[#374151] dark:text-[#CBD5E1] mb-4">访问量分布</h2>
           {pieData.length > 0 ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -142,12 +142,12 @@ export default function ChannelAnalyticsPage() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="text-xs text-[#6B7280] py-8 text-center">暂无数据</p>
+            <p className="text-xs text-[#6B7280] dark:text-[#94A3B8] py-8 text-center">暂无数据</p>
           )}
           {/* Legend */}
           <div className="flex flex-wrap gap-3 mt-3 justify-center">
             {pieData.map(entry => (
-              <div key={entry.name} className="flex items-center gap-1.5 text-[10px] text-[#6B7280]">
+              <div key={entry.name} className="flex items-center gap-1.5 text-[10px] text-[#6B7280] dark:text-[#94A3B8]">
                 <div className="size-2 rounded-full" style={{ background: entry.color }} />
                 {entry.name}
               </div>
@@ -156,8 +156,8 @@ export default function ChannelAnalyticsPage() {
         </div>
 
         {/* Bar chart */}
-        <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
-          <h2 className="text-sm font-semibold text-[#374151] mb-4">渠道转化对比</h2>
+        <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
+          <h2 className="text-sm font-medium text-[#374151] dark:text-[#CBD5E1] mb-4">渠道转化对比</h2>
           {barData.length > 0 ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -173,15 +173,15 @@ export default function ChannelAnalyticsPage() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="text-xs text-[#6B7280] py-8 text-center">暂无数据</p>
+            <p className="text-xs text-[#6B7280] dark:text-[#94A3B8] py-8 text-center">暂无数据</p>
           )}
         </div>
       </div>
 
       {/* Conversion funnel */}
       {funnel && funnel.visits > 0 && (
-        <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
-          <h2 className="text-sm font-semibold text-[#374151] mb-4">转化漏斗</h2>
+        <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
+          <h2 className="text-sm font-medium text-[#374151] dark:text-[#CBD5E1] mb-4">转化漏斗</h2>
           <div className="space-y-3">
             {funnelStages.map((stage, i) => {
               const pct = (stage.value / maxFunnel) * 100;
@@ -190,17 +190,17 @@ export default function ChannelAnalyticsPage() {
               return (
                 <div key={stage.label}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-[#374151] font-medium">{stage.label}</span>
+                    <span className="text-xs text-[#374151] dark:text-[#CBD5E1] font-medium">{stage.label}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-[#111827]">{stage.value}</span>
+                      <span className="text-sm font-bold text-[#111827] dark:text-[#F1F5F9]">{stage.value}</span>
                       {convRate && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#F3F4F6] text-[#6B7280]">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#F3F4F6] dark:bg-[#334155] text-[#6B7280] dark:text-[#94A3B8]">
                           {convRate}%
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="h-6 rounded bg-[#F3F4F6]">
+                  <div className="h-6 rounded bg-[#F3F4F6] dark:bg-[#334155]">
                     <div
                       className="h-full rounded flex items-center justify-end pr-2 transition-all"
                       style={{ width: `${Math.max(pct, 5)}%`, background: stage.color + '20' }}
@@ -216,11 +216,11 @@ export default function ChannelAnalyticsPage() {
       )}
 
       {/* Channel detail table */}
-      <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden">
+      <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-[#E5E7EB] dark:border-[#334155] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-[#F9FAFB] text-[#6B7280]">
+              <tr className="bg-[#F9FAFB] dark:bg-[#0F172A] text-[#6B7280] dark:text-[#94A3B8]">
                 <th className="text-left px-4 py-2.5 font-medium">渠道</th>
                 <th className="text-center px-4 py-2.5 font-medium">访问</th>
                 <th className="text-center px-4 py-2.5 font-medium">注册</th>
@@ -229,24 +229,24 @@ export default function ChannelAnalyticsPage() {
                 <th className="text-center px-4 py-2.5 font-medium">转化率</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#F3F4F6]">
+            <tbody className="divide-y divide-[#F3F4F6] dark:divide-[#334155]">
               {channels.map(ch => (
-                <tr key={ch.channel} className="hover:bg-[#F9FAFB]">
+                <tr key={ch.channel} className="hover:bg-[#FFFBEB] dark:hover:bg-[#F59E0B]/5">
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
                       <div className="size-2.5 rounded-full flex-shrink-0" style={{ background: CH_COLORS[ch.channel] || '#9CA3AF' }} />
-                      <span className="font-medium text-[#111827]">{CH_LABELS[ch.channel] || ch.channel}</span>
+                      <span className="font-medium text-[#111827] dark:text-[#F1F5F9]">{CH_LABELS[ch.channel] || ch.channel}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 text-center text-[#374151]">{ch.visits}</td>
-                  <td className="px-4 py-2.5 text-center text-[#374151]">{ch.registrations}</td>
-                  <td className="px-4 py-2.5 text-center text-[#374151]">{ch.conversions}</td>
+                  <td className="px-4 py-2.5 text-center text-[#374151] dark:text-[#CBD5E1]">{ch.visits}</td>
+                  <td className="px-4 py-2.5 text-center text-[#374151] dark:text-[#CBD5E1]">{ch.registrations}</td>
+                  <td className="px-4 py-2.5 text-center text-[#374151] dark:text-[#CBD5E1]">{ch.conversions}</td>
                   <td className="px-4 py-2.5 text-center text-[#D4A843] font-medium">${ch.revenue.toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-center text-[#374151]">{ch.conversion_rate}%</td>
+                  <td className="px-4 py-2.5 text-center text-[#374151] dark:text-[#CBD5E1]">{ch.conversion_rate}%</td>
                 </tr>
               ))}
               {channels.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-6 text-center text-[#6B7280]">暂无渠道数据</td></tr>
+                <tr><td colSpan={6} className="px-4 py-6 text-center text-[#6B7280] dark:text-[#94A3B8]">暂无渠道数据</td></tr>
               )}
             </tbody>
           </table>
