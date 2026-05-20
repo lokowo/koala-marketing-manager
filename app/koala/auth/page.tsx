@@ -43,10 +43,20 @@ function AuthPageInner() {
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [referralInput, setReferralInput] = useState(refCode);
+  const [cookieRef, setCookieRef] = useState<{ ref: string; ch: string } | null>(null);
   const [dataConsent, setDataConsent] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const autoVerifyDone = useRef(false);
+
+  useEffect(() => {
+    fetch('/api/sales/ref-info').then(r => r.json()).then(data => {
+      if (data.ref) {
+        setCookieRef(data);
+        if (!refCode) setReferralInput(data.ref);
+      }
+    }).catch(() => {});
+  }, [refCode]);
 
   // Auto-verify when arriving from email link (?mode=verify&email=...&code=...)
   useEffect(() => {
@@ -84,6 +94,7 @@ function AuthPageInner() {
                 body: JSON.stringify({ salesCode, email: urlEmail }),
               }).catch(() => {});
             }
+            fetch('/api/sales/attribute', { method: 'POST' }).catch(() => {});
             setStep('success');
             // No password available from email link — redirect to login
             setTimeout(() => {
@@ -194,6 +205,8 @@ function AuthPageInner() {
       }).catch(() => {});
     }
 
+    fetch('/api/sales/attribute', { method: 'POST' }).catch(() => {});
+
     setStep('success');
     setTimeout(() => router.replace('/koala/home'), 2000);
   }
@@ -290,6 +303,13 @@ function AuthPageInner() {
             {mode === 'register' ? '免费开始，发现你的理想导师' : '欢迎回来'}
           </p>
         </div>
+
+        {/* Sales referral banner (from cookie) */}
+        {cookieRef && !refCode && (
+          <div className="mb-4 px-4 py-2.5 rounded-lg text-xs text-center bg-amber-50 dark:bg-[rgba(212,168,67,0.1)] text-amber-700 dark:text-[#D4A843] border border-amber-200 dark:border-[rgba(212,168,67,0.2)]">
+            邀请码: <span className="font-mono font-bold">{cookieRef.ref}</span>
+          </div>
+        )}
 
         {/* Referral banner */}
         {refCode && (
