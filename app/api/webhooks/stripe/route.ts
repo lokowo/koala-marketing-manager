@@ -122,7 +122,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   await addCredits(sub.user_id, tier.monthlyCredits, 'subscription_credit', `${tier.label} 月度续付 ${tier.monthlyCredits} 积分`, referenceId);
   const invTotal = (invoice.amount_paid || 0) / 100;
   await tryCreateCommission({
-    userId: sub.user_id, stripePaymentId: (invoice.payment_intent as string) || `invoice_${invoice.id}`,
+    userId: sub.user_id, stripePaymentId: ((invoice as any).payment_intent as string) || `invoice_${invoice.id}`,
     stripeInvoiceId: invoice.id, productType: `sub_${tier.id}`,
     productName: `${tier.label} 月度续费`, paymentAmount: invTotal > 0 ? invTotal : tier.price,
   });

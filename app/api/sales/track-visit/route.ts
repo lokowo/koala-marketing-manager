@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabaseAdmin as any;
+
 export async function POST(req: NextRequest) {
   try {
     const { ref, ch, landing_page, fingerprint } = await req.json();
@@ -9,11 +12,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing ref or fingerprint' }, { status: 400 });
     }
 
-    // Channel validation
     const channel = typeof ch === 'string' && /^[a-z0-9_\-]{1,50}$/.test(ch) ? ch : 'unknown';
 
-    // Validate agent
-    const { data: agent } = await (supabaseAdmin as ReturnType<typeof import('@supabase/supabase-js').createClient>)
+    const { data: agent } = await db
       .from('sales_agents')
       .select('id')
       .eq('referral_code', ref)
@@ -24,12 +25,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid ref' }, { status: 404 });
     }
 
-    // Hour bucket for dedup
     const now = new Date();
     const hourBucket = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours()).toISOString();
 
-    // Upsert with dedup (idx_visits_dedup: agent_id + fingerprint + channel + hour_bucket)
-    const { error } = await (supabaseAdmin as ReturnType<typeof import('@supabase/supabase-js').createClient>)
+    const { error } = await db
       .from('sales_visits')
       .upsert(
         {
