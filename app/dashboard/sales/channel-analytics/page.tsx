@@ -25,7 +25,12 @@ const CH_LABELS: Record<string, string> = {
   offline: '线下', survey: '调研', other: '其他', unknown: '未知',
 };
 
-const COLORS = ['#D4A843', '#3B82F6', '#10B981', '#8B5CF6', '#EF4444', '#F59E0B', '#6366F1', '#EC4899', '#14B8A6'];
+const CH_COLORS: Record<string, string> = {
+  wechat: '#22C55E', xiaohongshu: '#EF4444', douyin: '#1E293B',
+  zhihu: '#0066FF', bilibili: '#00A1D6', email: '#3B82F6',
+  weibo: '#FF6900', whatsapp: '#25D366', offline: '#8B5CF6',
+  survey: '#F59E0B', other: '#9CA3AF', unknown: '#D1D5DB',
+};
 
 export default function ChannelAnalyticsPage() {
   const [channels, setChannels] = useState<ChannelData[]>([]);
@@ -47,6 +52,7 @@ export default function ChannelAnalyticsPage() {
   const pieData = channels.filter(c => c.visits > 0).map(c => ({
     name: CH_LABELS[c.channel] || c.channel,
     value: c.visits,
+    color: CH_COLORS[c.channel] || '#9CA3AF',
   }));
 
   const barData = channels.map(c => ({
@@ -58,14 +64,19 @@ export default function ChannelAnalyticsPage() {
 
   const funnelStages = funnel ? [
     { label: '访问', value: funnel.visits, color: '#3B82F6' },
-    { label: '注册', value: funnel.registrations, color: '#D4A843' },
+    { label: '注册', value: funnel.registrations, color: '#F59E0B' },
     { label: '首次付费', value: funnel.conversions, color: '#10B981' },
     { label: '续费', value: funnel.renewals, color: '#8B5CF6' },
   ] : [];
   const maxFunnel = Math.max(...funnelStages.map(s => s.value), 1);
 
+  const totalVisits = channels.reduce((s, c) => s + c.visits, 0);
+  const totalRegs = channels.reduce((s, c) => s + c.registrations, 0);
+  const totalConversions = channels.reduce((s, c) => s + c.conversions, 0);
+  const totalRevenue = channels.reduce((s, c) => s + c.revenue, 0);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-[#111827]">渠道分析</h1>
         <div className="flex gap-1.5">
@@ -83,6 +94,21 @@ export default function ChannelAnalyticsPage() {
         </div>
       </div>
 
+      {/* Summary row */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: '总访问', value: totalVisits, color: '#3B82F6' },
+          { label: '总注册', value: totalRegs, color: '#F59E0B' },
+          { label: '总转化', value: totalConversions, color: '#10B981' },
+          { label: '总佣金', value: `$${totalRevenue.toFixed(2)}`, color: '#D4A843' },
+        ].map(item => (
+          <div key={item.label} className="rounded-xl p-3 bg-white border border-[#E5E7EB]">
+            <div className="text-[10px] text-[#6B7280] mb-0.5">{item.label}</div>
+            <div className="text-lg font-bold" style={{ color: item.color }}>{item.value}</div>
+          </div>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Pie chart */}
         <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
@@ -91,9 +117,19 @@ export default function ChannelAnalyticsPage() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50} paddingAngle={2} label={(props: any) => `${props.name} ${((props.percent ?? 0) * 100).toFixed(0)}%`}>
-                    {pieData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={90}
+                    innerRadius={50}
+                    paddingAngle={2}
+                    label={(props: { name?: string; percent?: number }) => `${props.name ?? ''} ${((props.percent ?? 0) * 100).toFixed(0)}%`}
+                  >
+                    {pieData.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -103,11 +139,20 @@ export default function ChannelAnalyticsPage() {
           ) : (
             <p className="text-xs text-[#6B7280] py-8 text-center">暂无数据</p>
           )}
+          {/* Legend */}
+          <div className="flex flex-wrap gap-3 mt-3 justify-center">
+            {pieData.map(entry => (
+              <div key={entry.name} className="flex items-center gap-1.5 text-[10px] text-[#6B7280]">
+                <div className="size-2 rounded-full" style={{ background: entry.color }} />
+                {entry.name}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Bar chart */}
         <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
-          <h2 className="text-sm font-semibold text-[#374151] mb-4">渠道转化漏斗</h2>
+          <h2 className="text-sm font-semibold text-[#374151] mb-4">渠道转化对比</h2>
           {barData.length > 0 ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -117,7 +162,7 @@ export default function ChannelAnalyticsPage() {
                   <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={30} />
                   <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }} />
                   <Bar dataKey="visits" fill="#3B82F6" name="访问" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="registrations" fill="#D4A843" name="注册" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="registrations" fill="#F59E0B" name="注册" radius={[2, 2, 0, 0]} />
                   <Bar dataKey="conversions" fill="#10B981" name="转化" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -128,7 +173,7 @@ export default function ChannelAnalyticsPage() {
         </div>
       </div>
 
-      {/* P6.5 Conversion funnel */}
+      {/* Conversion funnel */}
       {funnel && funnel.visits > 0 && (
         <div className="rounded-xl p-5 bg-white border border-[#E5E7EB]">
           <h2 className="text-sm font-semibold text-[#374151] mb-4">转化漏斗</h2>
@@ -167,33 +212,40 @@ export default function ChannelAnalyticsPage() {
 
       {/* Channel detail table */}
       <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="bg-[#F9FAFB] text-[#6B7280]">
-              <th className="text-left px-4 py-2.5 font-medium">渠道</th>
-              <th className="text-center px-4 py-2.5 font-medium">访问</th>
-              <th className="text-center px-4 py-2.5 font-medium">注册</th>
-              <th className="text-center px-4 py-2.5 font-medium">转化</th>
-              <th className="text-center px-4 py-2.5 font-medium">佣金</th>
-              <th className="text-center px-4 py-2.5 font-medium">转化率</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#F3F4F6]">
-            {channels.map(ch => (
-              <tr key={ch.channel} className="hover:bg-[#F9FAFB]">
-                <td className="px-4 py-2.5 font-medium text-[#111827]">{CH_LABELS[ch.channel] || ch.channel}</td>
-                <td className="px-4 py-2.5 text-center text-[#374151]">{ch.visits}</td>
-                <td className="px-4 py-2.5 text-center text-[#374151]">{ch.registrations}</td>
-                <td className="px-4 py-2.5 text-center text-[#374151]">{ch.conversions}</td>
-                <td className="px-4 py-2.5 text-center text-[#D4A843] font-medium">${ch.revenue.toFixed(2)}</td>
-                <td className="px-4 py-2.5 text-center text-[#374151]">{ch.conversion_rate}%</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-[#F9FAFB] text-[#6B7280]">
+                <th className="text-left px-4 py-2.5 font-medium">渠道</th>
+                <th className="text-center px-4 py-2.5 font-medium">访问</th>
+                <th className="text-center px-4 py-2.5 font-medium">注册</th>
+                <th className="text-center px-4 py-2.5 font-medium">转化</th>
+                <th className="text-center px-4 py-2.5 font-medium">佣金</th>
+                <th className="text-center px-4 py-2.5 font-medium">转化率</th>
               </tr>
-            ))}
-            {channels.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-6 text-center text-[#6B7280]">暂无渠道数据</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[#F3F4F6]">
+              {channels.map(ch => (
+                <tr key={ch.channel} className="hover:bg-[#F9FAFB]">
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="size-2.5 rounded-full flex-shrink-0" style={{ background: CH_COLORS[ch.channel] || '#9CA3AF' }} />
+                      <span className="font-medium text-[#111827]">{CH_LABELS[ch.channel] || ch.channel}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-2.5 text-center text-[#374151]">{ch.visits}</td>
+                  <td className="px-4 py-2.5 text-center text-[#374151]">{ch.registrations}</td>
+                  <td className="px-4 py-2.5 text-center text-[#374151]">{ch.conversions}</td>
+                  <td className="px-4 py-2.5 text-center text-[#D4A843] font-medium">${ch.revenue.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-center text-[#374151]">{ch.conversion_rate}%</td>
+                </tr>
+              ))}
+              {channels.length === 0 && (
+                <tr><td colSpan={6} className="px-4 py-6 text-center text-[#6B7280]">暂无渠道数据</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
