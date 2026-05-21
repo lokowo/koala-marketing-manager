@@ -25,18 +25,26 @@ export async function GET(req: Request) {
     const items = (data || []).map((c: any) => ({
       id: c.id,
       agent_name: c.sales_agents?.user_profiles?.display_name || c.sales_agents?.user_profiles?.email || c.sales_agents?.referral_code,
+      agent_email: c.sales_agents?.user_profiles?.email || '',
       user_name: c.sales_referrals?.user_profiles?.display_name || c.sales_referrals?.user_profiles?.email || '未知',
+      user_email: c.sales_referrals?.user_profiles?.email || '',
       product_type: c.product_type,
       product_name: c.product_name,
       payment_amount: c.payment_amount,
       commission_rate: c.commission_rate,
       commission_amount: c.commission_amount,
+      refunded_amount: c.refunded_amount,
       status: c.status,
       created_at: c.created_at,
+      confirmed_at: c.confirmed_at,
+      confirmation_method: c.confirmation_method,
       paid_out_at: c.paid_out_at,
       payout_reference: c.payout_reference,
       payout_method: c.payout_method,
       payout_note: c.payout_note,
+      stripe_payment_id: c.stripe_payment_id,
+      stripe_invoice_id: c.stripe_invoice_id,
+      rejection_reason: c.rejection_reason,
     }));
 
     const pendingTotal = items.filter((c: any) => c.status === 'confirmed').reduce((s: number, c: any) => s + c.commission_amount, 0);
@@ -91,6 +99,54 @@ export async function POST(req: Request) {
     return Response.json({ ok: true, count: commission_ids.length });
   } catch (error) {
     console.error('[admin/commission-payout POST]', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const result = await getServerUserWithRole();
+    if (!result || !['admin', 'super_admin'].includes(result.role)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { commission_id } = await req.json();
+    if (!commission_id) {
+      return Response.json({ error: 'Missing commission_id' }, { status: 400 });
+    }
+
+    const now = new Date().toISOString();
+    const { data, error } = await db
+      .from('sales_commissions')
+      .update({
+        status: 'confirmed',
+        confirmed_at: now,
+        confirmed_by: result.user.id,
+        confirmation_method: 'manual_admin',
+      })
+      .eq('id', commission_id)
+      .eq('status', 'pending')
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) {
+      return Response.json({ error: 'Commission not found or not pending' }, { status: 404 });
+    }
+
+    await db.from('sales_audit_logs').insert({
+      actor_id: result.user.id,
+      actor_email: result.user.email || '',
+      actor_role: result.role,
+      action: 'commission_manual_confirmed',
+      target_type: 'commission',
+      target_id: commission_id,
+      details: { commission_amount: data.commission_amount, method: 'manual_admin' },
+    });
+
+    return Response.json({ ok: true, data });
+  } catch (error) {
+    console.error('[admin/commission-payout PATCH]', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
