@@ -231,8 +231,14 @@ export default function AnalyticsPage() {
           {tab === 'features' && (
             <>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">销售漏斗</h3>
+                <Link
+                  href="/dashboard/koala/sales-funnel"
+                  className="block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow no-underline group"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">销售漏斗</h3>
+                    <span className="text-xs text-blue-600 dark:text-blue-400 group-hover:underline">查看详情 →</span>
+                  </div>
                   {Object.keys(data?.salesFunnel || {}).length > 0 ? (
                     <div className="space-y-2.5">
                       {(() => {
@@ -259,9 +265,9 @@ export default function AnalyticsPage() {
                       })()}
                     </div>
                   ) : (
-                    <div className="h-[200px] flex items-center justify-center text-sm text-gray-300 dark:text-gray-600">暂无数据</div>
+                    <p className="text-sm text-gray-400 dark:text-gray-500 py-6 text-center">点击查看完整销售漏斗分析</p>
                   )}
-                </div>
+                </Link>
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
                   <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">

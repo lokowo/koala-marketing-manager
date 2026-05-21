@@ -135,6 +135,26 @@ export const METRICS = {
     label: '启用规则',
     tooltip: '当前处于启用状态的触发规则数，仅启用的规则会在前台触发',
   },
+  funnelVisits: {
+    label: '访问',
+    tooltip: '通过销售推广链接产生的页面访问总次数（扫码/点击链接）',
+  },
+  funnelRegistrations: {
+    label: '注册',
+    tooltip: '通过推广链接完成注册的新用户数',
+  },
+  funnelTrial: {
+    label: '试用',
+    tooltip: '已注册且至少发起过 1 次 AI 对话的用户数',
+  },
+  funnelPaid: {
+    label: '付费',
+    tooltip: '产生过至少 1 笔有效佣金记录的用户数（不含已拒绝订单）',
+  },
+  funnelConversionRate: {
+    label: '转化率',
+    tooltip: '当前阶段人数 / 上一阶段人数；上一阶段为 0 时显示 "—"',
+  },
 } as const;
 
 export type MetricKey = keyof typeof METRICS;
