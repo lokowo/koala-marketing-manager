@@ -25,11 +25,11 @@ export async function GET(req: NextRequest) {
   };
 
   try {
-    const { data: allUsers } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-    if (allUsers?.users) {
+    const { data: allUsers } = await db.from('user_profiles').select('id, created_at, role, email');
+    if (allUsers) {
       const dailyCounts: Record<string, number> = {};
       let cumulative = 0;
-      const sortedUsers = [...allUsers.users].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      const sortedUsers = [...allUsers].sort((a: { created_at: string }, b: { created_at: string }) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       for (const u of sortedUsers) {
         const day = new Date(u.created_at).toISOString().slice(0, 10);
         if (new Date(day) >= since) {
@@ -37,16 +37,16 @@ export async function GET(req: NextRequest) {
         }
       }
       const days = Object.entries(dailyCounts).sort(([a], [b]) => a.localeCompare(b));
-      const beforeRange = sortedUsers.filter(u => new Date(u.created_at) < since).length;
+      const beforeRange = sortedUsers.filter((u: { created_at: string }) => new Date(u.created_at) < since).length;
       cumulative = beforeRange;
       result.userGrowth = days.map(([date, count]) => {
         cumulative += count;
         return { date: date.slice(5), count, cumulative };
       });
-      result.engagementMetrics.totalUsers = allUsers.users.length;
+      result.engagementMetrics.totalUsers = allUsers.length;
       result.engagementMetrics.newUsersInRange = days.reduce((s, [, c]) => s + c, 0);
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.error('[admin/analytics] user query failed', e); }
 
   try {
     const { data: blogs } = await db

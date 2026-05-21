@@ -36,7 +36,7 @@ export async function GET() {
       weekLogsRes,
       recentLogsRes,
     ] = await Promise.all([
-      supabaseAdmin.auth.admin.listUsers(),
+      db.from('user_profiles').select('id, created_at, role, email'),
       db.from('professors').select('*', { count: 'exact', head: true }),
       db.from('knowledge_chunks').select('*', { count: 'exact', head: true }),
       db.from('blog_posts').select('*', { count: 'exact', head: true }).eq('status', 'published'),
@@ -51,7 +51,7 @@ export async function GET() {
       db.from('admin_work_logs').select('*, user_profiles!admin_work_logs_admin_profiles_fkey(display_name, email)').order('created_at', { ascending: false }).limit(20),
     ]);
 
-    const allUsers = usersRes.data?.users || [];
+    const allUsers = usersRes.data || [];
     const todayUsers = allUsers.filter((u: { created_at: string }) => new Date(u.created_at) >= today);
 
     const adminTeamWeek: Record<string, { name: string; email: string; actions: Record<string, number> }> = {};
@@ -89,17 +89,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error('[admin/stats]', error);
-    return Response.json({
-      users: { total: 0, today: 0 },
-      professors: 0,
-      knowledgeChunks: 0,
-      blog: { published: 0, draft: 0 },
-      chat: { today: 0, month: 0 },
-      outreach: { today: 0, month: 0 },
-      pendingApprovals: 0,
-      onlineAdmins: 0,
-      adminTeamWeek: [],
-      recentActivity: [],
-    });
+    return Response.json({ error: (error as Error).message || 'Internal server error' }, { status: 500 });
   }
 }

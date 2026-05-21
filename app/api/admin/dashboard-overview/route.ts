@@ -35,7 +35,7 @@ export async function GET() {
     ] = await Promise.all([
       db.from('user_profiles').select('id, created_at'),
       db.from('blog_posts').select('*', { count: 'exact', head: true }).eq('status', 'draft'),
-      db.from('ai_conversations').select('user_id', { count: 'exact' }).gte('created_at', monthStart),
+      db.from('ai_conversations').select('user_id, created_at', { count: 'exact' }).gte('created_at', monthStart),
       db.from('ai_conversations').select('*', { count: 'exact', head: true }).gte('created_at', prevMonthStart).lt('created_at', monthStart),
       db.from('credit_transactions').select('amount').in('type', ['purchase', 'subscription_credit']).gte('created_at', monthStart),
       db.from('credit_transactions').select('amount').in('type', ['purchase', 'subscription_credit']).gte('created_at', prevMonthStart).lt('created_at', monthStart),
@@ -201,13 +201,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error('[admin/dashboard-overview]', error);
-    return Response.json({
-      kpi: { total_users: 0, new_users_month: 0, new_users_prev_month: 0, new_users_change: 0, mau: 0, mau_prev: 0, mau_change: 0, revenue_month: 0, revenue_prev_month: 0, revenue_change: 0, commission_total: 0 },
-      user_trend: [],
-      pending_actions: { commissions: { count: 0, amount: 0 }, handoff: 0, draft_posts: 0 },
-      sales_ranking: [],
-      revenue_breakdown: { credits: 0, subscriptions: 0, total: 0 },
-      recent_activity: [],
-    });
+    return Response.json({ error: (error as Error).message || 'Internal server error' }, { status: 500 });
   }
 }

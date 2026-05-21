@@ -15,16 +15,14 @@ export async function GET() {
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
     const [
-      allUsersRes,
-      profilesRes,
+      usersRes,
       conversationsRes,
       outreachRes,
       referralsRes,
       creditsRes,
       qrcodesRes,
     ] = await Promise.all([
-      supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }),
-      db.from('user_profiles').select('id, referred_by, created_at, last_active_at'),
+      db.from('user_profiles').select('id, referred_by, created_at, role, email'),
       db.from('ai_conversations').select('user_id, mode, created_at').gte('created_at', sixtyDaysAgo.toISOString()),
       db.from('outreach_emails').select('user_id, created_at').gte('created_at', sixtyDaysAgo.toISOString()),
       db.from('user_profiles').select('referred_by').not('referred_by', 'is', null),
@@ -32,21 +30,22 @@ export async function GET() {
       db.from('sales_qrcodes').select('sales_user_id, code, scan_count, created_at'),
     ]);
 
-    const users = allUsersRes.data?.users ?? [];
-    const profiles = profilesRes.data ?? [];
+    const users = usersRes.data ?? [];
+    const profiles = users;
     const conversations = conversationsRes.data ?? [];
     const outreach = outreachRes.data ?? [];
     const referrals = referralsRes.data ?? [];
     const credits = creditsRes.data ?? [];
     const qrcodes = qrcodesRes.data ?? [];
 
-    // Acquisition channels
+    // Acquisition channels (derived from user_profiles.referred_by)
     const channels: Record<string, number> = { direct: 0, referral: 0, sales_qr: 0 };
     for (const u of users) {
-      const meta = u.user_metadata ?? {};
-      if (meta.sales_code) channels.sales_qr = (channels.sales_qr ?? 0) + 1;
-      else if (meta.referral_code) channels.referral = (channels.referral ?? 0) + 1;
-      else channels.direct = (channels.direct ?? 0) + 1;
+      if ((u as { referred_by: string | null }).referred_by) {
+        channels.referral = (channels.referral ?? 0) + 1;
+      } else {
+        channels.direct = (channels.direct ?? 0) + 1;
+      }
     }
 
     // Weekly cohort retention (last 8 weeks)
@@ -57,14 +56,14 @@ export async function GET() {
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 7);
 
-      const cohortUsers = users.filter(u => {
+      const cohortUsers = users.filter((u: { created_at: string }) => {
         const d = new Date(u.created_at);
         return d >= weekStart && d < weekEnd;
       });
 
       const retainedIds = new Set<string>();
       for (const c of conversations) {
-        if (new Date(c.created_at) >= weekEnd && cohortUsers.some(u => u.id === c.user_id)) {
+        if (new Date(c.created_at) >= weekEnd && cohortUsers.some((u: { id: string }) => u.id === c.user_id)) {
           retainedIds.add(c.user_id);
         }
       }
@@ -119,8 +118,8 @@ export async function GET() {
       }));
 
     // 30d vs prev 30d comparison
-    const recentUsers = users.filter(u => new Date(u.created_at) >= thirtyDaysAgo).length;
-    const prevUsers = users.filter(u => {
+    const recentUsers = users.filter((u: { created_at: string }) => new Date(u.created_at) >= thirtyDaysAgo).length;
+    const prevUsers = users.filter((u: { created_at: string }) => {
       const d = new Date(u.created_at);
       return d >= sixtyDaysAgo && d < thirtyDaysAgo;
     }).length;

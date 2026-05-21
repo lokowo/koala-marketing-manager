@@ -37,7 +37,7 @@ export async function GET() {
       qrcodesRes,
       followupsRes,
     ] = await Promise.all([
-      supabaseAdmin.auth.admin.listUsers(),
+      db.from('user_profiles').select('id, created_at, role, email'),
       db.from('ai_conversations').select('*', { count: 'exact', head: true }).gte('created_at', todayISO),
       db.from('ai_conversations').select('*', { count: 'exact', head: true }).gte('created_at', yesterdayISO).lt('created_at', todayISO),
       db.from('outreach_emails').select('*', { count: 'exact', head: true }).gte('created_at', todayISO),
@@ -53,7 +53,7 @@ export async function GET() {
       db.from('admin_work_logs').select('admin_id').eq('action', 'customer_update').gte('created_at', weekStartISO),
     ]);
 
-    const allUsers = usersRes.data?.users || [];
+    const allUsers = usersRes.data || [];
     const todayUsers = allUsers.filter((u: { created_at: string }) => new Date(u.created_at) >= today);
     const yesterdayUsers = allUsers.filter((u: { created_at: string }) => {
       const d = new Date(u.created_at);
