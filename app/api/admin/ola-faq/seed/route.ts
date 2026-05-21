@@ -43,8 +43,8 @@ const SEED_FAQS = [
   {
     category: 'company',
     keywords: ['考拉博士', 'Koala PhD', '你们做什么', '平台介绍', 'about', 'what do you do'],
-    answer_zh: '🐨 **关于 Koala PhD**\n\nKoala PhD（考拉博士）是澳洲 PhD 申请一站式平台。\n\n**核心功能：**\n- 🤖 AI 学术顾问 24 小时在线\n- 📚 24,000+ 澳洲学者数据库\n- ✉️ AI 个性化套磁信生成\n- 🎯 智能导师匹配\n- 📝 文书审阅 & 模拟面试\n\n**品牌定位：** 澳洲产学研科研机构\n**MARA 资质：** KSA 持有 MARA 注册资质',
-    answer_en: '🐨 **About Koala PhD**\n\nKoala PhD is a one-stop platform for Australian PhD applications.\n\n**Core Features:**\n- 🤖 24/7 AI Academic Advisor\n- 📚 24,000+ Australian Scholar Database\n- ✉️ AI Personalized Cold Email Generation\n- 🎯 Smart Supervisor Matching\n- 📝 Document Review & Mock Interview',
+    answer_zh: '🐨 **关于 Koala PhD**\n\nKoala PhD（考拉博士）是澳洲 PhD 申请一站式平台。\n\n**核心功能：**\n- 🤖 AI 学术顾问 24 小时在线\n- 📚 覆盖澳洲38所大学、23,500+位教授与研究员\n- ✉️ AI 个性化套磁信生成\n- 🎯 智能导师匹配\n- 📝 文书审阅 & 模拟面试\n\n**品牌定位：** 澳洲产学研科研机构\n**MARA 资质：** KSA 持有 MARA 注册资质',
+    answer_en: '🐨 **About Koala PhD**\n\nKoala PhD is a one-stop platform for Australian PhD applications.\n\n**Core Features:**\n- 🤖 24/7 AI Academic Advisor\n- 📚 Covering 38 Australian universities with 23,500+ professors and researchers\n- ✉️ AI Personalized Cold Email Generation\n- 🎯 Smart Supervisor Matching\n- 📝 Document Review & Mock Interview',
     priority: 5,
   },
   {
@@ -106,8 +106,8 @@ const SEED_FAQS = [
   {
     category: 'ola',
     keywords: ['你是谁', '小欧', 'Ola', 'who are you', '自我介绍'],
-    answer_zh: '👋 我是 **小欧 (Ola)**，Koala PhD 的 AI 学术顾问！\n\n我可以帮你：\n- 🔍 搜索和匹配澳洲教授\n- ✉️ 生成个性化套磁信\n- 📋 解答 PhD 申请问题\n- 📝 审阅文书 & 模拟面试\n\n我背后是 24,000+ 位澳洲学者的数据库和最新的学术信息。有什么想问的，尽管说！',
-    answer_en: '👋 I\'m **Ola**, the AI Academic Advisor at Koala PhD!\n\nI can help you:\n- 🔍 Search and match Australian professors\n- ✉️ Generate personalized cold emails\n- 📋 Answer PhD application questions\n- 📝 Review documents & mock interviews\n\nI\'m backed by a database of 24,000+ Australian scholars. Ask me anything!',
+    answer_zh: '👋 我是 **小欧 (Ola)**，Koala PhD 的 AI 学术顾问！\n\n我可以帮你：\n- 🔍 搜索和匹配澳洲教授\n- ✉️ 生成个性化套磁信\n- 📋 解答 PhD 申请问题\n- 📝 审阅文书 & 模拟面试\n\n我背后是覆盖澳洲38所大学、23,500+位教授与研究员的数据库和最新的学术信息。有什么想问的，尽管说！',
+    answer_en: '👋 I\'m **Ola**, the AI Academic Advisor at Koala PhD!\n\nI can help you:\n- 🔍 Search and match Australian professors\n- ✉️ Generate personalized cold emails\n- 📋 Answer PhD application questions\n- 📝 Review documents & mock interviews\n\nI\'m backed by a database covering 38 Australian universities with 23,500+ professors and researchers. Ask me anything!',
     priority: 10,
   },
 ];

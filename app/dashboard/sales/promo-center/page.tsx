@@ -72,7 +72,7 @@ export default function PromoCenterPage() {
   const [posterVariant, setPosterVariant] = useState<Variant>('A');
   const [posterSize, setPosterSize] = useState<PosterSize>('3:4');
   const [posterHeadline, setPosterHeadline] = useState('用 AI 找到你的理想 PhD 导师');
-  const [posterSubtitle, setPosterSubtitle] = useState('澳洲八大名校 · 4000+ 教授');
+  const [posterSubtitle, setPosterSubtitle] = useState('覆盖澳洲38所大学、23,500+位教授与研究员');
   const [showQR, setShowQR] = useState(true);
   const [showUrl, setShowUrl] = useState(false);
   const [showRefCode, setShowRefCode] = useState(true);

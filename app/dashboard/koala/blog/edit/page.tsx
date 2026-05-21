@@ -606,7 +606,7 @@ function BlogEditPageInner() {
               >
                 <div className="text-3xl mb-3">🐨</div>
                 <h3 className="text-base font-semibold mb-1" style={{ color: '#c9a96e' }}>找到适合你的澳洲博导</h3>
-                <p className="text-xs mb-4" style={{ color: '#6a7a7e' }}>AI 智能匹配 4,200+ 位学者，免费开始</p>
+                <p className="text-xs mb-4" style={{ color: '#6a7a7e' }}>覆盖澳洲38所大学、23,500+位教授与研究员</p>
                 <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm" style={{ background: '#c9a96e', color: '#080c10' }}>
                   开始匹配 →
                 </span>

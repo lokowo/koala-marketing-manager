@@ -93,7 +93,7 @@ export async function GET(req: Request) {
           <div style={{ display: 'flex', flexDirection: 'column', marginTop: 28, gap: 14, width: 580 }}>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(255,215,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#FFD700' }}>Q</div>
-              <div style={{ fontSize: 16, color: 'white', marginLeft: 14 }}>AI智能匹配 24,494位澳洲学者库</div>
+              <div style={{ fontSize: 16, color: 'white', marginLeft: 14 }}>覆盖澳洲38所大学、23,500+位教授与研究员</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(255,215,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#FFD700' }}>E</div>
