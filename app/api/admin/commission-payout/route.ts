@@ -13,7 +13,7 @@ export async function GET(req: Request) {
 
     let query = db
       .from('sales_commissions')
-      .select('*, sales_agents(user_id, referral_code, payment_method, payment_account, payment_name, user_profiles:user_id(display_name, email)), sales_referrals(referred_user_id, user_profiles:referred_user_id(display_name, email))')
+      .select('*, sales_agents(user_id, referral_code, tier, payment_method, payment_account, payment_name, user_profiles:user_id(display_name, email)), sales_referrals(referred_user_id, user_profiles:referred_user_id(display_name, email))')
       .order('created_at', { ascending: false });
 
     if (status !== 'all') query = query.eq('status', status);
@@ -26,6 +26,8 @@ export async function GET(req: Request) {
       id: c.id,
       agent_name: c.sales_agents?.user_profiles?.display_name || c.sales_agents?.user_profiles?.email || c.sales_agents?.referral_code,
       agent_email: c.sales_agents?.user_profiles?.email || '',
+      agent_referral_code: c.sales_agents?.referral_code || '',
+      agent_tier: c.sales_agents?.tier || 'standard',
       agent_payment_method: c.sales_agents?.payment_method || null,
       agent_payment_account: c.sales_agents?.payment_account || null,
       agent_payment_name: c.sales_agents?.payment_name || null,
@@ -50,9 +52,21 @@ export async function GET(req: Request) {
       rejection_reason: c.rejection_reason,
     }));
 
-    const pendingTotal = items.filter((c: any) => c.status === 'confirmed').reduce((s: number, c: any) => s + c.commission_amount, 0);
+    const allForStats = status !== 'all' ? (await db.from('sales_commissions').select('status, commission_amount, paid_out_at')).data || [] : items;
+    const confirmedItems = allForStats.filter((c: any) => c.status === 'confirmed');
+    const pendingItems = allForStats.filter((c: any) => c.status === 'pending');
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const paidThisMonth = allForStats.filter((c: any) => c.status === 'paid_out' && c.paid_out_at >= monthStart);
 
-    return Response.json({ data: items, pendingTotal: Math.round(pendingTotal * 100) / 100 });
+    const summary = {
+      pendingPayoutAmount: Math.round(confirmedItems.reduce((s: number, c: any) => s + (c.commission_amount || 0), 0) * 100) / 100,
+      pendingPayoutCount: confirmedItems.length,
+      paidThisMonth: Math.round(paidThisMonth.reduce((s: number, c: any) => s + (c.commission_amount || 0), 0) * 100) / 100,
+      pendingConfirmCount: pendingItems.length,
+    };
+
+    return Response.json({ data: items, pendingTotal: summary.pendingPayoutAmount, summary });
   } catch (error) {
     console.error('[admin/commission-payout GET]', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
