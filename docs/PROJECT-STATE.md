@@ -132,7 +132,7 @@ Jay 是产品负责人，**不写代码**。他的工作方式：
 ```
 Phase 0: ✅ 完成 — 数据紧急审计（#10 非澳教授）→ 12条Rejected + 命名统一
 Phase 1: ✅ 完成 — 修根因（共因A users查询 listUsers→user_profiles + promo-center RLS修复）
-Phase 2: 🟡 部分完成（universities表已建38所 + tier列已加并回填）
+Phase 2: ✅ 完成 — universities表38所 + tier列回填 + scholarships表(16条Go8种子) + research_grants表 + role_application_history表 + commission三tier列 + payout三字段 + paid_out_at命名修正
 Phase 3: 核心逻辑（tier佣金映射 + 自动确认 + 站内信重建 + KPI）
 Phase 4: UI补全（角色拒绝前端 + 推广码重设计 + 品牌设置）
 Phase 5: 全局UX（MetricLabel组件 + 全站tooltip）
@@ -146,9 +146,9 @@ Phase 6: 新功能（AI智能录入 + 知识库抓取 + 营销工具）
 ```
 sales_agents: id, user_id, name, display_name, phone, email, wechat_id, referral_code, status, tier, notes, created_at, updated_at, created_by, avatar_url, payment_method, payment_account, payment_name, notify_registration, notify_commission, notify_weekly_report
 
-sales_commission_rates: id, product_type, product_name, price_aud, commission_rate, min_rate, max_rate, standard_rate(待加), partner_rate(待加), senior_rate(待加), is_recurring, updated_by, updated_at, created_at
+sales_commission_rates: id, product_type, product_name, price_aud, commission_rate, min_rate, max_rate, standard_rate, partner_rate, senior_rate, is_recurring, updated_by, updated_at, created_at
 
-sales_commissions: id, agent_id, referral_id, stripe_payment_id, payment_amount, commission_rate, commission_amount, product_type, user_name, status, confirmed_at, paid_at, created_at, payout_reference(待加)
+sales_commissions: id, agent_id, referral_id, stripe_payment_id, payment_amount, commission_rate, commission_amount, product_type, user_name, status, confirmed_at, paid_out_at, created_at, payout_reference, payout_method, payout_note
 
 sales_referrals: id, agent_id, referred_user_id, channel, landing_page, total_revenue, total_commission, created_at
 
@@ -158,11 +158,11 @@ sales_kpi_targets: id, agent_id, period_start, period_end, target_visits, target
 
 sales_audit_logs: id, actor_id, actor_email, actor_role, action, target_type, target_id, details, created_at
 
-universities(待建): id, name, short_name, group_label, state, country, is_active, created_at
+universities: id, name, short_name, group_label, state, country, is_active, created_at
 
-scholarships(待建): id, name, university_id, type, coverage, amount_aud, eligibility, url, is_active, created_at
+scholarships: id, name, university_id, type, coverage, amount_aud, eligibility, url, is_active, created_at
 
-role_application_history(待建): id, application_id, action, actor_id, reason, snapshot, created_at
+role_application_history: id, application_id, action, actor_id, actor_role, reason, snapshot, created_at
 ```
 
 ---
