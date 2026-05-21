@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { MetricLabel } from '../../../../components/ui/metric-label';
+import { METRICS } from '../../../../lib/metrics-glossary';
 
 interface KpiValue {
   current: number;
@@ -41,10 +43,10 @@ function pctBg(pct: number) {
 }
 
 const KPI_META = [
-  { key: 'kpi1' as const, label: '扫码访问', color: '#3B82F6', icon: '📱' },
-  { key: 'kpi2' as const, label: '注册', color: '#22C55E', icon: '📝' },
-  { key: 'kpi3' as const, label: '付费转化', color: '#F59E0B', icon: '💳' },
-  { key: 'kpi4' as const, label: '线下转化', color: '#8B5CF6', icon: '🤝' },
+  { key: 'kpi1' as const, label: '扫码访问', color: '#3B82F6', icon: '📱', metricKey: 'kpiVisits' as keyof typeof METRICS },
+  { key: 'kpi2' as const, label: '注册', color: '#22C55E', icon: '📝', metricKey: 'kpiRegistrations' as keyof typeof METRICS },
+  { key: 'kpi3' as const, label: '付费转化', color: '#F59E0B', icon: '💳', metricKey: 'kpiPayments' as keyof typeof METRICS },
+  { key: 'kpi4' as const, label: '线下转化', color: '#8B5CF6', icon: '🤝', metricKey: 'kpiOffline' as keyof typeof METRICS },
 ];
 
 export default function KpiPage() {
@@ -87,7 +89,7 @@ export default function KpiPage() {
             <div key={m.key} className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-700 p-4">
               <div className="flex items-center gap-2 mb-2">
                 <span>{m.icon}</span>
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{m.label}</span>
+                <MetricLabel label={METRICS[m.metricKey].label} tooltip={METRICS[m.metricKey].tooltip} />
               </div>
               <div className="text-2xl font-light text-gray-900 dark:text-gray-100">{v?.current ?? 0}</div>
               <div className="flex items-center gap-2 mt-1">

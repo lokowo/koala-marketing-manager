@@ -91,6 +91,30 @@ export const METRICS = {
     label: '本月交易',
     tooltip: '当月成功完成的支付交易总笔数',
   },
+  kpiVisits: {
+    label: 'KPI1 扫码访问',
+    tooltip: '本月通过销售推广链接产生的独立访问次数（扫码/点击链接进入）',
+  },
+  kpiRegistrations: {
+    label: 'KPI2 注册',
+    tooltip: '本月通过销售推广链接成功注册的新用户数',
+  },
+  kpiPayments: {
+    label: 'KPI3 付费转化',
+    tooltip: '本月通过销售推广链接注册用户产生的付费订单数（不含已拒绝订单）',
+  },
+  kpiRevenue: {
+    label: '佣金收入',
+    tooltip: '本月销售获得的佣金总额（AUD），基于付费金额 × 佣金比例计算',
+  },
+  kpiOffline: {
+    label: 'KPI4 线下转化',
+    tooltip: '本月通过销售线下推广成功转化的客户数',
+  },
+  kpiOverall: {
+    label: '总完成率',
+    tooltip: '加权完成率 = KPI1×15% + KPI2×25% + KPI3×35% + KPI4×25%；目标为 0 的维度不计入',
+  },
 } as const;
 
 export type MetricKey = keyof typeof METRICS;

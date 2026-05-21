@@ -13,34 +13,85 @@ export async function GET() {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
-    weekStart.setHours(0, 0, 0, 0);
-    if (weekStart > now) weekStart.setDate(weekStart.getDate() - 7);
-    const weekStartISO = weekStart.toISOString();
+    const { data: agent } = await db
+      .from('sales_agents')
+      .select('id, user_id, referral_code, tier, user_profiles:user_id(display_name, email)')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .single();
 
-    const [kpiRes, customersRes, contactLogsRes, convertedRes] = await Promise.all([
-      db.from('kpi_settings').select('*').order('created_at', { ascending: false }).limit(1).single(),
-      // This week's new registrations via my promotions
-      db.from('sales_customers').select('id', { count: 'exact', head: true })
-        .eq('sales_user_id', user.id).gte('created_at', weekStartISO),
-      // This week's "contacted" stage changes
-      db.from('admin_work_logs').select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id).eq('action', 'customer_stage_change')
-        .gte('created_at', weekStartISO),
-      // This week's conversions
-      db.from('sales_customers').select('id', { count: 'exact', head: true })
-        .eq('sales_user_id', user.id).eq('stage', 'converted')
-        .gte('updated_at', weekStartISO),
+    if (!agent) return Response.json({ error: 'Not a sales agent' }, { status: 403 });
+
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const [targetsRes, visitsRes, refsRes, commsRes, offlineRes] = await Promise.all([
+      db.from('sales_kpi_targets').select('*')
+        .eq('agent_id', agent.id)
+        .lte('effective_from', today)
+        .gte('effective_until', today)
+        .order('effective_from', { ascending: false })
+        .limit(1),
+      db.from('sales_visits').select('id', { count: 'exact', head: true })
+        .eq('agent_id', agent.id)
+        .gte('visited_at', monthStart),
+      db.from('sales_referrals').select('id', { count: 'exact', head: true })
+        .eq('agent_id', agent.id)
+        .gte('created_at', monthStart),
+      db.from('sales_commissions').select('commission_amount')
+        .eq('agent_id', agent.id)
+        .gte('created_at', monthStart)
+        .neq('status', 'rejected'),
+      db.from('sales_referrals').select('id', { count: 'exact', head: true })
+        .eq('agent_id', agent.id)
+        .eq('offline_converted', true)
+        .gte('offline_converted_at', monthStart),
     ]);
 
-    const kpi = kpiRes.data ?? { weekly_new_leads: 10, weekly_followups: 20, weekly_conversions: 2 };
+    const target = targetsRes.data?.[0] || null;
+    const k1Current = visitsRes.count || 0;
+    const k2Current = refsRes.count || 0;
+    const k3Current = (commsRes.data || []).length;
+    const k4Current = offlineRes.count || 0;
+    const revenue = (commsRes.data || []).reduce(
+      (s: number, c: { commission_amount: number }) => s + Number(c.commission_amount), 0
+    );
+
+    const k1Target = target?.kpi_1_visits || 0;
+    const k2Target = target?.kpi_2_registrations || 0;
+    const k3Target = target?.kpi_3_payments || 0;
+    const k4Target = target?.kpi_4_offline || 0;
+    const revenueTarget = target?.kpi_3_revenue || 0;
+
+    const pct = (c: number, t: number) => t > 0 ? Math.round((c / t) * 100) : 0;
+    const k1p = pct(k1Current, k1Target);
+    const k2p = pct(k2Current, k2Target);
+    const k3p = pct(k3Current, k3Target);
+    const k4p = pct(k4Current, k4Target);
+    const overallPct = Math.round(k1p * 0.15 + k2p * 0.25 + k3p * 0.35 + k4p * 0.25);
+
+    const periodLabel = target
+      ? `${target.effective_from} ~ ${target.effective_until}`
+      : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     return Response.json({
-      leads: { current: customersRes.count || 0, target: kpi.weekly_new_leads || 10 },
-      followups: { current: contactLogsRes.count || 0, target: kpi.weekly_followups || 20 },
-      conversions: { current: convertedRes.count || 0, target: kpi.weekly_conversions || 2 },
+      agent: {
+        id: agent.id,
+        display_name: agent.user_profiles?.display_name || agent.user_profiles?.email?.split('@')[0] || '未知',
+        tier: agent.tier || 'standard',
+        referral_code: agent.referral_code,
+      },
+      period: periodLabel,
+      has_targets: !!target,
+      kpis: {
+        visits:        { current: k1Current, target: k1Target, pct: k1p },
+        registrations: { current: k2Current, target: k2Target, pct: k2p },
+        payments:      { current: k3Current, target: k3Target, pct: k3p },
+        offline:       { current: k4Current, target: k4Target, pct: k4p },
+        revenue:       { current: Math.round(revenue * 100) / 100, target: revenueTarget },
+      },
+      overall_pct: overallPct,
     });
   } catch (e) {
     console.error('[sales/my-kpi GET]', e);
