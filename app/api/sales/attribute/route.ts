@@ -16,6 +16,9 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
+    let body: { manual_channel?: string } = {};
+    try { body = await req.json(); } catch { /* no body or invalid JSON — ok */ }
+
     const refCookie = req.cookies.get('koala_ref')?.value;
     if (!refCookie) return NextResponse.json({ ok: true, attributed: false });
 
@@ -33,9 +36,10 @@ export async function POST(req: NextRequest) {
       .eq('referred_user_id', user.id).maybeSingle();
     if (existing) return NextResponse.json({ ok: true, attributed: false, reason: 'already_attributed' });
 
+    const channel = refData.ch || body?.manual_channel || 'unknown';
     await db.from('sales_referrals').insert({
       agent_id: agent.id, referred_user_id: user.id,
-      channel: refData.ch || 'unknown', landing_page: refData.lp || '/',
+      channel, landing_page: refData.lp || '/',
     });
 
     await db.from('sales_audit_logs').insert({

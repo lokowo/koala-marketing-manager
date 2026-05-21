@@ -27,13 +27,17 @@ const STATUS_CFG: Record<string, { label: string; bg: string; text: string; dark
 const CH_LABELS: Record<string, string> = {
   wechat: '微信', xiaohongshu: '小红书', douyin: '抖音',
   weibo: '微博', zhihu: '知乎', bilibili: 'B站',
-  email: '邮件', whatsapp: 'WhatsApp', other: '其他',
+  email: '邮件', whatsapp: 'WhatsApp',
+  tiktok: 'TikTok', instagram: 'Instagram', x: 'X (Twitter)', telegram: 'Telegram',
+  other: '其他',
 };
 
 const CH_COLORS: Record<string, string> = {
   wechat: '#22C55E', xiaohongshu: '#EF4444', douyin: '#1E293B',
   zhihu: '#0066FF', bilibili: '#00A1D6', email: '#3B82F6',
-  weibo: '#FF6900', whatsapp: '#22C55E', other: '#6B7280',
+  weibo: '#FF6900', whatsapp: '#22C55E',
+  tiktok: '#010101', instagram: '#E4405F', x: '#000000', telegram: '#26A5E4',
+  other: '#6B7280',
 };
 
 const TIER_CFG: Record<string, { label: string; bg: string; text: string; border: string; icon?: string }> = {

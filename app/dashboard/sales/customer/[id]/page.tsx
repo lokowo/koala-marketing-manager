@@ -55,20 +55,30 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
   const [contactSummary, setContactSummary] = useState('');
   const [contactOutcome, setContactOutcome] = useState('');
   const [logging, setLogging] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+
+  function applyCustomer(found: typeof customer) {
+    if (found) {
+      setCustomer(found);
+      setStage(found.stage);
+      setNote(found.note || '');
+    }
+  }
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) { router.replace('/login'); return; }
-      fetch(`/api/sales/customers?limit=200`).then(r => r.json()).then(d => {
+      fetch('/api/sales/customers').then(r => r.json()).then(d => {
         const found = (d.data ?? []).find((c: { id: string }) => c.id === id);
         if (found) {
-          setCustomer(found);
-          setStage(found.stage);
-          setNote(found.note || '');
+          applyCustomer(found);
           loadTimeline(found.id);
+        } else {
+          setNotFound(true);
         }
       });
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, router]);
 
   async function loadTimeline(customerId: string) {
@@ -110,15 +120,20 @@ export default function CustomerDetail({ params }: { params: Promise<{ id: strin
     setContactOutcome('');
     if (customer) {
       await loadTimeline(customer.id);
-      const res = await fetch(`/api/sales/customers?limit=200`);
+      const res = await fetch('/api/sales/customers');
       const d = await res.json();
       const refreshed = (d.data ?? []).find((c: { id: string }) => c.id === id);
-      if (refreshed) {
-        setCustomer(refreshed);
-        setStage(refreshed.stage);
-        setNote(refreshed.note || '');
-      }
+      if (refreshed) applyCustomer(refreshed);
     }
+  }
+
+  if (notFound) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-sm text-[#EF4444]">未找到该客户</p>
+        <button onClick={() => router.back()} className="mt-3 text-xs text-[#6B7280] dark:text-[#94A3B8] hover:text-[#374151] dark:hover:text-[#CBD5E1]">← 返回列表</button>
+      </div>
+    );
   }
 
   if (!customer) {

@@ -126,7 +126,7 @@ function SurveysContent() {
 
       {tab === 'promote' && (
         <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-[#E5E7EB] dark:border-[#334155] p-5">
-          <h3 className="text-sm font-semibold text-[#374151] dark:text-[#CBD5E1] mb-2">我推广的问卷</h3>
+          <h3 className="text-sm font-light tracking-tight text-[#374151] dark:text-[#CBD5E1] mb-2">我推广的问卷</h3>
           <p className="text-[10px] text-[#9CA3AF] dark:text-[#64748B] mb-4">查看您的推广二维码效果和客户详情</p>
           {surveys.filter(s => s.status === 'active').length === 0 ? (
             <p className="text-xs text-[#6B7280] dark:text-[#94A3B8]">暂无可推广的问卷。请在「问卷广场」中选择问卷生成推广码。</p>

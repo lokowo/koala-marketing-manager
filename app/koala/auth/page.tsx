@@ -43,6 +43,7 @@ function AuthPageInner() {
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [referralInput, setReferralInput] = useState(refCode);
+  const [manualChannel, setManualChannel] = useState('');
   const [cookieRef, setCookieRef] = useState<{ ref: string; ch: string } | null>(null);
   const [dataConsent, setDataConsent] = useState(false);
   const [error, setError] = useState('');
@@ -94,7 +95,11 @@ function AuthPageInner() {
                 body: JSON.stringify({ salesCode, email: urlEmail }),
               }).catch(() => {});
             }
-            fetch('/api/sales/attribute', { method: 'POST' }).catch(() => {});
+            fetch('/api/sales/attribute', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ manual_channel: manualChannel || undefined }),
+            }).catch(() => {});
             setStep('success');
             // No password available from email link — redirect to login
             setTimeout(() => {
@@ -205,7 +210,11 @@ function AuthPageInner() {
       }).catch(() => {});
     }
 
-    fetch('/api/sales/attribute', { method: 'POST' }).catch(() => {});
+    fetch('/api/sales/attribute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manual_channel: manualChannel || undefined }),
+    }).catch(() => {});
 
     setStep('success');
     setTimeout(() => router.replace('/koala/home'), 2000);
@@ -388,6 +397,34 @@ function AuthPageInner() {
                   🎁 注册成功后你将额外获得 5 积分
                 </p>
               )}
+            </div>
+          )}
+
+          {mode === 'register' && referralInput && !searchParams.get('ch') && !cookieRef?.ch && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1.5 text-gray-500 dark:text-[#a8b8ac]">从哪里知道我们？（可选）</label>
+              <select
+                value={manualChannel}
+                onChange={e => setManualChannel(e.target.value)}
+                className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none bg-white dark:bg-[#D4A843]/10 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-[#e8e4dc]"
+              >
+                <option value="">请选择（可选）</option>
+                <option value="wechat">微信</option>
+                <option value="xiaohongshu">小红书</option>
+                <option value="douyin">抖音</option>
+                <option value="weibo">微博</option>
+                <option value="zhihu">知乎</option>
+                <option value="bilibili">B站</option>
+                <option value="email">邮件</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="tiktok">TikTok</option>
+                <option value="instagram">Instagram</option>
+                <option value="x">X (Twitter)</option>
+                <option value="telegram">Telegram</option>
+                <option value="offline">线下活动</option>
+                <option value="friend">朋友推荐</option>
+                <option value="other">其他</option>
+              </select>
             </div>
           )}
 

@@ -25,20 +25,19 @@ export async function GET(req: Request) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')));
 
-    let query = db
+    let baseQuery = db
       .from('sales_commissions')
       .select('*, sales_referrals!inner(referred_user_id, user_profiles:referred_user_id(display_name, email))')
       .eq('agent_id', agent.id)
       .order('created_at', { ascending: false });
 
-    if (status && status !== 'all') query = query.eq('status', status);
-    if (from) query = query.gte('created_at', from);
-    if (to) query = query.lte('created_at', to + 'T23:59:59');
+    if (from) baseQuery = baseQuery.gte('created_at', from);
+    if (to) baseQuery = baseQuery.lte('created_at', to + 'T23:59:59');
 
-    const { data, error } = await query;
-    if (error) throw error;
+    const { data: allData, error: allError } = await baseQuery;
+    if (allError) throw allError;
 
-    const items = (data || []).map((c: any) => ({
+    const allItems = (allData || []).map((c: any) => ({
       id: c.id,
       product_type: c.product_type,
       product_name: c.product_name,
@@ -51,12 +50,20 @@ export async function GET(req: Request) {
       user_name: c.sales_referrals?.user_profiles?.display_name || c.sales_referrals?.user_profiles?.email || '未知',
     }));
 
+    const pendingItems = allItems.filter((c: any) => c.status === 'pending');
+    const confirmedItems = allItems.filter((c: any) => c.status === 'confirmed');
+    const paidItems = allItems.filter((c: any) => c.status === 'paid_out');
+
     const summary = {
-      pending_total: items.filter((c: any) => c.status === 'pending').reduce((s: number, c: any) => s + c.commission_amount, 0),
-      confirmed_total: items.filter((c: any) => c.status === 'confirmed').reduce((s: number, c: any) => s + c.commission_amount, 0),
-      paid_total: items.filter((c: any) => c.status === 'paid_out').reduce((s: number, c: any) => s + c.commission_amount, 0),
+      pending_total: pendingItems.reduce((s: number, c: any) => s + c.commission_amount, 0),
+      pending_count: pendingItems.length,
+      confirmed_total: confirmedItems.reduce((s: number, c: any) => s + c.commission_amount, 0),
+      confirmed_count: confirmedItems.length,
+      paid_total: paidItems.reduce((s: number, c: any) => s + c.commission_amount, 0),
+      paid_count: paidItems.length,
     };
 
+    const items = (status && status !== 'all') ? allItems.filter((c: any) => c.status === status) : allItems;
     const total = items.length;
     const offset = (page - 1) * limit;
     const paged = items.slice(offset, offset + limit);

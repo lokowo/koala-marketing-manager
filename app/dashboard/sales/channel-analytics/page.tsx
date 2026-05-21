@@ -22,14 +22,16 @@ interface FunnelData {
 const CH_LABELS: Record<string, string> = {
   wechat: '微信', xiaohongshu: '小红书', douyin: '抖音', weibo: '微博',
   zhihu: '知乎', bilibili: 'Bilibili', email: '邮件', whatsapp: 'WhatsApp',
+  tiktok: 'TikTok', instagram: 'Instagram', x: 'X (Twitter)', telegram: 'Telegram',
   offline: '线下', survey: '调研', other: '其他', unknown: '未知',
 };
 
 const CH_COLORS: Record<string, string> = {
   wechat: '#22C55E', xiaohongshu: '#EF4444', douyin: '#1E293B',
   zhihu: '#0066FF', bilibili: '#00A1D6', email: '#3B82F6',
-  weibo: '#FF6900', whatsapp: '#25D366', offline: '#8B5CF6',
-  survey: '#F59E0B', other: '#9CA3AF', unknown: '#D1D5DB',
+  weibo: '#FF6900', whatsapp: '#25D366',
+  tiktok: '#010101', instagram: '#E4405F', x: '#000000', telegram: '#26A5E4',
+  offline: '#8B5CF6', survey: '#F59E0B', other: '#9CA3AF', unknown: '#D1D5DB',
 };
 
 export default function ChannelAnalyticsPage() {
@@ -132,7 +134,7 @@ export default function ChannelAnalyticsPage() {
                     innerRadius={45}
                     paddingAngle={2}
                     label={({ x, y, name, percent }: any) => (
-                      <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={11} fill="#374151">
+                      <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={11} fill="#94A3B8">
                         {name} {(percent * 100).toFixed(0)}%
                       </text>
                     )}
