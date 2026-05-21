@@ -58,6 +58,7 @@ export interface Professor {
   updatedAt?: string;
 }
 
+/** @deprecated Use ResearchGrant or Scholarship instead */
 export interface Grant {
   id: string;
   grantName: string;
@@ -77,6 +78,41 @@ export interface Grant {
   referenceUrl: string;
   verificationStatus: 'Verified' | 'Pending' | 'Rejected';
   sourceCandidateId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ResearchGrant {
+  id: string;
+  name: string;
+  universityId: string;
+  fundingBody?: string;
+  amountAud?: number;
+  durationYears?: number;
+  year?: string;
+  leadProfessor?: string;
+  leadProfessorId?: string;
+  projectTitle?: string;
+  projectAbstract?: string;
+  keywords: string[];
+  phdRelevance: 'High' | 'Medium' | 'Low';
+  applicationUrl?: string;
+  verificationStatus: 'Verified' | 'Pending' | 'Rejected';
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Scholarship {
+  id: string;
+  name: string;
+  universityId: string;
+  type: 'government' | 'university' | 'industry';
+  coverage?: string;
+  amountAud?: number;
+  eligibility?: string;
+  url?: string;
+  isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
