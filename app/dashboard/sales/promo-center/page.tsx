@@ -110,6 +110,9 @@ export default function PromoCenterPage() {
     canvas.height = H;
 
     const tmpl = POSTER_TEMPLATES.find(t => t.id === posterTemplate) || POSTER_TEMPLATES[0];
+    const ch = CHANNELS.find(c => c.value === selectedChannel);
+    const chLabel = ch?.label || selectedChannel;
+    const chColor = ch?.color || '#6B7280';
 
     if (tmpl.bg.startsWith('linear')) {
       const grad = ctx.createLinearGradient(0, 0, W, H);
@@ -145,13 +148,32 @@ export default function PromoCenterPage() {
     ctx.fillStyle = tmpl.textColor;
     ctx.font = '28px sans-serif';
     ctx.globalAlpha = 0.7;
-    ctx.fillText('扫码开始你的 PhD 申请之旅', W / 2, 920);
+    ctx.fillText(`扫码注册 · ${chLabel}渠道`, W / 2, 920);
     ctx.globalAlpha = 1;
 
     ctx.font = '24px sans-serif';
     ctx.fillStyle = tmpl.accent;
     ctx.fillText(`推广码: ${referralCode}  ·  ${displayName}`, W / 2, 980);
 
+    // Channel badge — bottom-right corner
+    ctx.textAlign = 'right';
+    ctx.font = 'bold 22px sans-serif';
+    const badgeText = `${chLabel}推广`;
+    const badgeW = ctx.measureText(badgeText).width + 48;
+    const badgeH = 40;
+    const badgeX = W - 60 - badgeW;
+    const badgeY = H - 120;
+    ctx.fillStyle = chColor;
+    ctx.globalAlpha = 0.15;
+    ctx.beginPath();
+    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 20);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = chColor;
+    ctx.textAlign = 'center';
+    ctx.fillText(badgeText, badgeX + badgeW / 2, badgeY + 28);
+
+    ctx.textAlign = 'center';
     ctx.fillStyle = tmpl.textColor;
     ctx.globalAlpha = 0.4;
     ctx.font = '20px sans-serif';
@@ -161,10 +183,10 @@ export default function PromoCenterPage() {
     setGeneratingPoster(false);
 
     const link = document.createElement('a');
-    link.download = `koala-poster-${posterTemplate}-${referralCode}.png`;
+    link.download = `koala-poster-${posterTemplate}-${referralCode}-${selectedChannel}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
-  }, [qrImageUrl, posterTemplate, posterTagline, referralCode, displayName]);
+  }, [qrImageUrl, posterTemplate, posterTagline, referralCode, displayName, selectedChannel]);
 
   if (loading) return <p className="text-sm text-[#6B7280] dark:text-[#94A3B8] py-8 text-center">加载中...</p>;
   if (!referralCode) return (
