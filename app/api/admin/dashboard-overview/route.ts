@@ -33,7 +33,7 @@ export async function GET() {
       recentLogsRes,
       subsRes,
     ] = await Promise.all([
-      supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }),
+      db.from('user_profiles').select('id, created_at'),
       db.from('blog_posts').select('*', { count: 'exact', head: true }).eq('status', 'draft'),
       db.from('ai_conversations').select('user_id', { count: 'exact' }).gte('created_at', monthStart),
       db.from('ai_conversations').select('*', { count: 'exact', head: true }).gte('created_at', prevMonthStart).lt('created_at', monthStart),
@@ -48,7 +48,7 @@ export async function GET() {
       db.from('subscriptions').select('tier, status').eq('status', 'active'),
     ]);
 
-    const allUsers = usersRes.data?.users || [];
+    const allUsers = usersRes.data || [];
     const totalUsers = allUsers.length;
     const newUsersMonth = allUsers.filter((u: { created_at: string }) => new Date(u.created_at) >= new Date(monthStart)).length;
     const newUsersPrevMonth = allUsers.filter((u: { created_at: string }) => {
