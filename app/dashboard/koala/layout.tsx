@@ -38,6 +38,7 @@ import {
   IconExternalLink,
   IconHome,
   IconLogout,
+  IconCrown,
 } from '@tabler/icons-react';
 
 const ICON_PROPS = { size: 18, strokeWidth: 1.5 } as const;
@@ -73,6 +74,7 @@ function buildNavGroups(role: UserRole | null): { standalone: NavItem[]; groups:
         { icon: IconChartBar, label: '分销总览', href: '/dashboard/koala/sales-overview' },
         { icon: IconUser, label: '销售人员', href: '/dashboard/koala/sales-agents' },
         { icon: IconCoin, label: '佣金比例', href: '/dashboard/koala/commission-rates' },
+        { icon: IconCrown, label: '等级管理', href: '/dashboard/koala/tier-management' },
         { icon: IconTarget, label: 'KPI 目标', href: '/dashboard/koala/kpi-targets' },
         { icon: IconCircleCheck, label: '佣金审核', href: '/dashboard/koala/commission-review' },
         { icon: IconFileText, label: '审计日志', href: '/dashboard/koala/sales-audit' },

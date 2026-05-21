@@ -11,7 +11,7 @@ export async function GET() {
 
     const { data: agent } = await db
       .from('sales_agents')
-      .select('id, name, referral_code')
+      .select('id, name, referral_code, tier')
       .eq('user_id', result.user.id)
       .eq('status', 'active')
       .single();
@@ -132,7 +132,7 @@ export async function GET() {
       agent: {
         display_name: agent.name || result.user.email?.split('@')[0] || '',
         referral_code: agent.referral_code,
-        tier: 'bronze',
+        tier: agent.tier || 'standard',
       },
       kpi: {
         commission: {

@@ -36,11 +36,10 @@ const CH_COLORS: Record<string, string> = {
   weibo: '#FF6900', whatsapp: '#22C55E', other: '#6B7280',
 };
 
-const TIER_CFG: Record<string, { label: string; bg: string; text: string }> = {
-  bronze: { label: 'Bronze', bg: '#F59E0B10', text: '#D97706' },
-  silver: { label: 'Silver', bg: '#94A3B815', text: '#64748B' },
-  gold: { label: 'Gold', bg: '#F59E0B15', text: '#D97706' },
-  platinum: { label: 'Platinum', bg: '#3B82F615', text: '#3B82F6' },
+const TIER_CFG: Record<string, { label: string; bg: string; text: string; border: string; icon?: string }> = {
+  standard: { label: 'Standard', bg: '#64748B10', text: '#64748B', border: '#64748B30' },
+  senior: { label: '⭐ Senior', bg: '#F59E0B10', text: '#F59E0B', border: '#F59E0B30' },
+  partner: { label: '👑 Partner', bg: '#8B5CF610', text: '#8B5CF6', border: '#8B5CF630' },
 };
 
 const PRODUCT_LABELS: Record<string, string> = {
@@ -128,7 +127,7 @@ export default function SalesDashboard() {
   }
 
   const { agent, kpi, trend_30d, team_ranking, channel_breakdown, funnel, recent_commissions } = data;
-  const tierCfg = TIER_CFG[agent.tier] || TIER_CFG.bronze;
+  const tierCfg = TIER_CFG[agent.tier] || TIER_CFG.standard;
 
   function copyCode(text: string, key: string) {
     navigator.clipboard.writeText(text);
@@ -157,8 +156,8 @@ export default function SalesDashboard() {
           </div>
         </div>
         <span
-          className="text-xs font-medium px-3 py-1 rounded-full border border-[#F59E0B]/20"
-          style={{ background: tierCfg.bg, color: tierCfg.text }}
+          className="text-xs font-medium px-3 py-1 rounded-full border"
+          style={{ background: tierCfg.bg, color: tierCfg.text, borderColor: tierCfg.border }}
         >
           {tierCfg.label}
         </span>
@@ -207,7 +206,7 @@ export default function SalesDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         {/* Trend Chart */}
         <div className="lg:col-span-3 rounded-2xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
-          <h2 className="text-sm font-semibold text-[#374151] dark:text-[#E2E8F0] mb-4">业绩趋势 (30天)</h2>
+          <h2 className="text-sm font-light tracking-tight text-[#374151] dark:text-[#E2E8F0] mb-4">业绩趋势 (30天)</h2>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trend_30d}>
@@ -237,7 +236,7 @@ export default function SalesDashboard() {
 
         {/* Team Ranking — gold/silver/bronze borders */}
         <div className="lg:col-span-2 rounded-2xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
-          <h2 className="text-sm font-semibold text-[#374151] dark:text-[#E2E8F0] mb-3">团队排名</h2>
+          <h2 className="text-sm font-light tracking-tight text-[#374151] dark:text-[#E2E8F0] mb-3">团队排名</h2>
           {team_ranking.length > 0 ? (
             <div className="space-y-1.5">
               {team_ranking.map(r => {
@@ -275,7 +274,7 @@ export default function SalesDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Channel Breakdown — 8px bars */}
         <div className="rounded-2xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
-          <h2 className="text-sm font-semibold text-[#374151] dark:text-[#E2E8F0] mb-3">渠道表现</h2>
+          <h2 className="text-sm font-light tracking-tight text-[#374151] dark:text-[#E2E8F0] mb-3">渠道表现</h2>
           {channel_breakdown.length > 0 ? (
             <div className="space-y-3">
               {channel_breakdown.map(ch => (
@@ -341,7 +340,7 @@ export default function SalesDashboard() {
       {/* E: Recent Commissions */}
       <div className="rounded-2xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-[#374151] dark:text-[#E2E8F0]">最新收入</h2>
+          <h2 className="text-sm font-light tracking-tight text-[#374151] dark:text-[#E2E8F0]">最新收入</h2>
           <Link href="/dashboard/sales/my-commissions" className="text-[11px] text-[#F59E0B] font-medium no-underline hover:underline">查看全部 →</Link>
         </div>
         {recent_commissions.length > 0 ? (

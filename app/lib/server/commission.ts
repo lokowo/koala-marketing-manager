@@ -9,6 +9,64 @@ const db = supabaseAdmin as any;
 
 interface CommissionResult { created: boolean; commission_id?: string; reason?: string; }
 
+const TIER_ORDER: Record<string, number> = { standard: 0, senior: 1, partner: 2 };
+
+async function getTierCommissionRate(agentId: string, productType: string): Promise<number> {
+  const { data: agent } = await db
+    .from('sales_agents').select('tier')
+    .eq('id', agentId).single();
+  const tier = agent?.tier || 'standard';
+
+  const { data: tierRate } = await db
+    .from('sales_tier_rates').select('commission_rate')
+    .eq('product_type', productType).eq('tier', tier).maybeSingle();
+  if (tierRate) return parseFloat(tierRate.commission_rate);
+
+  const { data: defaultRate } = await db
+    .from('sales_commission_rates').select('commission_rate')
+    .eq('product_type', productType).maybeSingle();
+  return defaultRate?.commission_rate ? parseFloat(defaultRate.commission_rate) : 0.20;
+}
+
+export async function checkAndPromoteAgent(agentId: string): Promise<void> {
+  const { data: agent } = await db
+    .from('sales_agents').select('id, tier, name')
+    .eq('id', agentId).single();
+  if (!agent) return;
+
+  const [refsRes, commRes] = await Promise.all([
+    db.from('sales_referrals').select('id', { count: 'exact', head: true }).eq('agent_id', agentId),
+    db.from('sales_commissions').select('commission_amount')
+      .eq('agent_id', agentId).in('status', ['confirmed', 'paid_out']),
+  ]);
+
+  const totalRegistrations = refsRes.count || 0;
+  const totalCommission = (commRes.data || []).reduce((s: number, c: { commission_amount: number }) => s + Number(c.commission_amount), 0);
+
+  const { data: rules } = await db
+    .from('sales_tier_rules').select('*')
+    .order('min_registrations', { ascending: false });
+
+  let newTier = 'standard';
+  for (const rule of rules || []) {
+    if (totalRegistrations >= rule.min_registrations || totalCommission >= Number(rule.min_commission)) {
+      newTier = rule.tier;
+      break;
+    }
+  }
+
+  const currentOrder = TIER_ORDER[agent.tier || 'standard'] ?? 0;
+  const newOrder = TIER_ORDER[newTier] ?? 0;
+  if (newOrder > currentOrder) {
+    await db.from('sales_agents').update({ tier: newTier }).eq('id', agentId);
+    await db.from('sales_audit_logs').insert({
+      actor_id: agentId, actor_email: 'system', actor_role: 'system',
+      action: 'agent_tier_promoted', target_type: 'sales_agent', target_id: agentId,
+      details: { from_tier: agent.tier, to_tier: newTier, total_registrations: totalRegistrations, total_commission: totalCommission, agent_name: agent.name },
+    });
+  }
+}
+
 export async function tryCreateCommission(params: {
   userId: string; stripePaymentId: string; stripeInvoiceId?: string;
   stripeCheckoutSessionId?: string; productType: string; productName: string; paymentAmount: number;
@@ -21,11 +79,7 @@ export async function tryCreateCommission(params: {
     .eq('referred_user_id', userId).maybeSingle();
   if (!referral) return { created: false, reason: 'no_referral' };
 
-  const { data: rateConfig } = await db
-    .from('sales_commission_rates').select('commission_rate')
-    .eq('product_type', productType).maybeSingle();
-
-  const rate = rateConfig?.commission_rate ? parseFloat(rateConfig.commission_rate) : 0.20;
+  const rate = await getTierCommissionRate(referral.agent_id, productType);
   const commissionAmount = Math.round(paymentAmount * rate * 100) / 100;
 
   const { data: commission, error } = await db.from('sales_commissions').insert({

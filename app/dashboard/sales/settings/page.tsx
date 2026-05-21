@@ -17,6 +17,21 @@ interface AgentSettings {
   notify_weekly_report: boolean;
 }
 
+interface TierProgress {
+  current_tier: string;
+  total_registrations: number;
+  total_commission: number;
+  next_tier: string | null;
+  next_min_registrations: number;
+  next_min_commission: number;
+}
+
+const TIER_COLORS: Record<string, { label: string; color: string; bg: string }> = {
+  standard: { label: 'Standard', color: '#64748B', bg: '#64748B15' },
+  senior: { label: 'Senior', color: '#F59E0B', bg: '#F59E0B15' },
+  partner: { label: 'Partner', color: '#8B5CF6', bg: '#8B5CF615' },
+};
+
 const PAYMENT_METHODS = [
   { value: 'bank_transfer', label: '银行转账' },
   { value: 'paypal', label: 'PayPal' },
@@ -28,6 +43,7 @@ export default function SalesSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
+  const [tierProgress, setTierProgress] = useState<TierProgress | null>(null);
   const [settings, setSettings] = useState<AgentSettings>({
     display_name: '', email: '', referral_code: '', phone: '',
     payment_method: 'bank_transfer', payment_account: '', payment_name: '',
@@ -57,6 +73,9 @@ export default function SalesSettingsPage() {
           notify_weekly_report: agent.notify_weekly_report ?? true,
         });
       }
+      fetch('/api/sales/tier-progress').then(r => r.ok ? r.json() : null).then(d => {
+        if (d) setTierProgress(d);
+      }).catch(() => {});
       setLoading(false);
     });
   }, [router]);
@@ -107,7 +126,7 @@ export default function SalesSettingsPage() {
 
       {/* Personal Info */}
       <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
-        <h2 className="text-sm font-semibold text-[#374151] dark:text-[#CBD5E1] mb-4">个人信息</h2>
+        <h2 className="text-sm font-light tracking-tight text-[#374151] dark:text-[#CBD5E1] mb-4">个人信息</h2>
         <div className="space-y-3">
           <div>
             <label className="text-xs text-[#6B7280] dark:text-[#94A3B8] block mb-1">姓名</label>
@@ -135,7 +154,7 @@ export default function SalesSettingsPage() {
 
       {/* Payment Info */}
       <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
-        <h2 className="text-sm font-semibold text-[#374151] dark:text-[#CBD5E1] mb-4">收款信息</h2>
+        <h2 className="text-sm font-light tracking-tight text-[#374151] dark:text-[#CBD5E1] mb-4">收款信息</h2>
         <div className="space-y-3">
           <div>
             <label className="text-xs text-[#6B7280] dark:text-[#94A3B8] block mb-1">收款方式</label>
@@ -170,7 +189,7 @@ export default function SalesSettingsPage() {
 
       {/* Notification Settings */}
       <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
-        <h2 className="text-sm font-semibold text-[#374151] dark:text-[#CBD5E1] mb-4">通知设置</h2>
+        <h2 className="text-sm font-light tracking-tight text-[#374151] dark:text-[#CBD5E1] mb-4">通知设置</h2>
         <div className="space-y-3">
           {([
             { key: 'notify_registration' as const, label: '新客户注册通知', desc: '有用户通过你的推广链接注册时通知' },
@@ -192,6 +211,56 @@ export default function SalesSettingsPage() {
           ))}
         </div>
       </div>
+
+      {/* Tier Progress */}
+      {tierProgress && (
+        <div className="rounded-xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
+          <h2 className="text-sm font-light tracking-tight text-[#374151] dark:text-[#CBD5E1] mb-4">等级信息</h2>
+          <div className="flex items-center gap-3 mb-4">
+            <span
+              className="text-sm font-medium px-3 py-1 rounded"
+              style={{ background: TIER_COLORS[tierProgress.current_tier]?.bg, color: TIER_COLORS[tierProgress.current_tier]?.color }}
+            >
+              {TIER_COLORS[tierProgress.current_tier]?.label || tierProgress.current_tier}
+            </span>
+            <span className="text-xs text-[#6B7280] dark:text-[#94A3B8]">当前等级</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="rounded-lg p-3 bg-[#F9FAFB] dark:bg-[#0F172A]">
+              <div className="text-[10px] text-[#6B7280] dark:text-[#94A3B8]">累计注册</div>
+              <div className="text-lg font-medium text-[#111827] dark:text-[#F1F5F9]">{tierProgress.total_registrations}</div>
+            </div>
+            <div className="rounded-lg p-3 bg-[#F9FAFB] dark:bg-[#0F172A]">
+              <div className="text-[10px] text-[#6B7280] dark:text-[#94A3B8]">累计佣金</div>
+              <div className="text-lg font-medium text-[#111827] dark:text-[#F1F5F9]">${tierProgress.total_commission.toFixed(2)}</div>
+            </div>
+          </div>
+          {tierProgress.next_tier && (
+            <div className="rounded-lg p-3 border border-dashed border-[#E5E7EB] dark:border-[#334155]">
+              <div className="text-xs text-[#6B7280] dark:text-[#94A3B8] mb-1">
+                距离 <span style={{ color: TIER_COLORS[tierProgress.next_tier]?.color }} className="font-medium">{TIER_COLORS[tierProgress.next_tier]?.label}</span> 还需
+              </div>
+              <div className="text-xs text-[#374151] dark:text-[#CBD5E1]">
+                {tierProgress.next_min_registrations > tierProgress.total_registrations && (
+                  <span>{tierProgress.next_min_registrations - tierProgress.total_registrations} 个注册</span>
+                )}
+                {tierProgress.next_min_registrations > tierProgress.total_registrations && tierProgress.next_min_commission > tierProgress.total_commission && (
+                  <span className="text-[#9CA3AF] mx-1">或</span>
+                )}
+                {tierProgress.next_min_commission > tierProgress.total_commission && (
+                  <span>${(tierProgress.next_min_commission - tierProgress.total_commission).toFixed(2)} 佣金</span>
+                )}
+                {tierProgress.next_min_registrations <= tierProgress.total_registrations && tierProgress.next_min_commission <= tierProgress.total_commission && (
+                  <span className="text-green-600">已满足条件，等待系统更新</span>
+                )}
+              </div>
+            </div>
+          )}
+          {!tierProgress.next_tier && (
+            <div className="text-xs text-[#6B7280] dark:text-[#94A3B8]">已达到最高等级</div>
+          )}
+        </div>
+      )}
 
       <button
         onClick={save}

@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { getStripe, getSubscriptionTierByPriceId } from '../../../lib/server/stripe';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { addCredits, idempotentCheck } from '../../../lib/server/credits';
-import { tryCreateCommission, handleRefund } from '../../../lib/server/commission';
+import { tryCreateCommission, handleRefund, checkAndPromoteAgent } from '../../../lib/server/commission';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -70,11 +70,15 @@ async function handleCreditPackPurchase(session: Stripe.Checkout.Session, userId
   const { CREDIT_PACKAGES } = await import('../../../lib/constants');
   const pack = CREDIT_PACKAGES.find(p => p.stripePriceId === priceId);
   if (pack) {
-    await tryCreateCommission({
+    const result = await tryCreateCommission({
       userId, stripePaymentId: (session.payment_intent as string) || `checkout_${session.id}`,
       stripeCheckoutSessionId: session.id, productType: pack.id,
       productName: `${pack.label} — ${pack.credits} 积分`, paymentAmount: pack.priceAUD,
     });
+    if (result.created) {
+      const { data: ref } = await db.from('sales_referrals').select('agent_id').eq('referred_user_id', userId).maybeSingle();
+      if (ref) await checkAndPromoteAgent(ref.agent_id);
+    }
   }
 }
 
@@ -96,11 +100,15 @@ async function handleNewSubscription(session: Stripe.Checkout.Session, userId: s
   }, { onConflict: 'stripe_subscription_id' });
   await db.from('user_profiles').update({ plan_type: tier.id, updated_at: new Date().toISOString() }).eq('id', userId);
   await addCredits(userId, tier.monthlyCredits, 'subscription_credit', `${tier.label} 订阅首月 ${tier.monthlyCredits} 积分`, referenceId);
-  await tryCreateCommission({
+  const subResult = await tryCreateCommission({
     userId, stripePaymentId: (session.payment_intent as string) || `sub_${subscriptionId}`,
     stripeCheckoutSessionId: session.id, productType: `sub_${tier.id}`,
     productName: `${tier.label} 月度订阅`, paymentAmount: tier.price,
   });
+  if (subResult.created) {
+    const { data: ref } = await db.from('sales_referrals').select('agent_id').eq('referred_user_id', userId).maybeSingle();
+    if (ref) await checkAndPromoteAgent(ref.agent_id);
+  }
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
@@ -121,11 +129,15 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   }).eq('stripe_subscription_id', subscriptionId);
   await addCredits(sub.user_id, tier.monthlyCredits, 'subscription_credit', `${tier.label} 月度续付 ${tier.monthlyCredits} 积分`, referenceId);
   const invTotal = (invoice.amount_paid || 0) / 100;
-  await tryCreateCommission({
+  const invResult = await tryCreateCommission({
     userId: sub.user_id, stripePaymentId: ((invoice as any).payment_intent as string) || `invoice_${invoice.id}`,
     stripeInvoiceId: invoice.id, productType: `sub_${tier.id}`,
     productName: `${tier.label} 月度续费`, paymentAmount: invTotal > 0 ? invTotal : tier.price,
   });
+  if (invResult.created) {
+    const { data: ref } = await db.from('sales_referrals').select('agent_id').eq('referred_user_id', sub.user_id).maybeSingle();
+    if (ref) await checkAndPromoteAgent(ref.agent_id);
+  }
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
