@@ -264,17 +264,39 @@ export default function AnalyticsPage() {
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">教授大学分布 Top 15</h3>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                    教授大学分布（全部 {(data?.universityDistribution || []).reduce((s: number, g: AnyObj) => s + g.universities.length, 0)} 所）
+                  </h3>
                   {(data?.universityDistribution || []).length > 0 ? (
-                    <ResponsiveContainer width="100%" height={260}>
-                      <BarChart data={data?.universityDistribution} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                        <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-                        <YAxis type="category" dataKey="name" tick={{ fontSize: 9, fill: '#64748b' }} tickLine={false} axisLine={false} width={100} />
-                        <Tooltip contentStyle={{ fontSize: 11, borderRadius: 6 }} />
-                        <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} name="教授数" barSize={14} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <div className="max-h-[420px] overflow-y-auto space-y-4 pr-1">
+                      {data!.universityDistribution.map((g: AnyObj) => {
+                        const maxCount = Math.max(...g.universities.map((u: AnyObj) => u.count), 1);
+                        return (
+                          <div key={g.group}>
+                            <div className="flex items-center justify-between mb-1.5 sticky top-0 bg-white dark:bg-gray-800 py-1 z-10">
+                              <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{g.group}</span>
+                              <span className="text-[10px] text-gray-400 dark:text-gray-500">小计 {g.subtotal.toLocaleString()}</span>
+                            </div>
+                            <div className="space-y-1">
+                              {g.universities.map((u: AnyObj) => (
+                                <div key={u.name} className="flex items-center gap-2">
+                                  <span className="text-[10px] text-gray-600 dark:text-gray-400 w-16 shrink-0 truncate" title={u.name}>{u.shortName}</span>
+                                  <div className="flex-1 h-4 bg-gray-50 dark:bg-gray-700/30 rounded overflow-hidden">
+                                    <div
+                                      className="h-full rounded bg-blue-500/80 dark:bg-blue-500/60"
+                                      style={{ width: `${Math.max((u.count / maxCount) * 100, u.count > 0 ? 2 : 0)}%` }}
+                                    />
+                                  </div>
+                                  <span className={`text-[10px] w-10 text-right tabular-nums ${u.count === 0 ? 'text-gray-300 dark:text-gray-600' : 'text-gray-700 dark:text-gray-300 font-medium'}`}>
+                                    {u.count.toLocaleString()}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : (
                     <div className="h-[260px] flex items-center justify-center text-sm text-gray-300 dark:text-gray-600">暂无数据</div>
                   )}

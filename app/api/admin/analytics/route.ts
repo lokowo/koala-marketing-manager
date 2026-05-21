@@ -83,14 +83,26 @@ export async function GET(req: NextRequest) {
   } catch { /* ignore */ }
 
   try {
-    const { data: profs } = await db.from('professors').select('university').limit(5000);
-    if (profs) {
-      const uniCounts: Record<string, number> = {};
-      for (const p of profs) uniCounts[p.university] = (uniCounts[p.university] || 0) + 1;
-      result.universityDistribution = Object.entries(uniCounts)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 15)
-        .map(([name, count]) => ({ name: name.replace('University of ', 'U ').replace('The ', ''), count }));
+    const { data: unis } = await db.from('universities').select('name, short_name, group_label').eq('is_active', true);
+    const { data: profs } = await db.from('professors').select('university').limit(50000);
+    if (unis) {
+      const profCounts: Record<string, number> = {};
+      for (const p of (profs || [])) profCounts[p.university] = (profCounts[p.university] || 0) + 1;
+
+      const GROUP_ORDER = ['Go8', 'ATN', 'IRU', 'RUN', 'Other'];
+      const grouped: Record<string, Array<{ name: string; shortName: string; count: number }>> = {};
+      for (const u of unis) {
+        const g = u.group_label || 'Other';
+        if (!grouped[g]) grouped[g] = [];
+        grouped[g].push({ name: u.name, shortName: u.short_name || u.name, count: profCounts[u.name] || 0 });
+      }
+      for (const g of Object.keys(grouped)) {
+        grouped[g].sort((a, b) => b.count - a.count);
+      }
+
+      result.universityDistribution = GROUP_ORDER
+        .filter(g => grouped[g]?.length)
+        .map(g => ({ group: g, subtotal: grouped[g].reduce((s, u) => s + u.count, 0), universities: grouped[g] }));
     }
   } catch { /* ignore */ }
 
