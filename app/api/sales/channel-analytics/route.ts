@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     const [visitsRes, referralsRes, commissionsRes] = await Promise.all([
       db.from('sales_visits').select('channel').eq('agent_id', agent.id).gte('visited_at', since),
       db.from('sales_referrals').select('channel').eq('agent_id', agent.id).gte('created_at', since),
-      db.from('sales_commissions').select('product_type, commission_amount, status')
+      db.from('sales_commissions').select('product_type, commission_amount, status, sales_referrals(channel)')
         .eq('agent_id', agent.id).gte('created_at', since).neq('status', 'rejected'),
     ]);
 
@@ -45,6 +45,13 @@ export async function GET(req: Request) {
       const ch = r.channel || 'unknown';
       if (!channelMap[ch]) channelMap[ch] = { visits: 0, registrations: 0, conversions: 0, revenue: 0 };
       channelMap[ch].registrations++;
+    }
+
+    for (const c of commissions) {
+      const ch = c.sales_referrals?.channel || 'unknown';
+      if (!channelMap[ch]) channelMap[ch] = { visits: 0, registrations: 0, conversions: 0, revenue: 0 };
+      channelMap[ch].conversions++;
+      channelMap[ch].revenue += c.commission_amount || 0;
     }
 
     const totalConversions = commissions.length;

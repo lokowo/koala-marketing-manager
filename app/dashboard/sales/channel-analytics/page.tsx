@@ -128,10 +128,14 @@ export default function ChannelAnalyticsPage() {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={90}
-                    innerRadius={50}
+                    outerRadius={80}
+                    innerRadius={45}
                     paddingAngle={2}
-                    label={(props: { name?: string; percent?: number }) => `${props.name ?? ''} ${((props.percent ?? 0) * 100).toFixed(0)}%`}
+                    label={({ x, y, name, percent }: any) => (
+                      <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={11} fill="#374151">
+                        {name} {(percent * 100).toFixed(0)}%
+                      </text>
+                    )}
                   >
                     {pieData.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
