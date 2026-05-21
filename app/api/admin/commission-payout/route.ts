@@ -13,7 +13,7 @@ export async function GET(req: Request) {
 
     let query = db
       .from('sales_commissions')
-      .select('*, sales_agents!inner(user_id, referral_code, user_profiles:user_id(display_name, email)), sales_referrals!inner(referred_user_id, user_profiles:referred_user_id(display_name, email))')
+      .select('*, sales_agents(user_id, referral_code, user_profiles:user_id(display_name, email)), sales_referrals(referred_user_id, user_profiles:referred_user_id(display_name, email))')
       .order('created_at', { ascending: false });
 
     if (status !== 'all') query = query.eq('status', status);
