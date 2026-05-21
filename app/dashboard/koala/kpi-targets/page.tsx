@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { MetricLabel } from '../../../../components/ui/metric-label';
+import { NumberInput } from '../../../../components/ui/number-input';
 import { METRICS } from '../../../../lib/metrics-glossary';
 
 interface Agent {
@@ -187,10 +188,9 @@ export default function KpiTargetsPage() {
                   <div className="mb-1">
                     <MetricLabel label={metric.label} tooltip={metric.tooltip} />
                   </div>
-                  <input
-                    type="number"
+                  <NumberInput
                     value={batchForm[item.key]}
-                    onChange={e => setBatchForm(prev => ({ ...prev, [item.key]: Number(e.target.value) }))}
+                    onChange={v => setBatchForm(prev => ({ ...prev, [item.key]: v }))}
                     className="w-full rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#F59E0B]"
                   />
                 </div>
@@ -242,10 +242,9 @@ export default function KpiTargetsPage() {
                     return (
                       <div key={field.key} className="flex items-center gap-2">
                         <span className="text-[10px] text-gray-500 dark:text-gray-400 w-20 shrink-0 truncate">{metric.label}</span>
-                        <input
-                          type="number"
+                        <NumberInput
                           value={editForm[field.key] ?? 0}
-                          onChange={e => setEditForm(prev => ({ ...prev, [field.key]: Number(e.target.value) }))}
+                          onChange={v => setEditForm(prev => ({ ...prev, [field.key]: v }))}
                           className="flex-1 rounded-md px-2 py-1 text-xs bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#F59E0B]"
                         />
                       </div>

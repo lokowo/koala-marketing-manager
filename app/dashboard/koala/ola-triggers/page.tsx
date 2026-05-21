@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { NumberInput } from '../../../../components/ui/number-input';
 
 interface Trigger {
   id: string;
@@ -174,7 +175,7 @@ export default function OlaTriggersPage() {
                 </div>
                 <div className="w-24">
                   <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">优先级</label>
-                  <input type="number" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: Number(e.target.value) }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-700" />
+                  <NumberInput value={form.priority} onChange={v => setForm(f => ({ ...f, priority: v }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-700" />
                 </div>
               </div>
               <div>

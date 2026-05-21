@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
+import { NumberInput } from '../../../../components/ui/number-input';
 
 interface KPI {
   weekly_new_leads: number;
@@ -105,10 +106,9 @@ export default function KpiSettingsPage() {
                 <span className="text-xs text-gray-500 dark:text-gray-400">{item.label}</span>
               </div>
               {editing ? (
-                <input
-                  type="number"
+                <NumberInput
                   value={kpi[item.key]}
-                  onChange={e => setKpi(prev => ({ ...prev, [item.key]: parseInt(e.target.value) || 0 }))}
+                  onChange={v => setKpi(prev => ({ ...prev, [item.key]: v }))}
                   className="w-full text-2xl font-bold text-gray-800 dark:text-gray-200 border-b-2 border-amber-300 focus:outline-none bg-transparent"
                 />
               ) : (

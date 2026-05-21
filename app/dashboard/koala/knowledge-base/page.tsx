@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { NumberInput } from '../../../../components/ui/number-input';
 
 interface KnowledgeChunk {
   id: string;
@@ -255,21 +256,20 @@ export default function KnowledgeBasePage() {
         <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400">
           <label className="flex items-center gap-2">
             阈值:
-            <input
-              type="number"
+            <NumberInput
+              float
               min={0} max={1} step={0.05}
               value={semThreshold}
-              onChange={e => setSemThreshold(parseFloat(e.target.value))}
+              onChange={v => setSemThreshold(v)}
               className="w-20 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm"
             />
           </label>
           <label className="flex items-center gap-2">
             数量:
-            <input
-              type="number"
+            <NumberInput
               min={1} max={50}
               value={semLimit}
-              onChange={e => setSemLimit(parseInt(e.target.value))}
+              onChange={v => setSemLimit(v)}
               className="w-20 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm"
             />
           </label>

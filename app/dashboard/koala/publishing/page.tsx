@@ -32,10 +32,12 @@ export default function PublishingPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     const numFields = ['views', 'likes', 'saves', 'comments', 'dms', 'wechatAdds', 'consultations'];
-    setFormData(prev => ({
-      ...prev,
-      [name]: numFields.includes(name) ? parseInt(value) || 0 : value,
-    }));
+    if (numFields.includes(name)) {
+      const cleaned = value.replace(/^0+(?=\d)/, '');
+      setFormData(prev => ({ ...prev, [name]: cleaned === '' ? 0 : parseInt(cleaned) || 0 }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { NumberInput } from '../../../../components/ui/number-input';
 
 interface FAQ {
   id: string;
@@ -316,7 +317,7 @@ export default function FAQManagementPage() {
                 </div>
                 <div className="w-24">
                   <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">优先级</label>
-                  <input type="number" value={formPriority} onChange={e => setFormPriority(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-700" />
+                  <NumberInput value={formPriority} onChange={v => setFormPriority(v)} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-700" />
                 </div>
               </div>
             </div>

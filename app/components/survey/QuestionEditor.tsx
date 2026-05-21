@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { QuestionType } from '../../lib/services/surveyService';
+import { NumberInput } from '../../../components/ui/number-input';
 
 interface QuestionData {
   id?: string;
@@ -186,17 +187,15 @@ export default function QuestionEditor({ question, index, onSave, onChange, onDe
         <div className="flex items-center gap-3 pl-6">
           <div className="flex items-center gap-1">
             <span className="text-sm text-slate-500">范围</span>
-            <input
-              type="number"
+            <NumberInput
               value={(config.min as number) ?? 0}
-              onChange={e => { const c = { ...config, min: parseInt(e.target.value) }; setConfig(c); emitChange({ config: c }); }}
+              onChange={v => { const c = { ...config, min: v }; setConfig(c); emitChange({ config: c }); }}
               className="w-14 border border-slate-200 rounded px-2 py-1 text-sm"
             />
             <span className="text-slate-400">~</span>
-            <input
-              type="number"
+            <NumberInput
               value={(config.max as number) ?? 10}
-              onChange={e => { const c = { ...config, max: parseInt(e.target.value) }; setConfig(c); emitChange({ config: c }); }}
+              onChange={v => { const c = { ...config, max: v }; setConfig(c); emitChange({ config: c }); }}
               className="w-14 border border-slate-200 rounded px-2 py-1 text-sm"
             />
           </div>
