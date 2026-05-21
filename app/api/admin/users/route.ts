@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { requireSuperAdmin } from '../../../lib/auth';
+import { requireAdmin, requireSuperAdmin } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { logWork } from '../../../lib/worklog';
 import { notifyUser, notifySuperAdmins } from '../../../lib/notifications';
@@ -9,20 +9,23 @@ const db = supabaseAdmin as any;
 
 export async function GET() {
   try {
-    await requireSuperAdmin();
+    await requireAdmin();
 
-    const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-    if (authError) throw authError;
+    const [profilesRes, rolesRes] = await Promise.all([
+      db.from('user_profiles').select('id, email, display_name, created_at, updated_at'),
+      db.from('user_roles').select('user_id, role'),
+    ]);
 
-    const { data: rolesRaw } = await db.from('user_roles').select('user_id, role');
-    const roles = (rolesRaw ?? []) as { user_id: string; role: string }[];
-    const roleMap = new Map(roles.map((r: { user_id: string; role: string }) => [r.user_id, r.role]));
+    const profiles = (profilesRes.data ?? []) as { id: string; email: string; display_name: string; created_at: string; updated_at: string }[];
+    const roles = (rolesRes.data ?? []) as { user_id: string; role: string }[];
+    const roleMap = new Map(roles.map(r => [r.user_id, r.role]));
 
-    const users = authUsers.users.map(u => ({
+    const users = profiles.map(u => ({
       id: u.id,
       email: u.email,
+      display_name: u.display_name,
       created_at: u.created_at,
-      last_sign_in_at: u.last_sign_in_at,
+      last_sign_in_at: u.updated_at,
       role: roleMap.get(u.id) ?? null,
     }));
 
