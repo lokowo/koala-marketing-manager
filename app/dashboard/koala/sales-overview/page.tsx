@@ -174,14 +174,24 @@ export default function SalesOverviewPage() {
       {agents.length > 0 && (
         <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E5E7EB] dark:border-[#334155] p-5">
           <h2 className="text-sm font-semibold text-[#111827] dark:text-[#F1F5F9] mb-4">KPI 完成率对比</h2>
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={chartData} barCategoryGap="20%">
-              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={chartData} barCategoryGap="20%" margin={{ bottom: 60 }}>
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 11, fill: '#94a3b8' }}
+                tickLine={false}
+                axisLine={false}
+                angle={-45}
+                textAnchor="end"
+                interval={0}
+                height={80}
+              />
               <YAxis domain={[0, 150]} tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={36} unit="%" />
               <Tooltip
                 contentStyle={{ fontSize: 12, borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff' }}
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 formatter={(value: any) => [`${value}%`, undefined]}
+                labelFormatter={(label) => String(label)}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <ReferenceLine y={100} stroke="#94a3b8" strokeDasharray="4 4" label={{ value: '100%', position: 'right', fontSize: 10, fill: '#94a3b8' }} />
