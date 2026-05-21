@@ -13,12 +13,14 @@ interface Agent {
 interface KpiTarget {
   id: string;
   agent_id: string;
-  period_start: string;
-  period_end: string;
-  target_visits: number;
-  target_registrations: number;
-  target_conversions: number;
-  target_revenue: number;
+  effective_from: string;
+  effective_until: string;
+  period_type: string;
+  kpi_1_visits: number;
+  kpi_2_registrations: number;
+  kpi_3_payments: number;
+  kpi_3_revenue: number;
+  kpi_4_offline: number;
   sales_agents?: { user_id: string; referral_code: string; user_profiles: { display_name: string; email: string } | null };
 }
 
@@ -31,10 +33,11 @@ function getMonthRange(offset = 0) {
 }
 
 const KPI_FIELDS = [
-  { key: 'target_visits' as const, label: '访问量', color: '#3B82F6' },
-  { key: 'target_registrations' as const, label: '注册量', color: '#F59E0B' },
-  { key: 'target_conversions' as const, label: '转化数', color: '#10B981' },
-  { key: 'target_revenue' as const, label: '佣金 (AUD)', color: '#D4A843' },
+  { key: 'kpi_1_visits' as const, label: 'KPI1 访问', color: '#3B82F6' },
+  { key: 'kpi_2_registrations' as const, label: 'KPI2 注册', color: '#22C55E' },
+  { key: 'kpi_3_payments' as const, label: 'KPI3 付费', color: '#F59E0B' },
+  { key: 'kpi_3_revenue' as const, label: '佣金 (AUD)', color: '#D4A843' },
+  { key: 'kpi_4_offline' as const, label: 'KPI4 线下', color: '#8B5CF6' },
 ];
 
 export default function KpiTargetsPage() {
@@ -43,7 +46,7 @@ export default function KpiTargetsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(getMonthRange().label);
   const [showBatch, setShowBatch] = useState(false);
-  const [batchForm, setBatchForm] = useState({ target_visits: 100, target_registrations: 10, target_conversions: 3, target_revenue: 500 });
+  const [batchForm, setBatchForm] = useState({ kpi_1_visits: 50, kpi_2_registrations: 20, kpi_3_payments: 10, kpi_3_revenue: 500, kpi_4_offline: 5 });
   const [saving, setSaving] = useState(false);
 
   const months = [-2, -1, 0, 1].map(o => getMonthRange(o));
@@ -60,7 +63,7 @@ export default function KpiTargetsPage() {
   }, []);
 
   const currentMonth = months.find(m => m.label === selectedMonth) || months[2];
-  const monthTargets = targets.filter(t => t.period_start === currentMonth.start);
+  const monthTargets = targets.filter(t => t.effective_from === currentMonth.start);
 
   function getTargetForAgent(agentId: string) {
     return monthTargets.find(t => t.agent_id === agentId);
@@ -74,8 +77,8 @@ export default function KpiTargetsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         agent_ids: activeAgentIds,
-        period_start: currentMonth.start,
-        period_end: currentMonth.end,
+        effective_from: currentMonth.start,
+        effective_until: currentMonth.end,
         ...batchForm,
       }),
     });
@@ -128,7 +131,7 @@ export default function KpiTargetsPage() {
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
             为所有活跃销售设置 {currentMonth.label} 目标
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-4">
             {KPI_FIELDS.map(item => (
               <div key={item.key}>
                 <label className="text-[10px] font-medium mb-1 block" style={{ color: item.color }}>
@@ -185,7 +188,7 @@ export default function KpiTargetsPage() {
                     <div key={field.key} className="rounded-lg p-2 bg-gray-50 dark:bg-gray-800/50">
                       <div className="text-[10px] text-gray-400 dark:text-gray-500">{field.label}</div>
                       <div className="text-sm font-bold" style={{ color: field.color }}>
-                        {field.key === 'target_revenue' ? `$${target[field.key]}` : target[field.key]}
+                        {field.key === 'kpi_3_revenue' ? `$${target[field.key]}` : target[field.key]}
                       </div>
                     </div>
                   ))}

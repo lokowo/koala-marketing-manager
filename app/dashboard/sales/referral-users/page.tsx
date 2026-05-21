@@ -15,6 +15,9 @@ interface Referral {
   email: string;
   avatar_url: string | null;
   has_paid: boolean;
+  offline_converted: boolean;
+  offline_converted_at: string | null;
+  offline_notes: string | null;
 }
 
 const CH_LABELS: Record<string, string> = {
@@ -42,6 +45,10 @@ export default function ReferralUsersPage() {
   const [paidFilter, setPaidFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [markingId, setMarkingId] = useState<string | null>(null);
+  const [markingName, setMarkingName] = useState('');
+  const [offlineNotes, setOfflineNotes] = useState('');
+  const [markingSaving, setMarkingSaving] = useState(false);
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -74,6 +81,24 @@ export default function ReferralUsersPage() {
   const paidCount = referrals.filter(r => r.has_paid).length;
 
   const channelOptions = ['all', ...new Set(referrals.map(r => r.channel))];
+
+  async function markOffline() {
+    if (!markingId) return;
+    setMarkingSaving(true);
+    const res = await fetch('/api/sales/mark-offline', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ referral_id: markingId, notes: offlineNotes || undefined }),
+    });
+    if (res.ok) {
+      setMarkingId(null);
+      setOfflineNotes('');
+      fetchData();
+    } else {
+      alert('标记失败');
+    }
+    setMarkingSaving(false);
+  }
 
   function navigateToCustomer(referral: Referral) {
     router.push(`/dashboard/sales/customer/${referral.id}`);
@@ -161,6 +186,7 @@ export default function ReferralUsersPage() {
                     <th className="text-center px-4 py-2.5 font-medium">状态</th>
                     <th className="text-center px-4 py-2.5 font-medium">消费</th>
                     <th className="text-center px-4 py-2.5 font-medium">佣金</th>
+                    <th className="text-center px-4 py-2.5 font-medium">线下</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F3F4F6] dark:divide-[#334155]">
@@ -201,6 +227,20 @@ export default function ReferralUsersPage() {
                       </td>
                       <td className="px-4 py-3 text-center text-[#374151] dark:text-[#CBD5E1] font-medium">${r.total_revenue.toFixed(2)}</td>
                       <td className="px-4 py-3 text-center text-[#D4A843] font-bold">${r.total_commission.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
+                        {r.offline_converted ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-[#F3E8FF] text-[#7C3AED] font-medium">
+                            ✅ {new Date(r.offline_converted_at!).toLocaleDateString('zh-CN')}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => { setMarkingId(r.id); setMarkingName(r.display_name || r.email); }}
+                            className="text-[10px] px-2 py-1 rounded-lg border border-[#E5E7EB] dark:border-[#334155] text-[#64748B] hover:bg-[#F8FAFC] dark:hover:bg-[#334155] transition"
+                          >
+                            标记转化
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -249,6 +289,31 @@ export default function ReferralUsersPage() {
             </div>
           )}
         </>
+      )}
+
+      {markingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setMarkingId(null)} />
+          <div className="relative rounded-2xl p-6 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] shadow-xl max-w-sm w-full mx-4">
+            <h4 className="text-base font-light text-[#1E293B] dark:text-white mb-4">标记线下转化</h4>
+            <p className="text-sm text-[#64748B] dark:text-[#94A3B8] mb-3">确认 <strong>{markingName}</strong> 已完成线下转化？</p>
+            <textarea
+              placeholder="备注（可选）"
+              value={offlineNotes}
+              onChange={e => setOfflineNotes(e.target.value)}
+              className="w-full rounded-lg border border-[#E5E7EB] dark:border-[#334155] bg-white dark:bg-[#0F172A] text-sm text-[#1E293B] dark:text-[#E2E8F0] p-3 mb-4 focus:outline-none focus:border-[#8B5CF6] resize-none"
+              rows={3}
+            />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => { setMarkingId(null); setOfflineNotes(''); }} className="px-4 py-2 rounded-lg text-sm border border-[#E5E7EB] dark:border-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#F3F4F6] dark:hover:bg-[#334155] transition">
+                取消
+              </button>
+              <button onClick={markOffline} disabled={markingSaving} className="px-4 py-2 rounded-lg text-sm bg-[#8B5CF6] text-white font-medium hover:opacity-90 transition disabled:opacity-50">
+                {markingSaving ? '处理中...' : '确认转化'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

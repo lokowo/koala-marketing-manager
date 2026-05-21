@@ -34,6 +34,7 @@ export async function GET() {
       channelData,
       recentComms,
       funnelPayments, funnelRenewals,
+      offlineThis,
     ] = await Promise.all([
       db.from('sales_visits').select('id', { count: 'exact', head: true }).eq('agent_id', agent.id).gte('visited_at', monthStart),
       db.from('sales_visits').select('id', { count: 'exact', head: true }).eq('agent_id', agent.id).gte('visited_at', lastMonthStart).lte('visited_at', lastMonthEnd),
@@ -41,7 +42,7 @@ export async function GET() {
       db.from('sales_referrals').select('id', { count: 'exact', head: true }).eq('agent_id', agent.id).gte('created_at', lastMonthStart).lte('created_at', lastMonthEnd),
       db.from('sales_commissions').select('commission_amount, status').eq('agent_id', agent.id).gte('created_at', monthStart).neq('status', 'rejected'),
       db.from('sales_commissions').select('commission_amount, status').eq('agent_id', agent.id).gte('created_at', lastMonthStart).lte('created_at', lastMonthEnd).neq('status', 'rejected'),
-      db.from('sales_kpi_targets').select('*').eq('agent_id', agent.id).lte('period_start', now.toISOString().split('T')[0]).gte('period_end', now.toISOString().split('T')[0]).maybeSingle(),
+      db.from('sales_kpi_targets').select('*').eq('agent_id', agent.id).lte('effective_from', now.toISOString().split('T')[0]).gte('effective_until', now.toISOString().split('T')[0]).maybeSingle(),
       db.from('sales_visits').select('visited_at').eq('agent_id', agent.id).gte('visited_at', thirtyDaysAgo).order('visited_at', { ascending: true }),
       db.from('sales_referrals').select('created_at').eq('agent_id', agent.id).gte('created_at', thirtyDaysAgo).order('created_at', { ascending: true }),
       db.from('sales_agents').select('id, name').eq('status', 'active'),
@@ -49,6 +50,7 @@ export async function GET() {
       db.from('sales_commissions').select('created_at, commission_amount, status, product_type, sales_referrals(referred_user_id, user_profiles:referred_user_id(display_name, email))').eq('agent_id', agent.id).order('created_at', { ascending: false }).limit(5),
       db.from('sales_commissions').select('id', { count: 'exact', head: true }).eq('agent_id', agent.id).gte('created_at', monthStart).neq('status', 'rejected'),
       db.from('sales_commissions').select('id', { count: 'exact', head: true }).eq('agent_id', agent.id).gte('created_at', monthStart).neq('status', 'rejected').in('product_type', ['sub_starter', 'sub_pro', 'sub_elite']),
+      db.from('sales_referrals').select('id', { count: 'exact', head: true }).eq('agent_id', agent.id).eq('offline_converted', true).gte('offline_converted_at', monthStart),
     ]);
 
     const commsThisData = commsThis.data || [];
@@ -118,7 +120,7 @@ export async function GET() {
       visits: visitsThis.count || 0,
       registrations: refsThis.count || 0,
       payments: funnelPayments.count || 0,
-      renewals: funnelRenewals.count || 0,
+      offline: offlineThis.count || 0,
     };
 
     const visitsCurrent = visitsThis.count || 0;
@@ -140,17 +142,24 @@ export async function GET() {
         },
         visits: {
           current: visitsCurrent,
-          target: target?.target_visits || 0,
-          pct: target?.target_visits > 0 ? Math.round((visitsCurrent / target.target_visits) * 100) : 0,
+          target: target?.kpi_1_visits || 0,
+          pct: target?.kpi_1_visits > 0 ? Math.round((visitsCurrent / target.kpi_1_visits) * 100) : 0,
         },
         registrations: {
           current: refsCurrent,
-          target: target?.target_registrations || 0,
-          pct: target?.target_registrations > 0 ? Math.round((refsCurrent / target.target_registrations) * 100) : 0,
+          target: target?.kpi_2_registrations || 0,
+          pct: target?.kpi_2_registrations > 0 ? Math.round((refsCurrent / target.kpi_2_registrations) * 100) : 0,
         },
         conversions: {
           current: commsThisData.length,
+          target: target?.kpi_3_payments || 0,
+          pct: target?.kpi_3_payments > 0 ? Math.round((commsThisData.length / target.kpi_3_payments) * 100) : 0,
           rate: refsCurrent > 0 ? Math.round((commsThisData.length / refsCurrent) * 1000) / 10 : 0,
+        },
+        offline: {
+          current: offlineThis.count || 0,
+          target: target?.kpi_4_offline || 0,
+          pct: target?.kpi_4_offline > 0 ? Math.round(((offlineThis.count || 0) / target.kpi_4_offline) * 100) : 0,
         },
       },
       trend_30d: trend30d,
@@ -165,10 +174,10 @@ export async function GET() {
         status: c.status,
       })),
       // Legacy fields for backward compat
-      visits: { current: visitsCurrent, lastMonth: visitsLastMonth, target: target?.target_visits || 0 },
-      registrations: { current: refsCurrent, lastMonth: refsLastMonth, target: target?.target_registrations || 0 },
-      conversions: { current: commsThisData.length, lastMonth: commsLastData.length, target: target?.target_conversions || 0 },
-      commission: { current: Math.round(commissionThis * 100) / 100, lastMonth: Math.round(commissionLast * 100) / 100, target: target?.target_revenue || 0 },
+      visits: { current: visitsCurrent, lastMonth: visitsLastMonth, target: target?.kpi_1_visits || 0 },
+      registrations: { current: refsCurrent, lastMonth: refsLastMonth, target: target?.kpi_2_registrations || 0 },
+      conversions: { current: commsThisData.length, lastMonth: commsLastData.length, target: target?.kpi_3_payments || 0 },
+      commission: { current: Math.round(commissionThis * 100) / 100, lastMonth: Math.round(commissionLast * 100) / 100, target: target?.kpi_3_revenue || 0 },
     });
   } catch (error) {
     console.error('[sales/dashboard-stats]', error);

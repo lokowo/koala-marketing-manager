@@ -6,13 +6,14 @@ import { supabase } from '../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import {
-  IconCoins,
-  IconEye,
   IconUserPlus,
   IconCreditCard,
   IconBrandWechat,
   IconBook,
   IconMusic,
+  IconQrcode,
+  IconHeartHandshake,
+  IconChevronDown,
 } from '@tabler/icons-react';
 
 const STATUS_CFG: Record<string, { label: string; bg: string; text: string; darkBg?: string; darkText?: string }> = {
@@ -59,13 +60,21 @@ interface DashData {
     commission: { current: number; last_month: number; change_pct: number };
     visits: { current: number; target: number; pct: number };
     registrations: { current: number; target: number; pct: number };
-    conversions: { current: number; rate: number };
+    conversions: { current: number; target: number; pct: number; rate: number };
+    offline: { current: number; target: number; pct: number };
   };
   trend_30d: { date: string; visits: number; registrations: number }[];
   team_ranking: { rank: number; name: string; commission: number; is_me: boolean }[];
   channel_breakdown: { channel: string; visits: number; pct: number }[];
-  funnel: { visits: number; registrations: number; payments: number; renewals: number };
+  funnel: { visits: number; registrations: number; payments: number; offline: number };
   recent_commissions: { date: string; user_name: string; product: string; amount: number; status: string }[];
+}
+
+function getKpiColor(pct: number) {
+  if (pct >= 100) return '#3B82F6';
+  if (pct > 70) return '#22C55E';
+  if (pct > 30) return '#F59E0B';
+  return '#EF4444';
 }
 
 export default function SalesDashboard() {
@@ -129,13 +138,6 @@ export default function SalesDashboard() {
 
   const maxChannel = Math.max(...channel_breakdown.map(c => c.visits), 1);
 
-  const KPI_CARDS = [
-    { label: '本月佣金', icon: IconCoins, iconBg: 'bg-[#FEF3C7] dark:bg-[#F59E0B]/20', iconColor: 'text-[#F59E0B]', value: `$${kpi.commission.current.toFixed(2)}`, valueColor: 'text-[#059669] dark:text-[#34D399]', sub: kpi.commission.change_pct !== 0 ? `${kpi.commission.change_pct > 0 ? '↑' : '↓'}${Math.abs(kpi.commission.change_pct)}% vs上月` : '', subColor: kpi.commission.change_pct >= 0 ? 'text-[#059669]' : 'text-[#EF4444]', href: '/dashboard/sales/my-commissions' },
-    { label: '本月访问', icon: IconEye, iconBg: 'bg-[#DBEAFE] dark:bg-[#3B82F6]/20', iconColor: 'text-[#3B82F6]', value: String(kpi.visits.current), valueColor: 'text-[#1E293B] dark:text-[#E2E8F0]', sub: kpi.visits.target > 0 ? `目标${kpi.visits.target}` : '', subColor: 'text-[#64748B]', pct: kpi.visits.pct, href: '/dashboard/sales/channel-analytics' },
-    { label: '本月注册', icon: IconUserPlus, iconBg: 'bg-[#DCFCE7] dark:bg-[#22C55E]/20', iconColor: 'text-[#22C55E]', value: String(kpi.registrations.current), valueColor: 'text-[#1E293B] dark:text-[#E2E8F0]', sub: kpi.registrations.target > 0 ? `目标${kpi.registrations.target}` : '', subColor: 'text-[#64748B]', pct: kpi.registrations.pct, href: '/dashboard/sales/referral-users' },
-    { label: '本月转化', icon: IconCreditCard, iconBg: 'bg-[#F3E8FF] dark:bg-[#8B5CF6]/20', iconColor: 'text-[#8B5CF6]', value: String(kpi.conversions.current), valueColor: 'text-[#1E293B] dark:text-[#E2E8F0]', sub: `转化率 ${kpi.conversions.rate}%`, subColor: 'text-[#64748B]', href: '/dashboard/sales/referral-users' },
-  ];
-
   return (
     <div className="text-[#1E293B] dark:text-[#E2E8F0] max-w-5xl mx-auto space-y-5">
 
@@ -162,38 +164,41 @@ export default function SalesDashboard() {
         </span>
       </div>
 
-      {/* B: KPI Cards — colored icon backgrounds, hover lift */}
+      {/* B: KPI Funnel Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {KPI_CARDS.map(item => {
+        {[
+          { kpi: 1, name: '扫码访问', icon: IconQrcode, color: '#3B82F6', current: kpi.visits.current, target: kpi.visits.target, pct: kpi.visits.pct, convRate: null as number | null, convFrom: '' },
+          { kpi: 2, name: '注册', icon: IconUserPlus, color: '#22C55E', current: kpi.registrations.current, target: kpi.registrations.target, pct: kpi.registrations.pct, convRate: kpi.visits.current > 0 ? Math.round((kpi.registrations.current / kpi.visits.current) * 1000) / 10 : 0, convFrom: '访问→注册' },
+          { kpi: 3, name: '付费', icon: IconCreditCard, color: '#F59E0B', current: kpi.conversions.current, target: kpi.conversions.target, pct: kpi.conversions.pct, convRate: kpi.registrations.current > 0 ? Math.round((kpi.conversions.current / kpi.registrations.current) * 1000) / 10 : 0, convFrom: '注册→付费' },
+          { kpi: 4, name: '线下转化', icon: IconHeartHandshake, color: '#8B5CF6', current: kpi.offline.current, target: kpi.offline.target, pct: kpi.offline.pct, convRate: kpi.conversions.current > 0 ? Math.round((kpi.offline.current / kpi.conversions.current) * 1000) / 10 : 0, convFrom: '付费→线下' },
+        ].map(item => {
           const Icon = item.icon;
+          const barColor = getKpiColor(item.pct);
           return (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="rounded-2xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] hover:shadow-md hover:-translate-y-0.5 transition-all no-underline group"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <div className={`w-8 h-8 rounded-lg ${item.iconBg} flex items-center justify-center`}>
-                  <Icon size={16} className={item.iconColor} />
+            <div key={item.kpi} className="rounded-2xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] hover:shadow-md hover:-translate-y-0.5 transition-all">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: item.color + '15' }}>
+                  <Icon size={20} style={{ color: item.color }} />
                 </div>
-                <span className="text-xs text-[#64748B] dark:text-[#94A3B8]">{item.label}</span>
+                <div>
+                  <div className="text-[10px] font-semibold tracking-widest uppercase text-[#94A3B8] dark:text-[#64748B]">KPI {item.kpi}</div>
+                  <div className="text-sm font-medium text-[#1E293B] dark:text-[#E2E8F0]">{item.name}</div>
+                </div>
               </div>
-              <div className={`text-2xl font-bold ${item.valueColor}`}>{item.value}</div>
-              {item.sub && (
-                <div className={`mt-2 text-xs ${item.subColor}`}>
-                  {item.sub}
-                  {item.pct != null && ` · ${item.pct}%`}
+              <div className="text-3xl font-light tracking-tight text-[#1E293B] dark:text-white mb-1">{item.current}</div>
+              <div className="text-xs text-[#94A3B8] dark:text-[#64748B] mb-3">
+                目标 {item.target} · 完成 <span style={{ color: barColor }} className="font-medium">{item.pct}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-[#F1F5F9] dark:bg-[#0F172A] overflow-hidden mb-3">
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(item.pct, 100)}%`, background: barColor }} />
+              </div>
+              {item.convRate !== null && (
+                <div className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
+                  转化率 <span className="font-medium text-[#F59E0B]">{item.convRate}%</span>
+                  <span className="ml-1 text-[#94A3B8]">({item.convFrom})</span>
                 </div>
               )}
-              {item.pct != null && item.pct > 0 && (
-                <div className="mt-3 h-1.5 rounded-full bg-[#F1F5F9] dark:bg-[#334155] overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#F59E0B] to-[#EAB308] transition-all duration-500"
-                    style={{ width: `${Math.min(item.pct, 100)}%` }}
-                  />
-                </div>
-              )}
-            </Link>
+            </div>
           );
         })}
       </div>
@@ -293,34 +298,43 @@ export default function SalesDashboard() {
           )}
         </div>
 
-        {/* Conversion Funnel — 28px bars */}
+        {/* Conversion Funnel — KPI 4-level */}
         <div className="rounded-2xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
-          <h2 className="text-sm font-semibold text-[#374151] dark:text-[#E2E8F0] mb-3">转化漏斗</h2>
-          <div className="space-y-3">
-            {[
-              { label: '访问', value: funnel.visits, color: '#F59E0B', pct: 100 },
-              { label: '注册', value: funnel.registrations, color: '#3B82F6', pct: funnel.visits > 0 ? Math.round((funnel.registrations / funnel.visits) * 100) : 0 },
-              { label: '付费', value: funnel.payments, color: '#22C55E', pct: funnel.registrations > 0 ? Math.round((funnel.payments / funnel.registrations) * 100) : 0 },
-              { label: '续费', value: funnel.renewals, color: '#8B5CF6', pct: funnel.payments > 0 ? Math.round((funnel.renewals / funnel.payments) * 100) : 0 },
-            ].map((stage, i) => (
-              <div key={stage.label}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-[#374151] dark:text-[#CBD5E1] font-medium">{stage.label}</span>
-                  <span className="text-xs font-medium" style={{ color: stage.color }}>
-                    {stage.value} {i > 0 && <span className="text-[10px] text-[#64748B] dark:text-[#94A3B8]">({stage.pct}%)</span>}
+          <h2 className="text-base font-light tracking-tight text-[#1E293B] dark:text-white mb-6">销售漏斗</h2>
+          {(() => {
+            const visits = funnel.visits;
+            const levels = [
+              { kpi: 1, name: '扫码访问', value: visits, color: '#3B82F6', widthPct: 100 },
+              { kpi: 2, name: '注册', value: funnel.registrations, color: '#22C55E', widthPct: visits > 0 ? Math.max((funnel.registrations / visits) * 100, 5) : 5 },
+              { kpi: 3, name: '付费', value: funnel.payments, color: '#F59E0B', widthPct: visits > 0 ? Math.max((funnel.payments / visits) * 100, 5) : 5 },
+              { kpi: 4, name: '线下转化', value: funnel.offline, color: '#8B5CF6', widthPct: visits > 0 ? Math.max((funnel.offline / visits) * 100, 5) : 5 },
+            ];
+            return levels.map((level, i) => (
+              <div key={level.kpi}>
+                <div className="flex items-center gap-3 mb-1">
+                  <span className="w-12 text-[10px] font-semibold tracking-wider text-[#94A3B8]">KPI {level.kpi}</span>
+                  <span className="w-16 text-xs text-[#64748B] dark:text-[#94A3B8] truncate">{level.name}</span>
+                  <div className="flex-1 h-8 rounded-lg bg-[#F1F5F9] dark:bg-[#0F172A] overflow-hidden">
+                    <div className="h-full rounded-lg flex items-center px-3 transition-all duration-700"
+                      style={{ width: `${level.widthPct}%`, background: level.color + '20', borderLeft: `3px solid ${level.color}` }}>
+                      <span className="text-xs font-medium" style={{ color: level.color }}>{level.value}</span>
+                    </div>
+                  </div>
+                  <span className="w-12 text-right text-xs text-[#94A3B8]">
+                    {i === 0 ? '100%' : visits > 0 ? Math.round((level.value / visits) * 100) + '%' : '0%'}
                   </span>
                 </div>
-                <div className="h-7 rounded-lg overflow-hidden bg-[#F1F5F9] dark:bg-[#334155]">
-                  <div
-                    className="h-full rounded-lg flex items-center px-3 transition-all duration-500"
-                    style={{ width: `${Math.max(stage.pct, 5)}%`, background: stage.color + '20' }}
-                  >
-                    <span className="text-[10px] font-bold" style={{ color: stage.color }}>{stage.value}</span>
+                {i < levels.length - 1 && (
+                  <div className="flex items-center ml-28 my-1.5">
+                    <IconChevronDown size={12} className="text-[#F59E0B]" />
+                    <span className="text-[10px] text-[#F59E0B] ml-1">
+                      转化率 {levels[i].value > 0 ? Math.round((levels[i + 1].value / levels[i].value) * 100) : 0}%
+                    </span>
                   </div>
-                </div>
+                )}
               </div>
-            ))}
-          </div>
+            ));
+          })()}
         </div>
       </div>
 
@@ -380,7 +394,7 @@ export default function SalesDashboard() {
           return (
             <button
               key={ch.key}
-              onClick={() => copyCode(`https://koalaphd.com/?ref=${agent.referral_code}&ch=${ch.key}`, ch.key)}
+              onClick={() => copyCode(`https://koalaphd.com/koala/auth?ref=${agent.referral_code}&ch=${ch.key}`, ch.key)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition whitespace-nowrap"
               style={{
                 background: ch.color + '15',

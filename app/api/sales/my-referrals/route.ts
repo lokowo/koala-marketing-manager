@@ -44,6 +44,9 @@ export async function GET(req: Request) {
         email: profile?.email || '',
         avatar_url: profile?.avatar_url || null,
         has_paid: (r.total_revenue || 0) > 0,
+        offline_converted: r.offline_converted || false,
+        offline_converted_at: r.offline_converted_at || null,
+        offline_notes: r.offline_notes || null,
       };
     });
 
