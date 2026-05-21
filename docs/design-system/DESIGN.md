@@ -309,7 +309,45 @@ Footer (简洁, 一行)
 
 ---
 
-## 10. File Reference 文件参考
+## 10. 已确认设计模式
+
+以下模式已在实际页面中验证通过，后续开发必须遵守。
+
+### 产品分组规则
+- **订阅产品** (`sub_*`): 蓝色 badge (`bg-blue-50 text-blue-600` / `dark:bg-blue-900/30 dark:text-blue-400`)
+- **积分包** (`credit_*`): 紫色 badge (`bg-purple-50 text-purple-600` / `dark:bg-purple-900/30 dark:text-purple-400`)
+- 分组之间用 section header 分隔（badge + 横线）
+
+### 三 Tier 颜色映射
+| Tier | 浅色模式 | 深色模式 | 圆点色 |
+|------|---------|---------|--------|
+| Standard | `#6b7280` (gray-500) | `#9ca3af` (gray-400) | `bg-gray-400` |
+| Senior | `#d97706` (amber-600) | `#fbbf24` (amber-400) | `bg-amber-500` |
+| Partner | `#9333ea` (purple-600) | `#c084fc` (purple-400) | `bg-purple-500` |
+
+### 浅深模式 CSS Variable 用法
+页面通过 CSS custom properties 实现浅深模式切换，不硬编码 hex：
+```css
+.tier-page {
+  --text-primary: #111827;      /* 深色切换为 #f3f4f6 */
+  --text-secondary: #6b7280;    /* 深色切换为 #9ca3af */
+  --text-tertiary: #9ca3af;     /* 深色切换为 #6b7280 */
+  --card-bg: #ffffff;           /* 深色切换为 #1f2937 */
+  --card-border: #e5e7eb;       /* 深色切换为 #374151 */
+  --surface-raised: #f9fafb;    /* 深色切换为 #111827 */
+}
+```
+通过 `@media (prefers-color-scheme: dark)` 和 `.dark` 类双重覆盖。
+
+### 数字输入
+所有数字输入字段必须使用 `NumberInput` 组件（或等效逻辑），特性：
+- 禁止 leading zeros（`007` → `7`）
+- `inputMode="decimal"` 触发数字键盘
+- 空值显示空字符串而非 `"0"`
+
+---
+
+## 11. File Reference 文件参考
 
 本设计系统配合以下文件使用:
 
