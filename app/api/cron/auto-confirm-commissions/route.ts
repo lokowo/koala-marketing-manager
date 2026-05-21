@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { checkAndPromoteAgent } from '../../../lib/server/commission';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -31,6 +32,11 @@ export async function GET(req: NextRequest) {
         details: { commission_amount: c.commission_amount, method: 'auto_t30' },
       });
     }
+    const agentIds = [...new Set(pending.filter((c: { refunded_amount: string }) => !(parseFloat(c.refunded_amount) > 0)).map((c: { agent_id: string }) => c.agent_id))] as string[];
+    for (const agentId of agentIds) {
+      await checkAndPromoteAgent(agentId);
+    }
+
     console.log(`[cron] Auto-confirmed ${count} commissions, total AUD ${total.toFixed(2)}`);
     return NextResponse.json({ confirmed: count, total_amount: Math.round(total * 100) / 100, skipped: pending.length - count });
   } catch (error) {

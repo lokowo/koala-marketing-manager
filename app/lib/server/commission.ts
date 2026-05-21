@@ -54,11 +54,12 @@ export async function checkAndPromoteAgent(agentId: string): Promise<void> {
 
   const currentOrder = TIER_ORDER[agent.tier || 'standard'] ?? 0;
   const newOrder = TIER_ORDER[newTier] ?? 0;
-  if (newOrder > currentOrder) {
+  if (newOrder !== currentOrder) {
     await db.from('sales_agents').update({ tier: newTier }).eq('id', agentId);
+    const action = newOrder > currentOrder ? 'agent_tier_promoted' : 'agent_tier_demoted';
     await db.from('sales_audit_logs').insert({
       actor_id: agentId, actor_email: 'system', actor_role: 'system',
-      action: 'agent_tier_promoted', target_type: 'sales_agent', target_id: agentId,
+      action, target_type: 'sales_agent', target_id: agentId,
       details: { from_tier: agent.tier, to_tier: newTier, total_commission: totalCommission, agent_name: agent.name },
     });
   }
@@ -150,4 +151,6 @@ export async function handleRefund(params: {
     action: 'commission_refunded', target_type: 'commission', target_id: commission.id,
     details: { original_status: commission.status, refund_amount: refundAmount, refund_event_id: refundEventId },
   });
+
+  await checkAndPromoteAgent(commission.agent_id);
 }
