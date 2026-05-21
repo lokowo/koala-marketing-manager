@@ -13,7 +13,10 @@ interface Commission {
   commission_amount: number;
   status: string;
   created_at: string;
-  paid_at: string | null;
+  paid_out_at: string | null;
+  payout_reference: string | null;
+  payout_method: string | null;
+  payout_note: string | null;
 }
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {

@@ -46,7 +46,9 @@ export async function GET(req: Request) {
       commission_amount: c.commission_amount,
       status: c.status,
       created_at: c.created_at,
-      paid_at: c.paid_at,
+      paid_out_at: c.paid_out_at,
+      payout_reference: c.payout_reference,
+      payout_method: c.payout_method,
       user_name: c.sales_referrals?.user_profiles?.display_name || c.sales_referrals?.user_profiles?.email || '未知',
     }));
 

@@ -33,7 +33,10 @@ export async function GET(req: Request) {
       commission_amount: c.commission_amount,
       status: c.status,
       created_at: c.created_at,
-      paid_at: c.paid_at,
+      paid_out_at: c.paid_out_at,
+      payout_reference: c.payout_reference,
+      payout_method: c.payout_method,
+      payout_note: c.payout_note,
     }));
 
     const pendingTotal = items.filter((c: any) => c.status === 'confirmed').reduce((s: number, c: any) => s + c.commission_amount, 0);
@@ -52,16 +55,25 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { commission_ids } = await req.json();
+    const { commission_ids, payout_reference, payout_method, payout_note } = await req.json();
     if (!commission_ids?.length) {
       return Response.json({ error: 'No commission IDs provided' }, { status: 400 });
     }
 
     const now = new Date().toISOString();
 
+    const updatePayload: Record<string, unknown> = {
+      status: 'paid_out',
+      paid_out_at: now,
+      paid_out_by: result.user.id,
+    };
+    if (payout_reference) updatePayload.payout_reference = payout_reference;
+    if (payout_method) updatePayload.payout_method = payout_method;
+    if (payout_note) updatePayload.payout_note = payout_note;
+
     const { error } = await db
       .from('sales_commissions')
-      .update({ status: 'paid_out', paid_at: now })
+      .update(updatePayload)
       .in('id', commission_ids)
       .eq('status', 'confirmed');
 
@@ -73,7 +85,7 @@ export async function POST(req: Request) {
       actor_role: result.role,
       action: 'commission_batch_payout',
       target_type: 'commission',
-      details: { commission_ids, count: commission_ids.length, paid_at: now },
+      details: { commission_ids, count: commission_ids.length, paid_out_at: now, payout_reference, payout_method },
     });
 
     return Response.json({ ok: true, count: commission_ids.length });
