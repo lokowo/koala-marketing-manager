@@ -228,7 +228,7 @@ export default function WorkLogsPage() {
                   const logRole = (log.details as Record<string, unknown>)?.role as string || 'admin';
                   return (
                     <React.Fragment key={log.id}>
-                      <tr className="hover:bg-gray-50 dark:bg-gray-800/50 cursor-pointer" onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}>
+                      <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer" onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}>
                         <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                           {new Date(log.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                         </td>
@@ -274,7 +274,7 @@ export default function WorkLogsPage() {
                               {log.details && (
                                 <div>
                                   <span className="text-gray-400 dark:text-gray-500">详情:</span>
-                                  <pre className="mt-1 p-2 rounded bg-white border border-gray-200 dark:border-gray-700 text-[10px] text-gray-600 dark:text-gray-400 overflow-auto max-h-[200px] whitespace-pre-wrap">
+                                  <pre className="mt-1 p-2 rounded bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-[10px] text-gray-600 dark:text-gray-400 overflow-auto max-h-[200px] whitespace-pre-wrap">
                                     {JSON.stringify(log.details, null, 2)}
                                   </pre>
                                 </div>
@@ -292,9 +292,9 @@ export default function WorkLogsPage() {
 
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-4">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 text-xs rounded bg-white border border-gray-200 dark:border-gray-700 disabled:opacity-50">上一页</button>
+              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 text-xs rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 disabled:opacity-50">上一页</button>
               <span className="text-xs text-gray-500 dark:text-gray-400">{page} / {totalPages}</span>
-              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 text-xs rounded bg-white border border-gray-200 dark:border-gray-700 disabled:opacity-50">下一页</button>
+              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 text-xs rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 disabled:opacity-50">下一页</button>
             </div>
           )}
         </>

@@ -219,7 +219,7 @@ export default function KnowledgeBasePage() {
           <button onClick={handleBackfill} disabled={backfilling} className="px-3 py-2 border border-orange-300 text-orange-700 text-sm rounded-lg hover:bg-orange-50 transition disabled:opacity-50">
             {backfilling ? '重建中...' : '重建索引'}
           </button>
-          <button onClick={() => setShowBatch(true)} className="px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:bg-gray-800/50 transition">
+          <button onClick={() => setShowBatch(true)} className="px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
             批量导入
           </button>
           <button onClick={openCreate} className="px-3 py-2 bg-[#1A1A2E] text-white text-sm rounded-lg hover:bg-[#2A2A3E] transition">
@@ -328,7 +328,7 @@ export default function KnowledgeBasePage() {
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {chunks.map(chunk => (
-              <div key={chunk.id} className="p-4 hover:bg-gray-50 dark:bg-gray-800/50 group">
+              <div key={chunk.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 group">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
@@ -353,8 +353,8 @@ export default function KnowledgeBasePage() {
           <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-sm">
             <span className="text-gray-500 dark:text-gray-400">第 {page}/{totalPages} 页</span>
             <div className="flex gap-2">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:bg-gray-800/50 disabled:opacity-30">上一页</button>
-              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:bg-gray-800/50 disabled:opacity-30">下一页</button>
+              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-30">上一页</button>
+              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-30">下一页</button>
             </div>
           </div>
         )}

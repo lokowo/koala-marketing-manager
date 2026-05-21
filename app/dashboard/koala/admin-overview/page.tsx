@@ -176,7 +176,7 @@ export default function AdminOverviewPage() {
                     const total = Object.values(admin.actions).reduce((a, b) => a + b, 0);
                     const other = total - blogCount - profCount - emailCount;
                     return (
-                      <tr key={admin.userId} className="hover:bg-gray-50 dark:bg-gray-800/50">
+                      <tr key={admin.userId} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                         <td className="px-3 py-2">
                           <Link href={`/dashboard/koala/work-logs/${admin.userId}?role=admin`} className="text-gray-700 dark:text-gray-300 hover:text-amber-500 no-underline font-medium">
                             {admin.name}
@@ -221,7 +221,7 @@ export default function AdminOverviewPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {data.salesLeaderboard.map((s, i) => (
-                    <tr key={s.userId} className={s.met ? 'bg-green-50/50' : 'bg-red-50/30'}>
+                    <tr key={s.userId} className={s.met ? 'bg-green-50/50 dark:bg-green-900/10' : 'bg-red-50/30 dark:bg-red-900/10'}>
                       <td className="px-2 py-2 text-gray-400 dark:text-gray-500 font-bold">{i + 1}</td>
                       <td className="px-2 py-2">
                         <Link href={`/dashboard/koala/work-logs/${s.userId}?role=sales`} className="text-gray-700 dark:text-gray-300 hover:text-amber-500 no-underline font-medium">
@@ -259,7 +259,7 @@ export default function AdminOverviewPage() {
               const roleIcon = item.role === 'sales' ? '🟢' : '📝';
               const roleLabel = item.role === 'sales' ? 'Sales' : 'Admin';
               return (
-                <div key={item.id} className="flex items-start gap-3 py-2.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                <div key={item.id} className="flex items-start gap-3 py-2.5 border-b border-gray-100 dark:border-gray-700/50 last:border-0">
                   <span className="text-[10px] text-gray-400 dark:text-gray-500 w-16 flex-shrink-0 pt-0.5">{timeAgo(item.createdAt)}</span>
                   <span className="text-sm flex-shrink-0">{roleIcon}</span>
                   <div className="flex-1 min-w-0">

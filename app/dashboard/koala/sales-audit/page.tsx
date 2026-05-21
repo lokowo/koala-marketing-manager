@@ -110,7 +110,7 @@ export default function SalesAuditPage() {
                   return (
                     <div
                       key={log.id}
-                      className="bg-white rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition cursor-pointer"
+                      className="bg-white dark:bg-[#1E293B] rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition cursor-pointer"
                       onClick={() => setExpanded(isExpanded ? null : log.id)}
                     >
                       <div className="flex items-start gap-3 px-4 py-3">
@@ -142,7 +142,7 @@ export default function SalesAuditPage() {
                         </span>
                       </div>
                       {isExpanded && log.details && (
-                        <div className="px-4 pb-3 border-t border-[#F3F4F6]">
+                        <div className="px-4 pb-3 border-t border-[#F3F4F6] dark:border-gray-700">
                           <pre className="text-[10px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 mt-2 overflow-x-auto">
                             {JSON.stringify(log.details, null, 2)}
                           </pre>

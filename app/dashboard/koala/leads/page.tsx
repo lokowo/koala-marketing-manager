@@ -83,7 +83,7 @@ export default function LeadsPage() {
             </thead>
             <tbody>
               {leads.map(lead => (
-                <tr key={lead.id} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800/50">
+                <tr key={lead.id} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300">{lead.source}</td>
                   <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300">{lead.ai_score}</td>
                   <td className="px-4 py-2.5">

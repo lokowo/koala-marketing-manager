@@ -161,19 +161,19 @@ export default function UsersPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <div className="text-2xl font-medium text-gray-900 dark:text-gray-100">{users.length}</div>
           <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">总用户 <span className="text-emerald-600">+{todayCount} 今日</span></div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <div className="text-2xl font-medium text-gray-900 dark:text-gray-100">{activeCount}</div>
           <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">7天活跃用户</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <div className="text-2xl font-medium text-gray-900 dark:text-gray-100">—</div>
           <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">有画像用户</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <div className="text-2xl font-medium text-gray-900 dark:text-gray-100">—</div>
           <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">本月申请信</div>
         </div>
@@ -194,7 +194,7 @@ export default function UsersPage() {
         <button
           onClick={() => setShowFilters(v => !v)}
           className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-lg transition-colors ${
-            showFilters ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:bg-gray-800/50'
+            showFilters ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
           }`}
         >
           <Filter className="size-3.5" />
@@ -207,7 +207,7 @@ export default function UsersPage() {
         <div className="flex gap-3 flex-wrap bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
           <div>
             <label className="block text-[11px] text-gray-500 dark:text-gray-400 mb-1">注册时间</label>
-            <select value={timeFilter} onChange={e => setTimeFilter(e.target.value)} className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white">
+            <select value={timeFilter} onChange={e => setTimeFilter(e.target.value)} className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800">
               <option value="all">全部</option>
               <option value="7d">最近7天</option>
               <option value="30d">最近30天</option>
@@ -231,7 +231,7 @@ export default function UsersPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
             <tr>
@@ -298,7 +298,7 @@ export default function UsersPage() {
                         disabled={saving === user.id}
                         onChange={e => updateRole(e as unknown as React.MouseEvent, user.id, e.target.value as UserRole)}
                         onClick={e => e.stopPropagation()}
-                        className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-[11px] text-gray-700 dark:text-gray-300 bg-white focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                        className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-[11px] text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 focus:outline-none focus:border-emerald-500 disabled:opacity-50"
                       >
                         <option value="">— 无权限 —</option>
                         <option value="viewer">只读</option>

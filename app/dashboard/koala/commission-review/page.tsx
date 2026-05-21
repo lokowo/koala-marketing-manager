@@ -141,11 +141,11 @@ export default function CommissionReviewPage() {
                   <th className="text-center px-3 py-2.5 font-medium">状态</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                 {commissions.map(c => {
                   const cfg = STATUS_CFG[c.status] || STATUS_CFG.pending;
                   return (
-                    <tr key={c.id} className={`hover:bg-gray-50 dark:bg-gray-800/50 ${selected.has(c.id) ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}>
+                    <tr key={c.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${selected.has(c.id) ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}>
                       {statusFilter === 'confirmed' && (
                         <td className="px-3 py-2.5">
                           <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} className="accent-[#F59E0B]" />

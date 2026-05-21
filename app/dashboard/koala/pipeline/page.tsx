@@ -40,7 +40,7 @@ export default function PipelinePage() {
           { label: '待审核', value: '0', icon: '⏳' },
           { label: '总教授数', value: '0', icon: '📊' },
         ].map(stat => (
-          <div key={stat.label} className="bg-white rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+          <div key={stat.label} className="bg-white dark:bg-[#1E293B] rounded-xl p-5 border border-gray-200 dark:border-gray-700">
             <div className="text-2xl mb-1">{stat.icon}</div>
             <div className="text-xl font-medium text-gray-900 dark:text-gray-100">{stat.value}</div>
             <div className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</div>
@@ -48,7 +48,7 @@ export default function PipelinePage() {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">API 状态</h2>
         <div className="space-y-2">
           {apiStatus.map(api => (
@@ -65,7 +65,7 @@ export default function PipelinePage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">手动触发采集</h2>
           <button

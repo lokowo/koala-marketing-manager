@@ -98,7 +98,7 @@ export default function MarketingToolsPage() {
                 <span className="text-2xl">{tool.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 text-gray-900 dark:text-gray-100">{tool.title}</h3>
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{tool.title}</h3>
                     <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                       可用 ✅
                     </span>

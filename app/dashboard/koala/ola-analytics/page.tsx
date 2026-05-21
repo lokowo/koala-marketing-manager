@@ -150,13 +150,13 @@ export default function OlaAnalyticsPage() {
     <div>
       <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100 mb-4">Ola 分析</h1>
 
-      <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 w-fit">
         {tabs.map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              tab === t.key ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              tab === t.key ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             {t.label}
@@ -192,7 +192,7 @@ function OverviewTab({ kpi, funnel, ratings }: { kpi: KPIData | null; funnel: Fu
 
       {/* Funnel Chart */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4">对话漏斗</h2>
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">对话漏斗</h2>
         {funnel.length === 0 ? (
           <p className="text-gray-400 text-sm">暂无数据</p>
         ) : (
@@ -204,7 +204,7 @@ function OverviewTab({ kpi, funnel, ratings }: { kpi: KPIData | null; funnel: Fu
                   <span className="text-xs text-gray-500 w-20 shrink-0 text-right">
                     {STAGE_LABELS[item.stage] || item.stage}
                   </span>
-                  <div className="flex-1 bg-gray-100 rounded-full h-7 relative overflow-hidden">
+                  <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-7 relative overflow-hidden">
                     <div
                       className="h-full bg-amber-400 rounded-full transition-all duration-500 flex items-center"
                       style={{ width: `${Math.max((item.count / maxCount) * 100, 2)}%` }}
@@ -224,7 +224,7 @@ function OverviewTab({ kpi, funnel, ratings }: { kpi: KPIData | null; funnel: Fu
       {/* Rating Distribution */}
       {ratings && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">评分分布 (30天)</h2>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">评分分布 (30天)</h2>
           <div className="flex items-end gap-3 h-32 mb-4">
             {[1, 2, 3, 4, 5].map(star => {
               const count = ratings.distribution[star] || 0;
@@ -232,14 +232,14 @@ function OverviewTab({ kpi, funnel, ratings }: { kpi: KPIData | null; funnel: Fu
               const height = Math.max((count / maxCount) * 100, 4);
               return (
                 <div key={star} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{count}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{count}</span>
                   <div className="w-full flex items-end" style={{ height: '100px' }}>
                     <div
                       className={`w-full rounded-t transition-all duration-500 ${star <= 2 ? 'bg-red-400' : star === 3 ? 'bg-amber-400' : 'bg-green-400'}`}
                       style={{ height: `${height}%` }}
                     />
                   </div>
-                  <span className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500">{star}★</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{star}★</span>
                 </div>
               );
             })}
@@ -247,13 +247,13 @@ function OverviewTab({ kpi, funnel, ratings }: { kpi: KPIData | null; funnel: Fu
 
           {ratings.lowRated.length > 0 && (
             <div>
-              <h3 className="text-xs font-medium text-gray-600 mb-2">差评列表 (≤2分)</h3>
+              <h3 className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">差评列表 (≤2分)</h3>
               <div className="space-y-2">
                 {ratings.lowRated.slice(0, 10).map(lr => (
-                  <div key={lr.sessionId} className="flex items-center gap-3 text-xs bg-red-50 rounded-lg p-3">
+                  <div key={lr.sessionId} className="flex items-center gap-3 text-xs bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
                     <span className="text-red-500 font-bold">{lr.rating}★</span>
-                    <span className="text-gray-600 flex-1 truncate">{lr.comment || '无评论'}</span>
-                    <span className="text-gray-400 shrink-0">{new Date(lr.ratedAt).toLocaleDateString('zh-CN')}</span>
+                    <span className="text-gray-600 dark:text-gray-300 flex-1 truncate">{lr.comment || '无评论'}</span>
+                    <span className="text-gray-400 dark:text-gray-500 shrink-0">{new Date(lr.ratedAt).toLocaleDateString('zh-CN')}</span>
                   </div>
                 ))}
               </div>
@@ -281,7 +281,7 @@ function DetailsTab({ triggers }: { triggers: TriggerItem[] }) {
     <div className="space-y-6">
       {/* Trigger Effectiveness */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4">触发规则效果</h2>
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">触发规则效果</h2>
         {triggers.length === 0 ? (
           <p className="text-gray-400 text-sm">暂无触发数据</p>
         ) : (
@@ -289,20 +289,20 @@ function DetailsTab({ triggers }: { triggers: TriggerItem[] }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-gray-700">
-                  <th className="text-left py-2 px-3 text-gray-500 font-medium">触发规则</th>
-                  <th className="text-right py-2 px-3 text-gray-500 font-medium">展示</th>
-                  <th className="text-right py-2 px-3 text-gray-500 font-medium">点击</th>
-                  <th className="text-right py-2 px-3 text-gray-500 font-medium">关闭</th>
-                  <th className="text-right py-2 px-3 text-gray-500 font-medium">点击率</th>
+                  <th className="text-left py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">触发规则</th>
+                  <th className="text-right py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">展示</th>
+                  <th className="text-right py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">点击</th>
+                  <th className="text-right py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">关闭</th>
+                  <th className="text-right py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">点击率</th>
                 </tr>
               </thead>
               <tbody>
                 {triggers.map(t => (
-                  <tr key={t.triggerKey} className="border-b border-gray-50 hover:bg-gray-50 dark:bg-gray-800/50">
-                    <td className="py-2 px-3 text-gray-900 font-mono text-xs">{t.triggerKey}</td>
-                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400 dark:text-gray-500">{t.shown}</td>
-                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400 dark:text-gray-500">{t.clicked}</td>
-                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400 dark:text-gray-500">{t.dismissed}</td>
+                  <tr key={t.triggerKey} className="border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <td className="py-2 px-3 text-gray-900 dark:text-gray-100 font-mono text-xs">{t.triggerKey}</td>
+                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{t.shown}</td>
+                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{t.clicked}</td>
+                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{t.dismissed}</td>
                     <td className="py-2 px-3 text-right">
                       <span className={`font-medium ${t.clickRate > 10 ? 'text-green-600' : t.clickRate > 5 ? 'text-amber-600' : 'text-gray-600'}`}>
                         {t.clickRate}%
@@ -318,13 +318,13 @@ function DetailsTab({ triggers }: { triggers: TriggerItem[] }) {
 
       {/* Tool Stats Placeholder */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-2">Tool 使用统计</h2>
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Tool 使用统计</h2>
         <p className="text-gray-400 text-sm">暂无数据 — 需要 ola_events 埋点后启用</p>
       </div>
 
       {/* Knowledge Gaps Placeholder */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-2">知识盲区 Top 10</h2>
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">知识盲区 Top 10</h2>
         <p className="text-gray-400 text-sm">功能开发中 — 需要 RAG 引擎记录 miss 事件</p>
       </div>
     </div>
@@ -343,13 +343,13 @@ function EmailsTab({
   return (
     <div className="space-y-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4">再激活邮件模板</h2>
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">再激活邮件模板</h2>
         {templates.length === 0 ? (
           <p className="text-gray-400 text-sm">暂无模板 — 请先运行 seed API</p>
         ) : (
           <div className="space-y-3">
             {templates.map(t => (
-              <div key={t.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+              <div key={t.id} className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 <button
                   onClick={() => onToggle(t.id, !t.enabled)}
                   className={`w-10 h-6 rounded-full relative transition-colors ${t.enabled ? 'bg-green-500' : 'bg-gray-300'}`}
@@ -363,10 +363,10 @@ function EmailsTab({
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {TEMPLATE_LABELS[t.template_key] || t.template_key}
                   </p>
-                  <p className="text-xs text-gray-500 truncate">{t.subject_zh}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{t.subject_zh}</p>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-gray-500 shrink-0">
+                <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 shrink-0">
                   <span>发送 {t.stats.sent}</span>
                   <span>打开 {t.stats.sent > 0 ? Math.round((t.stats.opened / t.stats.sent) * 100) : 0}%</span>
                   <span>点击 {t.stats.sent > 0 ? Math.round((t.stats.clicked / t.stats.sent) * 100) : 0}%</span>

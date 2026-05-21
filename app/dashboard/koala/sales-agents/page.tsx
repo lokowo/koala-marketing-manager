@@ -109,7 +109,7 @@ export default function SalesAgentsPage() {
         placeholder="搜索姓名、邮箱或推广码..."
         value={search}
         onChange={e => setSearch(e.target.value)}
-        className="w-full rounded-lg px-4 py-2.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:text-gray-500 focus:outline-none focus:border-[#F59E0B]"
+        className="w-full rounded-lg px-4 py-2.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:border-[#F59E0B]"
       />
 
       {loading ? (
@@ -130,13 +130,13 @@ export default function SalesAgentsPage() {
                   <th className="text-center px-4 py-2.5 font-medium">ID</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#F3F4F6]">
+              <tbody className="divide-y divide-[#F3F4F6] dark:divide-gray-700">
                 {agents.map(agent => {
                   const profile = agent.user_profiles;
                   const statusCfg = STATUS_CFG[agent.status] || STATUS_CFG.active;
                   const tierCfg = TIER_CFG[agent.tier] || TIER_CFG.standard;
                   return (
-                    <tr key={agent.id} className="hover:bg-gray-50 dark:bg-gray-800/50">
+                    <tr key={agent.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
                           <div className="size-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-400">
@@ -212,7 +212,7 @@ export default function SalesAgentsPage() {
                       <button
                         key={u.id}
                         onClick={() => { setSelectedUser({ id: u.id, email: u.email }); setUserResults([]); setUserSearch(u.email); }}
-                        className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:bg-gray-800/50 transition ${selectedUser?.id === u.id ? 'bg-[#FFFBEB]' : ''}`}
+                        className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700/50 transition ${selectedUser?.id === u.id ? 'bg-[#FFFBEB] dark:bg-amber-900/20' : ''}`}
                       >
                         <span className="font-medium text-gray-900 dark:text-gray-100">{u.display_name}</span>
                         <span className="text-gray-400 dark:text-gray-500 ml-2">{u.email}</span>

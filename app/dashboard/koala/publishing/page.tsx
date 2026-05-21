@@ -80,7 +80,7 @@ export default function PublishingPage() {
       </div>
 
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">{tp.pageTitle} ({records.length})</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{tp.pageTitle} ({records.length})</h3>
         <button onClick={() => setShowForm(true)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
           {tp.addButton}
         </button>
@@ -126,7 +126,7 @@ export default function PublishingPage() {
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {records.map((record) => (
-                <tr key={record.id} className="hover:bg-gray-50 dark:bg-gray-800/50">
+                <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{record.platform}</td>
                   <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{record.contentTitle}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{record.publishDate}</td>

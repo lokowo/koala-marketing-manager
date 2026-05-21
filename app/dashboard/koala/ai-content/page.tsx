@@ -155,7 +155,7 @@ export default function AIContentPage() {
               <button
                 key={n}
                 onClick={() => setImageCount(n)}
-                className={`px-3 py-1.5 text-sm rounded-lg border ${imageCount === n ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                className={`px-3 py-1.5 text-sm rounded-lg border ${imageCount === n ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
               >
                 {n === 0 ? '无插图' : `${n}张`}
               </button>

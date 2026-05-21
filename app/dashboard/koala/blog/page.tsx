@@ -152,7 +152,7 @@ export default function BlogPage() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">AI生成文章自动保存到草稿箱，编辑确认后点击发布</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/koala/blog" target="_blank" className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <Link href="/koala/blog" target="_blank" className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
             🌐 查看博客
           </Link>
           <Link href="/dashboard/koala/ai-content/batch" className="px-4 py-2 text-sm border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50">
@@ -161,7 +161,7 @@ export default function BlogPage() {
           <button onClick={() => setShowProfModal(true)} className="px-4 py-2 text-sm border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50">
             🎓 教授推荐
           </button>
-          <Link href="/dashboard/koala/ai-content" className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          <Link href="/dashboard/koala/ai-content" className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
             ✏️ AI生成
           </Link>
           <Link href="/dashboard/koala/blog/edit" className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700">
@@ -1150,7 +1150,7 @@ function ImageManagerModal({
                 <div className="flex gap-2">
                   <button
                     onClick={() => setStatus('editing')}
-                    className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                    className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   >
                     ✏️ 编辑图片
                   </button>
@@ -1177,7 +1177,7 @@ function ImageManagerModal({
               <div className="flex gap-3">
                 <button
                   onClick={() => setStatus('editing')}
-                  className="flex-1 px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                  className="flex-1 px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
                   ✏️ 编辑排列
                 </button>

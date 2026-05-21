@@ -1,184 +1,158 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
+import Link from 'next/link';
 
-interface KPI {
-  weekly_new_leads: number;
-  weekly_followups: number;
-  weekly_conversions: number;
-  monthly_revenue_target: number;
+interface KpiValue {
+  current: number;
+  target: number;
+  pct: number;
 }
 
-interface WeekSnapshot {
-  week_start: string;
-  total_leads: number;
-  total_conversions: number;
-  sales_count: number;
-}
-
-interface SalesKpi {
-  userId: string;
+interface AgentKpi {
+  id: string;
   name: string;
-  weeklyLeads: number;
-  weeklyFollowups: number;
-  weeklyConversions: number;
-  weeklyContacts: number;
-  contactMethodBreakdown: Record<string, number>;
-  totalCustomers: number;
-  totalConverted: number;
-  conversionRate: string;
-  leadsTarget: number;
-  followupsTarget: number;
-  conversionsTarget: number;
-  leadsMet: boolean;
-  followupsMet: boolean;
-  conversionsMet: boolean;
+  referral_code: string;
+  kpi1: KpiValue;
+  kpi2: KpiValue;
+  kpi3: KpiValue;
+  kpi4: KpiValue;
+  revenue: number;
+  overall_pct: number;
 }
+
+interface KpiData {
+  team_totals: { kpi1: KpiValue; kpi2: KpiValue; kpi3: KpiValue; kpi4: KpiValue };
+  agents: AgentKpi[];
+}
+
+function pctColor(pct: number) {
+  if (pct >= 100) return 'text-blue-600';
+  if (pct > 70) return 'text-emerald-600';
+  if (pct > 30) return 'text-amber-500';
+  return 'text-red-500';
+}
+
+function pctBg(pct: number) {
+  if (pct >= 100) return 'bg-blue-500';
+  if (pct > 70) return 'bg-emerald-500';
+  if (pct > 30) return 'bg-amber-400';
+  return 'bg-red-400';
+}
+
+const KPI_META = [
+  { key: 'kpi1' as const, label: '扫码访问', color: '#3B82F6', icon: '📱' },
+  { key: 'kpi2' as const, label: '注册', color: '#22C55E', icon: '📝' },
+  { key: 'kpi3' as const, label: '付费转化', color: '#F59E0B', icon: '💳' },
+  { key: 'kpi4' as const, label: '线下转化', color: '#8B5CF6', icon: '🤝' },
+];
 
 export default function KpiPage() {
-  const [kpi, setKpi] = useState<KPI>({ weekly_new_leads: 10, weekly_followups: 20, weekly_conversions: 2, monthly_revenue_target: 5000 });
-  const [history, setHistory] = useState<WeekSnapshot[]>([]);
-  const [perSales, setPerSales] = useState<SalesKpi[]>([]);
-  const [editing, setEditing] = useState(false);
+  const [data, setData] = useState<KpiData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin/kpi').then(r => r.json()).then(d => {
-      if (d.kpi) setKpi(d.kpi);
-      setHistory(d.history ?? []);
-      setPerSales(d.perSalesKpi ?? []);
-      setLoading(false);
-    });
+    fetch('/api/admin/sales-kpi-overview')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
-  async function saveKpi() {
-    await fetch('/api/admin/kpi', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(kpi),
-    });
-    setEditing(false);
-  }
+  if (loading) return <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">加载中...</p>;
 
-  if (loading) return <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">加载中…</p>;
-
-  const chartData = history.map(h => ({
-    week: h.week_start.slice(5),
-    leads: h.total_leads,
-    conversions: h.total_conversions,
-  }));
-
-  const metWeeks = history.filter(h => h.total_conversions >= kpi.weekly_conversions).length;
-  const achievementRate = history.length > 0 ? ((metWeeks / history.length) * 100).toFixed(0) : '—';
-
-  const sortedSales = [...perSales].sort((a, b) => {
-    if (a.conversionsMet !== b.conversionsMet) return a.conversionsMet ? -1 : 1;
-    return b.weeklyConversions - a.weeklyConversions;
-  });
+  const team = data?.team_totals;
+  const agents = data?.agents || [];
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">KPI 设置与追踪</h1>
-
-      {/* KPI Targets */}
-      <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">目标设置</h2>
-          <button
-            onClick={() => editing ? saveKpi() : setEditing(true)}
-            className="text-xs px-4 py-1.5 rounded-lg font-medium transition"
-            style={{ background: editing ? '#f59e0b' : '#f1f5f9', color: editing ? '#fff' : '#64748b' }}
-          >
-            {editing ? '保存' : '编辑'}
-          </button>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">Sales KPI 追踪</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">本月分销团队 KPI 完成情况</p>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[
-            { key: 'weekly_new_leads' as const, label: '周注册目标', icon: '📥', unit: '个' },
-            { key: 'weekly_followups' as const, label: '周跟进目标', icon: '📞', unit: '次' },
-            { key: 'weekly_conversions' as const, label: '周转化目标', icon: '🎯', unit: '个' },
-            { key: 'monthly_revenue_target' as const, label: '周收入目标', icon: '💰', unit: '$' },
-          ].map(item => (
-            <div key={item.key} className="rounded-xl p-4 border border-gray-100 dark:border-gray-700">
-              <div className="flex items-center gap-2 mb-2">
-                <span>{item.icon}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{item.label}</span>
-              </div>
-              {editing ? (
-                <input
-                  type="number"
-                  value={kpi[item.key]}
-                  onChange={e => setKpi(prev => ({ ...prev, [item.key]: parseInt(e.target.value) || 0 }))}
-                  className="w-full text-2xl font-bold text-gray-800 dark:text-gray-200 border-b-2 border-amber-300 focus:outline-none bg-transparent"
-                />
-              ) : (
-                <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{kpi[item.key]} <span className="text-xs font-normal text-gray-400 dark:text-gray-500">{item.unit}</span></div>
-              )}
-            </div>
-          ))}
-        </div>
+        <Link
+          href="/dashboard/koala/kpi-targets"
+          className="text-xs px-4 py-2 rounded-lg bg-[#111827] text-white font-medium hover:opacity-90 transition no-underline"
+        >
+          设置目标
+        </Link>
       </div>
 
-      {/* Achievement Table */}
-      <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">本周达标情况</h2>
-        {sortedSales.length === 0 ? (
-          <p className="text-xs text-gray-400 dark:text-gray-500 py-4 text-center">暂无销售数据</p>
+      {/* Team KPI Summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {KPI_META.map(m => {
+          const v = team?.[m.key];
+          const pct = v?.pct ?? 0;
+          return (
+            <div key={m.key} className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span>{m.icon}</span>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{m.label}</span>
+              </div>
+              <div className="text-2xl font-light text-gray-900 dark:text-gray-100">{v?.current ?? 0}</div>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[11px] text-gray-400 dark:text-gray-500">目标 {v?.target ?? 0}</span>
+                <span className={`text-[11px] font-medium ${pctColor(pct)}`}>{pct}%</span>
+              </div>
+              <div className="mt-2 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all ${pctBg(pct)}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Per-Agent KPI Table */}
+      <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">个人达标情况</h2>
+        {agents.length === 0 ? (
+          <p className="text-xs text-gray-400 dark:text-gray-500 py-4 text-center">暂无活跃销售人员</p>
         ) : (
           <div className="overflow-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
                   <th className="text-left px-4 py-2.5 font-medium">销售</th>
-                  <th className="text-center px-4 py-2.5 font-medium">状态</th>
-                  <th className="text-center px-4 py-2.5 font-medium">注册</th>
-                  <th className="text-center px-4 py-2.5 font-medium">联系</th>
-                  <th className="text-center px-4 py-2.5 font-medium">跟进</th>
-                  <th className="text-center px-4 py-2.5 font-medium">转化</th>
-                  <th className="text-center px-4 py-2.5 font-medium">总转化率</th>
+                  <th className="text-center px-4 py-2.5 font-medium">KPI1 扫码</th>
+                  <th className="text-center px-4 py-2.5 font-medium">KPI2 注册</th>
+                  <th className="text-center px-4 py-2.5 font-medium">KPI3 付费</th>
+                  <th className="text-center px-4 py-2.5 font-medium">KPI4 线下</th>
+                  <th className="text-center px-4 py-2.5 font-medium">佣金</th>
+                  <th className="text-center px-4 py-2.5 font-medium">总完成率</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {sortedSales.map(s => {
-                  const allMet = s.leadsMet && s.followupsMet && s.conversionsMet;
-                  const noneMet = !s.leadsMet && !s.followupsMet && !s.conversionsMet;
-                  const statusIcon = allMet ? '🌟' : noneMet ? '🔴' : '⚠️';
-                  const methodIcons: Record<string, string> = { wechat: '💬', phone: '📞', email: '✉️', meeting: '🤝', other: '📝' };
+                {agents.map(a => {
+                  const allMet = a.kpi1.pct >= 100 && a.kpi2.pct >= 100 && a.kpi3.pct >= 100 && a.kpi4.pct >= 100;
+                  const noneMet = a.kpi1.pct === 0 && a.kpi2.pct === 0 && a.kpi3.pct === 0 && a.kpi4.pct === 0;
                   return (
-                    <tr key={s.userId} className="hover:bg-gray-50 dark:bg-gray-800/50">
-                      <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300 font-medium">{s.name}</td>
-                      <td className="px-4 py-2.5 text-center text-base">{statusIcon}</td>
-                      <td className="px-4 py-2.5 text-center">
-                        <span className={`font-medium ${s.leadsMet ? 'text-green-600' : 'text-red-500'}`}>
-                          {s.weeklyLeads}/{s.leadsTarget}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-center">
-                        <span className="font-medium text-blue-600">{s.weeklyContacts}</span>
-                        {s.weeklyContacts > 0 && (
-                          <div className="flex items-center justify-center gap-0.5 mt-0.5">
-                            {Object.entries(s.contactMethodBreakdown).map(([method, count]) => (
-                              <span key={method} className="text-[9px]" title={`${method}: ${count}`}>
-                                {methodIcons[method] || '📝'}{count}
-                              </span>
-                            ))}
+                    <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="size-7 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                            {a.name[0]?.toUpperCase()}
                           </div>
-                        )}
+                          <div>
+                            <div className="font-medium text-gray-700 dark:text-gray-300">{a.name}</div>
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">{a.referral_code}</div>
+                          </div>
+                        </div>
                       </td>
-                      <td className="px-4 py-2.5 text-center">
-                        <span className={`font-medium ${s.followupsMet ? 'text-green-600' : 'text-red-500'}`}>
-                          {s.weeklyFollowups}/{s.followupsTarget}
+                      {([a.kpi1, a.kpi2, a.kpi3, a.kpi4] as KpiValue[]).map((kpi, i) => (
+                        <td key={i} className="px-4 py-3 text-center">
+                          <span className="font-medium text-gray-700 dark:text-gray-300">{kpi.current}/{kpi.target}</span>
+                          <div className={`text-[10px] font-medium ${pctColor(kpi.pct)}`}>
+                            {kpi.target > 0 ? `${kpi.pct}%` : '—'}
+                          </div>
+                        </td>
+                      ))}
+                      <td className="px-4 py-3 text-center font-medium text-gray-700 dark:text-gray-300">
+                        ${a.revenue.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-flex items-center gap-1 text-sm font-medium ${pctColor(a.overall_pct)}`}>
+                          {allMet ? '🌟' : noneMet ? '🔴' : '⚠️'} {a.overall_pct}%
                         </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-center">
-                        <span className={`font-medium ${s.conversionsMet ? 'text-green-600' : 'text-red-500'}`}>
-                          {s.weeklyConversions}/{s.conversionsTarget}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-center">
-                        <span className="text-gray-600 dark:text-gray-400">{s.conversionRate}%</span>
-                        <div className="text-[9px] text-gray-400 dark:text-gray-500">{s.totalConverted}/{s.totalCustomers}</div>
                       </td>
                     </tr>
                   );
@@ -189,27 +163,12 @@ export default function KpiPage() {
         )}
       </div>
 
-      {/* Trend Chart */}
-      <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">过去 12 周趋势</h2>
-          <span className="text-xs text-gray-400 dark:text-gray-500">达标率 {achievementRate}%</span>
-        </div>
-        {chartData.length === 0 ? (
-          <p className="text-xs text-gray-400 dark:text-gray-500 py-8 text-center">暂无历史数据 — 周报将在每周一自动生成</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={28} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-              <ReferenceLine y={kpi.weekly_conversions} stroke="#ef4444" strokeDasharray="4 4" label={{ value: `目标 ${kpi.weekly_conversions}`, position: 'right', fontSize: 10, fill: '#ef4444' }} />
-              <Bar dataKey="leads" fill="#93c5fd" radius={[4, 4, 0, 0]} name="线索" />
-              <Bar dataKey="conversions" fill="#f59e0b" radius={[4, 4, 0, 0]} name="转化" />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
+      {/* Weight explanation */}
+      <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <p className="text-[11px] text-gray-400 dark:text-gray-500">
+          总完成率权重: KPI1 扫码 15% · KPI2 注册 25% · KPI3 付费 35% · KPI4 线下 25%。
+          目标值在 <Link href="/dashboard/koala/kpi-targets" className="text-amber-600 dark:text-amber-400 hover:underline no-underline">KPI 目标设置</Link> 中按月配置。
+        </p>
       </div>
     </div>
   );

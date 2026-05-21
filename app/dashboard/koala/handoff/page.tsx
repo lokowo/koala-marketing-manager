@@ -53,11 +53,11 @@ export default function HandoffQueuePage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">Handoff 队列</h1>
-          <p className="text-sm text-gray-500 mt-1">Ola AI 转人工请求</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Ola AI 转人工请求</p>
         </div>
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
           {(['pending', 'handled', 'all'] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 text-xs rounded-md transition-colors ${filter === f ? 'bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-500 hover:text-gray-700'}`}>
+            <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 text-xs rounded-md transition-colors ${filter === f ? 'bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
               {f === 'pending' ? '待处理' : f === 'handled' ? '已处理' : '全部'}
             </button>
           ))}
@@ -66,9 +66,9 @@ export default function HandoffQueuePage() {
 
       <div className="space-y-3">
         {loading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">加载中...</div>
+          <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">加载中...</div>
         ) : requests.length === 0 ? (
-          <div className="p-8 text-center text-gray-400 text-sm bg-white rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
             {filter === 'pending' ? '暂无待处理的请求' : '暂无记录'}
           </div>
         ) : (
@@ -83,9 +83,9 @@ export default function HandoffQueuePage() {
                     <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(r.created_at)}</span>
                     {r.user_id && <span className="text-xs text-gray-400 dark:text-gray-500">User: {r.user_id.slice(0, 8)}...</span>}
                   </div>
-                  {r.reason && <p className="text-sm font-medium text-gray-800 mb-1">原因：{r.reason}</p>}
+                  {r.reason && <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">原因：{r.reason}</p>}
                   {r.conversation_summary && (
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap line-clamp-3">{r.conversation_summary}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap line-clamp-3">{r.conversation_summary}</p>
                   )}
                 </div>
                 {r.status === 'pending' && (

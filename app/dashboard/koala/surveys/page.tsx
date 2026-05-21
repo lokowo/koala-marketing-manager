@@ -150,7 +150,7 @@ export default function SurveysPage() {
           ) : (
             <div className="space-y-2">
               {surveys.filter(s => s.status === 'active').map(s => (
-                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <span className="text-sm text-gray-700 dark:text-gray-300">{s.title}</span>
                   <div className="flex gap-2">
                     <Link
@@ -183,7 +183,7 @@ export default function SurveysPage() {
           ) : (
             <div className="space-y-2">
               {surveys.filter(s => s.status !== 'deleted' && s.status !== 'draft').map(s => (
-                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <div>
                     <span className="text-sm text-gray-700 dark:text-gray-300">{s.title}</span>
                     <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{s.response_count ?? 0} 份回复</span>
