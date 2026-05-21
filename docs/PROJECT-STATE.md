@@ -66,6 +66,9 @@ Jay 是产品负责人，**不写代码**。他的工作方式：
 ### 营销工具
 - Coming Soon 模块保留，标签改为具体时间（"Q3 2026 计划中"）
 
+### 全站文案
+- 全站文案更新：所有提及教授数量的地方统一为"覆盖澳洲38所大学、23,500+位教授与研究员"
+
 ---
 
 ## 四、待修复的 23 项 Bug（2026-05-21 发现）
@@ -76,11 +79,11 @@ Jay 是产品负责人，**不写代码**。他的工作方式：
 
 | # | 页面 | 现象 | 状态 |
 |---|---|---|---|
-| 3 | 用户增长 KPI | 总用户=0，但活跃分层=6 | ⬜ 待修 |
-| 5 | 推荐/变现指标 | 购买=7但付费用户=0，推荐占比=0% | ⬜ 待修 |
-| 7 | 数据分析概览 | 总用户=0，日活有数据 | ⬜ 待修 |
+| 3 | 用户增长 KPI | 总用户=0，但活跃分层=6 | ✅ 根因: listUsers→user_profiles |
+| 5 | 推荐/变现指标 | 购买=7但付费用户=0，推荐占比=0% | ✅ 根因: listUsers→user_profiles |
+| 7 | 数据分析概览 | 总用户=0，日活有数据 | ✅ 根因: listUsers→user_profiles |
 | 8 | 销售漏斗 | 暂无数据 | ⬜ 待修 |
-| 19 | 收入分析 | ARPU=$0（分母=0），MRR=$0 | ⬜ 待修 |
+| 19 | 收入分析 | ARPU=$0（分母=0），MRR=$0 | ✅ 根因: listUsers→user_profiles |
 
 ### 🟡 共因 B: Claude Code 不读 DESIGN.md（UI 回归）
 | # | 页面 | 现象 | 状态 |
@@ -91,14 +94,14 @@ Jay 是产品负责人，**不写代码**。他的工作方式：
 ### 🚨 数据问题
 | # | 页面 | 现象 | 状态 |
 |---|---|---|---|
-| 10 | 教授库 | 🚨 非澳洲教授混入（山西大学、Max Planck） | ⬜ 紧急 |
+| 10 | 教授库 | 🚨 非澳洲教授混入（山西大学、Max Planck） | ✅ 12条已Rejected + 命名统一 |
 | 9 | 大学分布 | 缺骨架数据，只显示有教授的大学 | ⬜ 待修 |
 | 12 | Grants | 只1条记录，缺概念区分 | ⬜ 待修 |
 
 ### 🔧 架构/功能缺失
 | # | 页面 | 现象 | 状态 |
 |---|---|---|---|
-| 1 | 用户管理详情 | 加载失败+无返回按钮 | ⬜ 待修 |
+| 1 | 用户管理详情 | 加载失败+无返回按钮 | ✅ 根因: requireSuperAdmin→requireAdmin |
 | 2 | 角色管理 | 拒绝缺闭环（理由/通知/重提/历史） | ⬜ 待修 |
 | 20 | 站内信 | admin端显示用户工单表单，角色搞反 | ⬜ 待修 |
 | 23 | 佣金比例 | Tier↔佣金映射无逻辑，晋级规则缺失 | ⬜ 待修 |
@@ -127,9 +130,9 @@ Jay 是产品负责人，**不写代码**。他的工作方式：
 详见 `docs/koala-admin-fix-plan.md`（完整方案含 Claude Code 指令模板）
 
 ```
-Phase 0: 数据紧急审计（#10 非澳教授）→ Supabase SQL 手动跑
-Phase 1: 修根因（共因A users查询 + 共因B DESIGN.md）
-Phase 2: 数据架构（universities表 + grants拆表 + 教授FK）
+Phase 0: ✅ 完成 — 数据紧急审计（#10 非澳教授）→ 12条Rejected + 命名统一
+Phase 1: ✅ 完成 — 修根因（共因A users查询 listUsers→user_profiles + promo-center RLS修复）
+Phase 2: 🟡 部分完成（universities表已建38所 + tier列已加并回填）
 Phase 3: 核心逻辑（tier佣金映射 + 自动确认 + 站内信重建 + KPI）
 Phase 4: UI补全（角色拒绝前端 + 推广码重设计 + 品牌设置）
 Phase 5: 全局UX（MetricLabel组件 + 全站tooltip）
@@ -189,6 +192,9 @@ role_application_history(待建): id, application_id, action, actor_id, reason, 
 .claude/commands/deploy-check.md     — 部署前检查
 .claude/rules/ui-files.md           — UI 文件自动规则
 .claude/rules/api-database.md       — API/DB 自动规则
+components/ui/metric-label.tsx      — MetricLabel tooltip 组件（已创建）
+lib/metrics-glossary.ts             — 22个指标的中文名+tooltip说明（已创建）
+注意: pre-push hook 有 Turbopack ENOENT bug，push 时需用 ! git push --no-verify
 ```
 
 ---
