@@ -46,7 +46,7 @@ export async function GET() {
       db.from('sales_referrals').select('created_at').eq('agent_id', agent.id).gte('created_at', thirtyDaysAgo).order('created_at', { ascending: true }),
       db.from('sales_agents').select('id, name').eq('status', 'active'),
       db.from('sales_visits').select('channel').eq('agent_id', agent.id).gte('visited_at', monthStart),
-      db.from('sales_commissions').select('created_at, commission_amount, status, product_type, user_name').eq('agent_id', agent.id).order('created_at', { ascending: false }).limit(5),
+      db.from('sales_commissions').select('created_at, commission_amount, status, product_type, referred_user_id, user_profiles:referred_user_id(display_name, email)').eq('agent_id', agent.id).order('created_at', { ascending: false }).limit(5),
       db.from('sales_commissions').select('id', { count: 'exact', head: true }).eq('agent_id', agent.id).gte('created_at', monthStart).neq('status', 'rejected'),
       db.from('sales_commissions').select('id', { count: 'exact', head: true }).eq('agent_id', agent.id).gte('created_at', monthStart).neq('status', 'rejected').in('product_type', ['sub_starter', 'sub_pro', 'sub_elite']),
     ]);
@@ -159,7 +159,7 @@ export async function GET() {
       funnel,
       recent_commissions: (recentComms.data || []).map((c: any) => ({
         date: c.created_at,
-        user_name: c.user_name || '未知用户',
+        user_name: c.user_profiles?.display_name || c.user_profiles?.email || '未知用户',
         product: c.product_type || '',
         amount: Math.round((c.commission_amount || 0) * 100) / 100,
         status: c.status,

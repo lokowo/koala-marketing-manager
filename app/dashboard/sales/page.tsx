@@ -327,7 +327,7 @@ export default function SalesDashboard() {
       {/* E: Recent Commissions */}
       <div className="rounded-2xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-[#374151] dark:text-[#E2E8F0]">最近佣金</h2>
+          <h2 className="text-sm font-semibold text-[#374151] dark:text-[#E2E8F0]">最新收入</h2>
           <Link href="/dashboard/sales/my-commissions" className="text-[11px] text-[#F59E0B] font-medium no-underline hover:underline">查看全部 →</Link>
         </div>
         {recent_commissions.length > 0 ? (
