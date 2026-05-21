@@ -667,7 +667,7 @@ function ProductCard({
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-[var(--text-secondary)]">{row.product_type}</span>
             {price > 0 && (
-              <span className="text-xs text-[var(--text-tertiary)]">
+              <span className="text-xs text-[var(--text-secondary)]">
                 ${price.toFixed(2)}{isSub && '/月'}
               </span>
             )}
