@@ -671,3 +671,11 @@ Koala PhD is an AI-first platform where users chat with "考拉学长" to get fr
 ## Sentry 错误检查
 修复 bug 前先查 Sentry 最新错误：
 curl -H "Authorization: Bearer $SENTRY_AUTH_TOKEN" "https://sentry.io/api/0/projects/assa-investment-group/javascript-nextjs/issues/?query=is:unresolved&sort=date&limit=10"
+
+## 硬规则（不可违反）
+### Push 前必须 build 通过
+任何 git push 前本地 npm run build 必须通过。
+两道闸门：
+- .claude/hooks/pre-push-check.sh — Claude Code 层拦截（exit 2）
+- .husky/pre-push — git 层拦截
+禁止 --no-verify 或任何绕过手段。

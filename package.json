@@ -22,7 +22,8 @@
     "seed:knowledge": "npx tsx scripts/seed-knowledge-base.ts",
     "scrape:professors": "npx tsx scripts/scrape-university-professors.ts",
     "scrape:v2": "npx tsx scripts/scrape-professors-v2.ts",
-    "generate:bios": "npx tsx scripts/generate-ai-summaries.ts"
+    "generate:bios": "npx tsx scripts/generate-ai-summaries.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
@@ -71,6 +72,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "husky": "^9.1.7",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
