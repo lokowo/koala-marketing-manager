@@ -6,7 +6,7 @@ export default function NotFound() {
       <OlaEmpty
         message="这个页面走丢了..."
         actionLabel="回首页"
-        actionHref="/koala/home"
+        actionHref="/dashboard"
       />
     </div>
   );
