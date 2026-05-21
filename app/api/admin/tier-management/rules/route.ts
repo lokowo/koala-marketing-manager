@@ -11,16 +11,17 @@ export async function PATCH(req: Request) {
       return Response.json({ error: 'Only super_admin can modify tier rules' }, { status: 403 });
     }
 
-    const { tier, min_registrations, min_commission } = await req.json();
+    const { tier, min_commission } = await req.json();
     if (!tier) {
       return Response.json({ error: 'Missing tier' }, { status: 400 });
     }
 
+    const commission = parseFloat(min_commission) || 0;
+
     const { error } = await db
       .from('sales_tier_rules')
       .update({
-        min_registrations: parseInt(min_registrations) || 0,
-        min_commission: parseFloat(min_commission) || 0,
+        min_commission: commission,
         updated_at: new Date().toISOString(),
         updated_by: result.user.id,
       })
@@ -34,7 +35,7 @@ export async function PATCH(req: Request) {
       actor_role: result.role,
       action: 'tier_rule_updated',
       target_type: 'sales_tier_rules',
-      details: { tier, min_registrations, min_commission },
+      details: { tier, min_commission: commission },
     });
 
     return Response.json({ ok: true });

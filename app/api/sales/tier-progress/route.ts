@@ -18,13 +18,11 @@ export async function GET() {
 
     if (!agent) return Response.json({ error: 'Not a sales agent' }, { status: 403 });
 
-    const [refsRes, commRes, rulesRes] = await Promise.all([
-      db.from('sales_referrals').select('id', { count: 'exact', head: true }).eq('agent_id', agent.id),
+    const [commRes, rulesRes] = await Promise.all([
       db.from('sales_commissions').select('commission_amount').eq('agent_id', agent.id).in('status', ['confirmed', 'paid_out']),
-      db.from('sales_tier_rules').select('*').order('min_registrations', { ascending: true }),
+      db.from('sales_tier_rules').select('*').order('min_commission', { ascending: true }),
     ]);
 
-    const totalRegistrations = refsRes.count || 0;
     const totalCommission = (commRes.data || []).reduce((s: number, c: { commission_amount: number }) => s + Number(c.commission_amount), 0);
     const currentTier = agent.tier || 'standard';
 
@@ -33,7 +31,6 @@ export async function GET() {
     const rules = rulesRes.data || [];
 
     let nextTier: string | null = null;
-    let nextMinRegistrations = 0;
     let nextMinCommission = 0;
 
     if (currentIndex < tierOrder.length - 1) {
@@ -41,17 +38,14 @@ export async function GET() {
       const rule = rules.find((r: { tier: string }) => r.tier === nextTierName);
       if (rule) {
         nextTier = nextTierName;
-        nextMinRegistrations = rule.min_registrations;
         nextMinCommission = Number(rule.min_commission);
       }
     }
 
     return Response.json({
       current_tier: currentTier,
-      total_registrations: totalRegistrations,
       total_commission: Math.round(totalCommission * 100) / 100,
       next_tier: nextTier,
-      next_min_registrations: nextMinRegistrations,
       next_min_commission: nextMinCommission,
     });
   } catch (error) {

@@ -10,7 +10,7 @@ export async function GET() {
 
     const [ratesRes, rulesRes, countsRes] = await Promise.all([
       db.from('sales_tier_rates').select('*').order('product_type').order('tier'),
-      db.from('sales_tier_rules').select('*').order('min_registrations', { ascending: true }),
+      db.from('sales_tier_rules').select('*').order('min_commission', { ascending: true }),
       db.from('sales_agents').select('tier').eq('status', 'active'),
     ]);
 

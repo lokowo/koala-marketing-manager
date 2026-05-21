@@ -14,7 +14,6 @@ interface RateRow {
 
 interface RuleRow {
   tier: string;
-  min_registrations: number;
   min_commission: number;
   description: string;
 }
@@ -175,16 +174,17 @@ function RateCell({
         <div>
           <div className="relative">
             <input
-              type="number"
-              min={1}
-              max={50}
-              step={0.1}
+              type="text"
+              inputMode="decimal"
               value={inputVal}
-              onChange={(e) => setInputVal(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === '' || /^\d*\.?\d*$/.test(v)) setInputVal(v);
+              }}
               onBlur={commitEdit}
               onKeyDown={handleKeyDown}
               autoFocus
-              className="w-full text-center text-lg font-semibold py-1.5 rounded-lg border-2 border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-gray-900 dark:text-gray-100 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-full text-center text-lg font-semibold py-1.5 rounded-lg border-2 border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-gray-900 dark:text-gray-100 outline-none"
             />
             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500 pointer-events-none">%</span>
           </div>
@@ -224,8 +224,8 @@ export default function TierManagementPage() {
   // Dirty tracking for rates: Map of "product_type:tier" -> new decimal rate
   const [dirtyRates, setDirtyRates] = useState<Map<string, number>>(new Map());
 
-  // Dirty tracking for rules: Map of "tier" -> { min_registrations?, min_commission? }
-  const [dirtyRules, setDirtyRules] = useState<Map<string, { min_registrations?: number; min_commission?: number }>>(new Map());
+  // Dirty tracking for rules: Map of "tier" -> { min_commission? }
+  const [dirtyRules, setDirtyRules] = useState<Map<string, { min_commission?: number }>>(new Map());
 
   const [savingRates, setSavingRates] = useState(false);
   const [savingRules, setSavingRules] = useState(false);
@@ -288,6 +288,23 @@ export default function TierManagementPage() {
 
   async function saveAllRates() {
     if (dirtyRates.size === 0) return;
+
+    const affectedProducts = new Set(Array.from(dirtyRates.keys()).map((k) => k.split(':')[0]));
+    for (const pt of affectedProducts) {
+      const std = getEffectiveRate(pt, 'standard');
+      const sen = getEffectiveRate(pt, 'senior');
+      const par = getEffectiveRate(pt, 'partner');
+      const name = PRODUCT_DISPLAY[pt]?.name || pt;
+      if (std >= sen) {
+        showToast(`${name}: Standard(${(std * 100).toFixed(1)}%) 必须小于 Senior(${(sen * 100).toFixed(1)}%)`, 'error');
+        return;
+      }
+      if (sen >= par) {
+        showToast(`${name}: Senior(${(sen * 100).toFixed(1)}%) 必须小于 Partner(${(par * 100).toFixed(1)}%)`, 'error');
+        return;
+      }
+    }
+
     setSavingRates(true);
     try {
       const entries = Array.from(dirtyRates.entries());
@@ -304,7 +321,6 @@ export default function TierManagementPage() {
 
       const allOk = results.every((r) => r.ok);
       if (allOk) {
-        // Update local state
         setRates((prev) =>
           prev.map((row) => {
             const updated = { ...row };
@@ -320,7 +336,9 @@ export default function TierManagementPage() {
         setDirtyRates(new Map());
         showToast('佣金比例已保存', 'success');
       } else {
-        showToast('部分保存失败，请重试', 'error');
+        const failed = results.find((r) => !r.ok);
+        const body = failed ? await failed.json().catch(() => null) : null;
+        showToast(body?.error || '部分保存失败，请重试', 'error');
       }
     } catch {
       showToast('保存失败，请重试', 'error');
@@ -330,41 +348,26 @@ export default function TierManagementPage() {
 
   // ── Rule change handler ──
 
-  function handleRuleChange(tier: string, field: 'min_registrations' | 'min_commission', value: number) {
+  function handleRuleCommissionChange(tier: string, value: number) {
     setDirtyRules((prev) => {
       const next = new Map(prev);
-      const existing = next.get(tier) || {};
       const original = rules.find((r) => r.tier === tier);
-
-      const newEntry = { ...existing, [field]: value };
-
-      // Check if it matches original
-      let isClean = true;
-      if (original) {
-        const regMatch = newEntry.min_registrations !== undefined
-          ? newEntry.min_registrations === original.min_registrations
-          : true;
-        const comMatch = newEntry.min_commission !== undefined
-          ? Math.abs(newEntry.min_commission - original.min_commission) < 0.01
-          : true;
-        isClean = regMatch && comMatch;
-      }
+      const isClean = original && Math.abs(value - original.min_commission) < 0.01;
 
       if (isClean) {
         next.delete(tier);
       } else {
-        next.set(tier, newEntry);
+        next.set(tier, { min_commission: value });
       }
       return next;
     });
   }
 
-  function getEffectiveRule(tier: string, field: 'min_registrations' | 'min_commission'): number {
+  function getEffectiveRuleCommission(tier: string): number {
     const dirty = dirtyRules.get(tier);
-    if (dirty && dirty[field] !== undefined) return dirty[field]!;
+    if (dirty?.min_commission !== undefined) return dirty.min_commission;
     const original = rules.find((r) => r.tier === tier);
-    if (!original) return 0;
-    return original[field];
+    return original?.min_commission ?? 0;
   }
 
   async function saveAllRules() {
@@ -380,7 +383,6 @@ export default function TierManagementPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               tier,
-              min_registrations: changes.min_registrations ?? original?.min_registrations ?? 0,
               min_commission: changes.min_commission ?? original?.min_commission ?? 0,
             }),
           });
@@ -395,7 +397,6 @@ export default function TierManagementPage() {
             if (!changes) return row;
             return {
               ...row,
-              min_registrations: changes.min_registrations ?? row.min_registrations,
               min_commission: changes.min_commission ?? row.min_commission,
             };
           })
@@ -570,9 +571,8 @@ export default function TierManagementPage() {
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
                       <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">等级</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">累计注册 &ge;</th>
                       <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">累计佣金 &ge;</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">条件关系</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">说明</th>
                       <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">当前人数</th>
                     </tr>
                   </thead>
@@ -586,10 +586,9 @@ export default function TierManagementPage() {
                         </div>
                       </td>
                       <td className="px-4 py-4 text-gray-400 dark:text-gray-500">&mdash;</td>
-                      <td className="px-4 py-4 text-gray-400 dark:text-gray-500">&mdash;</td>
                       <td className="px-4 py-4">
                         <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                          默认
+                          默认等级
                         </span>
                       </td>
                       <td className="px-4 py-4 text-right">
@@ -606,33 +605,34 @@ export default function TierManagementPage() {
                         </div>
                       </td>
                       <td className="px-4 py-4">
-                        <input
-                          type="number"
-                          min={0}
-                          disabled={disabled}
-                          value={getEffectiveRule('senior', 'min_registrations')}
-                          onChange={(e) => handleRuleChange('senior', 'min_registrations', parseInt(e.target.value) || 0)}
-                          className="w-24 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:border-amber-400 dark:focus:border-amber-500 transition disabled:opacity-50 disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="relative w-28">
+                        <div className="relative w-32">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500">$</span>
                           <input
-                            type="number"
-                            min={0}
-                            step={10}
+                            type="text"
+                            inputMode="decimal"
                             disabled={disabled}
-                            value={getEffectiveRule('senior', 'min_commission')}
-                            onChange={(e) => handleRuleChange('senior', 'min_commission', parseFloat(e.target.value) || 0)}
-                            className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:border-amber-400 dark:focus:border-amber-500 transition disabled:opacity-50 disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            value={(() => {
+                              const dirty = dirtyRules.get('senior');
+                              if (dirty?.min_commission !== undefined) {
+                                return dirty.min_commission === 0 ? '' : String(dirty.min_commission);
+                              }
+                              const orig = rules.find((r) => r.tier === 'senior');
+                              const v = orig?.min_commission ?? 0;
+                              return v === 0 ? '' : String(v);
+                            })()}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/[^0-9.]/g, '');
+                              if (raw === '') { handleRuleCommissionChange('senior', 0); return; }
+                              const n = Number(raw);
+                              if (!isNaN(n)) handleRuleCommissionChange('senior', n);
+                            }}
+                            placeholder="0"
+                            className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:border-amber-400 dark:focus:border-amber-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
                           />
                         </div>
                       </td>
                       <td className="px-4 py-4">
-                        <span className="text-xs px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-medium">
-                          满足任一
-                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">累计佣金达标自动晋级</span>
                       </td>
                       <td className="px-4 py-4 text-right">
                         <span className="text-sm font-medium text-amber-600 dark:text-amber-400">{counts.senior}</span>
@@ -648,33 +648,34 @@ export default function TierManagementPage() {
                         </div>
                       </td>
                       <td className="px-4 py-4">
-                        <input
-                          type="number"
-                          min={0}
-                          disabled={disabled}
-                          value={getEffectiveRule('partner', 'min_registrations')}
-                          onChange={(e) => handleRuleChange('partner', 'min_registrations', parseInt(e.target.value) || 0)}
-                          className="w-24 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:border-purple-400 dark:focus:border-purple-500 transition disabled:opacity-50 disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="relative w-28">
+                        <div className="relative w-32">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500">$</span>
                           <input
-                            type="number"
-                            min={0}
-                            step={10}
+                            type="text"
+                            inputMode="decimal"
                             disabled={disabled}
-                            value={getEffectiveRule('partner', 'min_commission')}
-                            onChange={(e) => handleRuleChange('partner', 'min_commission', parseFloat(e.target.value) || 0)}
-                            className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:border-purple-400 dark:focus:border-purple-500 transition disabled:opacity-50 disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            value={(() => {
+                              const dirty = dirtyRules.get('partner');
+                              if (dirty?.min_commission !== undefined) {
+                                return dirty.min_commission === 0 ? '' : String(dirty.min_commission);
+                              }
+                              const orig = rules.find((r) => r.tier === 'partner');
+                              const v = orig?.min_commission ?? 0;
+                              return v === 0 ? '' : String(v);
+                            })()}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/[^0-9.]/g, '');
+                              if (raw === '') { handleRuleCommissionChange('partner', 0); return; }
+                              const n = Number(raw);
+                              if (!isNaN(n)) handleRuleCommissionChange('partner', n);
+                            }}
+                            placeholder="0"
+                            className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:border-purple-400 dark:focus:border-purple-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
                           />
                         </div>
                       </td>
                       <td className="px-4 py-4">
-                        <span className="text-xs px-2 py-1 rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">
-                          满足任一
-                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">累计佣金达标自动晋级</span>
                       </td>
                       <td className="px-4 py-4 text-right">
                         <span className="text-sm font-medium text-purple-600 dark:text-purple-400">{counts.partner}</span>

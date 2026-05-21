@@ -10,7 +10,7 @@ import {
   IconLayoutDashboard,
   IconChartBar,
   IconUser,
-  IconCoin,
+
   IconTarget,
   IconCircleCheck,
   IconFileText,
@@ -73,7 +73,6 @@ function buildNavGroups(role: UserRole | null): { standalone: NavItem[]; groups:
       items: [
         { icon: IconChartBar, label: '分销总览', href: '/dashboard/koala/sales-overview' },
         { icon: IconUser, label: '销售人员', href: '/dashboard/koala/sales-agents' },
-        { icon: IconCoin, label: '佣金比例', href: '/dashboard/koala/commission-rates' },
         { icon: IconCrown, label: '等级管理', href: '/dashboard/koala/tier-management' },
         { icon: IconTarget, label: 'KPI 目标', href: '/dashboard/koala/kpi-targets' },
         { icon: IconCircleCheck, label: '佣金审核', href: '/dashboard/koala/commission-review' },

@@ -34,22 +34,19 @@ export async function checkAndPromoteAgent(agentId: string): Promise<void> {
     .eq('id', agentId).single();
   if (!agent) return;
 
-  const [refsRes, commRes] = await Promise.all([
-    db.from('sales_referrals').select('id', { count: 'exact', head: true }).eq('agent_id', agentId),
-    db.from('sales_commissions').select('commission_amount')
-      .eq('agent_id', agentId).in('status', ['confirmed', 'paid_out']),
-  ]);
+  const { data: commRows } = await db
+    .from('sales_commissions').select('commission_amount')
+    .eq('agent_id', agentId).in('status', ['confirmed', 'paid_out']);
 
-  const totalRegistrations = refsRes.count || 0;
-  const totalCommission = (commRes.data || []).reduce((s: number, c: { commission_amount: number }) => s + Number(c.commission_amount), 0);
+  const totalCommission = (commRows || []).reduce((s: number, c: { commission_amount: number }) => s + Number(c.commission_amount), 0);
 
   const { data: rules } = await db
     .from('sales_tier_rules').select('*')
-    .order('min_registrations', { ascending: false });
+    .order('min_commission', { ascending: false });
 
   let newTier = 'standard';
   for (const rule of rules || []) {
-    if (totalRegistrations >= rule.min_registrations || totalCommission >= Number(rule.min_commission)) {
+    if (totalCommission >= Number(rule.min_commission)) {
       newTier = rule.tier;
       break;
     }
@@ -62,7 +59,7 @@ export async function checkAndPromoteAgent(agentId: string): Promise<void> {
     await db.from('sales_audit_logs').insert({
       actor_id: agentId, actor_email: 'system', actor_role: 'system',
       action: 'agent_tier_promoted', target_type: 'sales_agent', target_id: agentId,
-      details: { from_tier: agent.tier, to_tier: newTier, total_registrations: totalRegistrations, total_commission: totalCommission, agent_name: agent.name },
+      details: { from_tier: agent.tier, to_tier: newTier, total_commission: totalCommission, agent_name: agent.name },
     });
   }
 }

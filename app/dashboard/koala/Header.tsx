@@ -10,7 +10,7 @@ const TITLES: Record<string, string> = {
   '/dashboard/koala': '仪表盘',
   '/dashboard/koala/sales-overview': '分销总览',
   '/dashboard/koala/sales-agents': '销售人员',
-  '/dashboard/koala/commission-rates': '佣金比例',
+
   '/dashboard/koala/kpi-targets': 'KPI 目标',
   '/dashboard/koala/commission-review': '佣金审核',
   '/dashboard/koala/sales-audit': '审计日志',

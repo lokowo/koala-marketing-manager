@@ -21,6 +21,32 @@ export async function PATCH(req: Request) {
       return Response.json({ error: '佣金比例必须在 1% ~ 50% 之间' }, { status: 400 });
     }
 
+    const { data: allRates } = await db
+      .from('sales_tier_rates')
+      .select('tier, commission_rate')
+      .eq('product_type', product_type);
+
+    const rateMap: Record<string, number> = {};
+    for (const r of allRates || []) {
+      rateMap[r.tier] = parseFloat(r.commission_rate);
+    }
+    rateMap[tier] = rate;
+
+    const std = rateMap['standard'] ?? 0;
+    const sen = rateMap['senior'] ?? 0;
+    const par = rateMap['partner'] ?? 0;
+
+    if (std >= sen) {
+      return Response.json({
+        error: `Standard(${(std * 100).toFixed(1)}%) 必须小于 Senior(${(sen * 100).toFixed(1)}%)`,
+      }, { status: 400 });
+    }
+    if (sen >= par) {
+      return Response.json({
+        error: `Senior(${(sen * 100).toFixed(1)}%) 必须小于 Partner(${(par * 100).toFixed(1)}%)`,
+      }, { status: 400 });
+    }
+
     const { error } = await db
       .from('sales_tier_rates')
       .update({ commission_rate: rate, updated_at: new Date().toISOString(), updated_by: result.user.id })
@@ -28,6 +54,13 @@ export async function PATCH(req: Request) {
       .eq('tier', tier);
 
     if (error) throw error;
+
+    if (tier === 'standard') {
+      await db
+        .from('sales_commission_rates')
+        .update({ commission_rate: rate, updated_at: new Date().toISOString(), updated_by: result.user.id })
+        .eq('product_type', product_type);
+    }
 
     await db.from('sales_audit_logs').insert({
       actor_id: result.user.id,

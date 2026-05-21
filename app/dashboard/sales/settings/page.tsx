@@ -19,10 +19,8 @@ interface AgentSettings {
 
 interface TierProgress {
   current_tier: string;
-  total_registrations: number;
   total_commission: number;
   next_tier: string | null;
-  next_min_registrations: number;
   next_min_commission: number;
 }
 
@@ -225,11 +223,7 @@ export default function SalesSettingsPage() {
             </span>
             <span className="text-xs text-[#6B7280] dark:text-[#94A3B8]">当前等级</span>
           </div>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="rounded-lg p-3 bg-[#F9FAFB] dark:bg-[#0F172A]">
-              <div className="text-[10px] text-[#6B7280] dark:text-[#94A3B8]">累计注册</div>
-              <div className="text-lg font-medium text-[#111827] dark:text-[#F1F5F9]">{tierProgress.total_registrations}</div>
-            </div>
+          <div className="mb-4">
             <div className="rounded-lg p-3 bg-[#F9FAFB] dark:bg-[#0F172A]">
               <div className="text-[10px] text-[#6B7280] dark:text-[#94A3B8]">累计佣金</div>
               <div className="text-lg font-medium text-[#111827] dark:text-[#F1F5F9]">${tierProgress.total_commission.toFixed(2)}</div>
@@ -241,16 +235,9 @@ export default function SalesSettingsPage() {
                 距离 <span style={{ color: TIER_COLORS[tierProgress.next_tier]?.color }} className="font-medium">{TIER_COLORS[tierProgress.next_tier]?.label}</span> 还需
               </div>
               <div className="text-xs text-[#374151] dark:text-[#CBD5E1]">
-                {tierProgress.next_min_registrations > tierProgress.total_registrations && (
-                  <span>{tierProgress.next_min_registrations - tierProgress.total_registrations} 个注册</span>
-                )}
-                {tierProgress.next_min_registrations > tierProgress.total_registrations && tierProgress.next_min_commission > tierProgress.total_commission && (
-                  <span className="text-[#9CA3AF] mx-1">或</span>
-                )}
-                {tierProgress.next_min_commission > tierProgress.total_commission && (
+                {tierProgress.next_min_commission > tierProgress.total_commission ? (
                   <span>${(tierProgress.next_min_commission - tierProgress.total_commission).toFixed(2)} 佣金</span>
-                )}
-                {tierProgress.next_min_registrations <= tierProgress.total_registrations && tierProgress.next_min_commission <= tierProgress.total_commission && (
+                ) : (
                   <span className="text-green-600">已满足条件，等待系统更新</span>
                 )}
               </div>
