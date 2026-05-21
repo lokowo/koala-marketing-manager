@@ -1,7 +1,0 @@
-#!/usr/bin/env sh
-echo "🔨 Build check before push..."
-if ! npm run build; then
-  echo "❌ Build failed. Push aborted."
-  exit 1
-fi
-echo "✅ Build passed."

@@ -1,24 +1,34 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, MessageCircle, CreditCard, BookOpen, UserCircle } from 'lucide-react';
+import { Home, Users, MessageCircle, CreditCard, BookOpen, UserCircle, Bell } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { OlaAvatar } from './ola/OlaAvatar';
 
-const NAV_ITEMS: { href: string; icon: React.ElementType; label: string; highlight?: boolean }[] = [
+const NAV_ITEMS: { href: string; icon: React.ElementType; label: string; highlight?: boolean; badge?: boolean }[] = [
   { href: '/koala/home', icon: Home, label: '首页' },
   { href: '/koala/chat', icon: MessageCircle, label: 'Ola AI', highlight: true },
   { href: '/koala/professors', icon: Users, label: '教授库' },
   { href: '/koala/pricing', icon: CreditCard, label: '定价' },
   { href: '/koala/blog', icon: BookOpen, label: '博客' },
+  { href: '/koala/messages', icon: Bell, label: '消息', badge: true },
   { href: '/koala/my-profile', icon: UserCircle, label: '我的' },
 ];
 
 export default function TopNavBar() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) { setUnreadCount(0); return; }
+    fetch('/api/user/notifications?limit=1')
+      .then(r => r.json())
+      .then(d => setUnreadCount(d.unreadCount ?? 0))
+      .catch(() => {});
+  }, [user]);
 
   function isActive(href: string) {
     return pathname.startsWith(href);
@@ -64,6 +74,11 @@ export default function TopNavBar() {
               {item.label}
               {showDot && (
                 <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-green-600" />
+              )}
+              {item.badge && unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full text-[9px] font-bold bg-[#b06040] text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
               )}
             </Link>
           );

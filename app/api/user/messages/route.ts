@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
         title: `工单已创建: ${subj}`,
         content: '我们已收到您的消息，客服团队将尽快回复。',
         type: 'info',
-        link: '/dashboard/koala/notifications',
+        link: '/koala/messages',
       });
 
       notifyNewSupportTicket({
