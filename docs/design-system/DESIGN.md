@@ -345,6 +345,41 @@ Footer (简洁, 一行)
 - `inputMode="decimal"` 触发数字键盘
 - 空值显示空字符串而非 `"0"`
 
+### Metric Card 规范
+顶部概览用统一 Metric Card 组件：
+- 布局: `grid grid-cols-2 lg:grid-cols-4 gap-4`
+- 背景: `var(--surface-raised)` (浅色 `#f9fafb` / 深色 `#111827`)
+- 圆角: 8px, 内间距: 16px
+- 标签: 13px `var(--text-secondary)` + ℹ️ tooltip（使用 `MetricLabel` 组件）
+- 数值: 24px `font-medium` `var(--text-primary)` `tabular-nums`
+- 分母为 0 时显示 "—" 或 "N/A"，禁止显示 0 或 0%
+
+### 表格行规范
+管理后台数据表格统一样式：
+- 表头: 12px `uppercase` `tracking-[0.5px]` `var(--text-tertiary)` `font-medium`
+- 行分隔: `1px solid var(--card-border)`
+- hover 高亮: `background: var(--surface-raised)` (CSS hover)
+- 销售列: 28px 头像圆 (字母 initial + 确定性 hash 颜色) + display_name (14px `font-medium`) + tier 标签 (11px `font-medium` 对应 tier 色)
+- 佣金/金额列: 16px `font-medium` `tabular-nums` 绿色 (`var(--commission-green)`: 浅色 `#16a34a` / 深色 `#4ade80`)
+- 状态列: 彩色 badge (11px `font-medium` `px-2.5 py-0.5 rounded`), 浅色/深色各一套配色
+- Checkbox 列: `accent-blue-600 w-3.5 h-3.5`
+- 数字对齐: `tabular-nums text-right`
+- 日期: `text-xs tabular-nums whitespace-nowrap`
+
+### Drill-down 展开面板规范
+点击表格行展开详情：
+- 背景: `var(--card-bg)`, 上下 `1px solid var(--card-border)` 边框
+- 内间距: `px-6 py-5`
+- 三列 grid: `grid-cols-1 md:grid-cols-3 gap-6`
+  - 左列: 实体信息 (名称/邮箱/付款账户等)
+  - 中列: 交易详情 (金额/产品/Stripe ID/佣金计算)
+  - 右列: 时间线 (圆点 + 竖线，active 蓝色 / inactive 灰色)
+- Section header: 11px `uppercase tracking-[0.5px] font-medium var(--text-tertiary)`
+- Detail row: label `text-xs var(--text-tertiary)` / value `text-sm var(--text-primary)`, `justify-between`
+- 每个关键字段旁 Copy 图标 (`IconCopy size={12}`), 点击复制 + Toast 反馈
+- 销售名可点击弹出完整付款资料弹窗
+- 弹窗: `max-w-sm`, `var(--card-bg)` 背景, avatar + 基本信息 + 付款资料列表
+
 ---
 
 ## 11. File Reference 文件参考
