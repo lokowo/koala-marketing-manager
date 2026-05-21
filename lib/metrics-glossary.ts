@@ -115,6 +115,26 @@ export const METRICS = {
     label: '总完成率',
     tooltip: '加权完成率 = KPI1×15% + KPI2×25% + KPI3×35% + KPI4×25%；目标为 0 的维度不计入',
   },
+  faqTotal: {
+    label: 'FAQ 总数',
+    tooltip: '已配置的 FAQ 自动回复条目总数（含启用和禁用）',
+  },
+  faqEnabled: {
+    label: '启用条目',
+    tooltip: '当前处于启用状态的 FAQ 条目数，用户提问时会匹配这些条目',
+  },
+  faqMatchRate: {
+    label: '匹配率',
+    tooltip: 'FAQ 命中次数 / 用户提问总次数；命中 FAQ 的问题不消耗 LLM 额度',
+  },
+  olaTriggerTotal: {
+    label: '触发规则总数',
+    tooltip: '已配置的 Ola 主动触发规则数（含启用和禁用），Ola 会在用户浏览指定页面时弹出气泡消息',
+  },
+  olaTriggerEnabled: {
+    label: '启用规则',
+    tooltip: '当前处于启用状态的触发规则数，仅启用的规则会在前台触发',
+  },
 } as const;
 
 export type MetricKey = keyof typeof METRICS;

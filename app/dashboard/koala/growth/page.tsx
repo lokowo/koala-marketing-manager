@@ -5,6 +5,8 @@ import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
+import { MetricLabel } from '../../../../components/ui/metric-label';
+import { METRICS } from '../../../../lib/metrics-glossary';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyObj = Record<string, any>;
@@ -93,10 +95,10 @@ export default function GrowthPage() {
 
       {/* Overview metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <MetricCard label="总用户" value={overview.totalUsers} />
-        <MetricCard label="30天新增" value={overview.newUsers30d} delta={overview.newUsersPrev30d} accent />
-        <MetricCard label="30天对话" value={overview.conversations30d} delta={overview.conversationsPrev30d} />
-        <MetricCard label="30天套磁" value={overview.outreach30d} delta={overview.outreachPrev30d} />
+        <MetricCard label={METRICS.totalUsers.label} tooltip={METRICS.totalUsers.tooltip} value={overview.totalUsers} />
+        <MetricCard label={METRICS.newUsers30d.label} tooltip={METRICS.newUsers30d.tooltip} value={overview.newUsers30d} delta={overview.newUsersPrev30d} accent />
+        <MetricCard label={METRICS.conversations30d.label} tooltip={METRICS.conversations30d.tooltip} value={overview.conversations30d} delta={overview.conversationsPrev30d} />
+        <MetricCard label={METRICS.outreach30d.label} tooltip={METRICS.outreach30d.tooltip} value={overview.outreach30d} delta={overview.outreachPrev30d} />
       </div>
 
       {/* Channels + Engagement tiers */}
@@ -168,10 +170,10 @@ export default function GrowthPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
-                  <th className="text-left px-3 py-2 font-medium">注册周</th>
-                  <th className="text-center px-3 py-2 font-medium">新增</th>
-                  <th className="text-center px-3 py-2 font-medium">次周留存</th>
-                  <th className="text-center px-3 py-2 font-medium">留存率</th>
+                  <th className="text-left px-3 py-2 font-medium"><MetricLabel label={METRICS.registrationWeek.label} tooltip={METRICS.registrationWeek.tooltip} /></th>
+                  <th className="text-center px-3 py-2 font-medium"><MetricLabel label={METRICS.newUsersWeekly.label} tooltip={METRICS.newUsersWeekly.tooltip} /></th>
+                  <th className="text-center px-3 py-2 font-medium"><MetricLabel label={METRICS.nextWeekRetention.label} tooltip={METRICS.nextWeekRetention.tooltip} /></th>
+                  <th className="text-center px-3 py-2 font-medium"><MetricLabel label={METRICS.retentionRate.label} tooltip={METRICS.retentionRate.tooltip} /></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -207,15 +209,15 @@ export default function GrowthPage() {
           <div className="grid grid-cols-3 gap-3">
             <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
               <div className="text-2xl font-medium text-gray-800 dark:text-gray-100">{referralStats?.totalReferrers ?? 0}</div>
-              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">推荐人</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1"><MetricLabel label={METRICS.referrers.label} tooltip={METRICS.referrers.tooltip} /></div>
             </div>
             <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
               <div className="text-2xl font-medium text-emerald-600 dark:text-emerald-400">{referralStats?.totalReferred ?? 0}</div>
-              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">被推荐用户</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1"><MetricLabel label={METRICS.referredUsers.label} tooltip={METRICS.referredUsers.tooltip} /></div>
             </div>
             <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
               <div className="text-2xl font-medium text-blue-600 dark:text-blue-400">{referralStats?.referralRate ?? 0}%</div>
-              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">推荐占比</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1"><MetricLabel label={METRICS.referralRatio.label} tooltip={METRICS.referralRatio.tooltip} /></div>
             </div>
           </div>
         </div>
@@ -225,19 +227,19 @@ export default function GrowthPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
               <div className="text-xl font-medium text-amber-600 dark:text-amber-400">{creditStats?.totalSpent ?? 0}</div>
-              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">积分消耗</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1"><MetricLabel label={METRICS.creditsConsumed.label} tooltip={METRICS.creditsConsumed.tooltip} /></div>
             </div>
             <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
               <div className="text-xl font-medium text-gray-800 dark:text-gray-100">{creditStats?.purchaseCount ?? 0}</div>
-              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">购买次数</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1"><MetricLabel label={METRICS.purchaseCount.label} tooltip={METRICS.purchaseCount.tooltip} /></div>
             </div>
             <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
               <div className="text-xl font-medium text-blue-600 dark:text-blue-400">{creditStats?.spenders ?? 0}</div>
-              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">付费用户</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1"><MetricLabel label={METRICS.paidUsers.label} tooltip={METRICS.paidUsers.tooltip} /></div>
             </div>
             <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
               <div className="text-xl font-medium text-emerald-600 dark:text-emerald-400">{creditStats?.totalEarned ?? 0}</div>
-              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">积分发放</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1"><MetricLabel label={METRICS.creditsIssued.label} tooltip={METRICS.creditsIssued.tooltip} /></div>
             </div>
           </div>
         </div>
@@ -262,10 +264,12 @@ export default function GrowthPage() {
   );
 }
 
-function MetricCard({ label, value, delta, accent }: { label: string; value: number; delta?: number; accent?: boolean }) {
+function MetricCard({ label, tooltip, value, delta, accent }: { label: string; tooltip?: string; value: number; delta?: number; accent?: boolean }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className="text-[10px] text-gray-400 dark:text-gray-500 mb-1">{label}</div>
+      <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">
+        {tooltip ? <MetricLabel label={label} tooltip={tooltip} /> : label}
+      </div>
       <div className="flex items-baseline">
         <span className={`text-2xl font-medium ${accent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-gray-100'}`}>{value.toLocaleString()}</span>
         {delta !== undefined && <Delta current={value} previous={delta} />}

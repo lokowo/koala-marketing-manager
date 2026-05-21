@@ -189,7 +189,7 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
             <Field label="职称" name="title" value={form.title} onChange={handleChange} />
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">Position Title{!professor.positionTitle && <MissingBadge />}</label>
-              <select name="positionTitle" value={form.positionTitle ?? ''} onChange={handleChange} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+              <select name="positionTitle" value={form.positionTitle ?? ''} onChange={handleChange} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900">
                 <option value="">-- Select --</option>
                 {POSITION_TITLES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -200,7 +200,7 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
             <Field label="研究方向" name="researchAreas" value={(form.researchAreas ?? []).join(', ')} onChange={handleChange} placeholder="逗号分隔" />
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">招生状态</label>
-              <select name="acceptingStudents" value={form.acceptingStudents ?? 'unknown'} onChange={handleChange} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+              <select name="acceptingStudents" value={form.acceptingStudents ?? 'unknown'} onChange={handleChange} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900">
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
                 <option value="likely">Likely</option>
@@ -209,7 +209,7 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">审核状态</label>
-              <select name="verificationStatus" value={form.verificationStatus ?? 'Pending'} onChange={handleChange} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+              <select name="verificationStatus" value={form.verificationStatus ?? 'Pending'} onChange={handleChange} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900">
                 <option value="Verified">Verified</option>
                 <option value="Pending">Pending</option>
                 <option value="Rejected">Rejected</option>
@@ -218,7 +218,7 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-1">备注</label>
-            <textarea name="references" value={form.references ?? ''} onChange={handleChange} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" rows={3} />
+            <textarea name="references" value={form.references ?? ''} onChange={handleChange} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900" rows={3} />
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={saving} className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
@@ -244,10 +244,10 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-800 leading-snug">{p.title}</p>
                       {p.journal && <p className="text-xs text-slate-500 mt-0.5">{p.journal}{p.year ? ` · ${p.year}` : ''}</p>}
-                      {p.authors && <p className="text-xs text-slate-400 mt-0.5 truncate">{p.authors}</p>}
+                      {p.authors && <p className="text-xs text-slate-500 mt-0.5 truncate">{p.authors}</p>}
                     </div>
                     <div className="flex-shrink-0 text-right">
-                      {p.citation_count != null && <span className="text-xs text-slate-400">{p.citation_count} 引用</span>}
+                      {p.citation_count != null && <span className="text-xs text-slate-600">{p.citation_count} 引用</span>}
                       {p.doi && (
                         <a href={`https://doi.org/${p.doi}`} target="_blank" rel="noopener noreferrer" className="block text-xs text-blue-500 mt-0.5 no-underline">
                           DOI <ExternalLink className="size-3 inline" />
@@ -278,7 +278,7 @@ export default function ProfessorDetailPage({ params }: { params: Promise<{ id: 
                   <div className="flex items-center gap-3 mt-1 flex-wrap">
                     {g.funding_body && <span className="text-xs text-slate-500">{g.funding_body}</span>}
                     {g.amount && <span className="text-xs font-medium text-emerald-600">${Number(g.amount).toLocaleString()}</span>}
-                    {(g.start_year || g.year) && <span className="text-xs text-slate-400">{g.start_year || g.year}{g.end_year ? `–${g.end_year}` : ''}</span>}
+                    {(g.start_year || g.year) && <span className="text-xs text-slate-600">{g.start_year || g.year}{g.end_year ? `–${g.end_year}` : ''}</span>}
                     {g.status && <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${g.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{g.status}</span>}
                   </div>
                 </div>
@@ -556,7 +556,7 @@ function ResearchTab({ profile, loading, enriching, onLoad, onEnrich, hasSS }: {
 function MetricCard({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-3">
-      <div className="text-[10px] text-slate-400 mb-1">{label}</div>
+      <div className="text-[10px] text-slate-500 mb-1">{label}</div>
       <div className="text-lg font-bold text-slate-800">{value}</div>
     </div>
   );
@@ -572,7 +572,7 @@ function Field({ label, name, value, onChange, type = 'text', required, missing,
         {label}{missing && <MissingBadge />}
       </label>
       <input type={type} name={name} value={value ?? ''} onChange={onChange} required={required} placeholder={placeholder}
-        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-slate-400" />
+        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-400" />
     </div>
   );
 }

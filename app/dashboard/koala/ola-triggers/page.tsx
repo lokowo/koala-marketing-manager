@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { NumberInput } from '../../../../components/ui/number-input';
+import { MetricLabel } from '../../../../components/ui/metric-label';
+import { METRICS } from '../../../../lib/metrics-glossary';
 
 interface Trigger {
   id: string;
@@ -116,6 +118,20 @@ export default function OlaTriggersPage() {
       </div>
 
       {seedResult && <div className="mb-4 p-3 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg">{seedResult}</div>}
+
+      {/* Summary Stats */}
+      {!loading && triggers.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <div className="text-[13px] text-gray-500 dark:text-gray-400"><MetricLabel label={METRICS.olaTriggerTotal.label} tooltip={METRICS.olaTriggerTotal.tooltip} /></div>
+            <div className="text-2xl font-medium text-gray-900 dark:text-gray-100 mt-1">{triggers.length}</div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <div className="text-[13px] text-gray-500 dark:text-gray-400"><MetricLabel label={METRICS.olaTriggerEnabled.label} tooltip={METRICS.olaTriggerEnabled.tooltip} /></div>
+            <div className="text-2xl font-medium text-gray-900 dark:text-gray-100 mt-1">{triggers.filter(t => t.enabled).length}</div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
         {loading ? (

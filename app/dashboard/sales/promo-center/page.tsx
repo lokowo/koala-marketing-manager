@@ -210,7 +210,7 @@ export default function PromoCenterPage() {
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-medium text-[#111827] dark:text-[#F1F5F9]">{ch.label}</div>
                     {channelStats[ch.value] != null && (
-                      <div className="text-[10px] text-[#9CA3AF] dark:text-[#64748B]">{channelStats[ch.value]} 次访问</div>
+                      <div className="text-[10px] text-[#6B7280] dark:text-[#94A3B8]">{channelStats[ch.value]} 次访问</div>
                     )}
                   </div>
                   <button
@@ -227,8 +227,8 @@ export default function PromoCenterPage() {
             })}
           </div>
           <div className="rounded-xl p-4 bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155]">
-            <div className="text-[11px] text-[#6B7280] dark:text-[#94A3B8] mb-1.5">当前选中链接预览</div>
-            <div className="text-xs font-mono text-[#374151] dark:text-[#CBD5E1] break-all">{promoLink}</div>
+            <div className="text-[11px] text-[#374151] dark:text-[#CBD5E1] mb-1.5">当前选中链接预览</div>
+            <div className="text-xs font-mono text-[#111827] dark:text-[#F1F5F9] break-all">{promoLink}</div>
           </div>
         </div>
       )}
@@ -241,7 +241,7 @@ export default function PromoCenterPage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={qrImageUrl} alt="推广二维码" width={240} height={240} className="rounded" />
             </div>
-            <div className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] text-center">
+            <div className="text-[10px] text-[#374151] dark:text-[#CBD5E1] text-center">
               {CHANNELS.find(c => c.value === selectedChannel)?.label} · {referralCode}
             </div>
             <div className="flex gap-2">
