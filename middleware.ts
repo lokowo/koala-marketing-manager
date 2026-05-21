@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
@@ -23,6 +24,8 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  const { data: { user } } = await supabase.auth.getUser();
+
   // ─── Sales Attribution (P2') ─────────────────────────────────────────────
   const ref = request.nextUrl.searchParams.get('ref');
   const ch = request.nextUrl.searchParams.get('ch') || 'unknown';
@@ -42,10 +45,63 @@ export async function middleware(request: NextRequest) {
     };
     supabaseResponse.cookies.set('koala_ref', refData, cookieOpts);
 
-    if (!request.cookies.get('koala_visitor')?.value) {
-      supabaseResponse.cookies.set('koala_visitor', crypto.randomUUID(), {
+    let visitorFp = request.cookies.get('koala_visitor')?.value;
+    if (!visitorFp) {
+      visitorFp = crypto.randomUUID();
+      supabaseResponse.cookies.set('koala_visitor', visitorFp, {
         ...cookieOpts, httpOnly: false,
       });
+    }
+
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = adminClient as any;
+    const { data: agent } = await db
+      .from('sales_agents').select('id, user_id')
+      .eq('referral_code', ref).eq('status', 'active').single();
+
+    if (agent) {
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+        || request.headers.get('x-real-ip') || 'unknown';
+      const ua = request.headers.get('user-agent') || '';
+      const cutoff = new Date(Date.now() - 86400000).toISOString();
+      // Layer 1: self-scan — agent scanning their own code
+      const isSelfScan = user && user.id === agent.user_id;
+
+      if (!isSelfScan) {
+        // Layer 2: cookie dedup — same visitor + agent within 24h
+        const { count: cookieDups } = await db.from('sales_visits')
+          .select('id', { count: 'exact', head: true })
+          .eq('visitor_fingerprint', visitorFp)
+          .eq('agent_id', agent.id)
+          .gte('visited_at', cutoff);
+
+        if (!cookieDups || cookieDups === 0) {
+          // Layer 3: IP rate limit — ≥5 from same IP + agent in 24h
+          const { count: ipCount } = await db.from('sales_visits')
+            .select('id', { count: 'exact', head: true })
+            .eq('ip', ip)
+            .eq('agent_id', agent.id)
+            .gte('visited_at', cutoff);
+
+          if ((ipCount || 0) < 5) {
+            // Layer 4: suspicious marking — ≥3 from same IP is suspicious
+            await db.from('sales_visits').insert({
+              agent_id: agent.id,
+              channel: ch || 'unknown',
+              visitor_fingerprint: visitorFp,
+              landing_page: request.nextUrl.pathname,
+              ip,
+              user_agent: ua,
+              is_suspicious: (ipCount || 0) >= 3,
+            });
+          }
+        }
+      }
     }
   }
 
@@ -60,7 +116,6 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith('/dashboard') && !user) {

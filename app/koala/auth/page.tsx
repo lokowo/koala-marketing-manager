@@ -425,6 +425,11 @@ function AuthPageInner() {
               <p className="text-[10px] text-center text-gray-500 dark:text-[#6a7a7e]">
                 注册即表示同意我们的服务条款和隐私政策
               </p>
+              <div className="text-center pt-1">
+                <Link href="/koala/home" className="text-sm no-underline text-gray-400 dark:text-[#6a7a7e] hover:text-gray-600 dark:hover:text-[#a8b8ac] transition">
+                  先逛逛 →
+                </Link>
+              </div>
             </div>
           )}
         </form>

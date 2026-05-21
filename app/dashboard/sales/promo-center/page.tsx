@@ -81,7 +81,7 @@ export default function PromoCenterPage() {
     });
   }, [router]);
 
-  const promoLink = referralCode ? `https://koalaphd.com/?ref=${referralCode}&ch=${selectedChannel}` : '';
+  const promoLink = referralCode ? `https://koalaphd.com/koala/auth?ref=${referralCode}&ch=${selectedChannel}` : '';
   const qrImageUrl = promoLink ? `https://api.qrserver.com/v1/create-qr-code/?size=480x480&format=png&data=${encodeURIComponent(promoLink)}` : '';
 
   function copyText(text: string, key: string) {
@@ -207,7 +207,7 @@ export default function PromoCenterPage() {
             {CHANNELS.map(ch => {
               const Icon = ch.icon;
               const isSelected = selectedChannel === ch.value;
-              const link = `https://koalaphd.com/?ref=${referralCode}&ch=${ch.value}`;
+              const link = `https://koalaphd.com/koala/auth?ref=${referralCode}&ch=${ch.value}`;
               const copyKey = `link-${ch.value}`;
               return (
                 <div
