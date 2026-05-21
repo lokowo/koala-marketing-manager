@@ -13,7 +13,7 @@ export async function GET(req: Request) {
 
     let query = db
       .from('sales_commissions')
-      .select('*, sales_agents(user_id, referral_code, user_profiles:user_id(display_name, email)), sales_referrals(referred_user_id, user_profiles:referred_user_id(display_name, email))')
+      .select('*, sales_agents(user_id, referral_code, payment_method, payment_account, payment_name, user_profiles:user_id(display_name, email)), sales_referrals(referred_user_id, user_profiles:referred_user_id(display_name, email))')
       .order('created_at', { ascending: false });
 
     if (status !== 'all') query = query.eq('status', status);
@@ -26,6 +26,9 @@ export async function GET(req: Request) {
       id: c.id,
       agent_name: c.sales_agents?.user_profiles?.display_name || c.sales_agents?.user_profiles?.email || c.sales_agents?.referral_code,
       agent_email: c.sales_agents?.user_profiles?.email || '',
+      agent_payment_method: c.sales_agents?.payment_method || null,
+      agent_payment_account: c.sales_agents?.payment_account || null,
+      agent_payment_name: c.sales_agents?.payment_name || null,
       user_name: c.sales_referrals?.user_profiles?.display_name || c.sales_referrals?.user_profiles?.email || '未知',
       user_email: c.sales_referrals?.user_profiles?.email || '',
       product_type: c.product_type,
