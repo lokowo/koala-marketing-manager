@@ -85,14 +85,13 @@ export default function PromoCenterPage() {
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.replace('/login'); return; }
-      await fetch('/api/admin/me');
-      const [agentRes, statsRes] = await Promise.all([
-        (supabase as any).from('sales_agents').select('referral_code, name').eq('user_id', user.id).eq('status', 'active').single(),
+      const [dashRes, statsRes] = await Promise.all([
+        fetch('/api/sales/dashboard-stats').then(r => r.ok ? r.json() : null),
         fetch('/api/sales/channel-analytics?days=90').then(r => r.ok ? r.json() : null),
       ]);
-      if (agentRes.data?.referral_code) {
-        setReferralCode(agentRes.data.referral_code);
-        setDisplayName(agentRes.data.name || user.email?.split('@')[0] || '');
+      if (dashRes?.agent?.referral_code) {
+        setReferralCode(dashRes.agent.referral_code);
+        setDisplayName(dashRes.agent.display_name || user.email?.split('@')[0] || '');
       }
       if (statsRes?.channels) {
         const map: Record<string, number> = {};
