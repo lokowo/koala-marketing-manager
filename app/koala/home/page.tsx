@@ -20,9 +20,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default async function HomePage() {
-  const [profResult, matchData, blogData] = await Promise.all([
+  const [profResult, , blogData] = await Promise.all([
     listProfessors({ limit: 6, sortBy: 'opportunity_score' }).catch(() => ({ data: [], total: 0 })),
-    db.from('ai_conversations').select('id', { count: 'exact', head: true }).then((r: { count: number }) => r.count || 0).catch(() => 0),
+    Promise.resolve(0),
     (async () => {
       try {
         const { data: pinned } = await db
@@ -111,7 +111,6 @@ export default async function HomePage() {
       <HomeClient
         initialProfessors={profResult.data}
         initialProfCount={profResult.total}
-        initialMatchCount={matchData as number}
         initialBlogPosts={blogPosts}
       />
     </>

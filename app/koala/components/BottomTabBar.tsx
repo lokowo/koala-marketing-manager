@@ -12,11 +12,13 @@ const LEFT_TABS = [
   { href: '/koala/home', icon: Compass, label: '首页' },
 ] as const;
 
-const RIGHT_TABS = [
-  { href: '/koala/professors', icon: Users, label: '教授库' },
-  { href: '/koala/messages', icon: Bell, label: '消息' },
-  { href: '/koala/my-profile', icon: UserCircle, label: '我的' },
-] as const;
+function getRightTabs(loggedIn: boolean) {
+  return [
+    { href: '/koala/professors', icon: Users, label: '教授库', visible: true },
+    { href: '/koala/messages', icon: Bell, label: '消息', visible: loggedIn },
+    { href: loggedIn ? '/koala/my-profile' : '/koala/auth', icon: UserCircle, label: loggedIn ? '我的' : '登录', visible: true },
+  ].filter(t => t.visible);
+}
 
 export default function BottomTabBar() {
   const pathname = usePathname();
@@ -43,7 +45,9 @@ export default function BottomTabBar() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 bg-white dark:bg-[#0a0e14] border-t border-gray-200 dark:border-[rgba(201,169,110,0.12)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className="text-center text-[9px] text-gray-300 dark:text-[#D4A843]/30 pt-0.5">{APP_VERSION}</div>
+      {process.env.NODE_ENV !== 'production' && (
+        <div className="text-center text-[9px] text-gray-300 dark:text-[#D4A843]/30 pt-0.5">{APP_VERSION}</div>
+      )}
       <div className="relative flex justify-around items-end px-4 pb-6 pt-2 max-w-[480px] mx-auto">
         {LEFT_TABS.map(tab => {
           const active = isActive(tab.href);
@@ -75,7 +79,7 @@ export default function BottomTabBar() {
             <span className={`font-semibold text-[9px] ${koalaActive ? 'text-white dark:text-[#0a0e14]' : 'text-white dark:text-[#D4A843]'}`}>Ola</span>
           </Link>
         </div>
-        {RIGHT_TABS.map(tab => {
+        {getRightTabs(!!user).map(tab => {
           const active = isActive(tab.href);
           const Icon = tab.icon;
           const showBadge = tab.href === '/koala/messages' && unreadCount > 0;

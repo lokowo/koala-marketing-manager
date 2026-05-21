@@ -10,27 +10,6 @@ import type { Professor } from '../../lib/types';
 import { useAuth } from '../components/AuthContext';
 import { BRAND, getUniBadge, parseUniversity } from '../../lib/constants';
 
-function useCountUp(target: number, duration = 1500) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (target <= 0) return;
-    const totalFrames = Math.round(duration / 16);
-    const step = Math.max(1, Math.ceil(target / totalFrames));
-    let current = 0;
-    const timer = setInterval(() => {
-      current += step;
-      if (current >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(current);
-      }
-    }, 16);
-    return () => clearInterval(timer);
-  }, [target, duration]);
-  return count;
-}
-
 const CATEGORY_LABELS: Record<string, string> = {
   phd_guide: 'PhD指南',
   application: '申请攻略',
@@ -95,16 +74,15 @@ const PRICING_PREVIEW = [
 interface HomeClientProps {
   initialProfessors: Professor[];
   initialProfCount: number;
-  initialMatchCount: number;
+
   initialBlogPosts: BlogPost[];
 }
 
-export default function HomeClient({ initialProfessors, initialProfCount, initialMatchCount, initialBlogPosts }: HomeClientProps) {
+export default function HomeClient({ initialProfessors, initialProfCount, initialBlogPosts }: HomeClientProps) {
   const router = useRouter();
   const { user, profile, showLogin, signOut } = useAuth();
   const [professors] = useState<Professor[]>(initialProfessors);
   const profCount = initialProfCount > 0 ? initialProfCount.toLocaleString() : '4,200+';
-  const [matchCount] = useState(initialMatchCount);
   const [showNotif, setShowNotif] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -113,7 +91,6 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
   const blogScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  const displayMatchCount = useCountUp(matchCount);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -348,9 +325,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                   开始匹配 <ArrowRight className="size-4" />
                 </Link>
                 <div className="mt-4 text-[11px] text-center md:text-left text-amber-700 dark:text-[#D4A843]/40">
-                  {matchCount > 0
-                    ? `已帮助 ${displayMatchCount.toLocaleString()} 位同学匹配理想导师`
-                    : '已帮助众多同学匹配理想导师'}
+                  已覆盖全澳 38 所大学
                 </div>
               </div>
 
@@ -372,7 +347,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
               {
                 icon: '💬', step: '01', title: '聊背景',
                 desc: '告诉 Koala 你的专业方向、学术经历和兴趣，AI 帮你评估申请竞争力',
-                features: ['覆盖全澳 30+ 所大学', '中英文双语支持'],
+                features: ['覆盖全澳 38 所大学', '中英文双语支持'],
                 extra: '⏱ 约 2 分钟',
                 primary: true,
                 iconBg: 'bg-[#D4A843]/20',
@@ -704,7 +679,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                 还在犹豫？先聊聊你的想法
               </h2>
               <p className="text-gray-300 mb-6 text-base md:text-lg">
-                免费匹配导师，不满意随时退出。已有 {initialMatchCount.toLocaleString()} 位同学开始了对话。
+                免费匹配导师，不满意随时退出。覆盖澳洲 38 所大学、23,500+ 位教授与研究员。
               </p>
               <div className="flex flex-wrap gap-3 md:gap-4">
                 <Link
@@ -728,7 +703,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                 <div className="text-xs text-gray-400 mt-1">导师与学者</div>
               </div>
               <div className="text-center px-5 py-4 bg-white/5 rounded-xl min-w-[100px]">
-                <div className="text-2xl lg:text-3xl font-bold text-[#4ECDC4]">30+</div>
+                <div className="text-2xl lg:text-3xl font-bold text-[#4ECDC4]">38</div>
                 <div className="text-xs text-gray-400 mt-1">澳洲大学</div>
               </div>
               <div className="text-center px-5 py-4 bg-white/5 rounded-xl min-w-[100px]">
