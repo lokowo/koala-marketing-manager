@@ -1,5 +1,5 @@
 # Koala PhD — 项目状态文件
-> 最后更新: 2026-05-21
+> 最后更新: 2026-05-22
 > 本文件是任何新对话的第一份必读材料。新开对话时告诉 Claude："读 docs/PROJECT-STATE.md，接着干。"
 
 ---
@@ -71,52 +71,49 @@ Jay 是产品负责人，**不写代码**。他的工作方式：
 
 ---
 
-## 四、待修复的 23 项 Bug（2026-05-21 发现）
+## 四、23 项 Bug 修复记录（2026-05-21 发现，全部已修复）
 
 ### 🔴 共因 A: users 表查询返回 0（影响 5+ 页面）
-所有查 users 表的指标返回 0，但查 conversations/行为日志的正常。
-可能原因: RLS 策略/查错表/WHERE 过滤错误/JOIN 错误。
-
 | # | 页面 | 现象 | 状态 |
 |---|---|---|---|
 | 3 | 用户增长 KPI | 总用户=0，但活跃分层=6 | ✅ 根因: listUsers→user_profiles |
 | 5 | 推荐/变现指标 | 购买=7但付费用户=0，推荐占比=0% | ✅ 根因: listUsers→user_profiles |
 | 7 | 数据分析概览 | 总用户=0，日活有数据 | ✅ 根因: listUsers→user_profiles |
-| 8 | 销售漏斗 | 暂无数据 | ⬜ 待修 |
+| 8 | 销售漏斗 | 暂无数据 | ✅ 新建独立页+API，数据源改为 sales_visits→referrals→conversations→commissions |
 | 19 | 收入分析 | ARPU=$0（分母=0），MRR=$0 | ✅ 根因: listUsers→user_profiles |
 
 ### 🟡 共因 B: Claude Code 不读 DESIGN.md（UI 回归）
 | # | 页面 | 现象 | 状态 |
 |---|---|---|---|
-| 6 | 推广码效果 | 标签灰色看不清 | ⬜ 待修 |
-| 11 | 教授详情页 | 字段值极浅灰像 placeholder | ⬜ 待修 |
+| 6 | 推广码效果 | 标签灰色看不清 | ✅ 颜色对比度修复 |
+| 11 | 教授详情页 | 字段值极浅灰像 placeholder | ✅ 颜色对比度修复 |
 
 ### 🚨 数据问题
 | # | 页面 | 现象 | 状态 |
 |---|---|---|---|
 | 10 | 教授库 | 🚨 非澳洲教授混入（山西大学、Max Planck） | ✅ 12条已Rejected + 命名统一 |
-| 9 | 大学分布 | 缺骨架数据，只显示有教授的大学 | ⬜ 待修 |
-| 12 | Grants | 只1条记录，缺概念区分 | ⬜ 待修 |
+| 9 | 大学分布 | 缺骨架数据，只显示有教授的大学 | ✅ universities表38所+分布图修复 |
+| 12 | Grants | 只1条记录，缺概念区分 | ✅ scholarships表+research_grants表拆分 |
 
 ### 🔧 架构/功能缺失
 | # | 页面 | 现象 | 状态 |
 |---|---|---|---|
 | 1 | 用户管理详情 | 加载失败+无返回按钮 | ✅ 根因: requireSuperAdmin→requireAdmin |
-| 2 | 角色管理 | 拒绝缺闭环（理由/通知/重提/历史） | ⬜ 待修 |
-| 20 | 站内信 | admin端显示用户工单表单，角色搞反 | ⬜ 待修 |
-| 23 | 佣金比例 | Tier↔佣金映射无逻辑，晋级规则缺失 | ⬜ 待修 |
-| 21 | 佣金审核 | 缺30天自动确认+行drill-down+转账凭证 | ⬜ 待修 |
-| 22 | KPI目标 | 全部未设置，缺三维度+晋级进度可视化 | ⬜ 待修 |
-| 17 | 品牌设置 | 只读无法编辑 | ⬜ 待修 |
+| 2 | 角色管理 | 拒绝缺闭环（理由/通知/重提/历史） | ✅ 角色管理重建+历史表 |
+| 20 | 站内信 | admin端显示用户工单表单，角色搞反 | ✅ 站内信重建 |
+| 23 | 佣金比例 | Tier↔佣金映射无逻辑，晋级规则缺失 | ✅ tier佣金映射+晋级/降级规则 |
+| 21 | 佣金审核 | 缺30天自动确认+行drill-down+转账凭证 | ✅ 自动确认+drill-down+凭证 |
+| 22 | KPI目标 | 全部未设置，缺三维度+晋级进度可视化 | ✅ KPI三维度+晋级进度 |
+| 17 | 品牌设置 | 只读无法编辑 | ✅ 品牌设置可编辑+brand_settings表 |
 
 ### 📝 UX / Tooltip 缺失
 | # | 页面 | 状态 |
 |---|---|---|
-| 4 | 留存缺 tooltip | ⬜ |
-| 14 | FAQ 缺 tooltip | ⬜ |
-| 16 | Ola 触发器缺说明 | ⬜ |
+| 4 | 留存缺 tooltip | ✅ MetricLabel全站tooltip |
+| 14 | FAQ 缺 tooltip | ✅ MetricLabel全站tooltip |
+| 16 | Ola 触发器缺说明 | ✅ MetricLabel全站tooltip |
 
-### 🚀 新功能（下个 Sprint）
+### 🚀 新功能（已规划到 Phase 6）
 | # | 模块 | 说明 |
 |---|---|---|
 | 13 | 知识库自动抓取 | 教授/奖学金定期同步 |
@@ -133,10 +130,10 @@ Jay 是产品负责人，**不写代码**。他的工作方式：
 Phase 0: ✅ 完成 — 数据紧急审计（#10 非澳教授）→ 12条Rejected + 命名统一
 Phase 1: ✅ 完成 — 修根因（共因A users查询 listUsers→user_profiles + promo-center RLS修复）
 Phase 2: ✅ 完成 — universities表38所 + tier列回填 + scholarships表(16条Go8种子) + research_grants表 + role_application_history表 + commission三tier列 + payout三字段 + paid_out_at命名修正
-Phase 3: 核心逻辑（tier佣金映射 + 自动确认 + 站内信重建 + KPI）
-Phase 4: UI补全（角色拒绝前端 + 推广码重设计 + 品牌设置）
-Phase 5: 全局UX（MetricLabel组件 + 全站tooltip）
-Phase 6: 新功能（AI智能录入 + 知识库抓取 + 营销工具）
+Phase 3: ✅ 完成 — tier佣金映射+自动确认+站内信重建+KPI+角色管理
+Phase 4: ✅ 完成 — 推广码+教授详情+品牌设置+佣金审核+等级管理+销售漏斗+大学分布
+Phase 5: ✅ 完成 — MetricLabel全站tooltip+颜色对比度修复
+Phase 6: 待启动 — 新功能（AI智能录入 + 知识库抓取 + 营销工具）
 ```
 
 ---
@@ -163,6 +160,8 @@ universities: id, name, short_name, group_label, state, country, is_active, crea
 scholarships: id, name, university_id, type, coverage, amount_aud, eligibility, url, is_active, created_at
 
 role_application_history: id, application_id, action, actor_id, actor_role, reason, snapshot, created_at
+
+brand_settings: id, key, value, updated_by, updated_at, created_at
 ```
 
 ---
@@ -199,4 +198,23 @@ lib/metrics-glossary.ts             — 22个指标的中文名+tooltip说明（
 
 ---
 
-> **给下一个 Claude 的话**: 读完这个文件你就有了完整上下文。不要问 Jay "之前做了什么"，这里全有。直接问他"今天从哪个 Phase 继续？"
+## 九、下一步
+
+### Phase 6 新功能
+- **AI 智能录入** (#15): 自然语言+语音→结构化数据录入教授/奖学金
+- **知识库自动抓取** (#13): 教授/奖学金数据定期从 Semantic Scholar / ARC Portal / 大学官网同步
+- **营销工具** (#18): 3 个 Coming Soon 模块落地（Q3 2026 计划中）
+
+### 核心产品优化
+- 主页改版（koala/home）
+- AI 顾问对话优化（koala/chat）
+- 教授匹配算法调优
+- 以上待 Jay 定优先级
+
+### 测试数据清理
+- 上线前跑 `scripts/cleanup-test-data.ts` 清除测试 agent 产生的 visits/referrals/commissions
+- 确认生产数据不受影响后再执行
+
+---
+
+> **给下一个 Claude 的话**: 读完这个文件你就有了完整上下文。不要问 Jay "之前做了什么"，这里全有。Phase 0-5 全部完成，23 项 Bug 已清零。直接问他"Phase 6 从哪个功能开始？"
