@@ -129,7 +129,52 @@ async function processReferralCode(
     return false;
   }
 
-  // --- Tier 2: Match sales_qrcodes.code (sales channel) ---
+  // --- Tier 2: Match sales_agents.referral_code ---
+  try {
+    const { data: salesAgent } = await db
+      .from('sales_agents')
+      .select('id, user_id')
+      .eq('referral_code', upperCode)
+      .eq('status', 'active')
+      .single();
+
+    if (salesAgent) {
+      console.log('[referral] tier2: matched sales_agents.referral_code, agent:', salesAgent.id);
+
+      await db.from('sales_referrals').insert({
+        agent_id: salesAgent.id,
+        referred_user_id: newUserId,
+        channel: 'referral_code',
+        landing_page: '/',
+      }).then(() => {}).catch((e: unknown) => console.error('[referral] sales_referrals insert failed:', e));
+
+      await db.from('sales_customers').insert({
+        sales_user_id: salesAgent.user_id,
+        customer_user_id: newUserId,
+        source: 'referral_code',
+        source_code: upperCode,
+        stage: 'lead',
+      }).then(() => {}).catch((e: unknown) => console.error('[referral] sales_customers insert failed:', e));
+
+      const { data: freshProfile } = await db.from('user_profiles').select('credits_remaining').eq('id', newUserId).single();
+      const currentBalance = freshProfile?.credits_remaining ?? newUserProfile.credits_remaining ?? 0;
+      const newBalance = currentBalance + 5;
+      await db.from('user_profiles').update({ credits_remaining: newBalance }).eq('id', newUserId);
+      await db.from('credit_transactions').insert({
+        user_id: newUserId,
+        amount: 5,
+        balance_after: newBalance,
+        type: 'earn_referral',
+        description: 'Sales 渠道注册奖励',
+      });
+      console.log('[referral] tier2 complete (sales_agents): credit +5, new balance:', newBalance);
+      return true;
+    }
+  } catch (e) {
+    console.error('[referral] tier2 sales_agents lookup failed:', e);
+  }
+
+  // --- Tier 3: Match sales_qrcodes.code (sales QR channel) ---
   try {
     const { data: salesQr } = await db
       .from('sales_qrcodes')
@@ -138,14 +183,14 @@ async function processReferralCode(
       .single();
 
     if (salesQr) {
-      console.log('[referral] tier2: matched sales_qrcodes, sales_user:', salesQr.sales_user_id);
+      console.log('[referral] tier3: matched sales_qrcodes, sales_user:', salesQr.sales_user_id);
 
       await db.from('sales_customers').insert({
         sales_user_id: salesQr.sales_user_id,
         customer_user_id: newUserId,
         qrcode_id: salesQr.id,
         source: 'referral_code',
-        stage: 'registered',
+        stage: 'lead',
       }).then(() => {}).catch((e: unknown) => console.error('[referral] sales_customers insert failed:', e));
 
       const { data: qr } = await db.from('sales_qrcodes').select('register_count').eq('id', salesQr.id).single();
@@ -165,11 +210,11 @@ async function processReferralCode(
         type: 'earn_referral',
         description: 'Sales 渠道注册奖励',
       });
-      console.log('[referral] tier2 complete: sales credit +5, new balance:', newBalance);
+      console.log('[referral] tier3 complete: sales credit +5, new balance:', newBalance);
       return true;
     }
   } catch (e) {
-    console.error('[referral] tier2 sales lookup failed:', e);
+    console.error('[referral] tier3 sales lookup failed:', e);
   }
 
   console.log('[referral] no match found for code:', upperCode);
