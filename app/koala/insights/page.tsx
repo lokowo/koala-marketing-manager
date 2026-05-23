@@ -72,13 +72,29 @@ const GROUP_LABELS: Record<string, string> = {
   Other: '其他大学',
 };
 
+async function fetchAllProfessors() {
+  const PAGE = 1000;
+  const all: Array<{ university: string; research_areas: string[]; accepting_students: string | null }> = [];
+  let from = 0;
+  while (true) {
+    const { data } = await db
+      .from('professors')
+      .select('university, research_areas, accepting_students')
+      .range(from, from + PAGE - 1);
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
 async function fetchInsightsData(): Promise<InsightsData> {
-  const [profResult, uniResult] = await Promise.all([
-    db.from('professors').select('university, research_areas, accepting_students'),
+  const [professors, uniResult] = await Promise.all([
+    fetchAllProfessors(),
     db.from('universities').select('name, short_name, group_label'),
   ]);
 
-  const professors = profResult.data ?? [];
   const universities = uniResult.data ?? [];
   const totalProfessors = professors.length;
 
