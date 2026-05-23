@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Download, Loader2, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Download, Loader2, Share2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
 
@@ -64,7 +64,6 @@ export default function SharePoster({
   const [toast, setToast] = useState('');
   const [themeId, setThemeId] = useState('dark');
   const posterRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const currentTheme = ALL_THEMES.find(t => t.id === themeId) ?? ALL_THEMES[0];
 
@@ -130,10 +129,6 @@ export default function SharePoster({
   const handleCopyLink = () => {
     if (!referralCode) return;
     navigator.clipboard.writeText(`https://koalaphd.com/?ref=${referralCode}`).then(() => showToast('链接已复制'));
-  };
-
-  const scrollThemes = (dir: 'left' | 'right') => {
-    scrollRef.current?.scrollBy({ left: dir === 'left' ? -120 : 120, behavior: 'smooth' });
   };
 
   if (!open) return null;
@@ -290,55 +285,47 @@ export default function SharePoster({
               </div>
             </div>
 
-            {/* Theme picker */}
-            <div className="mt-3 relative">
-              <button
-                onClick={() => scrollThemes('left')}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 size-6 flex items-center justify-center rounded-full bg-black/60 text-white/80"
-              >
-                <ChevronLeft size={14} />
-              </button>
-              <div
-                ref={scrollRef}
-                className="flex gap-2 overflow-x-auto scrollbar-hide px-8 py-1"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {/* Gradient themes */}
-                {GRADIENT_THEMES.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => setThemeId(t.id)}
-                    className={`shrink-0 flex flex-col items-center gap-1 ${themeId === t.id ? 'opacity-100' : 'opacity-60 hover:opacity-80'} transition-opacity`}
-                  >
-                    <div
-                      className={`size-10 rounded-lg bg-gradient-to-br ${t.gradient} border-2 ${themeId === t.id ? 'border-[#D4A843]' : 'border-white/20'}`}
-                    />
-                    <span className="text-[9px] text-white/60">{t.label}</span>
-                  </button>
-                ))}
-                {/* Separator */}
-                <div className="shrink-0 w-px bg-white/20 mx-1 self-stretch" />
-                {/* Image themes */}
-                {IMAGE_THEMES.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => setThemeId(t.id)}
-                    className={`shrink-0 flex flex-col items-center gap-1 ${themeId === t.id ? 'opacity-100' : 'opacity-60 hover:opacity-80'} transition-opacity`}
-                  >
-                    <div
-                      className={`size-10 rounded-lg bg-cover bg-center border-2 ${themeId === t.id ? 'border-[#D4A843]' : 'border-white/20'}`}
-                      style={{ backgroundImage: `url(${t.src})` }}
-                    />
-                    <span className="text-[9px] text-white/60">{t.label}</span>
-                  </button>
-                ))}
+            {/* Theme picker — wrapping grid, all visible */}
+            <div className="mt-3 space-y-2">
+              {/* Gradient themes */}
+              <div>
+                <p className="text-[10px] text-white/40 mb-1.5 px-1">渐变主题</p>
+                <div className="flex flex-wrap gap-2">
+                  {GRADIENT_THEMES.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => setThemeId(t.id)}
+                      className={`flex flex-col items-center gap-1 ${themeId === t.id ? 'opacity-100' : 'opacity-60 hover:opacity-80'} transition-opacity`}
+                    >
+                      <div
+                        className={`size-10 rounded-lg bg-gradient-to-br ${t.gradient} border-2 ${themeId === t.id ? 'border-[#D4A843]' : 'border-white/20'}`}
+                      />
+                      <span className="text-[9px] text-white/60">{t.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <button
-                onClick={() => scrollThemes('right')}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 size-6 flex items-center justify-center rounded-full bg-black/60 text-white/80"
-              >
-                <ChevronRight size={14} />
-              </button>
+              {/* Separator */}
+              <div className="border-t border-white/10" />
+              {/* Image themes */}
+              <div>
+                <p className="text-[10px] text-white/40 mb-1.5 px-1">图片背景</p>
+                <div className="flex flex-wrap gap-2">
+                  {IMAGE_THEMES.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => setThemeId(t.id)}
+                      className={`flex flex-col items-center gap-1 ${themeId === t.id ? 'opacity-100' : 'opacity-60 hover:opacity-80'} transition-opacity`}
+                    >
+                      <div
+                        className={`size-10 rounded-lg bg-cover bg-center border-2 ${themeId === t.id ? 'border-[#D4A843]' : 'border-white/20'}`}
+                        style={{ backgroundImage: `url(${t.src})` }}
+                      />
+                      <span className="text-[9px] text-white/60">{t.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Hint */}
