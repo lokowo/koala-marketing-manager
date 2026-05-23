@@ -64,9 +64,9 @@ async function processReferralCode(
   }
 
   if (referrerProfile && referrerProfile.id !== newUserId) {
-    const isAdmin = referrerProfile.role === 'admin';
+    const isAdminRole = ['admin', 'super_admin'].includes(referrerProfile.role ?? '');
 
-    if (!isAdmin) {
+    if (!isAdminRole) {
       const { data: codeRecord } = await db
         .from('referral_codes')
         .select('uses, max_uses')
@@ -80,7 +80,7 @@ async function processReferralCode(
       }
       console.log('[referral] referrer invite count:', uses, '/', maxUses);
     } else {
-      console.log('[referral] referrer is admin, skipping max_uses check');
+      console.log('[referral] referrer is admin/super_admin, skipping max_uses check');
     }
 
     // Set referred_by on new user (no credits at registration — awarded on email verification)
