@@ -51,6 +51,9 @@ export interface StudentContext {
     parsedData?: Record<string, unknown>;
   }>;
   profileCompleteness: number;
+  profileCompletedAt?: string;
+  researchInterests?: string[];
+  publications?: unknown[];
 }
 
 export async function getStudentContext(userId: string): Promise<StudentContext | null> {
@@ -113,6 +116,9 @@ export async function getStudentContext(userId: string): Promise<StudentContext 
         parsedData: d.parsed_data as Record<string, unknown> | undefined,
       })),
       profileCompleteness: p.profile_completeness ?? 0,
+      profileCompletedAt: p.profile_completed_at || undefined,
+      researchInterests: p.research_interests || undefined,
+      publications: p.publications || undefined,
     };
   } catch (e) {
     console.error('[student-context] Failed to load:', e);
@@ -148,10 +154,14 @@ export function buildStudentContextPrompt(ctx: StudentContext): string {
 
   // Research
   const research: string[] = [];
+  if (ctx.researchInterests?.length) research.push(`研究兴趣：${ctx.researchInterests.join('、')}`);
   if (ctx.hasResearchExperience != null) research.push(`科研经历：${ctx.hasResearchExperience ? '有' : '无'}`);
   if (ctx.researchDescription) research.push(`科研详情：${ctx.researchDescription}`);
   if (ctx.hasPublications != null) research.push(`发表论文：${ctx.hasPublications ? '有' : '无'}`);
   if (ctx.publicationDetails) research.push(`论文详情：${ctx.publicationDetails}`);
+  if (ctx.publications && Array.isArray(ctx.publications) && ctx.publications.length > 0) {
+    research.push(`论文列表：${JSON.stringify(ctx.publications).slice(0, 500)}`);
+  }
   if (ctx.strengths?.length) research.push(`优势：${ctx.strengths.join('、')}`);
   if (research.length > 0) sections.push(`### 科研背景\n${research.join('\n')}`);
 
@@ -203,8 +213,10 @@ export function buildStudentContextPrompt(ctx: StudentContext): string {
   if (ctx.languagePreference) prefs.push(`语言偏好：${ctx.languagePreference}`);
   if (prefs.length > 0) sections.push(`### 个人偏好\n${prefs.join('\n')}`);
 
-  // Profile completeness warning
-  if (ctx.profileCompleteness < 40) {
+  // Profile status
+  if (ctx.profileCompletedAt) {
+    sections.push(`### ✅ 画像已完善（${ctx.profileCompleteness}%，上次更新：${ctx.profileCompletedAt}）\n用户已完成画像收集，不需要再次收集。直接基于以上信息提供个性化建议。如果用户主动说"更新我的信息"或"我有新论文/新经历"，则重新进入画像更新模式。`);
+  } else if (ctx.profileCompleteness < 40) {
     sections.push(`### ⚠️ 用户画像不完整（${ctx.profileCompleteness}%）\n请在对话中自然地引导用户补充以下关键信息：专业背景、GPA、科研经历、目标研究方向。信息越完整，匹配和推荐越精准。`);
   }
 
