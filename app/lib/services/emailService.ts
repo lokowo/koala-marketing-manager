@@ -35,7 +35,7 @@ function brandTemplate(title: string, body: string): string {
         <!-- Footer -->
         <tr><td style="background:#f8f4ea;padding:20px 32px;text-align:center;border-top:1px solid #ebe3d0;">
           <div style="font-size:11px;color:#907858;line-height:1.6;">
-            ${BRAND_NAME} · 澳洲产学研科研机构<br/>
+            ${BRAND_NAME} · 澳洲 PhD 留学 AI 智能顾问平台<br/>
             Suite 22/26A Lime St, Sydney NSW 2000<br/>
             <a href="mailto:info@koalaphd.com" style="color:#c4a050;text-decoration:none;">info@koalaphd.com</a>
           </div>
@@ -203,5 +203,32 @@ export async function sendSecurityWarning(params: {
     to: params.to,
     subject: `${BRAND_NAME} — 账户安全提醒`,
     html: brandTemplate('账户安全提醒', body),
+  });
+}
+
+export async function sendProfessorVerificationEmail(params: {
+  to: string;
+  code: string;
+  professorName: string;
+}) {
+  const body = `
+    <p>Dear Professor ${params.professorName},</p>
+    <p>We have received a request to verify your profile on ${BRAND_NAME}, an AI-powered platform that connects prospective PhD students with Australian supervisors.</p>
+    <p>Your verification code is:</p>
+    ${codeBlock(params.code)}
+    <p>This code expires in 10 minutes. Once verified, you will be able to:</p>
+    <ul style="padding-left:20px;margin:16px 0;">
+      <li style="margin-bottom:8px;">Manage your public profile and research interests</li>
+      <li style="margin-bottom:8px;">Post a message visible to prospective students</li>
+      <li style="margin-bottom:8px;">See analytics on student interest</li>
+    </ul>
+    <p style="font-size:12px;color:#907858;">If you did not request this verification, please ignore this email.</p>
+  `;
+
+  return getResend().emails.send({
+    from: `${BRAND_NAME} <${FROM_EMAIL}>`,
+    to: params.to,
+    subject: `${BRAND_NAME} — Verify Your Professor Profile`,
+    html: brandTemplate('Professor Verification', body),
   });
 }
