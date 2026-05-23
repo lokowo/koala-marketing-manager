@@ -5,28 +5,24 @@ import { Canvas, FabricImage, Textbox, Rect, Group, FabricObject, Gradient, Shad
 import QRCode from 'qrcode';
 import { POSTER_FONTS, loadPosterFonts, DEFAULT_ZH_FONT } from './poster-fonts';
 
-// ── Types ─────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────
 
-interface GradientBgDef {
+interface ImageBgDef {
   id: string;
+  src: string;
   label: string;
-  colors: string[];
 }
 
-type PosterSize = '3:4' | '1:1' | '9:16';
 type TextColor = '#FFFFFF' | '#000000' | '#D4A843';
 
-const GRADIENT_BACKGROUNDS: GradientBgDef[] = [
-  { id: 'g-minimal',  label: '简约', colors: ['#FFFFFF'] },
-  { id: 'g-academic', label: '学术', colors: ['#0F172A'] },
-  { id: 'g-vibrant',  label: '活力', colors: ['#F59E0B', '#EC4899'] },
+const IMAGE_BACKGROUNDS: ImageBgDef[] = [
+  { id: '11', src: '/images/posters/11.png', label: '砂岩主楼' },
+  { id: '22', src: '/images/posters/22.png', label: '蓝花楹校园' },
+  { id: '33', src: '/images/posters/33.png', label: '林荫主楼' },
+  { id: '44', src: '/images/posters/44.png', label: 'STEM大楼' },
+  { id: '55', src: '/images/posters/55.png', label: '图书馆' },
+  { id: '66', src: '/images/posters/66.png', label: '蓝花楹步道' },
 ];
-
-const SIZE_CONFIGS: Record<PosterSize, { w: number; h: number; label: string }> = {
-  '3:4': { w: 1080, h: 1440, label: '3:4 社交媒体' },
-  '1:1': { w: 1080, h: 1080, label: '1:1 方形' },
-  '9:16': { w: 1080, h: 1920, label: '9:16 竖屏' },
-};
 
 const TEXT_COLORS: { value: TextColor; label: string }[] = [
   { value: '#FFFFFF', label: '白' },
@@ -36,6 +32,7 @@ const TEXT_COLORS: { value: TextColor; label: string }[] = [
 
 const LOGO_KEY = '__isLogo';
 const BG_KEY = '__isBg';
+const OVERLAY_KEY = '__isOverlay';
 const QR_KEY = '__isQR';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,13 +43,15 @@ interface Props {
   channel: string;
 }
 
-export default function FabricPosterEditor({ referralCode, channel }: Props) {
+export default function ImagePosterEditor({ referralCode, channel }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<Canvas | null>(null);
-  const [bgId, setBgId] = useState('g-minimal');
-  const [size, setSize] = useState<PosterSize>('3:4');
+  const [bgId, setBgId] = useState('11');
+  const [canvasSize, setCanvasSize] = useState({ w: 1080, h: 1440 });
   const [selectedObj, setSelectedObj] = useState<FabricObject | null>(null);
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [showUrl, setShowUrl] = useState(true);
+  const [showChannel, setShowChannel] = useState(true);
   const [toolbarProps, setToolbarProps] = useState({
     fontFamily: DEFAULT_ZH_FONT,
     fontSize: 48,
@@ -61,21 +60,17 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
   });
   const initDone = useRef(false);
 
-  // ── Font loading ───────────────────────────────────
   useEffect(() => {
     loadPosterFonts().then(() => setFontsLoaded(true));
   }, []);
 
-  // ── Canvas init ─────────────────────────────────────
   useEffect(() => {
     if (!canvasRef.current || initDone.current || !fontsLoaded) return;
     initDone.current = true;
 
-    const { w, h } = SIZE_CONFIGS[size];
     const fc = new Canvas(canvasRef.current, {
-      width: w,
-      height: h,
-      backgroundColor: '#1a1a2e',
+      width: 1080, height: 1440,
+      backgroundColor: '#0F1419',
       selection: true,
       preserveObjectStacking: true,
     });
@@ -84,8 +79,21 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     fc.on('selection:updated', (e) => handleSelection(e.selected?.[0] ?? null));
     fc.on('selection:cleared', () => handleSelection(null));
 
+    // Clamp QR group to canvas bounds
+    fc.on('object:moving', (e) => {
+      const obj = e.target;
+      if (!obj || !meta(obj)[QR_KEY]) return;
+      const bound = obj.getBoundingRect();
+      const cw = fc.getWidth();
+      const ch = fc.getHeight();
+      if (bound.left < 0) obj.set('left', (obj.left ?? 0) - bound.left);
+      if (bound.top < 0) obj.set('top', (obj.top ?? 0) - bound.top);
+      if (bound.left + bound.width > cw) obj.set('left', (obj.left ?? 0) - (bound.left + bound.width - cw));
+      if (bound.top + bound.height > ch) obj.set('top', (obj.top ?? 0) - (bound.top + bound.height - ch));
+    });
+
     fabricRef.current = fc;
-    loadBackground(fc, 'g-minimal', size).then(() => addPresetElements(fc, size, referralCode, channel));
+    loadImageBackground(fc, '11', referralCode, channel);
 
     return () => { fc.dispose(); initDone.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,7 +101,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
 
   function handleSelection(obj: FabricObject | null) {
     if (!obj || !(obj instanceof Textbox)) {
-      setSelectedObj(null);
+      setSelectedObj(obj instanceof Textbox ? obj : null);
       return;
     }
     setSelectedObj(obj);
@@ -105,97 +113,146 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     });
   }
 
-  // ── Load gradient background ───────────────────────
-  async function loadBackground(fc: Canvas, id: string, sz: PosterSize) {
-    const { w, h } = SIZE_CONFIGS[sz];
-    const objs = fc.getObjects();
-    for (const o of objs) {
-      if (meta(o)[BG_KEY]) fc.remove(o);
-    }
-
-    const bgDef = GRADIENT_BACKGROUNDS.find(b => b.id === id);
+  // ── Load image background at native size ───────────
+  async function loadImageBackground(fc: Canvas, id: string, refCode: string, ch: string) {
+    const bgDef = IMAGE_BACKGROUNDS.find(b => b.id === id);
     if (!bgDef) return;
 
-    const bgRect = new Rect({
-      left: 0, top: 0, width: w, height: h,
-      selectable: false, evented: false, hasControls: false, hasBorders: false,
-      fill: bgDef.colors.length > 1
-        ? new Gradient({
-            type: 'linear',
-            coords: { x1: 0, y1: 0, x2: w, y2: h },
-            colorStops: bgDef.colors.map((c, i) => ({
-              offset: i / (bgDef.colors.length - 1),
-              color: c,
-            })),
-          })
-        : bgDef.colors[0],
-    });
-    meta(bgRect)[BG_KEY] = true;
-    fc.insertAt(0, bgRect);
-    fc.requestRenderAll();
+    // Remove all objects
+    fc.clear();
+
+    try {
+      const img = await FabricImage.fromURL(bgDef.src, { crossOrigin: 'anonymous' });
+      const w = img.width || 1080;
+      const h = img.height || 1440;
+
+      fc.setDimensions({ width: w, height: h });
+      setCanvasSize({ w, h });
+
+      // Image at native size, no crop/scale/drag
+      img.set({
+        left: 0, top: 0, scaleX: 1, scaleY: 1,
+        selectable: false, evented: false, hasControls: false, hasBorders: false,
+      });
+      meta(img)[BG_KEY] = true;
+      fc.add(img);
+
+      // Fog overlay
+      const fog = new Rect({
+        left: 0, top: 0, width: w, height: h,
+        selectable: false, evented: false, hasControls: false, hasBorders: false,
+        fill: '#0F1419', opacity: 0.50,
+      });
+      meta(fog)[OVERLAY_KEY] = true;
+      fc.add(fog);
+
+      // Top scrim
+      const topScrim = new Rect({
+        left: 0, top: 0, width: w, height: h * 0.45,
+        selectable: false, evented: false, hasControls: false, hasBorders: false,
+        fill: new Gradient({
+          type: 'linear',
+          coords: { x1: 0, y1: 0, x2: 0, y2: h * 0.45 },
+          colorStops: [
+            { offset: 0, color: 'rgba(15,20,25,0.55)' },
+            { offset: 0.6, color: 'rgba(15,20,25,0.15)' },
+            { offset: 1, color: 'rgba(15,20,25,0)' },
+          ],
+        }),
+      });
+      meta(topScrim)[OVERLAY_KEY] = true;
+      fc.add(topScrim);
+
+      // Bottom scrim
+      const bottomScrim = new Rect({
+        left: 0, top: h * 0.55, width: w, height: h * 0.45,
+        selectable: false, evented: false, hasControls: false, hasBorders: false,
+        fill: new Gradient({
+          type: 'linear',
+          coords: { x1: 0, y1: 0, x2: 0, y2: h * 0.45 },
+          colorStops: [
+            { offset: 0, color: 'rgba(15,20,25,0)' },
+            { offset: 0.5, color: 'rgba(15,20,25,0.40)' },
+            { offset: 1, color: 'rgba(15,20,25,0.55)' },
+          ],
+        }),
+      });
+      meta(bottomScrim)[OVERLAY_KEY] = true;
+      fc.add(bottomScrim);
+
+      // Preset elements
+      await addPresetElements(fc, w, h, refCode, ch);
+      fc.requestRenderAll();
+    } catch (e) {
+      console.error('Failed to load image background', e);
+    }
   }
 
-  // ── Preset elements ─────────────────────────────────
-  async function addPresetElements(fc: Canvas, sz: PosterSize, refCode: string, ch: string) {
-    const { w, h } = SIZE_CONFIGS[sz];
+  // ── Preset text elements ────────────────────────────
+  async function addPresetElements(fc: Canvas, w: number, h: number, refCode: string, ch: string) {
     const font = DEFAULT_ZH_FONT;
+    const pad = Math.round(w * 0.04);
 
+    // Logo (locked)
     const logo = new Textbox('🐨 Koala PhD', {
-      left: 40, top: 30, fontSize: 32,
-      fontFamily: font, fontWeight: 'bold', fill: '#FFFFFF', width: 300,
+      left: pad, top: pad, fontSize: Math.round(w * 0.03),
+      fontFamily: font, fontWeight: 'bold', fill: '#FFFFFF', width: w * 0.35,
       editable: false, selectable: false, evented: false,
-      shadow: new Shadow({ color: 'rgba(0,0,0,0.5)', blur: 4, offsetX: 1, offsetY: 1 }),
+      shadow: new Shadow({ color: 'rgba(0,0,0,0.6)', blur: 4, offsetX: 1, offsetY: 1 }),
     });
     meta(logo)[LOGO_KEY] = true;
     fc.add(logo);
 
-    const headline = new Textbox('用AI找到你的理想PhD导师', {
-      left: 40, top: h * 0.06 + 40, fontSize: 48,
-      fontFamily: font, fontWeight: 'bold', fill: '#FFFFFF', width: w - 80, lineHeight: 1.3,
-      shadow: new Shadow({ color: 'rgba(0,0,0,0.6)', blur: 6, offsetX: 1, offsetY: 2 }),
-    });
-    fc.add(headline);
+    // Headline
+    fc.add(new Textbox('用AI找到你的理想PhD导师', {
+      left: pad, top: h * 0.08, fontSize: Math.round(w * 0.045),
+      fontFamily: font, fontWeight: 'bold', fill: '#FFFFFF', width: w - pad * 2, lineHeight: 1.3,
+      shadow: new Shadow({ color: 'rgba(0,0,0,0.7)', blur: 8, offsetX: 1, offsetY: 2 }),
+    }));
 
-    const subtitle = new Textbox('覆盖澳洲38所大学、24,000+位教授', {
-      left: 40, top: h * 0.06 + 130, fontSize: 24,
-      fontFamily: font, fontWeight: 'normal', fill: '#FFFFFF', width: w - 80,
-      shadow: new Shadow({ color: 'rgba(0,0,0,0.5)', blur: 4, offsetX: 1, offsetY: 1 }),
-    });
-    fc.add(subtitle);
+    // Subtitle
+    fc.add(new Textbox('覆盖澳洲38所大学、24,000+位教授', {
+      left: pad, top: h * 0.15, fontSize: Math.round(w * 0.022),
+      fontFamily: font, fontWeight: 'normal', fill: '#FFFFFF', width: w - pad * 2,
+      shadow: new Shadow({ color: 'rgba(0,0,0,0.6)', blur: 4, offsetX: 1, offsetY: 1 }),
+    }));
 
-    const points = [
+    // Selling points
+    const pts = [
       '✦ AI智能匹配，精准推荐导师',
       '✦ 一键生成个性化套磁信',
       '✦ 覆盖全部澳洲八大名校',
       '✦ 科研方向深度分析报告',
     ];
-    points.forEach((text, i) => {
+    const ptFontSize = Math.round(w * 0.02);
+    const ptSpacing = Math.round(ptFontSize * 2.2);
+    pts.forEach((text, i) => {
       fc.add(new Textbox(text, {
-        left: 60, top: h * 0.60 + i * 50, fontSize: 22,
-        fontFamily: font, fontWeight: 'normal', fill: '#FFFFFF', width: w - 120,
-        shadow: new Shadow({ color: 'rgba(0,0,0,0.6)', blur: 4, offsetX: 1, offsetY: 1 }),
+        left: pad + 20, top: h * 0.62 + i * ptSpacing, fontSize: ptFontSize,
+        fontFamily: font, fontWeight: 'normal', fill: '#FFFFFF', width: w - pad * 2 - 40,
+        shadow: new Shadow({ color: 'rgba(0,0,0,0.7)', blur: 4, offsetX: 1, offsetY: 1 }),
       }));
     });
 
+    // Slogan
     fc.add(new Textbox('Koala — 陪你从申请到毕业，每一步都在', {
-      left: 40, top: h - 160, fontSize: 20,
-      fontFamily: font, fontWeight: 'normal', fill: '#D4A843', width: w - 80,
-      shadow: new Shadow({ color: 'rgba(0,0,0,0.5)', blur: 4, offsetX: 1, offsetY: 1 }),
+      left: pad, top: h - h * 0.11, fontSize: Math.round(w * 0.019),
+      fontFamily: font, fontWeight: 'normal', fill: '#D4A843', width: w * 0.55,
+      shadow: new Shadow({ color: 'rgba(0,0,0,0.6)', blur: 4, offsetX: 1, offsetY: 1 }),
     }));
 
+    // URL text
     fc.add(new Textbox('www.koalaphd.com  ·  info@koalastudy.net', {
-      left: 40, top: h - 110, fontSize: 18,
-      fontFamily: font, fontWeight: 'normal', fill: 'rgba(255,255,255,0.8)', width: w - 80,
+      left: pad, top: h - h * 0.06, fontSize: Math.round(w * 0.016),
+      fontFamily: font, fontWeight: 'normal', fill: 'rgba(255,255,255,0.7)', width: w * 0.55,
       shadow: new Shadow({ color: 'rgba(0,0,0,0.4)', blur: 3, offsetX: 1, offsetY: 1 }),
     }));
 
-    await addQRCode(fc, refCode, ch, sz);
-    fc.requestRenderAll();
+    // QR code — bottom-right
+    await addQRCode(fc, w, h, refCode, ch);
   }
 
-  // ── QR Code ─────────────────────────────────────────
-  async function addQRCode(fc: Canvas, refCode: string, ch: string, sz: PosterSize) {
-    const { w, h } = SIZE_CONFIGS[sz];
+  async function addQRCode(fc: Canvas, w: number, h: number, refCode: string, ch: string) {
     const url = `https://koalaphd.com/koala/auth?ref=${refCode}&ch=${ch}`;
     try {
       const qrDataUrl = await QRCode.toDataURL(url, {
@@ -203,18 +260,19 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
         color: { dark: '#1a2332', light: '#FFFFFF' },
       });
       const qrImg = await FabricImage.fromURL(qrDataUrl);
-      const qrSize = 180;
+      const qrSize = Math.round(w * 0.16);
       qrImg.set({
-        left: w - qrSize - 50, top: h - qrSize - 140,
+        left: w - qrSize - w * 0.05, top: h - qrSize - h * 0.12,
         scaleX: qrSize / (qrImg.width || qrSize),
         scaleY: qrSize / (qrImg.height || qrSize),
         shadow: new Shadow({ color: 'rgba(0,0,0,0.3)', blur: 8, offsetX: 2, offsetY: 2 }),
       });
       meta(qrImg)[QR_KEY] = true;
 
-      const pad = 12;
+      const pad = Math.round(qrSize * 0.07);
       const qrBg = new Rect({
-        left: w - qrSize - 50 - pad, top: h - qrSize - 140 - pad,
+        left: w - qrSize - w * 0.05 - pad,
+        top: h - qrSize - h * 0.12 - pad,
         width: qrSize + pad * 2, height: qrSize + pad * 2,
         fill: '#FFFFFF', rx: 12, ry: 12,
         shadow: new Shadow({ color: 'rgba(0,0,0,0.2)', blur: 10, offsetX: 2, offsetY: 2 }),
@@ -222,16 +280,18 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
       meta(qrBg)[QR_KEY] = true;
 
       const qrLabel = new Textbox('扫码了解更多', {
-        left: w - qrSize - 50 - pad, top: h - 140 + pad + 4,
-        fontSize: 14, fontFamily: DEFAULT_ZH_FONT, fill: 'rgba(255,255,255,0.7)',
-        width: qrSize + pad * 2, textAlign: 'center', editable: false,
-        shadow: new Shadow({ color: 'rgba(0,0,0,0.4)', blur: 3, offsetX: 1, offsetY: 1 }),
+        left: w - qrSize - w * 0.05 - pad,
+        top: h - h * 0.12 + pad + 4,
+        fontSize: Math.round(w * 0.013), fontFamily: DEFAULT_ZH_FONT,
+        fill: 'rgba(255,255,255,0.7)', width: qrSize + pad * 2,
+        textAlign: 'center', editable: false,
+        shadow: new Shadow({ color: 'rgba(0,0,0,0.5)', blur: 3, offsetX: 1, offsetY: 1 }),
       });
       meta(qrLabel)[QR_KEY] = true;
 
       const qrGroup = new Group([qrBg, qrImg, qrLabel], {
-        left: w - qrSize - 50 - pad,
-        top: h - qrSize - 140 - pad,
+        left: w - qrSize - w * 0.05 - pad,
+        top: h - qrSize - h * 0.12 - pad,
       });
       meta(qrGroup)[QR_KEY] = true;
       fc.add(qrGroup);
@@ -241,45 +301,31 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
   }
 
   // ── Actions ─────────────────────────────────────────
-  const switchBackground = useCallback(async (id: string) => {
+  const switchImage = useCallback(async (id: string) => {
     setBgId(id);
     const fc = fabricRef.current;
     if (!fc) return;
-    await loadBackground(fc, id, size);
-    fc.requestRenderAll();
+    await loadImageBackground(fc, id, referralCode, channel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [size]);
-
-  const switchSize = useCallback(async (newSize: PosterSize) => {
-    const fc = fabricRef.current;
-    if (!fc) return;
-    setSize(newSize);
-    const { w, h } = SIZE_CONFIGS[newSize];
-    fc.setDimensions({ width: w, height: h });
-    await loadBackground(fc, bgId, newSize);
-    fc.requestRenderAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bgId]);
+  }, [referralCode, channel]);
 
   function addText() {
     const fc = fabricRef.current;
     if (!fc) return;
-    const { w, h } = SIZE_CONFIGS[size];
-    const tb = new Textbox('双击编辑文字', {
+    const { w, h } = canvasSize;
+    fc.add(new Textbox('双击编辑文字', {
       left: w / 2 - 150, top: h / 2 - 30, fontSize: 28,
       fontFamily: DEFAULT_ZH_FONT, fontWeight: 'normal', fill: '#FFFFFF', width: 300,
       shadow: new Shadow({ color: 'rgba(0,0,0,0.5)', blur: 4, offsetX: 1, offsetY: 1 }),
-    });
-    fc.add(tb);
-    fc.setActiveObject(tb);
+    }));
     fc.requestRenderAll();
   }
 
-  async function addQR() {
+  async function refreshQR() {
     const fc = fabricRef.current;
     if (!fc) return;
     fc.getObjects().filter(o => meta(o)[QR_KEY]).forEach(o => fc.remove(o));
-    await addQRCode(fc, referralCode, channel, size);
+    await addQRCode(fc, canvasSize.w, canvasSize.h, referralCode, channel);
     fc.requestRenderAll();
   }
 
@@ -304,11 +350,11 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     if (!fc) return;
     fc.discardActiveObject();
     fc.requestRenderAll();
-    const { w } = SIZE_CONFIGS[size];
+    const { w } = canvasSize;
     const multiplier = Math.max(1, 1080 / w);
     const dataUrl = fc.toDataURL({ format: 'png', quality: 1, multiplier });
     const link = document.createElement('a');
-    link.download = `koala-poster-${bgId}-${referralCode}.png`;
+    link.download = `koala-poster-img-${bgId}-${referralCode}.png`;
     link.href = dataUrl;
     link.click();
   }
@@ -323,7 +369,6 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     );
   }
 
-  const { w: canvasW, h: canvasH } = SIZE_CONFIGS[size];
   const zhFonts = POSTER_FONTS.filter(f => f.category === 'zh');
   const enFonts = POSTER_FONTS.filter(f => f.category === 'en');
 
@@ -332,31 +377,23 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Left panel */}
         <div className="w-full lg:w-[280px] shrink-0 space-y-4">
-          {/* Background selector */}
+          {/* Image selector */}
           <div className="rounded-xl p-4 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
-            <div className="text-xs font-medium text-[#374151] dark:text-[#CBD5E1] mb-3">渐变主题</div>
-            <div className="flex flex-wrap gap-2">
-              {GRADIENT_BACKGROUNDS.map(bg => (
+            <div className="text-xs font-medium text-[#374151] dark:text-[#CBD5E1] mb-3">图片背景</div>
+            <div className="grid grid-cols-3 gap-2">
+              {IMAGE_BACKGROUNDS.map(bg => (
                 <button
                   key={bg.id}
-                  onClick={() => switchBackground(bg.id)}
-                  className={`relative rounded-lg overflow-hidden w-[72px] aspect-[3/4] transition-all ${
+                  onClick={() => switchImage(bg.id)}
+                  className={`relative rounded-lg overflow-hidden aspect-[3/4] transition-all ${
                     bgId === bg.id
                       ? 'ring-2 ring-[#F59E0B] ring-offset-1 ring-offset-white dark:ring-offset-[#1E293B]'
                       : 'hover:ring-1 hover:ring-[#D1D5DB] dark:hover:ring-[#475569]'
                   }`}
                 >
-                  <div
-                    className="absolute inset-0"
-                    style={bg.colors.length > 1
-                      ? { background: `linear-gradient(135deg, ${bg.colors[0]}, ${bg.colors[1]})` }
-                      : { background: bg.colors[0] }
-                    }
-                  />
-                  {bg.colors[0] === '#FFFFFF' && (
-                    <div className="absolute inset-0 border border-[#E5E7EB] dark:border-[#475569] rounded-lg" />
-                  )}
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent p-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={bg.src} alt={bg.label} className="w-full h-full object-cover" />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1">
                     <span className="text-[9px] text-white leading-tight block text-center">{bg.label}</span>
                   </div>
                   {bgId === bg.id && (
@@ -373,21 +410,32 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
           <div className="rounded-xl p-4 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
             <div className="text-xs font-medium text-[#374151] dark:text-[#CBD5E1] mb-3">添加元素</div>
             <div className="flex gap-2">
-              <button
-                onClick={addText}
-                className="flex-1 py-2.5 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5"
-              >
+              <button onClick={addText}
+                className="flex-1 py-2.5 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 3v3M13 3v3M3 3h10M8 3v10M6 13h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 + 文字
               </button>
-              <button
-                onClick={addQR}
-                className="flex-1 py-2.5 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5"
-              >
+              <button onClick={refreshQR}
+                className="flex-1 py-2.5 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="10" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="1" y="10" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="11" y="11" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.5"/></svg>
                 + QR码
               </button>
             </div>
+          </div>
+
+          {/* Toggle controls */}
+          <div className="rounded-xl p-4 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] space-y-2">
+            <div className="text-xs font-medium text-[#374151] dark:text-[#CBD5E1] mb-1">显示开关</div>
+            <label className="flex items-center gap-2 text-[11px] text-[#374151] dark:text-[#CBD5E1] cursor-pointer">
+              <input type="checkbox" checked={showUrl} onChange={() => setShowUrl(v => !v)}
+                className="rounded border-[#D1D5DB] text-[#F59E0B] focus:ring-[#F59E0B]" />
+              网址文字
+            </label>
+            <label className="flex items-center gap-2 text-[11px] text-[#374151] dark:text-[#CBD5E1] cursor-pointer">
+              <input type="checkbox" checked={showChannel} onChange={() => setShowChannel(v => !v)}
+                className="rounded border-[#D1D5DB] text-[#F59E0B] focus:ring-[#F59E0B]" />
+              渠道标识
+            </label>
           </div>
 
           {/* Text toolbar */}
@@ -400,14 +448,11 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
                 </button>
               </div>
 
-              {/* Font family */}
               <div>
                 <label className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] block mb-1">字体</label>
-                <select
-                  value={toolbarProps.fontFamily}
+                <select value={toolbarProps.fontFamily}
                   onChange={e => updateSelectedText('fontFamily', e.target.value)}
-                  className="w-full rounded-lg px-2 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]"
-                >
+                  className="w-full rounded-lg px-2 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]">
                   <optgroup label="中文">
                     {zhFonts.map(f => <option key={f.family} value={f.family}>{f.label}</option>)}
                   </optgroup>
@@ -417,7 +462,6 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
                 </select>
               </div>
 
-              {/* Font size */}
               <div>
                 <label className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] flex justify-between mb-1">
                   <span>字号</span>
@@ -428,7 +472,6 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
                   className="w-full accent-[#F59E0B]" />
               </div>
 
-              {/* Color */}
               <div>
                 <label className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] block mb-1">颜色</label>
                 <div className="flex gap-1.5">
@@ -440,15 +483,13 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
                       style={{
                         background: c.value === '#FFFFFF' ? '#F3F4F6' : c.value === '#000000' ? '#1E293B' : '#D4A843',
                         color: c.value === '#FFFFFF' ? '#374151' : '#FFFFFF',
-                      }}
-                    >
+                      }}>
                       {c.label}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Bold */}
               <div>
                 <label className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] block mb-1">样式</label>
                 <button
@@ -457,8 +498,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
                     toolbarProps.fontWeight === 'bold'
                       ? 'bg-[#111827] dark:bg-[#F1F5F9] text-white dark:text-[#0F172A]'
                       : 'bg-[#F3F4F6] dark:bg-[#334155] text-[#6B7280] dark:text-[#94A3B8]'
-                  }`}
-                >
+                  }`}>
                   B
                 </button>
               </div>
@@ -469,7 +509,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
         {/* Right: Canvas */}
         <div className="flex-1 min-w-0">
           <div className="rounded-xl bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] p-4 flex items-center justify-center overflow-hidden">
-            <div style={{ width: '100%', maxWidth: 540, aspectRatio: `${canvasW}/${canvasH}`, position: 'relative' }}>
+            <div style={{ width: '100%', maxWidth: 540, aspectRatio: `${canvasSize.w}/${canvasSize.h}`, position: 'relative' }}>
               <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block', borderRadius: 8 }} />
             </div>
           </div>
@@ -478,22 +518,11 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
 
       {/* Bottom bar */}
       <div className="flex items-center justify-between gap-3 rounded-xl p-3 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
-        <div className="flex gap-2">
-          {(Object.entries(SIZE_CONFIGS) as [PosterSize, typeof SIZE_CONFIGS['3:4']][]).map(([key, cfg]) => (
-            <button key={key} onClick={() => switchSize(key)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition ${
-                size === key
-                  ? 'bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#92400E] dark:text-[#F59E0B]'
-                  : 'bg-[#F3F4F6] dark:bg-[#334155] text-[#6B7280] dark:text-[#94A3B8] hover:bg-[#E5E7EB] dark:hover:bg-[#475569]'
-              }`}
-            >
-              {cfg.label}
-            </button>
-          ))}
+        <div className="text-[11px] text-[#6B7280] dark:text-[#94A3B8]">
+          尺寸由图片决定 · {canvasSize.w} × {canvasSize.h}px
         </div>
         <button onClick={exportPNG}
-          className="flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-xs font-medium bg-[#F59E0B] text-white hover:bg-[#D97706] transition shadow-sm"
-        >
+          className="flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-xs font-medium bg-[#F59E0B] text-white hover:bg-[#D97706] transition shadow-sm">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2M8 2v9M5 8l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           下载 PNG
         </button>

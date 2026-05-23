@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 const FabricPosterEditor = dynamic(() => import('./FabricPosterEditor'), { ssr: false });
+const ImagePosterEditor = dynamic(() => import('./ImagePosterEditor'), { ssr: false });
 import {
   IconBrandWechat,
   IconBook,
@@ -49,7 +50,7 @@ const CHANNELS: ChannelDef[] = [
   { value: 'other', label: '其他', icon: IconLink, color: '#6B7280' },
 ];
 
-const TABS = ['推广链接', '推广二维码', '推广海报'] as const;
+const TABS = ['推广链接', '推广二维码', '渐变海报', '图片海报'] as const;
 
 export default function PromoCenterPage() {
   const router = useRouter();
@@ -225,9 +226,14 @@ export default function PromoCenterPage() {
         </div>
       )}
 
-      {/* Tab 3: Poster (fabric.js editor) */}
-      {tab === '推广海报' && (
+      {/* Tab 3: Gradient poster */}
+      {tab === '渐变海报' && (
         <FabricPosterEditor referralCode={referralCode} channel={selectedChannel} />
+      )}
+
+      {/* Tab 4: Image poster */}
+      {tab === '图片海报' && (
+        <ImagePosterEditor referralCode={referralCode} channel={selectedChannel} />
       )}
     </div>
   );
