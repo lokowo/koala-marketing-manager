@@ -74,11 +74,13 @@ const PRICING_PREVIEW = [
 interface HomeClientProps {
   initialProfessors: Professor[];
   initialProfCount: number;
-
+  initialUserCount: number;
   initialBlogPosts: BlogPost[];
+  professorLabels?: Record<string, string>;
+  postingProfIds?: string[];
 }
 
-export default function HomeClient({ initialProfessors, initialProfCount, initialBlogPosts }: HomeClientProps) {
+export default function HomeClient({ initialProfessors, initialProfCount, initialUserCount, initialBlogPosts, professorLabels = {}, postingProfIds = [] }: HomeClientProps) {
   const router = useRouter();
   const { user, profile, showLogin, signOut } = useAuth();
   const [professors] = useState<Professor[]>(initialProfessors);
@@ -325,7 +327,9 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                   开始匹配 <ArrowRight className="size-4" />
                 </Link>
                 <div className="mt-4 text-[11px] text-center md:text-left text-amber-700 dark:text-[#D4A843]/40">
-                  已覆盖全澳 38 所大学
+                  {initialUserCount >= 10
+                    ? `已帮助 ${initialUserCount.toLocaleString()} 位同学匹配理想导师`
+                    : '覆盖全澳 38 所大学'}
                 </div>
               </div>
 
@@ -496,6 +500,23 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                   className="shrink-0 w-56 lg:w-auto bg-gradient-to-br from-white to-gray-50 dark:from-[#0F1419] dark:to-[#151B23] rounded-2xl p-5 border border-gray-100 dark:border-white/10 hover:shadow-xl hover:shadow-[#D4A843]/5 hover:-translate-y-1 transition-all duration-300 group cursor-pointer no-underline flex flex-col gap-2.5 relative overflow-hidden border-l-4"
                   style={{ borderLeftColor: badge.bg }}
                 >
+                  {/* Recommend label */}
+                  {professorLabels[p.id] && (
+                    <span className={`absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      professorLabels[p.id].includes('学术') ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                      professorLabels[p.id].includes('招生') ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
+                      'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                    }`}>
+                      {professorLabels[p.id]}
+                    </span>
+                  )}
+                  {/* Posting badge */}
+                  {postingProfIds.includes(p.id) && (
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-[10px] font-bold w-fit">
+                      <span>🔥</span> 正在招生
+                    </div>
+                  )}
+
                   {/* University badge + status */}
                   <div className="flex items-center justify-between">
                     <span
@@ -679,7 +700,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                 还在犹豫？先聊聊你的想法
               </h2>
               <p className="text-gray-300 mb-6 text-base md:text-lg">
-                免费匹配导师，不满意随时退出。覆盖澳洲 38 所大学、23,500+ 位教授与研究员。
+                免费匹配导师，不满意随时退出。覆盖澳洲 38 所大学、{profCount} 位教授与研究员。
               </p>
               <div className="flex flex-wrap gap-3 md:gap-4">
                 <Link
@@ -726,6 +747,8 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
           <div className="flex flex-wrap justify-center md:justify-end gap-x-4 gap-y-1 text-[11px] text-gray-400 dark:text-[#6a7a7e]">
             <span>{BRAND.email}</span>
             <span>WeChat: {BRAND.wechat}</span>
+            <span>小红书: {BRAND.xiaohongshu}</span>
+            <Link href="/koala/insights" className="no-underline hover:underline text-gray-400 dark:text-[#6a7a7e]">研究洞察</Link>
             <Link href="/terms" className="no-underline hover:underline text-gray-400 dark:text-[#6a7a7e]">使用条款</Link>
             <Link href="/privacy" className="no-underline hover:underline text-gray-400 dark:text-[#6a7a7e]">隐私政策</Link>
           </div>
