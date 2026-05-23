@@ -83,35 +83,10 @@ async function processReferralCode(
       console.log('[referral] referrer is admin, skipping max_uses check');
     }
 
-    // Award credits to referrer (+15)
-    const newReferrerBalance = (referrerProfile.credits_remaining || 0) + 15;
-    const { error: refUpdateErr } = await db.from('user_profiles').update({ credits_remaining: newReferrerBalance }).eq('id', referrerProfile.id);
-    if (refUpdateErr) console.error('[referral] failed to update referrer credits:', refUpdateErr);
-    await db.from('credit_transactions').insert({
-      user_id: referrerProfile.id,
-      amount: 15,
-      balance_after: newReferrerBalance,
-      type: 'earn_referral',
-      description: `邀请好友注册（${newUserEmail.split('@')[0]})`,
-      reference_id: newUserId,
-    });
-    console.log('[referral] referrer +15 credits, new balance:', newReferrerBalance);
-
-    // Award credits to new user (+5)
-    const { data: freshProfile } = await db.from('user_profiles').select('credits_remaining').eq('id', newUserId).single();
-    const currentBalance = freshProfile?.credits_remaining ?? newUserProfile.credits_remaining ?? 0;
-    const newMyBalance = currentBalance + 5;
-    const { error: newUserUpdateErr } = await db.from('user_profiles').update({ credits_remaining: newMyBalance, referred_by: referrerProfile.id }).eq('id', newUserId);
-    if (newUserUpdateErr) console.error('[referral] failed to update new user credits:', newUserUpdateErr);
-    await db.from('credit_transactions').insert({
-      user_id: newUserId,
-      amount: 5,
-      balance_after: newMyBalance,
-      type: 'earn_referral',
-      description: '使用邀请码注册奖励',
-      reference_id: referrerProfile.id,
-    });
-    console.log('[referral] new user +5 credits, new balance:', newMyBalance);
+    // Set referred_by on new user (no credits at registration — awarded on email verification)
+    const { error: newUserUpdateErr } = await db.from('user_profiles').update({ referred_by: referrerProfile.id }).eq('id', newUserId);
+    if (newUserUpdateErr) console.error('[referral] failed to set referred_by:', newUserUpdateErr);
+    console.log('[referral] referred_by set to:', referrerProfile.id);
 
     // Increment uses count
     const { data: codeRecord } = await db.from('referral_codes').select('uses').eq('user_id', referrerProfile.id).single();
@@ -304,6 +279,16 @@ export async function POST(req: Request) {
     if (referralCode) {
       try {
         creditApplied = await processReferralCode(referralCode, userData.user.id, email);
+
+        // Mark matching referral_visits as converted
+        if (creditApplied) {
+          db.from('referral_visits')
+            .update({ converted: true, converted_user_id: userData.user.id })
+            .eq('referral_code', referralCode.toUpperCase())
+            .eq('converted', false)
+            .then(() => {})
+            .catch((e: unknown) => console.error('[register] referral_visits update:', e));
+        }
       } catch (refErr) {
         console.error('[register] referral credit failed:', { referralCode, userId: userData.user.id, error: refErr });
       }
