@@ -22,6 +22,13 @@ import { OlaAvatar } from '../components/ola/OlaAvatar';
 import { OlaWelcome } from '../components/ola/OlaWelcome';
 import { OlaRatingPrompt } from '../components/ola/OlaRatingPrompt';
 import { ChatHistorySidebar } from '../components/ola/ChatHistorySidebar';
+import { ProfileCard } from '../components/chat/ProfileCard';
+import { ColdEmailCard } from '../components/chat/ColdEmailCard';
+import { UpgradePrompt } from '../components/chat/UpgradePrompt';
+import { FeedbackCard } from '../components/chat/FeedbackCard';
+import { checkUsage, incrementUsage } from '../../lib/services/usageTracker';
+import { supabase } from '../../lib/supabase/client';
+import type { ExtractedProfile } from '../../lib/chat/extract-profile';
 import { Download, History } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -41,6 +48,17 @@ interface EmailPackageData {
   professorUniversity?: string | null;
 }
 
+interface ColdEmailData {
+  id?: string;
+  subject: string;
+  body: string;
+  highlights: { text: string; type: 'student' | 'professor' }[];
+  matchScores: { researchAlignment: number; backgroundFit: number; researchReadiness: number; opportunity: number; overall: number };
+  creditsUsed: number;
+  creditsRemaining: number;
+  professorId: string;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -53,8 +71,11 @@ interface Message {
   confidence?: ConfidenceLevel;
   feedback?: FeedbackRating;
   emailPackage?: EmailPackageData;
+  coldEmailData?: ColdEmailData;
+  upgradePrompt?: { feature: string; remaining: number };
   suggestions?: string[];
   suggestConsultation?: boolean;
+  profileData?: ExtractedProfile;
   noResults?: boolean;
   timestamp: Date;
 }
@@ -144,7 +165,13 @@ function ConfidenceBadgeInline({ level, count }: { level: ConfidenceLevel; count
   );
 }
 
-function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
+function AcceptingBadge({ status }: { status?: string }) {
+  if (!status || status === 'unknown') return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-white/[0.06] text-gray-400 dark:text-[#6a6058]">🟡 招生未知</span>;
+  if (status === 'yes' || status === 'likely') return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400">🟢 招生中</span>;
+  return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400">🔴 暂不招生</span>;
+}
+
+function ProfessorMatchCard({ match, onGenerateEmail }: { match: ProfessorMatch; onGenerateEmail?: (professorId: string, professorName: string) => void }) {
   const score = match.matchScore;
   const color = score >= 75 ? '#5a8060' : score >= 50 ? '#D4A843' : '#b06040';
   const hasStats = match.hIndex != null || match.paperCount != null || match.citationCount != null;
@@ -161,6 +188,18 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
             <div className="text-lg font-bold" style={{ color }}>{score}</div>
             <div className="text-[10px] text-gray-400 dark:text-[#6a6058]">匹配度</div>
           </div>
+        </div>
+        {/* Stats row + accepting badge */}
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          <AcceptingBadge status={match.acceptingStudents} />
+          {match.opportunityScore != null && match.opportunityScore > 0 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              机会分 {match.opportunityScore}
+            </span>
+          )}
+          {match.opportunityLabel && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(90,128,96,0.15)', color: '#5a8060' }}>{match.opportunityLabel}</span>
+          )}
         </div>
         {hasStats && (
           <div className="flex gap-3 mt-1.5 text-[10px] text-gray-500 dark:text-[#8a8078]">
@@ -179,9 +218,6 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
         {match.reason && (
           <div className="text-[11px] mt-2 pt-2 leading-relaxed text-gray-500 dark:text-[#a09888] border-t border-gray-200 dark:border-white/[0.08]">{match.reason}</div>
         )}
-        {match.opportunityLabel && (
-          <div className="inline-block text-[10px] px-2 py-0.5 rounded-full mt-1" style={{ background: 'rgba(90,128,96,0.15)', color: '#5a8060' }}>{match.opportunityLabel}</div>
-        )}
       </Link>
       <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-white/[0.08]">
         <Link
@@ -190,12 +226,12 @@ function ProfessorMatchCard({ match }: { match: ProfessorMatch }) {
         >
           查看详情
         </Link>
-        <Link
-          href={`/koala/chat?action=outreach&prof=${match.professorId}&name=${encodeURIComponent(match.name)}`}
-          className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
+        <button
+          onClick={() => onGenerateEmail?.(match.professorId, match.name)}
+          className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
         >
-          ✉️ 写申请信
-        </Link>
+          ✉️ 生成套磁信
+        </button>
       </div>
     </div>
   );
@@ -564,7 +600,7 @@ export default function ChatPage() {
 
 function ChatPageInner() {
   const searchParams = useSearchParams();
-  const { user, profile, showLogin } = useAuth();
+  const { user, profile, showLogin, refreshProfile } = useAuth();
   const [mode, setMode] = useState<AIMode>(() => {
     const action = searchParams.get('action');
     if (action === 'outreach') return 'write';
@@ -604,12 +640,20 @@ function ChatPageInner() {
   const [typewriterText, setTypewriterText] = useState('');
   const [exportingPdf, setExportingPdf] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isVoiceListening, setIsVoiceListening] = useState(false);
+  const [isVoiceTranscribing, setIsVoiceTranscribing] = useState(false);
+  const [profileCollectionPending, setProfileCollectionPending] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{ file: File; type: string } | null>(null);
+  const [coldEmailLoading, setColdEmailLoading] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackDismissed, setFeedbackDismissed] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autoSentRef = useRef(false);
   const ratingShownRef = useRef(false);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastMessageTimeRef = useRef<number>(Date.now());
 
   const currentMode = MODES.find(m => m.key === mode)!;
 
@@ -635,6 +679,19 @@ function ChatPageInner() {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     };
   }, [messages, loading]);
+
+  // Feedback idle timer: show after 5 min of inactivity
+  useEffect(() => {
+    if (feedbackDismissed || loading || messages.length < 4) return;
+    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    lastMessageTimeRef.current = Date.now();
+    feedbackTimerRef.current = setTimeout(() => {
+      if (!feedbackDismissed) setShowFeedback(true);
+    }, 5 * 60 * 1000);
+    return () => {
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    };
+  }, [messages, loading, feedbackDismissed]);
 
   // Typewriter effect for the latest assistant message
   useEffect(() => {
@@ -786,12 +843,34 @@ function ChatPageInner() {
         };
       }
 
-      const res = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      // If profile collection is pending, extract profile from user text in parallel
+      const extractionPromise = profileCollectionPending && txt.length >= 20
+        ? fetch('/api/chat/extract-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: txt }),
+          }).then(r => r.ok ? r.json() : null).catch(() => null)
+        : Promise.resolve(null);
+
+      const [res, extractionResult] = await Promise.all([
+        fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }),
+        extractionPromise,
+      ]);
       const data = await res.json();
+
+      // If extraction succeeded, clear the pending flag
+      const extractedProfile: ExtractedProfile | undefined =
+        extractionResult?.profile && Object.keys(extractionResult.profile).length > 0
+          ? extractionResult.profile
+          : undefined;
+      if (extractedProfile) setProfileCollectionPending(false);
+
+      // If the API signals profile collection, set pending for next message
+      if (data.profileCollectionSuggested) setProfileCollectionPending(true);
 
       let confidence: ConfidenceLevel | undefined;
       if (mode === 'research') {
@@ -812,6 +891,7 @@ function ChatPageInner() {
         suggestions: data.suggestions,
         emailPackage: data.emailPackage,
         suggestConsultation: data.suggestConsultation,
+        profileData: extractedProfile,
         noResults: mode === 'research' && (!data.citations || data.citations.length === 0),
         timestamp: new Date(),
       };
@@ -823,6 +903,9 @@ function ChatPageInner() {
         return updated;
       });
       if (data.achievement) setToastAchievement(data.achievement);
+      // Increment chat usage
+      if (user?.id) incrementUsage(supabase, user.id, 'chat').catch(() => {});
+      lastMessageTimeRef.current = Date.now();
     } catch {
       const errMsg: Message = {
         id: msgId(), role: 'assistant',
@@ -837,7 +920,7 @@ function ChatPageInner() {
     } finally {
       setLoading(false);
     }
-  }, [mode, tonePref, user]);
+  }, [mode, tonePref, user, profileCollectionPending, refreshProfile]);
 
   // Auto-send from URL params (professor outreach)
   const sendMessageWithProfessor = useCallback(async (txt: string, professorId?: string) => {
@@ -851,6 +934,19 @@ function ChatPageInner() {
     if (!txt || loading) return;
     if (!user) {
       showLogin();
+      return;
+    }
+
+    // Check chat_turn usage
+    const chatUsage = await checkUsage(supabase, user.id, 'chat');
+    if (!chatUsage.allowed) {
+      const upgradeMsg: Message = {
+        id: msgId(), role: 'assistant',
+        content: `你今天的对话次数已用完（${chatUsage.used}/${chatUsage.limit}）`,
+        upgradePrompt: { feature: '对话', remaining: 0 },
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, upgradeMsg]);
       return;
     }
 
@@ -999,6 +1095,103 @@ function ChatPageInner() {
     });
   }
 
+  const handleGenerateColdEmail = useCallback(async (professorId: string, professorName: string) => {
+    if (!user) { showLogin(); return; }
+    if (coldEmailLoading) return;
+
+    // Check email usage
+    const usage = await checkUsage(supabase, user.id, 'email');
+    if (!usage.allowed) {
+      const upgradeMsg: Message = {
+        id: msgId(), role: 'assistant',
+        content: `抱歉，你今天的套磁信免费次数已经用完了（${usage.used}/${usage.limit}）`,
+        upgradePrompt: { feature: '套磁信', remaining: 0 },
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, upgradeMsg]);
+      return;
+    }
+
+    // Show loading state in message stream
+    const loadingMsg: Message = {
+      id: msgId(), role: 'assistant',
+      content: `正在为你撰写给 ${professorName} 教授的套磁信...`,
+      timestamp: new Date(),
+    };
+    setColdEmailLoading(true);
+    setMessages(prev => [...prev, loadingMsg]);
+
+    try {
+      const res = await fetch('/api/chat/generate-cold-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ professorId }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: '生成失败' }));
+        if (res.status === 403) {
+          setMessages(prev => prev.map(m => m.id === loadingMsg.id ? {
+            ...m,
+            content: errData.error || '今日套磁信生成次数已用完',
+            upgradePrompt: { feature: '套磁信', remaining: 0 },
+          } : m));
+          return;
+        }
+        throw new Error(errData.error || '生成失败');
+      }
+
+      const data = await res.json();
+
+      // Transform matchScores from API array format to ColdEmailCard object format
+      const scoreArray: { dimension: string; score: number }[] = data.matchScores ?? [];
+      const getScore = (dim: string) => scoreArray.find(s => s.dimension === dim)?.score ?? 50;
+      const scores = {
+        researchAlignment: getScore('research_alignment'),
+        backgroundFit: getScore('background_fit'),
+        researchReadiness: getScore('research_readiness'),
+        opportunity: getScore('opportunity'),
+        overall: 0,
+      };
+      scores.overall = Math.round(
+        (scores.researchAlignment + scores.backgroundFit + scores.researchReadiness + scores.opportunity) / 4
+      );
+
+      const coldEmail: ColdEmailData = {
+        id: data.id,
+        subject: data.subject,
+        body: data.body,
+        highlights: data.highlights ?? [],
+        matchScores: scores,
+        creditsUsed: data.creditsUsed ?? 1,
+        creditsRemaining: data.creditsRemaining ?? 0,
+        professorId,
+      };
+
+      // Replace loading message with result
+      const resultMsg: Message = {
+        id: loadingMsg.id,
+        role: 'assistant',
+        content: '以上是根据你的背景和教授的最新研究定制的套磁信。你可以直接编辑内容，满意后复制发送。',
+        coldEmailData: coldEmail,
+        timestamp: new Date(),
+      };
+      setMessages(prev => {
+        const updated = prev.map(m => m.id === loadingMsg.id ? resultMsg : m);
+        setLocalHistory(mode, updated);
+        return updated;
+      });
+      setCredits(data.creditsRemaining ?? 0);
+    } catch (err) {
+      setMessages(prev => prev.map(m => m.id === loadingMsg.id ? {
+        ...m,
+        content: `套磁信生成失败：${err instanceof Error ? err.message : '请稍后再试'}`,
+      } : m));
+    } finally {
+      setColdEmailLoading(false);
+    }
+  }, [user, showLogin, coldEmailLoading, mode]);
+
   const formatTime = (d: Date) => d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
   return (
@@ -1102,7 +1295,7 @@ function ChatPageInner() {
 
                 {msg.role === 'assistant' && msg.scoreCard && <ScoreCardBlock card={msg.scoreCard} />}
                 {msg.role === 'assistant' && msg.matchedProfessors?.map((p, i) => (
-                  <ProfessorMatchCard key={i} match={p} />
+                  <ProfessorMatchCard key={i} match={p} onGenerateEmail={handleGenerateColdEmail} />
                 ))}
                 {msg.role === 'assistant' && msg.matchedProfessors && msg.matchedProfessors.length > 0 && (
                   <p className="text-[11px] mt-1.5 ml-1 text-gray-400 dark:text-[#8a8078]">
@@ -1148,7 +1341,51 @@ function ChatPageInner() {
                     />
                   </div>
                 )}
+                {msg.role === 'assistant' && msg.coldEmailData && (
+                  <div className="mt-2">
+                    <ColdEmailCard
+                      subject={msg.coldEmailData.subject}
+                      body={msg.coldEmailData.body}
+                      highlights={msg.coldEmailData.highlights}
+                      matchScores={msg.coldEmailData.matchScores}
+                      creditsUsed={msg.coldEmailData.creditsUsed}
+                      creditsRemaining={msg.coldEmailData.creditsRemaining}
+                      onRegenerate={() => handleGenerateColdEmail(msg.coldEmailData!.professorId, '教授')}
+                    />
+                  </div>
+                )}
+                {msg.role === 'assistant' && msg.upgradePrompt && (
+                  <div className="mt-2">
+                    <UpgradePrompt feature={msg.upgradePrompt.feature} remaining={msg.upgradePrompt.remaining} />
+                  </div>
+                )}
                 {msg.role === 'assistant' && msg.suggestConsultation && <ConsultationBanner />}
+                {msg.role === 'assistant' && msg.profileData && (
+                  <ProfileCard
+                    data={msg.profileData}
+                    onConfirm={async (confirmed) => {
+                      const res = await fetch('/api/user/profile', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(confirmed),
+                      });
+                      if (!res.ok) throw new Error('保存失败');
+                      refreshProfile();
+
+                      // Auto-send a matching request to Ola using existing tool_use flow
+                      const interests = confirmed.research_interests?.join('、') || confirmed.target_field || '';
+                      if (!interests) return;
+                      const parts: string[] = [`帮我匹配做 ${interests} 方向的导师`];
+                      if (confirmed.preferred_universities?.length) {
+                        parts.push(`偏好 ${confirmed.preferred_universities.join('、')} 的大学`);
+                      }
+                      if (confirmed.preferred_city?.length) {
+                        parts.push(`希望在 ${confirmed.preferred_city.join('、')}`);
+                      }
+                      sendMessage(parts.join('，'));
+                    }}
+                  />
+                )}
                 {msg.role === 'assistant' && msg.quickReplies && msg.quickReplies.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {msg.quickReplies.map(qr => (
@@ -1213,6 +1450,21 @@ function ChatPageInner() {
           />
         )}
 
+        {/* Feedback card — shown after 5 min idle */}
+        {showFeedback && !feedbackDismissed && (
+          <div className="flex justify-start mb-0.5">
+            <div className="mt-1 mr-2 flex-shrink-0">
+              <OlaAvatar state="welcome" size="sm" />
+            </div>
+            <div className="max-w-[80%]">
+              <FeedbackCard
+                conversationId={`${mode}_${messages[0]?.timestamp?.getTime() ?? Date.now()}`}
+                onDismiss={() => { setShowFeedback(false); setFeedbackDismissed(true); }}
+              />
+            </div>
+          </div>
+        )}
+
         <div ref={bottomRef} />
         </>
         )}
@@ -1264,14 +1516,17 @@ function ChatPageInner() {
                 e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
               }}
               onKeyDown={handleKeyDown}
-              placeholder={currentMode.placeholder}
+              placeholder={isVoiceListening ? '正在录音...' : isVoiceTranscribing ? '识别中...' : currentMode.placeholder}
               className="w-full resize-none text-sm outline-none bg-transparent leading-relaxed placeholder:text-gray-400 dark:placeholder:text-[#5a5550] text-gray-900 dark:text-[#e8e4dc]"
               style={{ maxHeight: 120 }}
             />
           </div>
           <VoiceInputButton
             onTranscript={(text) => setInput(prev => prev + text)}
+            onListeningChange={setIsVoiceListening}
+            onTranscribingChange={setIsVoiceTranscribing}
             size="md"
+            maxDuration={30}
           />
           <button
             onClick={() => sendMessage()}
