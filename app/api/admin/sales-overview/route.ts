@@ -17,8 +17,8 @@ export async function GET() {
       db.from('sales_qrcodes').select('sales_user_id, code, scan_count, created_at'),
       db.from('sales_weekly_reports').select('sales_user_id, week_start, summary').order('week_start', { ascending: false }).limit(50),
       db.from('sales_agents').select('id, user_id, referral_code, status, user_profiles:user_id(display_name, email)').eq('status', 'active'),
-      db.from('sales_visits').select('agent_id, channel').gte('visited_at', monthStart),
-      db.from('sales_referrals').select('agent_id, channel').gte('created_at', monthStart),
+      db.from('sales_visits').select('agent_id, channel').eq('is_test', false).gte('visited_at', monthStart),
+      db.from('sales_referrals').select('agent_id, channel').eq('is_test', false).gte('created_at', monthStart),
       db.from('sales_commissions').select('agent_id, commission_amount, status').gte('created_at', monthStart).neq('status', 'rejected'),
     ]);
 

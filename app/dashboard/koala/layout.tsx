@@ -40,6 +40,7 @@ import {
   IconHome,
   IconLogout,
   IconCrown,
+  IconRefresh,
 } from '@tabler/icons-react';
 
 const ICON_PROPS = { size: 18, strokeWidth: 1.5 } as const;
@@ -119,6 +120,7 @@ function buildNavGroups(role: UserRole | null): { standalone: NavItem[]; groups:
       { icon: IconAward, label: 'Grants', href: '/dashboard/koala/grants' },
       { icon: IconBooks, label: '知识库', href: '/dashboard/koala/knowledge-base' },
       { icon: IconQuestionMark, label: 'FAQ', href: '/dashboard/koala/faq' },
+      { icon: IconRefresh, label: '反馈飞轮', href: '/dashboard/koala/feedback-flywheel' },
     ],
   });
 

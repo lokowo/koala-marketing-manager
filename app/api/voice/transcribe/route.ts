@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
 
   const formData = await request.formData();
   const audioFile = formData.get('audio') as File;
-  const lang = (formData.get('lang') as string) || 'zh';
 
   if (!audioFile) {
     return Response.json({ error: '没有音频数据' }, { status: 400 });
@@ -20,7 +19,6 @@ export async function POST(request: NextRequest) {
   const whisperFormData = new FormData();
   whisperFormData.append('file', audioFile, 'audio.webm');
   whisperFormData.append('model', 'whisper-1');
-  whisperFormData.append('language', lang);
   whisperFormData.append('response_format', 'json');
 
   try {

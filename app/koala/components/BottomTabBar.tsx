@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Compass, Users, UserCircle, Bell, Mail } from 'lucide-react';
+import { Compass, Users, UserCircle, Bell, Mail, ClipboardList } from 'lucide-react';
 import { APP_VERSION } from '../../lib/version';
 import { useTheme } from '../../lib/theme';
 import { useAuth } from './AuthContext';
@@ -15,7 +15,7 @@ const LEFT_TABS = [
 function getRightTabs(loggedIn: boolean) {
   return [
     { href: '/koala/professors', icon: Users, label: '教授库', visible: true },
-    { href: '/koala/my-emails', icon: Mail, label: '套磁信', visible: loggedIn },
+    { href: '/koala/my-applications', icon: ClipboardList, label: '申请', visible: loggedIn },
     { href: loggedIn ? '/koala/my-profile' : '/koala/auth', icon: UserCircle, label: loggedIn ? '我的' : '登录', visible: true },
   ].filter(t => t.visible);
 }

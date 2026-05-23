@@ -23,8 +23,8 @@ export async function GET(req: Request) {
     const since = new Date(Date.now() - days * 86400000).toISOString();
 
     const [visitsRes, referralsRes, commissionsRes] = await Promise.all([
-      db.from('sales_visits').select('channel').eq('agent_id', agent.id).gte('visited_at', since),
-      db.from('sales_referrals').select('channel').eq('agent_id', agent.id).gte('created_at', since),
+      db.from('sales_visits').select('channel').eq('agent_id', agent.id).eq('is_test', false).gte('visited_at', since),
+      db.from('sales_referrals').select('channel').eq('agent_id', agent.id).eq('is_test', false).gte('created_at', since),
       db.from('sales_commissions').select('product_type, commission_amount, status, sales_referrals(channel)')
         .eq('agent_id', agent.id).gte('created_at', since).neq('status', 'rejected'),
     ]);

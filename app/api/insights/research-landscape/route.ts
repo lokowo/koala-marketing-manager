@@ -24,66 +24,68 @@ interface CacheEntry {
 
 let cache: CacheEntry | null = null;
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+const PAGE_SIZE = 1000;
+
+async function fetchAllPaginated(columns: string): Promise<Record<string, unknown>[]> {
+  const all: Record<string, unknown>[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await db.from('professors').select(columns).range(from, from + PAGE_SIZE - 1);
+    if (error) { console.error('[research-landscape] pagination error:', error); break; }
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+  return all;
+}
 
 async function aggregateData() {
-  const { data: professors } = await db
-    .from('professors')
-    .select('university, research_areas, accepting_students, is_verified, latest_papers');
-
-  if (!professors || professors.length === 0) {
-    return { total: 0, byUniversity: [], topResearchAreas: [], acceptingRate: 0, verifiedCount: 0, dataFreshnessRate: 0 };
+  // Get exact total via count
+  const { count: total } = await db.from('professors').select('id', { count: 'exact', head: true });
+  if (!total || total === 0) {
+    return { total: 0, byUniversity: [], groupSummary: {}, topResearchAreas: [], acceptingStudents: { count: 0, rate: 0 }, verifiedCount: 0, dataFreshness: { withPapers: 0, rate: 0 } };
   }
 
-  const total = professors.length;
+  // Run count queries and paginated fetches in parallel
+  // Fetch lightweight columns only — latest_papers is large JSONB, just check non-null via separate query
+  const [acceptingRes, verifiedRes, allRows, papersCountRes] = await Promise.all([
+    db.from('professors').select('id', { count: 'exact', head: true }).or('accepting_students.eq.yes,accepting_students.eq.likely'),
+    db.from('professors').select('id', { count: 'exact', head: true }).eq('is_verified', true),
+    fetchAllPaginated('university, research_areas'),
+    db.from('professors').select('id', { count: 'exact', head: true }).not('latest_papers', 'is', null),
+  ]);
 
-  // University distribution with groups
+  // University distribution
   const uniCounts = new Map<string, number>();
-  for (const p of professors) {
-    const uni = p.university ?? 'Unknown';
+  for (const p of allRows) {
+    const uni = (p.university as string) ?? 'Unknown';
     uniCounts.set(uni, (uniCounts.get(uni) ?? 0) + 1);
   }
-
   const byUniversity = Array.from(uniCounts.entries())
-    .map(([university, count]) => ({
-      university,
-      group: classifyUniversity(university),
-      count,
-    }))
+    .map(([university, count]) => ({ university, group: classifyUniversity(university), count }))
     .sort((a, b) => b.count - a.count);
 
-  // Research areas — each professor has an array of phrase-level areas
+  // Research areas
   const areaCounts = new Map<string, number>();
-  for (const p of professors) {
-    const areas: string[] = p.research_areas ?? [];
+  for (const p of allRows) {
+    const areas = p.research_areas as string[] | null;
+    if (!areas) continue;
     for (const area of areas) {
-      if (!area || typeof area !== 'string') continue;
+      if (!area || typeof area !== 'string' || area.trim().length < 3) continue;
       const normalized = area.trim();
-      if (normalized.length < 3) continue;
       areaCounts.set(normalized, (areaCounts.get(normalized) ?? 0) + 1);
     }
   }
-
   const topResearchAreas = Array.from(areaCounts.entries())
     .map(([area, count]) => ({ area, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 20);
 
-  // Accepting students rate (count 'yes' and 'likely')
-  const acceptingCount = professors.filter(
-    (p: { accepting_students: string | null }) => p.accepting_students === 'yes' || p.accepting_students === 'likely',
-  ).length;
-  const acceptingRate = Math.round((acceptingCount / total) * 1000) / 10;
+  const withPapersCount = papersCountRes.count ?? 0;
+  const acceptingCount = acceptingRes.count ?? 0;
+  const verifiedCount = verifiedRes.count ?? 0;
 
-  // Verified count
-  const verifiedCount = professors.filter((p: { is_verified: boolean }) => p.is_verified === true).length;
-
-  // Data freshness — professors with latest_papers
-  const withPapersCount = professors.filter(
-    (p: { latest_papers: unknown }) => p.latest_papers != null && (Array.isArray(p.latest_papers) ? p.latest_papers.length > 0 : true),
-  ).length;
-  const dataFreshnessRate = Math.round((withPapersCount / total) * 1000) / 10;
-
-  // Group summary
   const groupSummary: Record<string, number> = {};
   for (const u of byUniversity) {
     groupSummary[u.group] = (groupSummary[u.group] ?? 0) + u.count;
@@ -94,9 +96,9 @@ async function aggregateData() {
     byUniversity,
     groupSummary,
     topResearchAreas,
-    acceptingStudents: { count: acceptingCount, rate: acceptingRate },
+    acceptingStudents: { count: acceptingCount, rate: Math.round((acceptingCount / total) * 1000) / 10 },
     verifiedCount,
-    dataFreshness: { withPapers: withPapersCount, rate: dataFreshnessRate },
+    dataFreshness: { withPapers: withPapersCount, rate: Math.round((withPapersCount / total) * 1000) / 10 },
     cachedAt: new Date().toISOString(),
   };
 }

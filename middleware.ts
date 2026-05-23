@@ -102,6 +102,36 @@ export async function middleware(request: NextRequest) {
           }
         }
       }
+    } else {
+      // Not a sales agent code — record as user referral visit
+      const { data: referrerProfile } = await db
+        .from('user_profiles')
+        .select('id, referral_code')
+        .eq('referral_code', ref.toUpperCase())
+        .single();
+
+      if (!referrerProfile) {
+        const { data: codeRow } = await db
+          .from('referral_codes')
+          .select('user_id')
+          .eq('code', ref.toUpperCase())
+          .single();
+        if (codeRow) {
+          await db.from('referral_visits').insert({
+            referral_code: ref.toUpperCase(),
+            referrer_user_id: codeRow.user_id,
+            landing_page: request.nextUrl.pathname,
+            visitor_fingerprint: visitorFp,
+          });
+        }
+      } else {
+        await db.from('referral_visits').insert({
+          referral_code: ref.toUpperCase(),
+          referrer_user_id: referrerProfile.id,
+          landing_page: request.nextUrl.pathname,
+          visitor_fingerprint: visitorFp,
+        });
+      }
     }
   }
 

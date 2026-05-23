@@ -21,8 +21,8 @@ export async function GET(req: NextRequest) {
   const sinceISO = since.toISOString();
 
   try {
-    let visitsQ = db.from('sales_visits').select('id', { count: 'exact', head: true }).gte('visited_at', sinceISO);
-    let referralsQ = db.from('sales_referrals').select('id, referred_user_id', { count: 'exact' }).gte('created_at', sinceISO);
+    let visitsQ = db.from('sales_visits').select('id', { count: 'exact', head: true }).eq('is_test', false).gte('visited_at', sinceISO);
+    let referralsQ = db.from('sales_referrals').select('id, referred_user_id', { count: 'exact' }).eq('is_test', false).gte('created_at', sinceISO);
     let commissionsQ = db.from('sales_commissions').select('id', { count: 'exact', head: true }).gte('created_at', sinceISO).neq('status', 'rejected');
 
     if (agentId) {
@@ -62,12 +62,12 @@ export async function GET(req: NextRequest) {
 
     // Daily breakdown for trend chart
     const { data: dailyVisits } = await (agentId
-      ? db.from('sales_visits').select('visited_at').eq('agent_id', agentId).gte('visited_at', sinceISO)
-      : db.from('sales_visits').select('visited_at').gte('visited_at', sinceISO));
+      ? db.from('sales_visits').select('visited_at').eq('agent_id', agentId).eq('is_test', false).gte('visited_at', sinceISO)
+      : db.from('sales_visits').select('visited_at').eq('is_test', false).gte('visited_at', sinceISO));
 
     const { data: dailyRefs } = await (agentId
-      ? db.from('sales_referrals').select('created_at').eq('agent_id', agentId).gte('created_at', sinceISO)
-      : db.from('sales_referrals').select('created_at').gte('created_at', sinceISO));
+      ? db.from('sales_referrals').select('created_at').eq('agent_id', agentId).eq('is_test', false).gte('created_at', sinceISO)
+      : db.from('sales_referrals').select('created_at').eq('is_test', false).gte('created_at', sinceISO));
 
     const dayMap: Record<string, { visits: number; registrations: number }> = {};
     for (let i = days - 1; i >= 0; i--) {

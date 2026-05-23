@@ -12,7 +12,6 @@ import type { ProfessorMatch, ScoreCard } from '../../lib/types';
 import { ExtendedReadingPanel } from '../components/ai/ExtendedReadingPanel';
 import type { PaperData } from '../components/ai/PaperCitationCard';
 import { EmailPackage } from '../components/outreach/EmailPackage';
-import { BatchEmailFlow } from '../components/outreach/BatchEmailFlow';
 import { AchievementBadge } from '../components/ai/AchievementBadge';
 import { MiniStats } from '../components/ai/MiniStats';
 import { ConfidenceBadge, type ConfidenceLevel } from '../components/ai/ConfidenceBadge';
@@ -30,6 +29,7 @@ import { checkUsage, incrementUsage } from '../../lib/services/usageTracker';
 import { supabase } from '../../lib/supabase/client';
 import type { ExtractedProfile } from '../../lib/chat/extract-profile';
 import { Download, History } from 'lucide-react';
+import { SharePosterTrigger } from '../components/SharePoster';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -171,12 +171,23 @@ function AcceptingBadge({ status }: { status?: string }) {
   return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400">🔴 暂不招生</span>;
 }
 
-function ProfessorMatchCard({ match, onGenerateEmail }: { match: ProfessorMatch; onGenerateEmail?: (professorId: string, professorName: string) => void }) {
+function ProfessorMatchCard({ match, onGenerateEmail, selectable, selected, onToggleSelect }: { match: ProfessorMatch; onGenerateEmail?: (professorId: string, professorName: string) => void; selectable?: boolean; selected?: boolean; onToggleSelect?: (professorId: string) => void }) {
   const score = match.matchScore;
   const color = score >= 75 ? '#5a8060' : score >= 50 ? '#D4A843' : '#b06040';
   const hasStats = match.hIndex != null || match.paperCount != null || match.citationCount != null;
   return (
     <div className="rounded-xl p-3 mt-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
+      {selectable && (
+        <label className="flex items-center gap-2 mb-2 cursor-pointer" onClick={e => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect?.(match.professorId)}
+            className="size-4 rounded border-gray-300 dark:border-white/20 text-[#D4A843] accent-[#D4A843]"
+          />
+          <span className="text-[11px] text-gray-500 dark:text-[#a09888]">选中批量生成</span>
+        </label>
+      )}
       <Link href={`/koala/professors/${match.professorId}`} style={{ textDecoration: 'none' }}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -212,6 +223,29 @@ function ProfessorMatchCard({ match, onGenerateEmail }: { match: ProfessorMatch;
           <div className="flex flex-wrap gap-1 mt-1.5">
             {match.researchTags.slice(0, 3).map(tag => (
               <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-white/[0.08] text-amber-700 dark:text-[#D4A843]">{tag}</span>
+            ))}
+          </div>
+        )}
+        {match.latestPapers && match.latestPapers.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-white/[0.08]">
+            <div className="text-[10px] font-medium text-gray-400 dark:text-[#6a6058] mb-1">最新论文</div>
+            {match.latestPapers.slice(0, 2).map((paper, i) => (
+              <div key={i} className="mb-1 last:mb-0">
+                {paper.doi_url ? (
+                  <a href={paper.doi_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[11px] leading-snug text-blue-600 dark:text-blue-400 hover:underline no-underline">
+                    {paper.title}
+                    {paper.journal && <span className="text-gray-400 dark:text-[#6a6058]">, {paper.journal}</span>}
+                    {paper.year && <span className="text-gray-400 dark:text-[#6a6058]">, {paper.year}</span>}
+                    <span className="ml-0.5">↗</span>
+                  </a>
+                ) : (
+                  <span className="text-[11px] leading-snug text-gray-500 dark:text-[#8a8078]">
+                    {paper.title}
+                    {paper.journal && <span className="text-gray-400 dark:text-[#6a6058]">, {paper.journal}</span>}
+                    {paper.year && <span className="text-gray-400 dark:text-[#6a6058]">, {paper.year}</span>}
+                  </span>
+                )}
+              </div>
             ))}
           </div>
         )}
@@ -634,7 +668,6 @@ function ChatPageInner() {
   const [tonePref, setTonePref] = useState<TonePref>('casual');
   const [langPref, setLangPref] = useState<LangPref>('zh');
   const [parsedFile, setParsedFile] = useState<string | null>(null);
-  const [batchProfessors, setBatchProfessors] = useState<{ id: string; name: string; institution?: string; matchScore?: number }[] | null>(null);
   const [showRating, setShowRating] = useState(false);
   const [typewriterMsgId, setTypewriterMsgId] = useState<string | null>(null);
   const [typewriterText, setTypewriterText] = useState('');
@@ -645,6 +678,8 @@ function ChatPageInner() {
   const [profileCollectionPending, setProfileCollectionPending] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{ file: File; type: string } | null>(null);
   const [coldEmailLoading, setColdEmailLoading] = useState(false);
+  const [selectedProfessorIds, setSelectedProfessorIds] = useState<Set<string>>(new Set());
+  const [batchGenerating, setBatchGenerating] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDismissed, setFeedbackDismissed] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -962,7 +997,7 @@ function ChatPageInner() {
         matchScore: p.matchScore,
       }));
       if (profs?.length) {
-        setBatchProfessors(profs);
+        handleBatchColdEmails(profs.map(p => p.id));
         return;
       }
       // No prior professors in conversation — ask AI to search first (no credit consumed for search)
@@ -1192,6 +1227,143 @@ function ChatPageInner() {
     }
   }, [user, showLogin, coldEmailLoading, mode]);
 
+  const toggleProfessorSelect = useCallback((professorId: string) => {
+    setSelectedProfessorIds(prev => {
+      const next = new Set(prev);
+      if (next.has(professorId)) next.delete(professorId);
+      else next.add(professorId);
+      return next;
+    });
+  }, []);
+
+  const handleBatchColdEmails = useCallback(async (professorIds: string[]) => {
+    if (!user) { showLogin(); return; }
+    if (batchGenerating || professorIds.length === 0) return;
+
+    setBatchGenerating(true);
+    const progressMsgId = msgId();
+    setMessages(prev => [...prev, {
+      id: progressMsgId, role: 'assistant',
+      content: `正在批量生成 ${professorIds.length} 封套磁信，请稍候...`,
+      timestamp: new Date(),
+    }]);
+
+    try {
+      const res = await fetch('/api/chat/generate-cold-emails-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ professorIds }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: '批量生成失败' }));
+        setMessages(prev => prev.map(m => m.id === progressMsgId ? {
+          ...m, content: errData.error || '批量生成失败',
+          upgradePrompt: res.status === 403 ? { feature: '套磁信', remaining: 0 } : undefined,
+        } : m));
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error('No stream');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let currentEventType = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEventType = line.slice(7).trim();
+            continue;
+          }
+          if (line.startsWith('data: ')) {
+            const eventType = currentEventType;
+            currentEventType = '';
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (eventType === 'progress') {
+                setMessages(prev => prev.map(m => m.id === progressMsgId ? {
+                  ...m, content: `正在生成 ${data.current}/${data.total}...`,
+                } : m));
+              } else if (eventType === 'email_done') {
+                const r = data.result;
+                const scoreArray: { dimension: string; score: number }[] = r.matchScores ?? [];
+                const getScore = (dim: string) => scoreArray.find((s: { dimension: string; score: number }) => s.dimension === dim)?.score ?? 50;
+                const scores = {
+                  researchAlignment: getScore('research_alignment'),
+                  backgroundFit: getScore('background_fit'),
+                  researchReadiness: getScore('research_readiness'),
+                  opportunity: getScore('opportunity'),
+                  overall: 0,
+                };
+                scores.overall = Math.round(
+                  (scores.researchAlignment + scores.backgroundFit + scores.researchReadiness + scores.opportunity) / 4,
+                );
+
+                const emailMsg: Message = {
+                  id: msgId(), role: 'assistant',
+                  content: `✅ ${r.professorName}（${r.professorUniversity}）`,
+                  coldEmailData: {
+                    id: r.id,
+                    subject: r.subject,
+                    body: r.body,
+                    highlights: r.highlights ?? [],
+                    matchScores: scores,
+                    creditsUsed: r.creditsUsed ?? 1,
+                    creditsRemaining: r.creditsRemaining ?? 0,
+                    professorId: r.professorId,
+                  },
+                  timestamp: new Date(),
+                };
+                setMessages(prev => [...prev, emailMsg]);
+                setCredits(r.creditsRemaining ?? 0);
+              } else if (eventType === 'email_error') {
+                const errMsg: Message = {
+                  id: msgId(), role: 'assistant',
+                  content: `❌ ${data.professorName}: ${data.error}`,
+                  timestamp: new Date(),
+                };
+                setMessages(prev => [...prev, errMsg]);
+              } else if (eventType === 'done') {
+                setMessages(prev => prev.map(m => m.id === progressMsgId ? {
+                  ...m, content: `批量生成完成！成功 ${data.totalGenerated} 封${data.totalFailed > 0 ? `，失败 ${data.totalFailed} 封` : ''}。`,
+                } : m));
+
+                if (data.totalGenerated > 0) {
+                  const summaryMsg: Message = {
+                    id: msgId(), role: 'assistant',
+                    content: `已为你生成 ${data.totalGenerated} 封定制套磁信。每封都根据教授的最新论文和你的背景量身定制。你可以逐封检查和编辑，满意后复制发送。\n\n📬 所有套磁信都已保存到「我的套磁信」页面。`,
+                    suggestions: ['查看我的套磁信', '帮我匹配更多教授'],
+                    timestamp: new Date(),
+                  };
+                  setMessages(prev => [...prev, summaryMsg]);
+                }
+              }
+            } catch {
+              // skip malformed SSE
+            }
+          }
+        }
+      }
+    } catch (err) {
+      setMessages(prev => prev.map(m => m.id === progressMsgId ? {
+        ...m, content: `批量生成失败：${err instanceof Error ? err.message : '请稍后再试'}`,
+      } : m));
+    } finally {
+      setBatchGenerating(false);
+      setSelectedProfessorIds(new Set());
+    }
+  }, [user, showLogin, batchGenerating]);
+
   const formatTime = (d: Date) => d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
   return (
@@ -1295,19 +1467,39 @@ function ChatPageInner() {
 
                 {msg.role === 'assistant' && msg.scoreCard && <ScoreCardBlock card={msg.scoreCard} />}
                 {msg.role === 'assistant' && msg.matchedProfessors?.map((p, i) => (
-                  <ProfessorMatchCard key={i} match={p} onGenerateEmail={handleGenerateColdEmail} />
+                  <ProfessorMatchCard
+                    key={i}
+                    match={p}
+                    onGenerateEmail={handleGenerateColdEmail}
+                    selectable={msg.matchedProfessors!.length > 1}
+                    selected={selectedProfessorIds.has(p.professorId)}
+                    onToggleSelect={toggleProfessorSelect}
+                  />
                 ))}
                 {msg.role === 'assistant' && msg.matchedProfessors && msg.matchedProfessors.length > 0 && (
-                  <p className="text-[11px] mt-1.5 ml-1 text-gray-400 dark:text-[#8a8078]">
-                    不是你要找的教授？告诉我正确的教授名字和大学
-                  </p>
+                  <div className="flex items-center justify-between mt-1.5 ml-1">
+                    <p className="text-[11px] text-gray-400 dark:text-[#8a8078]">
+                      不是你要找的教授？告诉我正确的教授名字和大学
+                    </p>
+                    <SharePosterTrigger
+                      label="分享"
+                      matchCount={msg.matchedProfessors.length}
+                      className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md text-gray-400 dark:text-[#8a8078] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                    />
+                  </div>
                 )}
                 {msg.role === 'assistant' && msg.matchedProfessors && msg.matchedProfessors.length > 1 && (
                   <button
-                    onClick={() => setBatchProfessors(msg.matchedProfessors!.map(p => ({ id: p.professorId, name: p.name, institution: p.institution, matchScore: p.matchScore })))}
-                    className="mt-2 w-full py-2 rounded-xl text-xs font-semibold bg-gray-100 dark:bg-[#0d1520] text-[#1A1A2E] dark:text-[#D4A843] border border-gray-300 dark:border-[#D4A843]/30"
+                    onClick={() => {
+                      const ids = selectedProfessorIds.size > 0
+                        ? Array.from(selectedProfessorIds)
+                        : msg.matchedProfessors!.map(p => p.professorId);
+                      handleBatchColdEmails(ids);
+                    }}
+                    disabled={batchGenerating}
+                    className="mt-2 w-full py-2 rounded-xl text-xs font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] disabled:opacity-50"
                   >
-                    📨 批量生成申请信（{msg.matchedProfessors.length} 封）
+                    {batchGenerating ? '⏳ 生成中...' : `📨 批量生成套磁信（${selectedProfessorIds.size > 0 ? selectedProfessorIds.size : msg.matchedProfessors!.length} 封）`}
                   </button>
                 )}
                 {msg.role === 'assistant' && msg.citations && msg.citations.length > 0 && (
@@ -1351,6 +1543,9 @@ function ChatPageInner() {
                       creditsUsed={msg.coldEmailData.creditsUsed}
                       creditsRemaining={msg.coldEmailData.creditsRemaining}
                       onRegenerate={() => handleGenerateColdEmail(msg.coldEmailData!.professorId, '教授')}
+                      coldEmailId={msg.coldEmailData.id}
+                      professorId={msg.coldEmailData.professorId}
+                      userPlan={profile?.plan_type}
                     />
                   </div>
                 )}
@@ -1422,23 +1617,7 @@ function ChatPageInner() {
           </div>
         ))}
 
-        {/* Batch email flow */}
-        {batchProfessors && (
-          <div className="mt-2">
-            <BatchEmailFlow
-              professors={batchProfessors}
-              studentProfile={profile ? {
-                major: profile.major ?? undefined,
-                degreeLevel: profile.degree_level ?? undefined,
-                gpa: profile.gpa != null ? String(profile.gpa) : undefined,
-                researchInterests: profile.research_description ? [profile.research_description] : undefined,
-                university: profile.university ?? undefined,
-              } : undefined}
-              userId={user?.id}
-              onClose={() => setBatchProfessors(null)}
-            />
-          </div>
-        )}
+        {/* Batch generation progress is handled inline via messages */}
 
         {loading && <ThinkingBubble mode={mode} />}
 

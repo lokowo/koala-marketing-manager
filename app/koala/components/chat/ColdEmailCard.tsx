@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { Copy, Mail, Save, RefreshCw, Pencil, Check } from 'lucide-react';
+import { Copy, Mail, Save, RefreshCw, Pencil, Check, Eye, Lock } from 'lucide-react';
+import { ProfessorPreviewCard, type ProfessorPreviewData } from './ProfessorPreviewCard';
+import { SharePosterTrigger } from '../SharePoster';
 
 interface Highlight {
   text: string;
@@ -16,6 +18,15 @@ interface MatchScores {
   overall: number;
 }
 
+const WATERMARK_SEPARATOR = '\n\n---\nCrafted with Koala PhD';
+const WATERMARK_TEXT = '---\nCrafted with Koala PhD | AI-powered PhD advisor\nProfessor portal: koalaphd.com/professor/claim';
+
+function splitWatermark(body: string): { content: string; hasWatermark: boolean } {
+  const idx = body.indexOf(WATERMARK_SEPARATOR);
+  if (idx === -1) return { content: body, hasWatermark: false };
+  return { content: body.slice(0, idx).trimEnd(), hasWatermark: true };
+}
+
 interface ColdEmailCardProps {
   subject: string;
   body: string;
@@ -24,6 +35,9 @@ interface ColdEmailCardProps {
   creditsUsed: number;
   creditsRemaining: number;
   onRegenerate: () => void;
+  coldEmailId?: string;
+  professorId?: string;
+  userPlan?: string;
 }
 
 const SCORE_LABELS: { key: keyof MatchScores; label: string }[] = [
@@ -83,19 +97,60 @@ export function ColdEmailCard({
   creditsUsed,
   creditsRemaining,
   onRegenerate,
+  coldEmailId,
+  professorId,
+  userPlan,
 }: ColdEmailCardProps) {
+  const { content: cleanBody, hasWatermark } = splitWatermark(initialBody);
   const [subject, setSubject] = useState(initialSubject);
   const [editingSubject, setEditingSubject] = useState(false);
   const [subjectDraft, setSubjectDraft] = useState(initialSubject);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [previewData, setPreviewData] = useState<ProfessorPreviewData | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
 
+  const isElite = userPlan === 'elite';
+
+  const handleProfessorPreview = async () => {
+    if (!isElite) return;
+    setPreviewLoading(true);
+    setPreviewError(null);
+    try {
+      const payload = coldEmailId
+        ? { coldEmailId }
+        : { subject, body: bodyRef.current?.innerText ?? cleanBody, professorId };
+
+      const res = await fetch('/api/chat/professor-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPreviewError(data.error || '预览生成失败');
+        return;
+      }
+      setPreviewData(data);
+    } catch {
+      setPreviewError('网络错误，请稍后再试');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const getFullText = useCallback(() => {
+    const bodyText = bodyRef.current?.innerText ?? cleanBody;
+    const watermark = hasWatermark ? `\n\n${WATERMARK_TEXT}` : '';
+    return `${bodyText}${watermark}`;
+  }, [cleanBody, hasWatermark]);
+
   const getPlainText = useCallback(() => {
-    const bodyText = bodyRef.current?.innerText ?? initialBody;
-    return `Subject: ${subject}\n\n${bodyText}`;
-  }, [subject, initialBody]);
+    return `Subject: ${subject}\n\n${getFullText()}`;
+  }, [subject, getFullText]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(getPlainText());
@@ -104,19 +159,17 @@ export function ColdEmailCard({
   };
 
   const handleMailto = () => {
-    const bodyText = bodyRef.current?.innerText ?? initialBody;
-    const params = new URLSearchParams({ subject, body: bodyText });
+    const params = new URLSearchParams({ subject, body: getFullText() });
     window.open(`mailto:?${params.toString()}`);
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const bodyText = bodyRef.current?.innerText ?? initialBody;
       await fetch('/api/user/cold-emails/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject, body: bodyText }),
+        body: JSON.stringify({ subject, body: getFullText() }),
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -190,8 +243,22 @@ export function ColdEmailCard({
         suppressContentEditableWarning
         className="px-4 py-3 text-sm leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/20 min-h-[120px]"
       >
-        {highlightBody(initialBody, highlights)}
+        {highlightBody(cleanBody, highlights)}
       </div>
+
+      {/* Watermark */}
+      {hasWatermark && (
+        <div className="px-4 pb-3 select-none pointer-events-none">
+          <div className="border-t border-gray-200 dark:border-white/10 pt-2 mt-1">
+            <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
+              Crafted with Koala PhD | AI-powered PhD advisor
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
+              Professor portal: koalaphd.com/professor/claim
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 4. Action buttons */}
       <div className="px-4 py-3 border-t border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]">
@@ -224,6 +291,12 @@ export function ColdEmailCard({
         </div>
       </div>
 
+      {/* Share prompt */}
+      <div className="px-4 py-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+        <p className="text-[10px] text-gray-400 dark:text-gray-500">觉得好用？分享给同学 →</p>
+        <SharePosterTrigger label="分享海报" emailCount={1} />
+      </div>
+
       {/* 5. Legend + 6. Credits */}
       <div className="px-4 py-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-3 text-[10px] text-gray-400 dark:text-gray-500">
@@ -240,6 +313,43 @@ export function ColdEmailCard({
           {creditsUsed} credits used
           {creditsRemaining > 0 && <span className="ml-1">({creditsRemaining} remaining)</span>}
         </span>
+      </div>
+
+      {/* Professor Preview */}
+      <div className="px-4 py-3 border-t border-gray-200 dark:border-white/10">
+        {previewData ? (
+          <ProfessorPreviewCard data={previewData} onOptimize={onRegenerate} />
+        ) : isElite ? (
+          <>
+            {previewError && (
+              <p className="text-xs text-red-500 mb-2">{previewError}</p>
+            )}
+            <button
+              onClick={handleProfessorPreview}
+              disabled={previewLoading}
+              className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors disabled:opacity-50 min-h-[44px]"
+            >
+              {previewLoading ? (
+                <><span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> AI 分析中...</>
+              ) : (
+                <><Eye size={13} /> 教授会怎么看？</>
+              )}
+            </button>
+          </>
+        ) : (
+          <div className="flex items-center justify-between rounded-lg px-3 py-2.5 bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <Lock size={12} />
+              <span>教授视角预览</span>
+            </div>
+            <a
+              href="/koala/pricing"
+              className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-[#1A1A2E] dark:bg-blue-500 text-white no-underline"
+            >
+              升级 Elite
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

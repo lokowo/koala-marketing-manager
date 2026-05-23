@@ -23,10 +23,10 @@ export async function GET() {
     const agentIds = agents.map((a: any) => a.id);
 
     const [visitsRes, refsRes, commsRes, offlineRes, targetsRes] = await Promise.all([
-      db.from('sales_visits').select('agent_id').in('agent_id', agentIds).gte('visited_at', monthStart),
-      db.from('sales_referrals').select('agent_id').in('agent_id', agentIds).gte('created_at', monthStart),
+      db.from('sales_visits').select('agent_id').in('agent_id', agentIds).eq('is_test', false).gte('visited_at', monthStart),
+      db.from('sales_referrals').select('agent_id').in('agent_id', agentIds).eq('is_test', false).gte('created_at', monthStart),
       db.from('sales_commissions').select('agent_id, commission_amount').in('agent_id', agentIds).gte('created_at', monthStart).neq('status', 'rejected'),
-      db.from('sales_referrals').select('agent_id').in('agent_id', agentIds).eq('offline_converted', true).gte('offline_converted_at', monthStart),
+      db.from('sales_referrals').select('agent_id').in('agent_id', agentIds).eq('is_test', false).eq('offline_converted', true).gte('offline_converted_at', monthStart),
       db.from('sales_kpi_targets').select('*').in('agent_id', agentIds).lte('effective_from', today).gte('effective_until', today),
     ]);
 

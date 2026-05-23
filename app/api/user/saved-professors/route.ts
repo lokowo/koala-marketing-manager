@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getServerUser } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { upsertApplicationForSave } from '../../../lib/services/applicationSync';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -47,6 +48,10 @@ export async function POST(req: NextRequest) {
       .upsert({ user_id: user.id, professor_id, notes: notes ?? null }, { onConflict: 'user_id,professor_id' });
 
     if (error) throw error;
+
+    const { data: prof } = await db.from('professors').select('university').eq('id', professor_id).single();
+    upsertApplicationForSave(user.id, professor_id, prof?.university);
+
     return Response.json({ success: true });
   } catch (error) {
     console.error('[saved-professors POST]', error);

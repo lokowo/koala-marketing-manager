@@ -18,7 +18,7 @@ export default function SurveySuccessPage({ params }: { params: Promise<{ code: 
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
           <p className="text-sm font-medium text-amber-800">想了解更多？</p>
           <p className="text-xs text-amber-600">
-            {BRAND.name} 是澳洲领先的产学研科研机构，帮助你从申请到毕业，每一步都在。
+            {BRAND.name} — {BRAND.positioning}，帮助你从申请到毕业，每一步都在。
           </p>
           <a
             href="/koala/home"
@@ -32,7 +32,7 @@ export default function SurveySuccessPage({ params }: { params: Promise<{ code: 
         <div className="pt-4 border-t border-slate-100 space-y-2">
           <div className="flex items-center justify-center gap-4 text-xs text-slate-400">
             <span>微信: {BRAND.wechat}</span>
-            <span>小红书: @dr.koalaau</span>
+            <span>小红书: {BRAND.xiaohongshu}</span>
           </div>
         </div>
 

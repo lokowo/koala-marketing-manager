@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     return Response.json({
       success: true,
       handoff_id: data.id,
-      wechat_id: 'MissKoalaAu',
+      wechat_id: 'KoalaStudyAdvisor',
       contact_email: 'info@koalaphd.com',
     });
   } catch (error) {

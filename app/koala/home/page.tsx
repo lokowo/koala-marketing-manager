@@ -1,4 +1,4 @@
-import { listProfessors } from '../../lib/services/professorService';
+import { getFeaturedProfessors, countProfessors } from '../../lib/services/professorService';
 import { supabaseAdmin } from '../../lib/supabase/server';
 import HomeClient from './HomeClient';
 
@@ -20,9 +20,26 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default async function HomePage() {
-  const [profResult, , blogData] = await Promise.all([
-    listProfessors({ limit: 6, sortBy: 'opportunity_score' }).catch(() => ({ data: [], total: 0 })),
-    Promise.resolve(0),
+  const [featuredResult, profTotal, userCountResult, blogData, postingProfIds] = await Promise.all([
+    getFeaturedProfessors(6).catch(() => ({ data: [], labels: {} as Record<string, string> })),
+    countProfessors().catch(() => 0),
+    (async () => {
+      try {
+        const { count } = await db
+          .from('ai_conversations')
+          .select('user_id', { count: 'exact', head: true });
+        return count ?? 0;
+      } catch { return 0; }
+    })(),
+    (async () => {
+      try {
+        const { data } = await db
+          .from('professor_postings')
+          .select('professor_id')
+          .eq('status', 'active');
+        return [...new Set((data ?? []).map((r: { professor_id: string }) => r.professor_id))];
+      } catch { return []; }
+    })(),
     (async () => {
       try {
         const { data: pinned } = await db
@@ -75,7 +92,7 @@ export default async function HomePage() {
     alternateName: 'Koala Study Advisors',
     url: 'https://koalaphd.com',
     logo: 'https://koalaphd.com/koala-logo.svg',
-    description: '覆盖澳洲38所大学、23,500+位教授与研究员，一键生成套磁信。PhD 申请、奖学金、导师推荐。',
+    description: '覆盖澳洲38所大学、24,000+位教授与研究员，一键生成套磁信。PhD 申请、奖学金、导师推荐。',
     address: {
       '@type': 'PostalAddress',
       streetAddress: 'Suite 22/26A Lime St',
@@ -109,9 +126,12 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
       />
       <HomeClient
-        initialProfessors={profResult.data}
-        initialProfCount={profResult.total}
+        initialProfessors={featuredResult.data}
+        initialProfCount={profTotal as number}
+        initialUserCount={userCountResult as number}
         initialBlogPosts={blogPosts}
+        professorLabels={featuredResult.labels as Record<string, string>}
+        postingProfIds={postingProfIds as string[]}
       />
     </>
   );

@@ -30,7 +30,7 @@ export function SurveyThankYouEmail({ name, surveyTitle, registerUrl }: {
           </Button>
           <Hr style={{ borderColor: '#e5e7eb', margin: '24px 0' }} />
           <Text style={{ color: '#9ca3af', fontSize: 12 }}>
-            Koala PhD · koalaphd.com · 微信：MissKoalaAu
+            Koala PhD · koalaphd.com · 微信：KoalaStudyAdvisor
           </Text>
         </Container>
       </Body>

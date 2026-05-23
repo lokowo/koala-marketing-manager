@@ -7,11 +7,12 @@ import { useSearchParams } from 'next/navigation';
 
 const FREE_FEATURES = [
   { text: '每天 10 轮 AI 对话', ok: true },
+  { text: '首封申请信免费', ok: true },
+  { text: '1 版 CV 生成', ok: true },
   { text: 'Top 10 教授匹配（免费查看）', ok: true },
-  { text: '1 封免费申请信', ok: true },
   { text: '博客 / NIV签证评估 / GPA换算', ok: true },
-  { text: '上传简历 & 成绩单分析', ok: false },
   { text: '教授完整数据（经费/论文/联系方式）', ok: false },
+  { text: '上传简历 & 成绩单分析', ok: false },
   { text: 'PDF 报告下载', ok: false },
 ];
 

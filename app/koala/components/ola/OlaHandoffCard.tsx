@@ -20,7 +20,7 @@ export function OlaHandoffCard({ onClose }: OlaHandoffCardProps) {
             <div className="flex items-center gap-2 text-sm">
               <span className="text-base">💬</span>
               <span className="text-gray-700 dark:text-gray-300">微信：</span>
-              <span className="font-medium text-[#0D7C5F]">MissKoalaAu</span>
+              <span className="font-medium text-[#0D7C5F]">KoalaStudyAdvisor</span>
             </div>
 
             <div className="flex items-center gap-2 text-sm">

@@ -26,6 +26,7 @@ export async function GET(req: Request) {
       .from('sales_referrals')
       .select('*, user_profiles:referred_user_id(display_name, email, avatar_url)')
       .eq('agent_id', agent.id)
+      .eq('is_test', false)
       .order(sort === 'revenue' ? 'total_revenue' : 'created_at', { ascending: false });
 
     if (error) throw error;

@@ -38,6 +38,12 @@ function fromRow(row: ProfessorRow): Professor {
     opportunityScore: row.opportunity_score ?? undefined,
     opportunityBreakdown: (row.opportunity_breakdown as Professor['opportunityBreakdown']) ?? undefined,
     aiSummary: row.ai_summary ?? undefined,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    isVerified: (row as any).is_verified ?? false,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    slug: (row as any).slug ?? undefined,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    professorMessage: (row as any).professor_message ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at ?? undefined,
   };
@@ -220,6 +226,95 @@ export async function deleteProfessor(id: string): Promise<boolean> {
   return !error;
 }
 
+export type RecommendLabel = '🏆 学术影响力' | '🟢 招生中' | '🆕 新上线';
+
+export async function getFeaturedProfessors(count: number = 6): Promise<{ data: Professor[]; labels: Record<string, RecommendLabel> }> {
+  const perBucket = Math.ceil(count / 3);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabaseAdmin as any;
+  const [highImpact, recruiting, recent] = await Promise.all([
+    db.from('professors').select('*')
+      .eq('verification_status', 'Verified')
+      .not('h_index', 'is', null)
+      .order('h_index', { ascending: false })
+      .limit(30),
+    db.from('professors').select('*')
+      .eq('verification_status', 'Verified')
+      .eq('accepting_students', 'yes')
+      .not('opportunity_score', 'is', null)
+      .order('opportunity_score', { ascending: false })
+      .limit(30),
+    db.from('professors').select('*')
+      .eq('verification_status', 'Verified')
+      .order('created_at', { ascending: false })
+      .limit(30),
+  ]);
+
+  const usedIds = new Set<string>();
+  const uniCount: Record<string, number> = {};
+  const hiCount: Record<number, number> = {};
+  const result: Professor[] = [];
+  const labels: Record<string, RecommendLabel> = {};
+
+  function canAdd(p: Professor): boolean {
+    if (usedIds.has(p.id)) return false;
+    if ((uniCount[p.university] ?? 0) >= 2) return false;
+    if (p.hIndex != null && (hiCount[p.hIndex] ?? 0) >= 2) return false;
+    return true;
+  }
+
+  function add(p: Professor, label: RecommendLabel) {
+    usedIds.add(p.id);
+    uniCount[p.university] = (uniCount[p.university] ?? 0) + 1;
+    if (p.hIndex != null) hiCount[p.hIndex] = (hiCount[p.hIndex] ?? 0) + 1;
+    result.push(p);
+    labels[p.id] = label;
+  }
+
+  function shuffleTied(profs: Professor[], getKey: (p: Professor) => number | null | undefined): Professor[] {
+    const arr = [...profs];
+    let i = 0;
+    while (i < arr.length) {
+      const k = getKey(arr[i]);
+      let j = i + 1;
+      while (j < arr.length && getKey(arr[j]) === k) j++;
+      for (let a = j - 1; a > i; a--) {
+        const b = i + Math.floor(Math.random() * (a - i + 1));
+        [arr[a], arr[b]] = [arr[b], arr[a]];
+      }
+      i = j;
+    }
+    return arr;
+  }
+
+  const pool1 = shuffleTied(
+    (highImpact.data ?? []).map((r: ProfessorRow) => fromRow(r)),
+    p => p.hIndex ?? null,
+  );
+  for (const p of pool1) {
+    if (result.length >= perBucket) break;
+    if (canAdd(p)) add(p, '🏆 学术影响力');
+  }
+
+  const pool2 = shuffleTied(
+    (recruiting.data ?? []).map((r: ProfessorRow) => fromRow(r)),
+    p => p.opportunityScore ?? null,
+  );
+  for (const p of pool2) {
+    if (result.length >= perBucket * 2) break;
+    if (canAdd(p)) add(p, '🟢 招生中');
+  }
+
+  const pool3 = (recent.data ?? []).map((r: ProfessorRow) => fromRow(r));
+  for (const p of pool3) {
+    if (result.length >= count) break;
+    if (canAdd(p)) add(p, '🆕 新上线');
+  }
+
+  return { data: result, labels };
+}
+
 interface StudentMatchProfile {
   languagePreference?: string;
   personalityTags?: string[];
@@ -231,6 +326,12 @@ interface StudentMatchProfile {
   targetUniversities?: string[];
 }
 
+const UNIVERSITY_GROUPS: Record<string, string[]> = {
+  Go8: ['University of Melbourne', 'University of Sydney', 'Australian National University', 'University of Queensland', 'University of New South Wales', 'Monash University', 'University of Western Australia', 'University of Adelaide'],
+  ATN: ['University of Technology Sydney', 'RMIT University', 'Curtin University', 'Queensland University of Technology', 'University of South Australia'],
+  IRU: ['Griffith University', 'James Cook University', 'La Trobe University', 'Murdoch University', 'Flinders University', 'Charles Darwin University', 'Western Sydney University'],
+};
+
 export async function searchProfessorsForAI(params: {
   researchArea: string;
   university?: string;
@@ -238,6 +339,8 @@ export async function searchProfessorsForAI(params: {
   studentProfile?: StudentMatchProfile;
   studentContext?: StudentContext | null;
   userId?: string;
+  universityGroup?: string;
+  scholarshipRequired?: boolean;
 }): Promise<{ professor: Professor; score: number; reasons: string[] }[]> {
   const limit = Math.min(params.limit ?? 8, 15);
 
@@ -315,6 +418,22 @@ export async function searchProfessorsForAI(params: {
         .filter((i: { interaction_type: string }) => ['email_sent', 'rejected'].includes(i.interaction_type))
         .map((i: { professor_id: string }) => i.professor_id));
     } catch { /* table may not exist yet */ }
+  }
+
+  // 4b. Post-filter by university group
+  if (params.universityGroup) {
+    const groupKey = params.universityGroup.toUpperCase().replace(/\s+/g, '');
+    const groupUnis = UNIVERSITY_GROUPS[groupKey === 'GO8' ? 'Go8' : groupKey] ?? [];
+    if (groupUnis.length > 0) {
+      results = results.filter(p =>
+        groupUnis.some(u => p.university.toLowerCase().includes(u.toLowerCase())),
+      );
+    }
+  }
+
+  // 4c. Post-filter by scholarship requirement (Active grants = funding likely)
+  if (params.scholarshipRequired) {
+    results = results.filter(p => p.grantStatus === 'Active');
   }
 
   // 5. Multi-dimensional scoring with match reasons

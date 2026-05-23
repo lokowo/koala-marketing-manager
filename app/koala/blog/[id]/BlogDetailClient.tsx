@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { marked } from 'marked';
 import { Clock, Eye, Mail, Copy, Share2 } from 'lucide-react';
 import { shareToWechat, shareToMoments } from '../../../lib/share';
+import { STATS } from '../../../lib/constants';
 
 interface BlogPost {
   id: string;
@@ -242,7 +243,7 @@ export default function BlogDetailClient({ post, relatedPosts }: { post: BlogPos
         <div className="mt-8 rounded-xl px-6 py-8 text-center bg-gradient-to-br from-green-50 to-green-100 dark:from-[#1a2a20] dark:to-[#0d1a14] border border-green-200 dark:border-[#D4A843]/20">
           <div className="text-3xl mb-3">🐨</div>
           <h3 className="text-base font-semibold mb-1 text-gray-900 dark:text-[#D4A843]">找到适合你的澳洲博导</h3>
-          <p className="text-xs mb-4 text-gray-500 dark:text-[#6a7a7e]">覆盖澳洲38所大学、23,500+位教授与研究员</p>
+          <p className="text-xs mb-4 text-gray-500 dark:text-[#6a7a7e]">覆盖澳洲 {STATS.uniCount} 所大学、{STATS.profCountLabel} 位教授与研究员</p>
           <Link
             href="/koala/chat"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"

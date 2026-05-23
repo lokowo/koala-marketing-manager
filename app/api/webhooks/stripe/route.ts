@@ -45,6 +45,24 @@ async function resolveUserId(customerId: string, metadata?: Stripe.Metadata | nu
   return data?.id || null;
 }
 
+async function syncUsageTrackingTier(userId: string, tier: string) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: existing } = await db
+    .from('user_usage_tracking')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('date', today)
+    .maybeSingle();
+
+  if (existing) {
+    await db.from('user_usage_tracking').update({ subscription_tier: tier }).eq('id', existing.id);
+  } else {
+    await db.from('user_usage_tracking').insert({
+      user_id: userId, date: today, subscription_tier: tier,
+    });
+  }
+}
+
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const userId = await resolveUserId(session.customer as string, session.metadata);
   if (!userId) { console.error('[webhook] Could not resolve user for customer', session.customer); return; }
@@ -99,6 +117,7 @@ async function handleNewSubscription(session: Stripe.Checkout.Session, userId: s
     cancel_at_period_end: subscription.cancel_at_period_end, updated_at: new Date().toISOString(),
   }, { onConflict: 'stripe_subscription_id' });
   await db.from('user_profiles').update({ plan_type: tier.id, updated_at: new Date().toISOString() }).eq('id', userId);
+  await syncUsageTrackingTier(userId, tier.id);
   await addCredits(userId, tier.monthlyCredits, 'subscription_credit', `${tier.label} 订阅首月 ${tier.monthlyCredits} 积分`, referenceId);
   const subResult = await tryCreateCommission({
     userId, stripePaymentId: (session.payment_intent as string) || `sub_${subscriptionId}`,
@@ -159,7 +178,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }).eq('stripe_subscription_id', subscription.id);
   if (newTierId) {
     const { data: sub } = await db.from('subscriptions').select('user_id').eq('stripe_subscription_id', subscription.id).single();
-    if (sub) await db.from('user_profiles').update({ plan_type: mappedStatus === 'active' ? newTierId : 'free', updated_at: new Date().toISOString() }).eq('id', sub.user_id);
+    if (sub) {
+      const effectiveTier = mappedStatus === 'active' ? newTierId : 'free';
+      await db.from('user_profiles').update({ plan_type: effectiveTier, updated_at: new Date().toISOString() }).eq('id', sub.user_id);
+      await syncUsageTrackingTier(sub.user_id, effectiveTier);
+    }
   }
 }
 
@@ -168,6 +191,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const { data: sub } = await db.from('subscriptions').select('user_id').eq('stripe_subscription_id', subscription.id).single();
   if (sub) {
     await db.from('user_profiles').update({ plan_type: 'free', updated_at: new Date().toISOString() }).eq('id', sub.user_id);
+    await syncUsageTrackingTier(sub.user_id, 'free');
     await db.from('sales_audit_logs').insert({
       actor_id: sub.user_id, actor_email: '', actor_role: 'system',
       action: 'subscription_cancelled', target_type: 'referral',

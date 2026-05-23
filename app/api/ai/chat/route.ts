@@ -17,6 +17,7 @@ import { recordEvent } from '../../../lib/ola/ola-events';
 import { detectEmotion, getEmotionPromptSuffix } from '../../../lib/ola/ola-emotion';
 import { getOlaPersonaPrompt } from '../../../lib/prompts/ola-persona';
 import { getDeadlineContext } from '../../../lib/ola/ola-deadlines';
+import { loadMemories, formatMemoriesForPrompt, extractMemories, saveMemories, syncToProfile } from '../../../lib/services/memoryService';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -36,6 +37,15 @@ const PROFESSOR_SEARCH_TOOL: Anthropic.Tool = {
         type: 'string',
         description: '可选，指定大学名称筛选，如 "University of Melbourne"',
       },
+      universityGroup: {
+        type: 'string',
+        description: '可选，按大学联盟筛选：Go8（八大）、ATN（科技联盟）、IRU（创新研究联盟）',
+        enum: ['Go8', 'ATN', 'IRU'],
+      },
+      scholarshipRequired: {
+        type: 'boolean',
+        description: '可选，为 true 时只返回有活跃科研经费（可能提供奖学金）的教授',
+      },
       limit: {
         type: 'number',
         description: '返回数量，默认 8，最多 15',
@@ -45,7 +55,15 @@ const PROFESSOR_SEARCH_TOOL: Anthropic.Tool = {
   },
 };
 
-function professorToToolResult(p: Professor, score?: number, reasons?: string[]) {
+interface ToolPaper {
+  title: string;
+  journal: string | null;
+  year: number | null;
+  doi_url: string | null;
+  citation_count: number;
+}
+
+function professorToToolResult(p: Professor, score?: number, reasons?: string[], latestPapers?: ToolPaper[]) {
   return {
     id: p.id,
     name: p.name,
@@ -64,7 +82,38 @@ function professorToToolResult(p: Professor, score?: number, reasons?: string[])
     suitableStudentBackgrounds: p.suitableStudentBackgrounds,
     potentialRpTopics: p.potentialRpTopics,
     detailUrl: `/koala/professors/${p.id}`,
+    latest_papers: latestPapers ?? [],
   };
+}
+
+async function fetchLatestPapersForProfessors(professorIds: string[]): Promise<Record<string, ToolPaper[]>> {
+  if (professorIds.length === 0) return {};
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const { data } = await supabase
+      .from('papers')
+      .select('professor_id, title, journal, year, doi_url, citation_count')
+      .in('professor_id', professorIds)
+      .order('year', { ascending: false })
+      .limit(professorIds.length * 3);
+    const map: Record<string, ToolPaper[]> = {};
+    for (const row of (data ?? []) as Array<{ professor_id: string; title: string; journal: string | null; year: number | null; doi_url: string | null; citation_count: number }>) {
+      if (!map[row.professor_id]) map[row.professor_id] = [];
+      if (map[row.professor_id].length < 2) {
+        map[row.professor_id].push({
+          title: row.title,
+          journal: row.journal,
+          year: row.year,
+          doi_url: row.doi_url,
+          citation_count: row.citation_count,
+        });
+      }
+    }
+    return map;
+  } catch {
+    return {};
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -104,6 +153,18 @@ function detectIntent(message: string): 'outreach' | 'matching' | 'academic' | '
   if (/怎么做|如何设计|什么原理|为什么会|区别是什么|比较|对比|前沿|进展|综述|review|survey|state.of.the.art|benchmark/.test(m)) return 'academic';
   if (/machine learning|deep learning|nlp|computer vision|reinforcement|transformer|diffusion|quantum|nano|bio|chem|phys/.test(m)) return 'academic';
   return 'general';
+}
+
+const HIGH_VALUE_INTENT_RE = /找导师|选校|匹配|申请\s*(?:PhD|博士|phd)|套磁|奖学金|research\s*proposal|选方向|写申请信|导师推荐|转专业读博|联系教授|cold\s*email|supervisor|scholarship|phd\s*application|professor\s*matching/i;
+
+const UPDATE_PROFILE_RE = /更新我的信息|更新.*(?:画像|资料|背景)|修改.*(?:画像|资料|背景)|我发了.*(?:论文|paper)|新(?:论文|经历|实习|工作)|update.*(?:profile|info)|换了.*(?:专业|方向|学校)/i;
+
+function hasHighValueIntent(message: string): boolean {
+  return HIGH_VALUE_INTENT_RE.test(message);
+}
+
+function hasUpdateProfileIntent(message: string): boolean {
+  return UPDATE_PROFILE_RE.test(message);
 }
 
 function extractProfessorName(message: string): string | null {
@@ -273,6 +334,39 @@ export async function POST(request: NextRequest) {
       }
     } catch { /* anonymous user */ }
 
+    // Load user memories for prompt injection
+    let memoryPrompt = '';
+    if (trackingUserId) {
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const memDb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+        const memories = await loadMemories(memDb, trackingUserId);
+        memoryPrompt = formatMemoriesForPrompt(memories);
+      } catch (err) {
+        console.error('[memory load]', err);
+      }
+    }
+
+    if (memoryPrompt) {
+      extraContext += '\n\n' + memoryPrompt;
+    }
+
+    // Profile completeness check for intent-triggered collection
+    const profileAlreadyCompleted = !!studentCtx?.profileCompletedAt;
+    const profileComplete = profileAlreadyCompleted || (studentCtx ? (studentCtx.profileCompleteness ?? 0) >= 50 : false);
+    const lastUserMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+
+    // Detect "update my info" intent — re-enter collection mode even if profile is complete
+    const userWantsProfileUpdate =
+      lastUserMsg?.role === 'user'
+      && hasUpdateProfileIntent(lastUserMsg.content);
+
+    const triggerProfileCollection =
+      !profileComplete
+      && lastUserMsg?.role === 'user'
+      && hasHighValueIntent(lastUserMsg.content)
+      && messages.filter(m => m.role === 'user').length <= 3;
+
     if (studentCtx) {
       extraContext += '\n\n' + buildStudentContextPrompt(studentCtx);
     } else if (studentMatchProfile) {
@@ -288,6 +382,19 @@ export async function POST(request: NextRequest) {
       } else {
         extraContext += `\n\n## 用户画像状态\n画像信息较少，请在对话中自然地引导用户补充背景信息。`;
       }
+    }
+
+    if (userWantsProfileUpdate) {
+      extraContext += `\n\n## 🔄 用户请求更新画像
+用户希望更新个人信息。请进入画像更新模式：
+1. 确认用户想更新哪些信息（新论文？新经历？换方向？）
+2. 收集更新内容后，输出更新后的完整画像 JSON 块
+3. 更新完成后告知用户"已更新，后续推荐将基于最新信息"`;
+    } else if (triggerProfileCollection) {
+      extraContext += `\n\n## ⚠️ 画像不完整
+用户发出了高价值意图（找导师/申请/匹配等），但尚未建立完整画像。
+请先简要回应用户的问题，然后按照【意图识别与画像触发】规则，自然地提议收集用户背景信息。
+这是本次对话的第一次触发，请执行画像收集引导。`;
     }
 
     // Fetch full professor data when professorId is provided
@@ -501,6 +608,7 @@ H指数：${prof.hIndex ?? '未知'}`;
 
     let rawReply = '';
     let toolSearchedProfessors: Professor[] = [];
+    let toolPapersMap: Record<string, ToolPaper[]> = {};
 
     // Determine max tokens: research mode and academic-intent get more room for deep answers
     const maxTokens = (mode === 'research' || currentIntent === 'academic') ? 4000 : 2000;
@@ -527,7 +635,7 @@ H指数：${prof.hIndex ?? '未知'}`;
         const textBlock = response.content.find(b => b.type === 'text');
 
         if (toolUseBlock && toolUseBlock.type === 'tool_use' && toolUseBlock.name === 'searchProfessors') {
-          const toolInput = toolUseBlock.input as { researchArea: string; university?: string; limit?: number };
+          const toolInput = toolUseBlock.input as { researchArea: string; university?: string; universityGroup?: string; scholarshipRequired?: boolean; limit?: number };
 
           let toolResult: string;
           try {
@@ -537,6 +645,8 @@ H指数：${prof.hIndex ?? '未知'}`;
             let searchResults = await searchProfessorsForAI({
               researchArea: toolInput.researchArea,
               university: toolInput.university,
+              universityGroup: toolInput.universityGroup,
+              scholarshipRequired: toolInput.scholarshipRequired,
               limit: toolInput.limit,
               studentProfile: studentMatchProfile,
               studentContext: studentCtx,
@@ -582,8 +692,12 @@ H指数：${prof.hIndex ?? '未知'}`;
                 warning += '\n⚠️ 搜索结果中存在同名教授，请特别注意核实是否为你想联系的那位教授。';
               }
 
+              const profIds2 = searchResults.map(r => r.professor.id);
+              const papersMap = await fetchLatestPapersForProfessors(profIds2);
+              toolPapersMap = papersMap;
+
               toolResult = JSON.stringify({
-                professors: searchResults.map(r => professorToToolResult(r.professor, r.score, r.reasons)),
+                professors: searchResults.map(r => professorToToolResult(r.professor, r.score, r.reasons, papersMap[r.professor.id])),
                 total: searchResults.length,
                 warning: warning || undefined,
               });
@@ -705,10 +819,13 @@ H指数：${prof.hIndex ?? '未知'}`;
             ? matchReasons.join('；')
             : (aiMatch?.reason ?? `研究方向：${p.researchAreas.slice(0, 3).join('、')}`),
           researchTags: p.researchAreas.slice(0, 5),
-          opportunityLabel: p.acceptingStudents === 'yes' ? '招生中' : undefined,
+          opportunityLabel: p.acceptingStudents === 'yes' ? '招生中' : p.grantStatus === 'Active' ? '有活跃经费' : undefined,
           hIndex: p.hIndex,
           paperCount: p.paperCount,
           citationCount: p.citationCount,
+          acceptingStudents: p.acceptingStudents ?? 'unknown',
+          opportunityScore: p.opportunityScore ?? undefined,
+          latestPapers: (toolPapersMap[p.id] ?? []).slice(0, 2),
         };
       });
     } else if (blocks.professors) {
@@ -730,6 +847,10 @@ H指数：${prof.hIndex ?? '未知'}`;
     }
 
     result.suggestConsultation = shouldSuggestConsultation(messages, mode);
+
+    if (triggerProfileCollection) {
+      result.profileCollectionSuggested = true;
+    }
 
     // 6. Record 'matched' interactions when AI recommends professors
     //    and 'email_generated' when writing mode produces an email
@@ -761,6 +882,15 @@ H指数：${prof.hIndex ?? '未知'}`;
           console.error('[profile extraction] Failed:', err)
         );
       }
+    }
+
+    // Async memory extraction — every 5 user messages or on first message
+    const userMsgCount = messages.filter(m => m.role === 'user').length;
+    const resolvedUserId = userId || trackingUserId;
+    if (resolvedUserId && userMsgCount > 0 && (userMsgCount === 1 || userMsgCount % 5 === 0)) {
+      extractAndSaveMemories(resolvedUserId, messages, sessionId).catch(err =>
+        console.error('[memory extraction] Failed:', err)
+      );
     }
 
     return Response.json(result);
@@ -831,5 +961,29 @@ async function extractAndUpdateProfile(userId: string, message: string) {
     }
   } catch {
     // Parse failure — silently ignore
+  }
+}
+
+async function extractAndSaveMemories(
+  userId: string,
+  messages: Array<{ role: string; content: string }>,
+  conversationId?: string,
+) {
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const extracted = await extractMemories(messages, userId, conversationId);
+    if (extracted.length === 0) return;
+
+    await saveMemories(supabase, userId, extracted, conversationId);
+    console.log(`[memory extraction] Saved ${extracted.length} memories for ${userId}`);
+
+    await syncToProfile(supabase, userId);
+  } catch (err) {
+    console.error('[memory extraction]', err);
   }
 }

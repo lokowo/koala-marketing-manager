@@ -110,7 +110,7 @@ export async function GET() {
 
     // Revenue breakdown
     const activeSubs = subsRes.data ?? [];
-    const TIER_PRICES: Record<string, number> = { starter: 4.99, pro: 14.99, elite: 29.99 };
+    const TIER_PRICES: Record<string, number> = { starter: 19.9, pro: 49.0, elite: 99.0 };
     let subscriptionRevenue = 0;
     for (const sub of activeSubs) {
       subscriptionRevenue += TIER_PRICES[sub.tier] || 0;

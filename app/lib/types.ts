@@ -48,6 +48,9 @@ export interface Professor {
     explicit: number;
   };
   aiSummary?: string;
+  isVerified?: boolean;
+  slug?: string;
+  professorMessage?: string;
   // Extended matching fields
   supervisionStyle?: string;
   labSize?: string;
@@ -228,6 +231,14 @@ export interface PaperCitation {
   url: string;
 }
 
+export interface MatchPaper {
+  title: string;
+  journal: string | null;
+  year: number | null;
+  doi_url: string | null;
+  citation_count: number;
+}
+
 export interface ProfessorMatch {
   professorId: string;
   name: string;
@@ -240,6 +251,9 @@ export interface ProfessorMatch {
   hIndex?: number;
   paperCount?: number;
   citationCount?: number;
+  acceptingStudents?: string;
+  opportunityScore?: number;
+  latestPapers?: MatchPaper[];
 }
 
 export interface ScoreCardDimension {

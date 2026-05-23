@@ -37,7 +37,7 @@ interface UserProfile {
   transcript_url: string | null;
   file_name: string | null;
   profile_completeness: number;
-  plan_type: 'free' | 'starter' | 'pro' | 'elite';
+  plan_type: 'free' | 'pro' | 'elite';
   credits_remaining: number;
   admin_status: string | null;
   created_at: string;
@@ -91,8 +91,8 @@ interface UserDetail {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PLAN_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  free:    { label: '免费版',  color: '#64748b', bg: '#f1f5f9' },
-  starter: { label: 'Starter', color: '#16a34a', bg: '#dcfce7' },
+  free:    { label: '免费版',   color: '#64748b', bg: '#f1f5f9' },
+  starter: { label: 'Starter', color: '#0891b2', bg: '#cffafe' },
   pro:     { label: 'Pro',     color: '#b45309', bg: '#fef3c7' },
   elite:   { label: 'Elite',   color: '#7c3aed', bg: '#ede9fe' },
 };
@@ -550,7 +550,6 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white focus:outline-none focus:border-emerald-500"
                 >
                   <option value="free">免费版 (free)</option>
-                  <option value="starter">Starter</option>
                   <option value="pro">Pro</option>
                   <option value="elite">Elite</option>
                 </select>

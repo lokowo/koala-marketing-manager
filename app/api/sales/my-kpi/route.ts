@@ -35,9 +35,11 @@ export async function GET() {
         .limit(1),
       db.from('sales_visits').select('id', { count: 'exact', head: true })
         .eq('agent_id', agent.id)
+        .eq('is_test', false)
         .gte('visited_at', monthStart),
       db.from('sales_referrals').select('id', { count: 'exact', head: true })
         .eq('agent_id', agent.id)
+        .eq('is_test', false)
         .gte('created_at', monthStart),
       db.from('sales_commissions').select('commission_amount')
         .eq('agent_id', agent.id)
@@ -45,6 +47,7 @@ export async function GET() {
         .neq('status', 'rejected'),
       db.from('sales_referrals').select('id', { count: 'exact', head: true })
         .eq('agent_id', agent.id)
+        .eq('is_test', false)
         .eq('offline_converted', true)
         .gte('offline_converted_at', monthStart),
     ]);

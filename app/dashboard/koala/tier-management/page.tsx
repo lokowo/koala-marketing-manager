@@ -33,9 +33,9 @@ const PRODUCT_PRICES: Record<string, number> = {
   credit_standard: 9.99,
   credit_pro: 19.99,
   credit_flagship: 49.99,
-  sub_starter: 4.99,
-  sub_pro: 14.99,
-  sub_elite: 29.99,
+  sub_starter: 19.9,
+  sub_pro: 49.0,
+  sub_elite: 99.0,
 };
 
 const PRODUCT_DISPLAY: Record<string, { name: string }> = {
@@ -43,9 +43,9 @@ const PRODUCT_DISPLAY: Record<string, { name: string }> = {
   credit_standard: { name: '积分 - 标准' },
   credit_pro: { name: '积分 - 高级' },
   credit_flagship: { name: '积分 - 旗舰' },
-  sub_starter: { name: '订阅 - 入门' },
-  sub_pro: { name: '订阅 - 专业' },
-  sub_elite: { name: '订阅 - 精英' },
+  sub_starter: { name: '订阅 - Starter' },
+  sub_pro: { name: '订阅 - Pro' },
+  sub_elite: { name: '订阅 - Elite' },
 };
 
 const SUB_ORDER = ['sub_elite', 'sub_pro', 'sub_starter'];

@@ -20,7 +20,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     const [referrals, commissions] = await Promise.all([
-      db.from('sales_referrals').select('id', { count: 'exact' }).eq('agent_id', id),
+      db.from('sales_referrals').select('id', { count: 'exact' }).eq('agent_id', id).eq('is_test', false),
       db.from('sales_commissions').select('commission_amount, status').eq('agent_id', id),
     ]);
 

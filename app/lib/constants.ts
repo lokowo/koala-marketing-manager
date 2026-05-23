@@ -1,16 +1,22 @@
+export const STATS = {
+  profCountLabel: '24,000+',
+  uniCount: 38,
+  uniCountLabel: '38',
+} as const;
+
 export const BRAND = {
   name: 'Koala PhD',
   shortName: 'Koala',
   domain: 'koalaphd.com',
   email: 'info@koalaphd.com',
   address: 'Suite 22/26A Lime St, Sydney NSW 2000',
-  wechat: 'MissKoalaAu',
+  wechat: 'KoalaStudyAdvisor',
   xiaohongshu: 'DrKoalaAU',
   instagram: 'DrKoalaAU',
   tagline: 'Koala — 陪你从申请到毕业，每一步都在。',
   aiName: '考拉学长',
   aiSubtitle: '你的澳洲学术内线',
-  positioning: '澳洲产学研科研机构',
+  positioning: '澳洲 PhD 留学 AI 智能顾问平台',
 } as const;
 
 export const COLORS = {
@@ -77,6 +83,7 @@ export const FREE_LIMITS = {
   dailyAiTurns: 10,
   professorMatchCount: 10,
   freeEmails: 1,
+  freeCvVersions: 1,
   canUploadFiles: false,
   canViewProfessorDetail: false,
   canDownloadPdf: false,
@@ -92,15 +99,17 @@ export const SUBSCRIPTION_TIERS = {
     stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_SUB_STARTER || '',
     features: [
       '不限 AI 对话轮数',
-      '上传简历 & 成绩单',
+      '每月 5 封定制申请信',
+      '3 版 CV 定制',
+      '教授数据每周刷新',
+      '上传简历 & 成绩单分析',
       '教授完整资料（经费/论文/联系方式）',
-      '每月 10 封定制申请信',
       'PDF 评估报告下载',
-      '每周新教授推送',
     ],
     notIncluded: [
-      'RP 大纲生成',
-      '人工审核',
+      '无限邮件',
+      'AI 经历增强',
+      '教授视角预览',
     ],
   },
   pro: {
@@ -112,16 +121,17 @@ export const SUBSCRIPTION_TIERS = {
     stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_SUB_PRO || '',
     features: [
       'Starter 全部功能',
-      '每月 30 封定制申请信',
+      '每月 15 封定制申请信',
+      '无限 CV 定制',
+      'AI 经历增强（润色科研 & 实习描述）',
       'RP 大纲生成（不限次）',
       'Follow-up 智能提醒',
-      '每日任务 + 成就系统',
       '申请进度 Dashboard',
-      '人工审核 1 次/月',
     ],
     notIncluded: [
-      '新 ARC 项目 24 小时推送',
-      '月度策略报告',
+      '无限邮件',
+      '教授视角预览',
+      '优先匹配',
     ],
   },
   elite: {
@@ -133,12 +143,12 @@ export const SUBSCRIPTION_TIERS = {
     stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_SUB_ELITE || '',
     features: [
       'Pro 全部功能',
-      '每月 100 封定制申请信',
+      '无限定制申请信',
+      '教授视角预览（查看教授如何看你的申请）',
+      '优先匹配（新教授数据 24 小时推送）',
       '人工审核 3 次/月',
-      '新 ARC 项目 24 小时内推送',
       '回复追踪 + 意图分析',
       '月度申请策略报告',
-      '优先预约人工顾问（免费）',
     ],
     notIncluded: [],
   },

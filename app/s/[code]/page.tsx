@@ -346,7 +346,7 @@ function ThankYouPage({ contactInfo, registeredUserId, shareCode, responseId, on
         <div className="bg-white/5 rounded-xl p-4 space-y-2">
           <p className="text-sm font-medium text-white/80">想了解更多？</p>
           <p className="text-xs text-gray-500">
-            {BRAND.name} — 澳洲领先的产学研科研机构
+            {BRAND.name} — {BRAND.positioning}
           </p>
           <a
             href="/koala/home"

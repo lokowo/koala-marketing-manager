@@ -195,6 +195,11 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs:
               {professor.faculty && ` · ${professor.faculty}`}
             </div>
             <div className="flex gap-2 mt-2 flex-wrap">
+              {professor.isVerified && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                  ✓ 已验证
+                </span>
+              )}
               {professor.grantStatus === 'Active' && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(90,128,96,0.15)', color: '#5a8060' }}>
                   ✓ 活跃经费
@@ -206,6 +211,14 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs:
                 </span>
               )}
             </div>
+            {professor.isVerified && professor.slug && (
+              <Link
+                href={`/professor/${professor.slug}`}
+                className="inline-flex items-center gap-1 mt-2 text-[11px] text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                查看教授主页 →
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -228,6 +241,19 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs:
           <p className="text-xs text-gray-400 dark:text-[#6a7a7e]">暂无简介</p>
         )}
       </div>
+
+      {/* Professor Message */}
+      {professor.professorMessage && (
+        <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-blue-50/50 dark:bg-blue-500/5 border border-blue-200/50 dark:border-blue-500/12 shadow-sm dark:shadow-none">
+          <div className="flex items-center gap-2 mb-2">
+            <h2 className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">教授说</h2>
+            {professor.isVerified && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-500 dark:text-blue-400">已验证</span>
+            )}
+          </div>
+          <p className="text-xs leading-relaxed text-gray-600 dark:text-[#a8b8ac] whitespace-pre-wrap">{professor.professorMessage}</p>
+        </div>
+      )}
 
       {/* Opportunity Signal */}
       <div className="mx-4 lg:mx-0 mt-3 rounded-2xl p-4 bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-[rgba(212,168,67,0.12)] shadow-sm dark:shadow-none">

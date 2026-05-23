@@ -17,6 +17,9 @@
     },
     "app/api/webhooks/stripe/route.ts": {
       "maxDuration": 30
+    },
+    "app/api/cron/refresh-professors/route.ts": {
+      "maxDuration": 120
     }
   },
   "crons": [
@@ -27,6 +30,10 @@
     {
       "path": "/api/cron/auto-confirm-commissions",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-professors",
+      "schedule": "0 3 * * 0"
     }
   ]
 }

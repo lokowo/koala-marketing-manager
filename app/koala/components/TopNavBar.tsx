@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, MessageCircle, CreditCard, BookOpen, UserCircle, Bell, Mail } from 'lucide-react';
+import { Home, Users, MessageCircle, CreditCard, BookOpen, UserCircle, Bell, Mail, ClipboardList, FileText } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { OlaAvatar } from './ola/OlaAvatar';
 
@@ -14,6 +14,8 @@ const NAV_ITEMS: { href: string; icon: React.ElementType; label: string; highlig
   { href: '/koala/pricing', icon: CreditCard, label: '定价' },
   { href: '/koala/blog', icon: BookOpen, label: '博客' },
   { href: '/koala/my-emails', icon: Mail, label: '套磁信' },
+  { href: '/koala/my-applications', icon: ClipboardList, label: '申请' },
+  { href: '/koala/my-documents', icon: FileText, label: '文档' },
   { href: '/koala/messages', icon: Bell, label: '消息', badge: true },
   { href: '/koala/my-profile', icon: UserCircle, label: '我的' },
 ];

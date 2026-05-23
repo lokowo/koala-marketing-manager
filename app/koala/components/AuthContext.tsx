@@ -58,6 +58,10 @@ export interface UserProfile {
   personality_tags: string[] | null;
   language_preference: string | null;
   work_experience: string | null;
+  research_interests: string[] | null;
+  publications: unknown[] | null;
+  target_preferences: Record<string, unknown> | null;
+  profile_completed_at: string | null;
   files: Array<{ name: string; url: string; path: string; type: string; size: number; uploaded_at: string }> | null;
   role: string | null;
   role_status: string | null;
