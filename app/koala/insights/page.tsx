@@ -74,8 +74,8 @@ const GROUP_LABELS: Record<string, string> = {
 
 async function fetchInsightsData(): Promise<InsightsData> {
   const [profResult, uniResult] = await Promise.all([
-    db.from('professors').select('university, research_areas, accepting_students').eq('is_active', true),
-    db.from('universities').select('name, short_name, group_label').eq('is_active', true),
+    db.from('professors').select('university, research_areas, accepting_students'),
+    db.from('universities').select('name, short_name, group_label'),
   ]);
 
   const professors = profResult.data ?? [];
