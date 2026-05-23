@@ -3,27 +3,61 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Canvas, FabricImage, Textbox, Rect, Group, FabricObject, Gradient, Shadow } from 'fabric';
 import QRCode from 'qrcode';
-import { POSTER_FONTS, loadPosterFonts, DEFAULT_ZH_FONT } from './poster-fonts';
+import { POSTER_FONTS, loadPosterFonts } from './poster-fonts';
 
 // ── Types & Constants ───────────────────────────────────
 
-interface GradientBgDef { id: string; label: string; colors: string[]; isDark: boolean; }
+interface Props { referralCode: string; channel: string; }
 type PosterSize = '3:4' | '1:1' | '9:16';
 type EK = 'logo'|'title'|'subtitle'|'pt1'|'pt2'|'pt3'|'pt4'|'qr'|'scanLabel'|'inviteCode'|'url'|'channel';
+type ThemeId = 'minimal' | 'academic' | 'vibrant';
+type Variant = 'A' | 'B';
 
-const GRADIENT_BGS: GradientBgDef[] = [
-  { id: 'g-min-a',  label: '简约 A', colors: ['#FFFFFF'], isDark: false },
-  { id: 'g-min-b',  label: '简约 B', colors: ['#F1F5F9'], isDark: false },
-  { id: 'g-aca-a',  label: '学术 A', colors: ['#0F172A'], isDark: true },
-  { id: 'g-aca-b',  label: '学术 B', colors: ['#0F172A','#1E3A5F'], isDark: true },
-  { id: 'g-vib-a',  label: '活力 A', colors: ['#F59E0B','#EC4899'], isDark: true },
-  { id: 'g-vib-b',  label: '活力 B', colors: ['#6366F1','#EC4899'], isDark: true },
+interface ThemeDef {
+  id: ThemeId;
+  name: string;
+  desc: string;
+  font: string;
+  channels: string[];
+  isDark: boolean;
+  swatches: string[];
+  variants: Record<Variant, { colors: string[]; label: string }>;
+}
+
+const THEMES: ThemeDef[] = [
+  {
+    id: 'minimal', name: '简约', desc: '干净留白，适合正式推广',
+    font: 'Noto Sans SC', channels: ['微信', '邮件', 'WhatsApp'],
+    isDark: false, swatches: ['#FFFFFF', '#F1F5F9', '#E2E8F0'],
+    variants: {
+      A: { colors: ['#FFFFFF'], label: '纯白' },
+      B: { colors: ['#F1F5F9', '#E2E8F0'], label: '浅灰' },
+    },
+  },
+  {
+    id: 'academic', name: '学术', desc: '深沉专业，适合学术社群',
+    font: 'Noto Serif SC', channels: ['知乎', 'LinkedIn', '学术群'],
+    isDark: true, swatches: ['#0F172A', '#1E3A5F', '#1E40AF'],
+    variants: {
+      A: { colors: ['#0F172A'], label: '深蓝' },
+      B: { colors: ['#0F172A', '#1E3A5F'], label: '渐变蓝' },
+    },
+  },
+  {
+    id: 'vibrant', name: '活力', desc: '吸睛醒目，适合社交媒体',
+    font: 'ZCOOL KuaiLe', channels: ['小红书', '抖音', 'B站'],
+    isDark: true, swatches: ['#F59E0B', '#EC4899', '#6366F1'],
+    variants: {
+      A: { colors: ['#F59E0B', '#EC4899'], label: '橙粉' },
+      B: { colors: ['#6366F1', '#EC4899'], label: '紫粉' },
+    },
+  },
 ];
 
 const SIZE_CFG: Record<PosterSize,{w:number;h:number;label:string}> = {
-  '3:4': { w: 1080, h: 1440, label: '3:4 社交媒体' },
-  '1:1': { w: 1080, h: 1080, label: '1:1 方形' },
-  '9:16':{ w: 1080, h: 1920, label: '9:16 竖屏' },
+  '3:4': { w: 1080, h: 1440, label: '3:4' },
+  '1:1': { w: 1080, h: 1080, label: '1:1' },
+  '9:16':{ w: 1080, h: 1920, label: '9:16' },
 };
 
 const CH_OPTS = [
@@ -41,10 +75,10 @@ const CH_LABELS: Record<string,string> = {
 };
 
 const SELLING_PTS = [
-  '✦ AI 智能匹配，精准推荐导师',
+  '✦ AI 智能匹配澳洲博士导师',
   '✦ 一键生成个性化套磁信',
-  '✦ 研究计划智能对齐',
-  '✦ 申请进度全程追踪',
+  '✦ 教授论文对齐研究计划',
+  '✦ 全程申请进度追踪',
 ];
 
 type TextColor = '#FFFFFF'|'#1F2937'|'#D4A843';
@@ -67,7 +101,7 @@ function tStyles(isDark: boolean) {
   return { fg, fgSub, sh, shSm };
 }
 
-function layout(w: number, h: number) {
+function computeLayout(w: number, h: number) {
   const pad = 40;
   const qrSz = 270, qrPd = 20, qrTotH = qrSz + qrPd * 2;
   const ptGap = Math.round(h * 0.035);
@@ -88,8 +122,6 @@ function layout(w: number, h: number) {
 
 // ── Component ───────────────────────────────────────────
 
-interface Props { referralCode: string; channel: string; }
-
 export default function FabricPosterEditor({ referralCode, channel }: Props) {
   const cRef = useRef<HTMLCanvasElement>(null);
   const fcRef = useRef<Canvas|null>(null);
@@ -97,15 +129,19 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
   const initDone = useRef(false);
 
   const [ready, setReady] = useState(false);
-  const [bgId, setBgId] = useState('g-aca-a');
+  const [themeId, setThemeId] = useState<ThemeId>('academic');
+  const [variant, setVariant] = useState<Variant>('A');
   const [size, setSize] = useState<PosterSize>('3:4');
   const [titleTxt, setTitleTxt] = useState('用 AI 找到你的理想 PhD 导师');
   const [subTxt, setSubTxt] = useState('覆盖澳洲38所大学、24,000+位教授');
   const [ch, setCh] = useState(channel);
-  const [gFont, setGFont] = useState(DEFAULT_ZH_FONT);
+  const [gFont, setGFont] = useState(THEMES[1].font);
   const [vis, setVis] = useState({ qr:true, url:true, inviteCode:true, channel:true });
   const [selObj, setSelObj] = useState<FabricObject|null>(null);
-  const [tb, setTb] = useState({ fontFamily:DEFAULT_ZH_FONT, fontSize:48, fill:'#FFFFFF' as string, fontWeight:'bold' as string });
+  const [tb, setTb] = useState({ fontFamily:THEMES[1].font, fontSize:48, fill:'#FFFFFF' as string, fontWeight:'bold' as string });
+
+  const theme = THEMES.find(t=>t.id===themeId)!;
+  const bgColors = theme.variants[variant].colors;
 
   useEffect(() => { loadPosterFonts().then(() => setReady(true)); }, []);
 
@@ -118,9 +154,8 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     fc.on('selection:updated', e => onSel(e.selected?.[0]??null));
     fc.on('selection:cleared', () => onSel(null));
     fcRef.current = fc;
-    const bg = GRADIENT_BGS.find(b=>b.id===bgId)!;
-    paintBg(fc, bgId, size);
-    buildPreset(fc, w, h, bg.isDark);
+    paintBg(fc, bgColors, theme.isDark, size);
+    buildPreset(fc, w, h, theme.isDark);
     return () => { fc.dispose(); initDone.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
@@ -128,26 +163,24 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
   function onSel(obj: FabricObject|null) {
     if (!obj || !(obj instanceof Textbox)) { setSelObj(null); return; }
     setSelObj(obj);
-    setTb({ fontFamily:(obj.fontFamily as string)||DEFAULT_ZH_FONT, fontSize:obj.fontSize||48, fill:(obj.fill as string)||'#FFFFFF', fontWeight:(obj.fontWeight as string)||'normal' });
+    setTb({ fontFamily:(obj.fontFamily as string)||gFont, fontSize:obj.fontSize||48, fill:(obj.fill as string)||'#FFFFFF', fontWeight:(obj.fontWeight as string)||'normal' });
   }
 
   // ── Background ────────────────────────────────────────
-  function paintBg(fc: Canvas, id: string, sz: PosterSize) {
+  function paintBg(fc: Canvas, colors: string[], isDark: boolean, sz: PosterSize) {
     const {w,h} = SIZE_CFG[sz];
     fc.getObjects().filter(o => meta(o)[BG_KEY]||meta(o)[OV_KEY]).forEach(o => fc.remove(o));
-    const bg = GRADIENT_BGS.find(b => b.id === id);
-    if (!bg) return;
 
     const rect = new Rect({
       left:0,top:0,width:w,height:h, selectable:false,evented:false,
-      fill: bg.colors.length > 1
-        ? new Gradient({ type:'linear', coords:{x1:0,y1:0,x2:w,y2:h}, colorStops: bg.colors.map((c,i)=>({offset:i/(bg.colors.length-1),color:c})) })
-        : bg.colors[0],
+      fill: colors.length > 1
+        ? new Gradient({ type:'linear', coords:{x1:0,y1:0,x2:w,y2:h}, colorStops: colors.map((c,i)=>({offset:i/(colors.length-1),color:c})) })
+        : colors[0],
     });
     meta(rect)[BG_KEY] = true;
     fc.insertAt(0, rect);
 
-    if (bg.isDark) {
+    if (isDark) {
       const scrim = new Rect({
         left:0,top:0,width:w,height:Math.round(h*0.3), selectable:false,evented:false,
         fill: new Gradient({ type:'linear', coords:{x1:0,y1:0,x2:0,y2:Math.round(h*0.3)}, colorStops:[{offset:0,color:'rgba(255,255,255,0.10)'},{offset:1,color:'rgba(255,255,255,0)'}] }),
@@ -160,7 +193,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
 
   // ── Preset elements ───────────────────────────────────
   async function buildPreset(fc: Canvas, w: number, h: number, isDark: boolean) {
-    const L = layout(w, h);
+    const L = computeLayout(w, h);
     const { fg, fgSub, sh, shSm } = tStyles(isDark);
     const font = gFont;
     const els: Partial<Record<EK,FabricObject>> = {};
@@ -196,7 +229,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
       meta(t).__ek = k; fc.add(t); els[k] = t;
     });
 
-    const url = `https://koalaphd.com/koala/auth?ref=${referralCode}&ch=${ch}`;
+    const url = `https://koalaphd.com/?ref=${referralCode}`;
     try {
       const qrDataUrl = await QRCode.toDataURL(url, { width:480, margin:2, color:{dark:'#1a2332',light:'#FFFFFF'} });
       const qrImg = await FabricImage.fromURL(qrDataUrl);
@@ -219,7 +252,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     });
     meta(invite).__ek = 'inviteCode'; fc.add(invite); els.inviteCode = invite;
 
-    const urlEl = new Textbox('www.koalaphd.com', {
+    const urlEl = new Textbox('koalaphd.com', {
       left:L.url.left, top:L.url.top, fontSize:L.url.fontSize,
       fontFamily:font, fill:fgSub, width:300, shadow:shSm, visible:vis.url,
     });
@@ -235,7 +268,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     fc.requestRenderAll();
   }
 
-  // ── Recolor on bg switch ──────────────────────────────
+  // ── Recolor on theme switch ───────────────────────────
   function recolor(isDark: boolean) {
     const { fg, fgSub, sh, shSm } = tStyles(isDark);
     const els = elRef.current;
@@ -253,7 +286,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
 
   // ── Relayout on size switch ───────────────────────────
   function relayout(sz: PosterSize) {
-    const L = layout(SIZE_CFG[sz].w, SIZE_CFG[sz].h);
+    const L = computeLayout(SIZE_CFG[sz].w, SIZE_CFG[sz].h);
     const els = elRef.current;
     const r = (k:EK, p:Record<string,unknown>) => { const o=els[k]; if(o) o.set(p); };
     r('logo',  { left:L.logo.left, top:L.logo.top, fontSize:L.logo.fontSize });
@@ -268,32 +301,54 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     fcRef.current?.requestRenderAll();
   }
 
+  // ── Apply font to all text elements ───────────────────
+  function applyFont(font: string) {
+    const fc = fcRef.current; if (!fc) return;
+    for (const o of fc.getObjects()) if (o instanceof Textbox) o.set('fontFamily', font);
+    fc.requestRenderAll();
+  }
+
   // ── Sync helpers ──────────────────────────────────────
   function syncTitle(t:string) { setTitleTxt(t); const e=elRef.current.title; if(e instanceof Textbox){e.set('text',t);fcRef.current?.requestRenderAll();} }
   function syncSub(t:string) { setSubTxt(t); const e=elRef.current.subtitle; if(e instanceof Textbox){e.set('text',t);fcRef.current?.requestRenderAll();} }
   function syncCh(c:string) { setCh(c); const e=elRef.current.channel; if(e instanceof Textbox){e.set('text',CH_LABELS[c]||c);fcRef.current?.requestRenderAll();} }
-  function syncFont(f:string) { setGFont(f); const fc=fcRef.current; if(!fc) return; for(const o of fc.getObjects()) if(o instanceof Textbox) o.set('fontFamily',f); fc.requestRenderAll(); }
+  function syncFont(f:string) { setGFont(f); applyFont(f); }
 
-  // ── Actions ───────────────────────────────────────────
-  const switchBg = useCallback((id:string) => {
-    setBgId(id);
-    const fc=fcRef.current; if(!fc) return;
-    paintBg(fc, id, size);
-    const bg = GRADIENT_BGS.find(b=>b.id===id);
-    if(bg) recolor(bg.isDark);
+  // ── Theme switch ──────────────────────────────────────
+  const switchTheme = useCallback((id: ThemeId, v: Variant = 'A') => {
+    setThemeId(id);
+    setVariant(v);
+    const t = THEMES.find(th=>th.id===id)!;
+    const colors = t.variants[v].colors;
+    const fc = fcRef.current; if (!fc) return;
+    paintBg(fc, colors, t.isDark, size);
+    recolor(t.isDark);
+    setGFont(t.font);
+    applyFont(t.font);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [size]);
 
+  const switchVariant = useCallback((v: Variant) => {
+    setVariant(v);
+    const colors = theme.variants[v].colors;
+    const fc = fcRef.current; if (!fc) return;
+    paintBg(fc, colors, theme.isDark, size);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [themeId, size]);
+
+  // ── Size switch ───────────────────────────────────────
   const switchSize = useCallback((sz:PosterSize) => {
     const fc=fcRef.current; if(!fc) return;
     setSize(sz);
     const {w,h} = SIZE_CFG[sz];
     fc.setDimensions({width:w,height:h});
-    paintBg(fc, bgId, sz);
+    const colors = theme.variants[variant].colors;
+    paintBg(fc, colors, theme.isDark, sz);
     relayout(sz);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bgId]);
+  }, [themeId, variant]);
 
+  // ── Visibility ────────────────────────────────────────
   function toggleVis(key: keyof typeof vis) {
     setVis(prev => {
       const next = {...prev, [key]:!prev[key]};
@@ -304,20 +359,11 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     });
   }
 
-  async function regenerate() {
-    const fc=fcRef.current; if(!fc) return;
-    fc.getObjects().filter(o => !meta(o)[BG_KEY]&&!meta(o)[OV_KEY]).forEach(o => fc.remove(o));
-    elRef.current = {}; setSelObj(null);
-    const {w,h}=SIZE_CFG[size];
-    const isDark = GRADIENT_BGS.find(b=>b.id===bgId)?.isDark ?? true;
-    await buildPreset(fc, w, h, isDark);
-  }
-
+  // ── Add elements ──────────────────────────────────────
   function addText() {
     const fc=fcRef.current; if(!fc) return;
     const {w,h}=SIZE_CFG[size];
-    const isDark = GRADIENT_BGS.find(b=>b.id===bgId)?.isDark ?? true;
-    const {fg,sh}=tStyles(isDark);
+    const {fg,sh}=tStyles(theme.isDark);
     const t = new Textbox('双击编辑文字',{ left:w/2-150,top:h/2-30,fontSize:28,fontFamily:gFont,fill:fg,width:300,shadow:sh });
     fc.add(t); fc.setActiveObject(t); fc.requestRenderAll();
   }
@@ -325,8 +371,8 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
   async function addQR() {
     const fc=fcRef.current; if(!fc) return;
     const oldQr=elRef.current.qr; if(oldQr) fc.remove(oldQr);
-    const L=layout(SIZE_CFG[size].w, SIZE_CFG[size].h);
-    const url=`https://koalaphd.com/koala/auth?ref=${referralCode}&ch=${ch}`;
+    const L=computeLayout(SIZE_CFG[size].w, SIZE_CFG[size].h);
+    const url=`https://koalaphd.com/?ref=${referralCode}`;
     try {
       const d=await QRCode.toDataURL(url,{width:480,margin:2,color:{dark:'#1a2332',light:'#FFFFFF'}});
       const img=await FabricImage.fromURL(d);
@@ -339,6 +385,16 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     fc.requestRenderAll();
   }
 
+  // ── Regenerate ────────────────────────────────────────
+  async function regenerate() {
+    const fc=fcRef.current; if(!fc) return;
+    fc.getObjects().filter(o => !meta(o)[BG_KEY]&&!meta(o)[OV_KEY]).forEach(o => fc.remove(o));
+    elRef.current = {}; setSelObj(null);
+    const {w,h}=SIZE_CFG[size];
+    await buildPreset(fc, w, h, theme.isDark);
+  }
+
+  // ── Text editing ──────────────────────────────────────
   function updateSel(prop:string,val:unknown) {
     if(!selObj||!(selObj instanceof Textbox)) return;
     selObj.set(prop as keyof Textbox, val); fcRef.current?.requestRenderAll();
@@ -354,11 +410,12 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     setSelObj(null); fc.requestRenderAll();
   }
 
+  // ── Export ────────────────────────────────────────────
   function exportPNG() {
     const fc=fcRef.current; if(!fc) return;
     fc.discardActiveObject(); fc.requestRenderAll();
     const d=fc.toDataURL({format:'png',quality:1,multiplier:1});
-    const a=document.createElement('a'); a.download=`koala-poster-${bgId}-${referralCode}.png`; a.href=d; a.click();
+    const a=document.createElement('a'); a.download=`koala-poster-${themeId}-${variant}-${referralCode}.png`; a.href=d; a.click();
   }
 
   // ── Render ────────────────────────────────────────────
@@ -370,32 +427,96 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* ── Top: 3 Design Package Cards ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {THEMES.map(t => {
+          const active = themeId === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => switchTheme(t.id, 'A')}
+              className={`relative rounded-xl p-4 text-left transition-all border ${
+                active
+                  ? 'border-[#F59E0B] ring-2 ring-[#F59E0B]/30 bg-white dark:bg-[#1E293B]'
+                  : 'border-[#E5E7EB] dark:border-[#334155] bg-white dark:bg-[#1E293B] hover:border-[#D1D5DB] dark:hover:border-[#475569]'
+              }`}
+            >
+              {/* Swatch strip */}
+              <div className="flex gap-1 mb-3">
+                {t.swatches.map((c,i) => (
+                  <div key={i} className="flex-1 h-6 rounded-md first:rounded-l-lg last:rounded-r-lg" style={{background:c, border: c==='#FFFFFF'?'1px solid #E5E7EB':'none'}} />
+                ))}
+              </div>
+
+              {/* Aa font preview */}
+              <div className="text-lg font-semibold text-[#111827] dark:text-[#F1F5F9] mb-1" style={{fontFamily: t.font}}>
+                Aa 字体预览
+              </div>
+
+              {/* Theme name + desc */}
+              <div className="text-sm font-medium text-[#111827] dark:text-[#F1F5F9]">{t.name}</div>
+              <div className="text-[11px] text-[#6B7280] dark:text-[#94A3B8] mt-0.5">{t.desc}</div>
+
+              {/* Channel tags */}
+              <div className="flex flex-wrap gap-1 mt-2">
+                {t.channels.map(c => (
+                  <span key={c} className="px-2 py-0.5 rounded-full text-[10px] bg-[#F3F4F6] dark:bg-[#334155] text-[#6B7280] dark:text-[#94A3B8]">{c}</span>
+                ))}
+              </div>
+
+              {/* A/B variant toggle */}
+              {active && (
+                <div className="flex gap-1.5 mt-3 pt-3 border-t border-[#E5E7EB] dark:border-[#334155]">
+                  {(['A','B'] as Variant[]).map(v => (
+                    <button
+                      key={v}
+                      onClick={e => { e.stopPropagation(); switchVariant(v); }}
+                      className={`flex-1 py-1.5 rounded-lg text-[11px] font-medium transition ${
+                        variant === v
+                          ? 'bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#92400E] dark:text-[#F59E0B]'
+                          : 'bg-[#F3F4F6] dark:bg-[#334155] text-[#6B7280] dark:text-[#94A3B8] hover:bg-[#E5E7EB] dark:hover:bg-[#475569]'
+                      }`}
+                    >
+                      {v} · {t.variants[v].label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Active indicator */}
+              {active && (
+                <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-[#F59E0B] flex items-center justify-center">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Bottom: Left Panel + Right Preview ── */}
       <div className="flex flex-col lg:flex-row gap-4">
         {/* ── Left panel ── */}
-        <div className="w-full lg:w-[280px] shrink-0 space-y-3 max-h-[calc(100vh-200px)] lg:overflow-y-auto">
-          <Sec title="渐变主题">
-            <div className="grid grid-cols-3 gap-2">
-              {GRADIENT_BGS.map(bg => (
-                <button key={bg.id} onClick={()=>switchBg(bg.id)}
-                  className={`relative rounded-lg overflow-hidden aspect-[3/4] transition-all ${bgId===bg.id?'ring-2 ring-[#F59E0B] ring-offset-1 ring-offset-white dark:ring-offset-[#1E293B]':'hover:ring-1 hover:ring-[#D1D5DB] dark:hover:ring-[#475569]'}`}>
-                  <div className="absolute inset-0" style={bg.colors.length>1?{background:`linear-gradient(135deg,${bg.colors[0]},${bg.colors[1]})`}:{background:bg.colors[0]}} />
-                  {!bg.isDark && <div className="absolute inset-0 border border-[#E5E7EB] dark:border-[#475569] rounded-lg"/>}
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-1">
-                    <span className="text-[9px] text-white block text-center">{bg.label}</span>
-                  </div>
-                  {bgId===bg.id && <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#F59E0B] flex items-center justify-center"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg></div>}
-                </button>
-              ))}
-            </div>
+        <div className="w-full lg:w-[260px] shrink-0 space-y-3 lg:max-h-[calc(100vh-420px)] lg:overflow-y-auto lg:pr-1">
+          {/* 1. Title input */}
+          <Sec title="主标题">
+            <input value={titleTxt} onChange={e=>syncTitle(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]"/>
           </Sec>
 
-          <Sec title="文案编辑">
-            <label className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] block mb-1">主标题</label>
-            <input value={titleTxt} onChange={e=>syncTitle(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9] mb-2"/>
-            <label className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] block mb-1">副标题</label>
+          {/* 2. Subtitle input */}
+          <Sec title="副标题">
             <input value={subTxt} onChange={e=>syncSub(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]"/>
           </Sec>
 
+          {/* 3. Add elements — right below subtitle */}
+          <Sec title="添加元素">
+            <div className="flex gap-2">
+              <button onClick={addText} className="flex-1 py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ 文字</button>
+              <button onClick={addQR} className="flex-1 py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ QR码</button>
+            </div>
+          </Sec>
+
+          {/* 4. Channel + Font */}
           <Sec title="推广渠道">
             <select value={ch} onChange={e=>syncCh(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]">
               {CH_OPTS.map(c=><option key={c.v} value={c.v}>{c.l}</option>)}
@@ -409,6 +530,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
             </select>
           </Sec>
 
+          {/* 5. Visibility toggles */}
           <Sec title="显示开关">
             {([['qr','二维码'],['url','网址文字'],['inviteCode','邀请码'],['channel','渠道标识']] as const).map(([k,label])=>(
               <label key={k} className="flex items-center gap-2 text-[11px] text-[#374151] dark:text-[#CBD5E1] cursor-pointer">
@@ -418,6 +540,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
             ))}
           </Sec>
 
+          {/* 6. Size */}
           <Sec title="尺寸">
             <div className="flex gap-1.5">
               {(Object.entries(SIZE_CFG) as [PosterSize,typeof SIZE_CFG['3:4']][]).map(([k,cfg])=>(
@@ -429,13 +552,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
             </div>
           </Sec>
 
-          <Sec title="添加元素">
-            <div className="flex gap-2">
-              <button onClick={addText} className="flex-1 py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ 文字</button>
-              <button onClick={addQR} className="flex-1 py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ QR码</button>
-            </div>
-          </Sec>
-
+          {/* Text toolbar (shows when text selected) */}
           {selObj instanceof Textbox && (
             <div className="rounded-xl p-3 bg-white dark:bg-[#1E293B] border border-[#F59E0B]/40 shadow-sm space-y-2.5">
               <div className="flex items-center justify-between">
@@ -473,7 +590,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
           )}
         </div>
 
-        {/* ── Right: Canvas ── */}
+        {/* ── Right: Canvas Preview ── */}
         <div className="flex-1 min-w-0">
           <div className="rounded-xl bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] p-4 flex items-center justify-center overflow-hidden">
             <div style={{width:'100%',maxWidth:540,aspectRatio:`${cW}/${cH}`,position:'relative'}}>
