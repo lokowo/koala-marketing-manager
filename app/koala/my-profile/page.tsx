@@ -8,7 +8,7 @@ import { supabase } from '../../lib/supabase/client';
 import { shareToWechat } from '../../lib/share';
 import { useTheme } from '../../lib/theme';
 import VoiceInputButton from '../../components/VoiceInputButton';
-import SharePoster from '../../components/SharePoster';
+import { SharePosterTrigger } from '../components/SharePoster';
 import { OlaAchievements } from '../components/ola/OlaAchievements';
 
 // ─── timeAgo helper ────────────────────────
@@ -153,7 +153,7 @@ function ArcProgress({ pct, size = 56 }: { pct: number; size?: number }) {
 // ─── Plan badge ──────────────────────────────
 const PLAN_CONFIG = {
   free:    { label: '免费版', className: 'bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843]' },
-  starter: { label: 'Starter', className: 'bg-green-100 dark:bg-[#d4e8d8] text-green-700 dark:text-[#3a6040]' },
+  starter: { label: 'Starter', className: 'bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400' },
   pro:     { label: 'Pro ✦', className: 'bg-amber-100 dark:bg-[#f4e4b8] text-amber-700 dark:text-[#8a6030]' },
   elite:   { label: 'Elite ✦✦', className: 'bg-red-100 dark:bg-[#f8d8d0] text-red-700 dark:text-[#8a3020]' },
 };
@@ -375,8 +375,6 @@ export default function MyProfilePage() {
   const [inviteText, setInviteText] = useState('');
   const [referralStats, setReferralStats] = useState({ invited: 0, maxInvites: 3, earned: 0 });
   const [inviteCopied, setInviteCopied] = useState(false);
-  const [showPoster, setShowPoster] = useState(false);
-  const [posterData, setPosterData] = useState({ referralUrl: '', remainingInvites: 0, displayName: '' });
 
   const loadCredits = useCallback(() => {
     fetch('/api/user/credits').then(r => r.json()).then(d => {
@@ -1071,19 +1069,10 @@ export default function MyProfilePage() {
 
           {/* Poster + copy buttons */}
           <div className="flex gap-2 mb-3">
-            <button
-              onClick={() => {
-                setPosterData({
-                  referralUrl: `https://koalaphd.com/koala/auth?ref=${referralCode}`,
-                  remainingInvites: referralStats.maxInvites - referralStats.invited,
-                  displayName: profile?.display_name || '考拉用户',
-                });
-                setShowPoster(true);
-              }}
-              className="flex-1 text-[11px] py-2.5 rounded-lg font-medium bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
-            >
-              生成邀请海报
-            </button>
+            <SharePosterTrigger
+              label="生成邀请海报"
+              className="flex-1 flex items-center justify-center gap-1.5 text-[11px] py-2.5 rounded-lg font-medium bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
+            />
             <button
               onClick={() => {
                 navigator.clipboard.writeText(inviteText);
@@ -1104,15 +1093,7 @@ export default function MyProfilePage() {
         </div>
       )}
 
-      {/* Share Poster Modal */}
-      <SharePoster
-        open={showPoster}
-        onClose={() => setShowPoster(false)}
-        referralCode={referralCode}
-        referralUrl={posterData.referralUrl}
-        remainingInvites={posterData.remainingInvites}
-        displayName={posterData.displayName}
-      />
+      {/* Share Poster Modal — handled inline by SharePosterTrigger */}
 
       {/* ── Two-col layout ──────────────────── */}
       <div className="lg:flex lg:gap-3 lg:items-start lg:px-0">
@@ -1770,6 +1751,12 @@ export default function MyProfilePage() {
                     ))}
                   </div>
                 </div>
+                <Link href="/koala/my-profile/academic" className="flex items-center px-4 py-2.5 text-xs no-underline text-gray-500 dark:text-[#a8b8ac]">
+                  🎓 学术档案
+                </Link>
+                <Link href="/koala/my-profile/memories" className="flex items-center px-4 py-2.5 text-xs no-underline text-gray-500 dark:text-[#a8b8ac]">
+                  🧠 Ola 的记忆
+                </Link>
                 <Link href="/koala/tools" className="flex items-center px-4 py-2.5 text-xs no-underline text-gray-500 dark:text-[#a8b8ac]">
                   🔧 更多工具
                 </Link>
