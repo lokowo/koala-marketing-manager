@@ -368,23 +368,6 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     fc.add(t); fc.setActiveObject(t); fc.requestRenderAll();
   }
 
-  async function addQR() {
-    const fc=fcRef.current; if(!fc) return;
-    const oldQr=elRef.current.qr; if(oldQr) fc.remove(oldQr);
-    const L=computeLayout(SIZE_CFG[size].w, SIZE_CFG[size].h);
-    const url=`https://koalaphd.com/?ref=${referralCode}`;
-    try {
-      const d=await QRCode.toDataURL(url,{width:480,margin:2,color:{dark:'#1a2332',light:'#FFFFFF'}});
-      const img=await FabricImage.fromURL(d);
-      img.set({left:L.qrPd,top:L.qrPd,scaleX:L.qrSz/(img.width||L.qrSz),scaleY:L.qrSz/(img.height||L.qrSz)});
-      const bg=new Rect({left:0,top:0,width:L.qrSz+L.qrPd*2,height:L.qrSz+L.qrPd*2,fill:'#FFFFFF',rx:16,ry:16,shadow:new Shadow({color:'rgba(0,0,0,0.15)',blur:12,offsetX:0,offsetY:4})});
-      const g=new Group([bg,img],{left:L.qr.left,top:L.qr.top,visible:vis.qr});
-      meta(g)[QR_KEY]=true; meta(g).__ek='qr';
-      fc.add(g); elRef.current.qr=g;
-    } catch(e){console.error('QR failed',e);}
-    fc.requestRenderAll();
-  }
-
   // ── Regenerate ────────────────────────────────────────
   async function regenerate() {
     const fc=fcRef.current; if(!fc) return;
@@ -510,10 +493,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
 
           {/* 3. Add elements — right below subtitle */}
           <Sec title="添加元素">
-            <div className="flex gap-2">
-              <button onClick={addText} className="flex-1 py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ 文字</button>
-              <button onClick={addQR} className="flex-1 py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ QR码</button>
-            </div>
+            <button onClick={addText} className="w-full py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ 文字</button>
           </Sec>
 
           {/* 4. Channel + Font */}

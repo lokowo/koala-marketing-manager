@@ -7,9 +7,10 @@ import { POSTER_FONTS, loadPosterFonts, DEFAULT_ZH_FONT } from './poster-fonts';
 
 // ── Types & Constants ───────────────────────────────────
 
-interface ImageBgDef { id: string; src: string; label: string; }
-type PosterSize = '3:4' | '1:1' | '9:16';
+interface Props { referralCode: string; channel: string; }
 type EK = 'logo'|'title'|'subtitle'|'pt1'|'pt2'|'pt3'|'pt4'|'qr'|'scanLabel'|'inviteCode'|'url'|'channel';
+
+interface ImageBgDef { id: string; src: string; label: string; }
 
 const IMAGE_BGS: ImageBgDef[] = [
   { id: '11', src: '/images/posters/11.png', label: '砂岩主楼' },
@@ -20,11 +21,7 @@ const IMAGE_BGS: ImageBgDef[] = [
   { id: '66', src: '/images/posters/66.png', label: '蓝花楹步道' },
 ];
 
-const SIZE_CFG: Record<PosterSize,{w:number;h:number;label:string}> = {
-  '3:4': { w: 1080, h: 1440, label: '3:4 社交媒体' },
-  '1:1': { w: 1080, h: 1080, label: '1:1 方形' },
-  '9:16':{ w: 1080, h: 1920, label: '9:16 竖屏' },
-};
+const CW = 1080, CH = 1440;
 
 const CH_OPTS = [
   {v:'wechat',l:'微信'},{v:'xiaohongshu',l:'小红书'},{v:'douyin',l:'抖音'},
@@ -41,10 +38,10 @@ const CH_LABELS: Record<string,string> = {
 };
 
 const SELLING_PTS = [
-  '✦ AI 智能匹配，精准推荐导师',
+  '✦ AI 智能匹配澳洲博士导师',
   '✦ 一键生成个性化套磁信',
-  '✦ 研究计划智能对齐',
-  '✦ 申请进度全程追踪',
+  '✦ 教授论文对齐研究计划',
+  '✦ 全程申请进度追踪',
 ];
 
 type TextColor = '#FFFFFF'|'#1F2937'|'#D4A843';
@@ -59,10 +56,10 @@ const QR_KEY = '__isQR';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function meta(o: FabricObject): any { return o as any; }
 
-const sh = new Shadow({color:'rgba(0,0,0,0.6)',blur:6,offsetX:1,offsetY:2});
+const sh  = new Shadow({color:'rgba(0,0,0,0.6)',blur:6,offsetX:1,offsetY:2});
 const shSm = new Shadow({color:'rgba(0,0,0,0.4)',blur:3,offsetX:1,offsetY:1});
 
-function layout(w: number, h: number) {
+function computeLayout(w: number, h: number) {
   const pad = 40;
   const qrSz = 270, qrPd = 20, qrTotH = qrSz + qrPd * 2;
   const ptGap = Math.round(h * 0.035);
@@ -83,8 +80,6 @@ function layout(w: number, h: number) {
 
 // ── Component ───────────────────────────────────────────
 
-interface Props { referralCode: string; channel: string; }
-
 export default function ImagePosterEditor({ referralCode, channel }: Props) {
   const cRef = useRef<HTMLCanvasElement>(null);
   const fcRef = useRef<Canvas|null>(null);
@@ -93,7 +88,6 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
 
   const [ready, setReady] = useState(false);
   const [bgId, setBgId] = useState('11');
-  const [size, setSize] = useState<PosterSize>('3:4');
   const [titleTxt, setTitleTxt] = useState('用 AI 找到你的理想 PhD 导师');
   const [subTxt, setSubTxt] = useState('覆盖澳洲38所大学、24,000+位教授');
   const [ch, setCh] = useState(channel);
@@ -107,13 +101,12 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
   useEffect(() => {
     if (!cRef.current || initDone.current || !ready) return;
     initDone.current = true;
-    const {w,h} = SIZE_CFG[size];
-    const fc = new Canvas(cRef.current, { width:w, height:h, backgroundColor:'#0F1419', selection:true, preserveObjectStacking:true });
+    const fc = new Canvas(cRef.current, { width:CW, height:CH, backgroundColor:'#0F1419', selection:true, preserveObjectStacking:true });
     fc.on('selection:created', e => onSel(e.selected?.[0]??null));
     fc.on('selection:updated', e => onSel(e.selected?.[0]??null));
     fc.on('selection:cleared', () => onSel(null));
     fcRef.current = fc;
-    paintBg(fc, bgId, size).then(() => buildPreset(fc, w, h));
+    paintBg(fc, bgId).then(() => buildPreset(fc, CW, CH));
     return () => { fc.dispose(); initDone.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
@@ -125,8 +118,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
   }
 
   // ── Background: image cover-fit + fog + scrim ─────────
-  async function paintBg(fc: Canvas, id: string, sz: PosterSize) {
-    const {w,h} = SIZE_CFG[sz];
+  async function paintBg(fc: Canvas, id: string) {
     fc.getObjects().filter(o => meta(o)[BG_KEY]||meta(o)[OV_KEY]).forEach(o => fc.remove(o));
     const bgDef = IMAGE_BGS.find(b => b.id === id);
     if (!bgDef) return;
@@ -134,11 +126,11 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
     try {
       const img = await FabricImage.fromURL(bgDef.src, { crossOrigin: 'anonymous' });
       const imgW = img.width || 1080, imgH = img.height || 1440;
-      const scale = Math.max(w / imgW, h / imgH);
+      const scale = Math.max(CW / imgW, CH / imgH);
       img.set({
         scaleX: scale, scaleY: scale,
-        left: (w - imgW * scale) / 2,
-        top: (h - imgH * scale) / 2,
+        left: (CW - imgW * scale) / 2,
+        top: (CH - imgH * scale) / 2,
         selectable: false, evented: false,
       });
       meta(img)[BG_KEY] = true;
@@ -148,7 +140,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
     }
 
     const fog = new Rect({
-      left:0, top:0, width:w, height:h,
+      left:0, top:0, width:CW, height:CH,
       selectable:false, evented:false,
       fill: '#0F1419', opacity: 0.50,
     });
@@ -156,10 +148,10 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
     fc.insertAt(1, fog);
 
     const topScrim = new Rect({
-      left:0, top:0, width:w, height: Math.round(h*0.45),
+      left:0, top:0, width:CW, height: Math.round(CH*0.45),
       selectable:false, evented:false,
       fill: new Gradient({
-        type:'linear', coords:{x1:0,y1:0,x2:0,y2:Math.round(h*0.45)},
+        type:'linear', coords:{x1:0,y1:0,x2:0,y2:Math.round(CH*0.45)},
         colorStops:[{offset:0,color:'rgba(15,20,25,0.55)'},{offset:0.6,color:'rgba(15,20,25,0.15)'},{offset:1,color:'rgba(15,20,25,0)'}],
       }),
     });
@@ -167,10 +159,10 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
     fc.insertAt(2, topScrim);
 
     const bottomScrim = new Rect({
-      left:0, top: Math.round(h*0.55), width:w, height: Math.round(h*0.45),
+      left:0, top: Math.round(CH*0.55), width:CW, height: Math.round(CH*0.45),
       selectable:false, evented:false,
       fill: new Gradient({
-        type:'linear', coords:{x1:0,y1:0,x2:0,y2:Math.round(h*0.45)},
+        type:'linear', coords:{x1:0,y1:0,x2:0,y2:Math.round(CH*0.45)},
         colorStops:[{offset:0,color:'rgba(15,20,25,0)'},{offset:0.5,color:'rgba(15,20,25,0.40)'},{offset:1,color:'rgba(15,20,25,0.55)'}],
       }),
     });
@@ -180,9 +172,9 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
     fc.requestRenderAll();
   }
 
-  // ── Preset elements (always dark bg — white text) ─────
+  // ── Preset elements ───────────────────────────────────
   async function buildPreset(fc: Canvas, w: number, h: number) {
-    const L = layout(w, h);
+    const L = computeLayout(w, h);
     const font = gFont;
     const fg = '#FFFFFF';
     const fgSub = 'rgba(255,255,255,0.7)';
@@ -219,7 +211,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
       meta(t).__ek = k; fc.add(t); els[k] = t;
     });
 
-    const url = `https://koalaphd.com/koala/auth?ref=${referralCode}&ch=${ch}`;
+    const url = `https://koalaphd.com/?ref=${referralCode}`;
     try {
       const qrDataUrl = await QRCode.toDataURL(url, { width:480, margin:2, color:{dark:'#1a2332',light:'#FFFFFF'} });
       const qrImg = await FabricImage.fromURL(qrDataUrl);
@@ -242,7 +234,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
     });
     meta(invite).__ek = 'inviteCode'; fc.add(invite); els.inviteCode = invite;
 
-    const urlEl = new Textbox('www.koalaphd.com', {
+    const urlEl = new Textbox('koalaphd.com', {
       left:L.url.left, top:L.url.top, fontSize:L.url.fontSize,
       fontFamily:font, fill:fgSub, width:300, shadow:shSm, visible:vis.url,
     });
@@ -258,47 +250,21 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
     fc.requestRenderAll();
   }
 
-  // ── Relayout on size switch ───────────────────────────
-  function relayout(sz: PosterSize) {
-    const L = layout(SIZE_CFG[sz].w, SIZE_CFG[sz].h);
-    const els = elRef.current;
-    const r = (k:EK, p:Record<string,unknown>) => { const o=els[k]; if(o) o.set(p); };
-    r('logo',  { left:L.logo.left, top:L.logo.top, fontSize:L.logo.fontSize });
-    r('title', { left:L.title.left, top:L.title.top, fontSize:L.title.fontSize, width:L.title.width });
-    r('subtitle',{ left:L.sub.left, top:L.sub.top, fontSize:L.sub.fontSize, width:L.sub.width });
-    L.pts.forEach((p,i) => r(`pt${i+1}` as EK, { left:p.left, top:p.top, fontSize:p.fontSize, width:p.width }));
-    r('qr',    { left:L.qr.left, top:L.qr.top });
-    r('scanLabel',  { left:L.scan.left, top:L.scan.top, fontSize:L.scan.fontSize });
-    r('inviteCode', { left:L.invite.left, top:L.invite.top, fontSize:L.invite.fontSize });
-    r('url',   { left:L.url.left, top:L.url.top, fontSize:L.url.fontSize });
-    r('channel',{ left:L.ch.left, top:L.ch.top, fontSize:L.ch.fontSize });
-    fcRef.current?.requestRenderAll();
-  }
-
   // ── Sync helpers ──────────────────────────────────────
   function syncTitle(t:string) { setTitleTxt(t); const e=elRef.current.title; if(e instanceof Textbox){e.set('text',t);fcRef.current?.requestRenderAll();} }
   function syncSub(t:string) { setSubTxt(t); const e=elRef.current.subtitle; if(e instanceof Textbox){e.set('text',t);fcRef.current?.requestRenderAll();} }
   function syncCh(c:string) { setCh(c); const e=elRef.current.channel; if(e instanceof Textbox){e.set('text',CH_LABELS[c]||c);fcRef.current?.requestRenderAll();} }
   function syncFont(f:string) { setGFont(f); const fc=fcRef.current; if(!fc) return; for(const o of fc.getObjects()) if(o instanceof Textbox) o.set('fontFamily',f); fc.requestRenderAll(); }
 
-  // ── Actions ───────────────────────────────────────────
+  // ── Switch background image ──────────────────────────
   const switchBg = useCallback(async (id:string) => {
     setBgId(id);
     const fc=fcRef.current; if(!fc) return;
-    await paintBg(fc, id, size);
+    await paintBg(fc, id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [size]);
+  }, []);
 
-  const switchSize = useCallback(async (sz:PosterSize) => {
-    const fc=fcRef.current; if(!fc) return;
-    setSize(sz);
-    const {w,h} = SIZE_CFG[sz];
-    fc.setDimensions({width:w,height:h});
-    await paintBg(fc, bgId, sz);
-    relayout(sz);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bgId]);
-
+  // ── Visibility ────────────────────────────────────────
   function toggleVis(key: keyof typeof vis) {
     setVis(prev => {
       const next = {...prev, [key]:!prev[key]};
@@ -309,38 +275,22 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
     });
   }
 
+  // ── Add text ──────────────────────────────────────────
+  function addText() {
+    const fc=fcRef.current; if(!fc) return;
+    const t = new Textbox('双击编辑文字',{ left:CW/2-150,top:CH/2-30,fontSize:28,fontFamily:gFont,fill:'#FFFFFF',width:300,shadow:sh });
+    fc.add(t); fc.setActiveObject(t); fc.requestRenderAll();
+  }
+
+  // ── Regenerate ────────────────────────────────────────
   async function regenerate() {
     const fc=fcRef.current; if(!fc) return;
     fc.getObjects().filter(o => !meta(o)[BG_KEY]&&!meta(o)[OV_KEY]).forEach(o => fc.remove(o));
     elRef.current = {}; setSelObj(null);
-    const {w,h}=SIZE_CFG[size];
-    await buildPreset(fc, w, h);
+    await buildPreset(fc, CW, CH);
   }
 
-  function addText() {
-    const fc=fcRef.current; if(!fc) return;
-    const {w,h}=SIZE_CFG[size];
-    const t = new Textbox('双击编辑文字',{ left:w/2-150,top:h/2-30,fontSize:28,fontFamily:gFont,fill:'#FFFFFF',width:300,shadow:sh });
-    fc.add(t); fc.setActiveObject(t); fc.requestRenderAll();
-  }
-
-  async function addQR() {
-    const fc=fcRef.current; if(!fc) return;
-    const oldQr=elRef.current.qr; if(oldQr) fc.remove(oldQr);
-    const L=layout(SIZE_CFG[size].w, SIZE_CFG[size].h);
-    const url=`https://koalaphd.com/koala/auth?ref=${referralCode}&ch=${ch}`;
-    try {
-      const d=await QRCode.toDataURL(url,{width:480,margin:2,color:{dark:'#1a2332',light:'#FFFFFF'}});
-      const img=await FabricImage.fromURL(d);
-      img.set({left:L.qrPd,top:L.qrPd,scaleX:L.qrSz/(img.width||L.qrSz),scaleY:L.qrSz/(img.height||L.qrSz)});
-      const bg=new Rect({left:0,top:0,width:L.qrSz+L.qrPd*2,height:L.qrSz+L.qrPd*2,fill:'#FFFFFF',rx:16,ry:16,shadow:new Shadow({color:'rgba(0,0,0,0.15)',blur:12,offsetX:0,offsetY:4})});
-      const g=new Group([bg,img],{left:L.qr.left,top:L.qr.top,visible:vis.qr});
-      meta(g)[QR_KEY]=true; meta(g).__ek='qr';
-      fc.add(g); elRef.current.qr=g;
-    } catch(e){console.error('QR failed',e);}
-    fc.requestRenderAll();
-  }
-
+  // ── Text editing ──────────────────────────────────────
   function updateSel(prop:string,val:unknown) {
     if(!selObj||!(selObj instanceof Textbox)) return;
     selObj.set(prop as keyof Textbox, val); fcRef.current?.requestRenderAll();
@@ -356,6 +306,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
     setSelObj(null); fc.requestRenderAll();
   }
 
+  // ── Export ────────────────────────────────────────────
   function exportPNG() {
     const fc=fcRef.current; if(!fc) return;
     fc.discardActiveObject(); fc.requestRenderAll();
@@ -366,38 +317,60 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
   // ── Render ────────────────────────────────────────────
   if (!ready) return <Loading />;
 
-  const {w:cW,h:cH} = SIZE_CFG[size];
   const zhF = POSTER_FONTS.filter(f=>f.category==='zh');
   const enF = POSTER_FONTS.filter(f=>f.category==='en');
 
   return (
     <div className="space-y-4">
+      {/* ── Top: 6 Image Thumbnail Cards ── */}
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+        {IMAGE_BGS.map(bg => {
+          const active = bgId === bg.id;
+          return (
+            <button
+              key={bg.id}
+              onClick={() => switchBg(bg.id)}
+              className={`relative rounded-xl overflow-hidden aspect-[3/4] transition-all border ${
+                active
+                  ? 'border-[#F59E0B] ring-2 ring-[#F59E0B]/30'
+                  : 'border-[#E5E7EB] dark:border-[#334155] hover:border-[#D1D5DB] dark:hover:border-[#475569]'
+              }`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={bg.src} alt={bg.label} className="w-full h-full object-cover"/>
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
+                <span className="text-[10px] text-white block text-center font-medium">{bg.label}</span>
+              </div>
+              {active && (
+                <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#F59E0B] flex items-center justify-center">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Bottom: Left Panel + Right Preview ── */}
       <div className="flex flex-col lg:flex-row gap-4">
         {/* ── Left panel ── */}
-        <div className="w-full lg:w-[280px] shrink-0 space-y-3 max-h-[calc(100vh-200px)] lg:overflow-y-auto">
-          <Sec title="图片背景">
-            <div className="grid grid-cols-3 gap-2">
-              {IMAGE_BGS.map(bg => (
-                <button key={bg.id} onClick={()=>switchBg(bg.id)}
-                  className={`relative rounded-lg overflow-hidden aspect-[3/4] transition-all ${bgId===bg.id?'ring-2 ring-[#F59E0B] ring-offset-1 ring-offset-white dark:ring-offset-[#1E293B]':'hover:ring-1 hover:ring-[#D1D5DB] dark:hover:ring-[#475569]'}`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={bg.src} alt={bg.label} className="w-full h-full object-cover"/>
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1">
-                    <span className="text-[9px] text-white block text-center">{bg.label}</span>
-                  </div>
-                  {bgId===bg.id && <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#F59E0B] flex items-center justify-center"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg></div>}
-                </button>
-              ))}
-            </div>
+        <div className="w-full lg:w-[260px] shrink-0 space-y-3 lg:max-h-[calc(100vh-420px)] lg:overflow-y-auto lg:pr-1">
+          {/* 1. Title input */}
+          <Sec title="主标题">
+            <input value={titleTxt} onChange={e=>syncTitle(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]"/>
           </Sec>
 
-          <Sec title="文案编辑">
-            <label className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] block mb-1">主标题</label>
-            <input value={titleTxt} onChange={e=>syncTitle(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9] mb-2"/>
-            <label className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] block mb-1">副标题</label>
+          {/* 2. Subtitle input */}
+          <Sec title="副标题">
             <input value={subTxt} onChange={e=>syncSub(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]"/>
           </Sec>
 
+          {/* 3. Add text only */}
+          <Sec title="添加元素">
+            <button onClick={addText} className="w-full py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ 文字</button>
+          </Sec>
+
+          {/* 4. Channel + Font */}
           <Sec title="推广渠道">
             <select value={ch} onChange={e=>syncCh(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]">
               {CH_OPTS.map(c=><option key={c.v} value={c.v}>{c.l}</option>)}
@@ -411,6 +384,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
             </select>
           </Sec>
 
+          {/* 5. Visibility toggles */}
           <Sec title="显示开关">
             {([['qr','二维码'],['url','网址文字'],['inviteCode','邀请码'],['channel','渠道标识']] as const).map(([k,label])=>(
               <label key={k} className="flex items-center gap-2 text-[11px] text-[#374151] dark:text-[#CBD5E1] cursor-pointer">
@@ -420,24 +394,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
             ))}
           </Sec>
 
-          <Sec title="尺寸">
-            <div className="flex gap-1.5">
-              {(Object.entries(SIZE_CFG) as [PosterSize,typeof SIZE_CFG['3:4']][]).map(([k,cfg])=>(
-                <button key={k} onClick={()=>switchSize(k)}
-                  className={`flex-1 py-1.5 rounded-lg text-[11px] font-medium transition ${size===k?'bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#92400E] dark:text-[#F59E0B]':'bg-[#F3F4F6] dark:bg-[#334155] text-[#6B7280] dark:text-[#94A3B8] hover:bg-[#E5E7EB] dark:hover:bg-[#475569]'}`}>
-                  {cfg.label}
-                </button>
-              ))}
-            </div>
-          </Sec>
-
-          <Sec title="添加元素">
-            <div className="flex gap-2">
-              <button onClick={addText} className="flex-1 py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ 文字</button>
-              <button onClick={addQR} className="flex-1 py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ QR码</button>
-            </div>
-          </Sec>
-
+          {/* Text toolbar (shows when text selected) */}
           {selObj instanceof Textbox && (
             <div className="rounded-xl p-3 bg-white dark:bg-[#1E293B] border border-[#F59E0B]/40 shadow-sm space-y-2.5">
               <div className="flex items-center justify-between">
@@ -475,10 +432,10 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
           )}
         </div>
 
-        {/* ── Right: Canvas ── */}
+        {/* ── Right: Canvas Preview ── */}
         <div className="flex-1 min-w-0">
           <div className="rounded-xl bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] p-4 flex items-center justify-center overflow-hidden">
-            <div style={{width:'100%',maxWidth:540,aspectRatio:`${cW}/${cH}`,position:'relative'}}>
+            <div style={{width:'100%',maxWidth:540,aspectRatio:`${CW}/${CH}`,position:'relative'}}>
               <canvas ref={cRef} style={{width:'100%',height:'100%',display:'block',borderRadius:8}}/>
             </div>
           </div>
