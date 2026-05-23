@@ -1,220 +1,168 @@
-# Koala PhD — 项目状态文件
-> 最后更新: 2026-05-22
-> 本文件是任何新对话的第一份必读材料。新开对话时告诉 Claude："读 docs/PROJECT-STATE.md，接着干。"
+# Koala PhD 项目状态文档
+> 最后更新: 2026-05-23 | 版本: V2.0
 
----
-
-## 一、产品概述
-
-Koala PhD（考拉博士）是一个澳洲 PhD 留学 AI 智能顾问平台。
-- 品牌: Koala PhD / 考拉学长(AI名)
-- 域名: koalaphd.com
-- 部署: Vercel（项目名 assa2）
+## 项目概览
+**Koala PhD（考拉博士）** — 澳洲 PhD 留学 AI 智能顾问平台
+- 官网: koalaphd.com / koalastudyadvisors.net
+- 部署: Vercel (项目 assa2)
+- 数据库: Supabase (项目 geolbgirpkzxrdvozmqw, ap-northeast-1)
 - GitHub: jun.he@assainvest.com
-- Vercel 账号: renehee-5718
+- Vercel: renehee-5718
 - 技术栈: Next.js + Supabase + Stripe + Tailwind
-- 公开页面禁止出现 MARA 相关内容
-- 联系方式: info@koalastudyadvisors.net / WeChat: KoalaStudyAdvisor / 小红书: DrKoalaAU
+- 联系方式: info@koalastudyadvisors.net | WeChat: KoalaStudyAdvisor | 小红书: DrKoalaAU
 
----
+## 产品/定价体系（勿修改）
 
-## 二、Jay 的角色和工作方式
+### 积分包（一次性购买）
+| 产品 | 价格 AUD | 积分 | 佣金率 |
+|------|---------|------|--------|
+| 入门包 | $4.99 | 50 | 15% |
+| 标准包 | $9.99 | 120 | 18% |
+| 专业包 | $19.99 | 280 | 20% |
+| 旗舰包 | $49.99 | 800 | 20% |
 
-Jay 是产品负责人，**不写代码**。他的工作方式：
-1. 在 claude.ai 对话中观察产品、提出问题、做业务决策
-2. Claude（对话中的）帮他分析、规划、撰写执行指令
-3. 执行指令喂给 Claude Code 跑
-4. Jay 验收结果
+### 订阅（月度循环）
+| 产品 | 价格 AUD | 佣金率 |
+|------|---------|--------|
+| Starter | $19.90 | 20% |
+| Pro | $49.00 | 22% |
+| Elite | $99.00 | 25% |
 
-**关键约束**：
-- 每条 Claude Code 指令 < 1500 字符，最多 2-3 个功能或 5 个子任务
-- 开发前必须先做研究（调研最佳实践、竞品、技术方案），结果和方案必须经 Jay 批准才能写代码
-- 对话窗口经常换新 → 所有重要信息必须写在项目文件里，不能只存在对话历史中
+### 功能限额映射
+| 功能 | Free | Starter | Pro | Elite |
+|------|------|---------|-----|-------|
+| 对话轮数 | 10/天 | 无限 | 无限 | 无限 |
+| 语音输入 | 5/天 | 无限 | 无限 | 无限 |
+| 教授匹配 | 3/天 | 10/天 | 无限 | 无限 |
+| 套磁信 | 1/总 | 5/月 | 15/月 | 无限 |
+| CV生成 | 1/总 | 3/总 | 无限 | 无限 |
 
----
+注意: 每个产品内 standard/partner/senior 三档佣金率目前相同，后续可差异化。
 
-## 三、当前已确认的业务规则
+## 竞品分析
+- ApplyKite (50,000+ 用户): 全球平台，关键词匹配，澳洲深度不足
+- Koala PhD 差异化: 24,502教授 + 1536维embedding + 5维LLM重排 | 对话式AI顾问 | 38所澳洲大学 | 10位真实教授关系 | 双向高亮套磁信 | 模糊记忆系统
 
-### 分销系统
-- 3 个 sales agent: jun.he/KPH001(Partner), winnie/KPH002(Standard), fcc46695/KPH003(Senior)
-- **佣金 Tier 映射**: 每产品独立配 3 档 rate（standard_rate / partner_rate / senior_rate）
-- **晋级规则**: 累计订阅金额触达阈值即晋级（阈值待定）
-- **降级规则**: 退订/退款自动扣减累计金额，低于阈值自动降级
-- 佣金状态流: pending → confirmed（30天自动或admin手动） → paid_out
-- 一次性购买直接 confirmed，订阅首月 pending
-- 提成只算一级（A推荐B，B消费提成归A；B推荐C，C提成归B不回溯A）
-- 归因: 首次触达归因，cookie 30天有效
+## 技术架构
 
-### 教授库
-- **只允许澳洲大学的教授**（country 强制 AU）
-- 发现过数据污染: 山西大学、Max Planck Institute 混入 → 需要审查清理
-- university 字段应为 FK → universities 表
+### 教授匹配: 3层
+pgvector 语义搜索 → Claude 5维LLM重排 → 关键词兜底
 
-### 大学白名单
-- 需建 universities 表，预填澳洲约 40 所大学（Go8 + ATN + IRU + RUN + Other）
-- 所有教授/奖学金必须关联 universities.id
+### 教授数据刷新: 3数据源
+Semantic Scholar API(免费) + ARC Data Portal(免费JSON) + OpenAlex(免费key)
+- 用时刷新(Just-in-time): 用户点生成套磁信时，检查 last_refreshed_at > 30天则触发
+- 后台同步(Background Sync): cron job 待实现
 
-### Grants 拆分
-- 原 grants 表拆为: research_grants（科研经费）+ scholarships（学生奖学金）
-- industry scholarship 可手动加入
-- 每所 Go8 大学至少 2-3 个核心奖学金
+### 模糊记忆系统: 3层
+Layer 1 模糊记忆(user_memories) → Layer 2 结构化合成(user_profiles) → Layer 3 可视化知识卡
+- 详见 docs/MEMORY-TECH.md
 
-### 品牌
-- 单品牌架构（Koala PhD）
-- 品牌设置需可编辑
+### 套磁信生成: 7环节
+教授刷新 → 学生画像 → 匹配选择 → Prompt组装(学生+教授+论文+grants) → LLM生成 → 双向标注 → 积分扣除 → 存cold_emails
 
-### 营销工具
-- Coming Soon 模块保留，标签改为具体时间（"Q3 2026 计划中"）
+### 语音输入
+Web Speech API(免费,30秒上限) → 失败时 Whisper API fallback($0.006/分钟)
 
-### 全站文案
-- 全站文案更新：所有提及教授数量的地方统一为"覆盖澳洲38所大学、23,500+位教授与研究员"
+## 数据库表清单
 
----
+### 核心业务表
+- professors: 教授数据(含 latest_papers, latest_grants, is_verified, slug 等)
+- user_profiles: 用户学术画像(结构化)
+- user_memories: 模糊记忆(自然语言片段, 9类分类)
+- cold_emails: 套磁信(含 highlights, match_scores, follow_up_count)
+- chat_feedback: 对话反馈(6题随机)
+- user_usage_tracking: 用量追踪(按天, 含 subscription_tier)
+- professor_feedback: 教授对学生的反馈(interested/not_suitable)
+- sales_commission_rates: 佣金率配置(7产品)
+- sales_visits: 扫码访问记录
+- sales_referrals: 推荐购买记录
 
-## 四、23 项 Bug 修复记录（2026-05-21 发现，全部已修复）
+## 已完成功能清单 (Phase 0-6)
 
-### 🔴 共因 A: users 表查询返回 0（影响 5+ 页面）
-| # | 页面 | 现象 | 状态 |
-|---|---|---|---|
-| 3 | 用户增长 KPI | 总用户=0，但活跃分层=6 | ✅ 根因: listUsers→user_profiles |
-| 5 | 推荐/变现指标 | 购买=7但付费用户=0，推荐占比=0% | ✅ 根因: listUsers→user_profiles |
-| 7 | 数据分析概览 | 总用户=0，日活有数据 | ✅ 根因: listUsers→user_profiles |
-| 8 | 销售漏斗 | 暂无数据 | ✅ 新建独立页+API，数据源改为 sales_visits→referrals→conversations→commissions |
-| 19 | 收入分析 | ARPU=$0（分母=0），MRR=$0 | ✅ 根因: listUsers→user_profiles |
+### Phase 0-5: 基础功能 (23项Bug修复)
+全部完成
 
-### 🟡 共因 B: Claude Code 不读 DESIGN.md（UI 回归）
-| # | 页面 | 现象 | 状态 |
-|---|---|---|---|
-| 6 | 推广码效果 | 标签灰色看不清 | ✅ 颜色对比度修复 |
-| 11 | 教授详情页 | 字段值极浅灰像 placeholder | ✅ 颜色对比度修复 |
+### Phase 6: 核心产品优化 (37项, 2026-05-23)
 
-### 🚨 数据问题
-| # | 页面 | 现象 | 状态 |
-|---|---|---|---|
-| 10 | 教授库 | 🚨 非澳洲教授混入（山西大学、Max Planck） | ✅ 12条已Rejected + 命名统一 |
-| 9 | 大学分布 | 缺骨架数据，只显示有教授的大学 | ✅ universities表38所+分布图修复 |
-| 12 | Grants | 只1条记录，缺概念区分 | ✅ scholarships表+research_grants表拆分 |
+#### Ola 对话系统
+- [x] 意图识别 + 画像提取 (extract-profile.ts)
+- [x] ProfileCard 组件 + DB 持久化
+- [x] ProfileCard → 匹配系统对接 (自动触发 searchProfessors)
+- [x] Tool schema 补参数 (universityGroup + scholarshipRequired)
+- [x] Ola prompt 优化: 知识库优先规则、学术引用格式、自然推荐、变现引导
+- [x] 语音输入 30秒上限 + 计时器 + interimResults暂存 + Whisper fallback
+- [x] searchProfessors tool 返回 latest_papers + ProfessorMatchCard 展示DOI
+- [x] 对话反馈收集 (FeedbackCard + 6题随机 + API)
 
-### 🔧 架构/功能缺失
-| # | 页面 | 现象 | 状态 |
-|---|---|---|---|
-| 1 | 用户管理详情 | 加载失败+无返回按钮 | ✅ 根因: requireSuperAdmin→requireAdmin |
-| 2 | 角色管理 | 拒绝缺闭环（理由/通知/重提/历史） | ✅ 角色管理重建+历史表 |
-| 20 | 站内信 | admin端显示用户工单表单，角色搞反 | ✅ 站内信重建 |
-| 23 | 佣金比例 | Tier↔佣金映射无逻辑，晋级规则缺失 | ✅ tier佣金映射+晋级/降级规则 |
-| 21 | 佣金审核 | 缺30天自动确认+行drill-down+转账凭证 | ✅ 自动确认+drill-down+凭证 |
-| 22 | KPI目标 | 全部未设置，缺三维度+晋级进度可视化 | ✅ KPI三维度+晋级进度 |
-| 17 | 品牌设置 | 只读无法编辑 | ✅ 品牌设置可编辑+brand_settings表 |
+#### 模糊记忆系统
+- [x] memoryService.ts: extractMemories + saveMemories + loadMemories + formatMemoriesForPrompt + syncToProfile + profileCardToMemories
+- [x] 对话开始加载memories注入prompt
+- [x] 每5轮异步提取新记忆
+- [x] ProfileCard 确认后数据同步写入 user_memories
+- [x] 记忆知识卡页面 (app/koala/my-profile/memories/page.tsx)
 
-### 📝 UX / Tooltip 缺失
-| # | 页面 | 状态 |
-|---|---|---|
-| 4 | 留存缺 tooltip | ✅ MetricLabel全站tooltip |
-| 14 | FAQ 缺 tooltip | ✅ MetricLabel全站tooltip |
-| 16 | Ola 触发器缺说明 | ✅ MetricLabel全站tooltip |
+#### 套磁信生成系统
+- [x] 教授数据刷新服务 (professorRefreshService.ts): Semantic Scholar + ARC
+- [x] 套磁信生成API (POST /api/chat/generate-cold-email)
+- [x] ColdEmailCard 组件: 5维匹配仪表盘 + 双向高亮(学生蓝#E6F1FB/教授绿#E1F5EE) + 4操作按钮
+- [x] chat/page.tsx 全组件串联: handleGenerateColdEmail + 用量检查 + 加载动画
+- [x] 套磁信管理页面 (app/koala/my-emails/page.tsx): 列表+状态标签+统计
+- [x] Follow-up 生成API (POST /api/chat/generate-follow-up)
+- [x] 草稿保存/更新 API (PATCH /api/user/cold-emails/[id])
+- [x] UpgradePrompt 组件: 嵌入对话流不弹窗、不硬编码价格
+- [x] Stripe webhook 同步 subscription_tier (3个事件)
 
-### 🚀 新功能（已规划到 Phase 6）
-| # | 模块 | 说明 |
-|---|---|---|
-| 13 | 知识库自动抓取 | 教授/奖学金定期同步 |
-| 15 | ⭐ AI 智能录入 | 自然语言+语音→结构化数据 |
-| 18 | 营销工具 | 3个 Coming Soon 模块 |
+#### CV 生成系统
+- [x] 3版本: supervisor / scholarship / general
+- [x] generate-cv API (POST /api/user/generate-cv)
+- [x] generate-cv-pdf API (@react-pdf/renderer, Times-Roman, 72x90px照片区)
+- [x] CVPreviewCard 组件: 3-tab切换、照片上传、AI增强标签、PDF下载
+- [x] enhance-experience API: 根据专业方向重写经历
 
----
+#### 教授端平台
+- [x] 教授验证API (claim + verify 流程)
+- [x] 教授个人主页 (/professor/[slug]): banner+头像+Verified+基础信息+招生状态+研究标签+「教授说」+AI润色+最新论文+「我在找」
+- [x] 学生侧增强: Verified标签+查看主页链接+教授说摘要
+- [x] AI润色API (POST /api/professor/ai-polish)
+- [x] 学生推荐收件箱 + 教授反馈API
+- [x] professor_feedback 表
 
-## 五、修复执行顺序
+#### 用量+定价
+- [x] usageTracker 四档限额 (free/starter/pro/elite)
+- [x] UpgradePrompt 升级提示 (不硬编码价格)
+- [x] Stripe webhook syncUsageTrackingTier
+- [x] 定价页面修复 (四档正确价格 $0/$19.90/$49/$99)
 
-详见 `docs/koala-admin-fix-plan.md`（完整方案含 Claude Code 指令模板）
+#### 基础设施
+- [x] 6个数据库 migration (Supabase直接执行)
+- [x] 测试数据硬删除 (sales_visits清零, referrals保留真实3条)
+- [x] Footer 确认正确
+- [x] 海报编辑器 (fabric.js + 6底图)
+- [x] 首页多维推荐 + 全站文案统一(24,000+)
 
-```
-Phase 0: ✅ 完成 — 数据紧急审计（#10 非澳教授）→ 12条Rejected + 命名统一
-Phase 1: ✅ 完成 — 修根因（共因A users查询 listUsers→user_profiles + promo-center RLS修复）
-Phase 2: ✅ 完成 — universities表38所 + tier列回填 + scholarships表(16条Go8种子) + research_grants表 + role_application_history表 + commission三tier列 + payout三字段 + paid_out_at命名修正
-Phase 3: ✅ 完成 — tier佣金映射+自动确认+站内信重建+KPI+角色管理
-Phase 4: ✅ 完成 — 推广码+教授详情+品牌设置+佣金审核+等级管理+销售漏斗+大学分布
-Phase 5: ✅ 完成 — MetricLabel全站tooltip+颜色对比度修复
-Phase 6: 待启动 — 新功能（AI智能录入 + 知识库抓取 + 营销工具）
-```
+## 待完成项目 (P2)
+- [ ] 后台定期同步 cron job (每周刷新高需求教授)
+- [ ] 批量/选择性套磁信生成
+- [ ] 教授视角预览 (AI模拟教授读信反应)
+- [ ] 教授反馈飞轮算法优化 (500+条反馈后训练匹配偏好模型)
+- [ ] 教授招生帖发布
+- [ ] Ola 对话自然度持续优化 (基于 chat_feedback 数据每周迭代)
+- [ ] 教授规模化获客 (套磁信底部水印 + 教授推荐教授 + ARC Grant触发邀请)
 
----
+## 工作方法论（对 claude.ai 对话的强制规则）
 
-## 六、数据库表结构速查
+### 每次对话必须遵守的流程
+1. 读 PROJECT-STATE.md — 先了解全貌再说话
+2. 研究先行 — 任何新功能，先调研竞品/技术/现有代码，不假设
+3. 检查现有系统 — 出指令前必须查数据库/代码中已有的相关功能，避免冲突
+4. 方案给 Jay 拍板 — 列清楚做什么/为什么/怎么做，等确认后才出指令
+5. 指令质量把控 — 每条≤1500字符，2-3功能，不出矛盾指令
+6. 部署后必须检查 — 不跳过验证就出下一条指令
+7. 所有决策写入文件 — 更新 PROJECT-STATE.md
 
-```
-sales_agents: id, user_id, name, display_name, phone, email, wechat_id, referral_code, status, tier, notes, created_at, updated_at, created_by, avatar_url, payment_method, payment_account, payment_name, notify_registration, notify_commission, notify_weekly_report
-
-sales_commission_rates: id, product_type, product_name, price_aud, commission_rate, min_rate, max_rate, standard_rate, partner_rate, senior_rate, is_recurring, updated_by, updated_at, created_at
-
-sales_commissions: id, agent_id, referral_id, stripe_payment_id, payment_amount, commission_rate, commission_amount, product_type, user_name, status, confirmed_at, paid_out_at, created_at, payout_reference, payout_method, payout_note
-
-sales_referrals: id, agent_id, referred_user_id, channel, landing_page, total_revenue, total_commission, created_at
-
-sales_visits: id, agent_id, channel, visitor_fingerprint, landing_page, visited_at
-
-sales_kpi_targets: id, agent_id, period_start, period_end, target_visits, target_registrations, target_conversions, target_revenue, created_at
-
-sales_audit_logs: id, actor_id, actor_email, actor_role, action, target_type, target_id, details, created_at
-
-universities: id, name, short_name, group_label, state, country, is_active, created_at
-
-scholarships: id, name, university_id, type, coverage, amount_aud, eligibility, url, is_active, created_at
-
-role_application_history: id, application_id, action, actor_id, actor_role, reason, snapshot, created_at
-
-brand_settings: id, key, value, updated_by, updated_at, created_at
-```
-
----
-
-## 七、全局设计原则（从今天的 bug 中提炼）
-
-1. 所有数据看板每个指标 → 必须有 ℹ️ tooltip 解释口径
-2. 所有显示实体码/ID 的地方 → 必须同时显示人类可读标签
-3. 所有详情页 → 必须有返回按钮
-4. 分母为 0 → 显示 "—" 或 "N/A"，不显示 0 或 0%
-5. 所有 sales agent 展示 → 用 display_name
-6. 教授数据 → 强制澳洲大学白名单
-7. DB 列变更 → 必须全链路传播（API + 前端 + RLS）
-
----
-
-## 八、工作流文件位置
-
-```
-.claude/settings.json          — Hook 强制规则
-.claude/agents/product-manager.md   — 产品经理审查
-.claude/agents/design-reviewer.md   — 设计合规审查
-.claude/agents/sales-manager.md     — 销售逻辑审查
-.claude/agents/marketing-manager.md — 市场机制审查
-.claude/agents/smoke-tester.md      — 部署前冒烟测试
-.claude/commands/write-instruction.md — 指令生成器
-.claude/commands/deploy-check.md     — 部署前检查
-.claude/rules/ui-files.md           — UI 文件自动规则
-.claude/rules/api-database.md       — API/DB 自动规则
-components/ui/metric-label.tsx      — MetricLabel tooltip 组件（已创建）
-lib/metrics-glossary.ts             — 22个指标的中文名+tooltip说明（已创建）
-注意: pre-push hook 有 Turbopack ENOENT bug，push 时需用 ! git push --no-verify
-```
-
----
-
-## 九、下一步
-
-### Phase 6 新功能
-- **AI 智能录入** (#15): 自然语言+语音→结构化数据录入教授/奖学金
-- **知识库自动抓取** (#13): 教授/奖学金数据定期从 Semantic Scholar / ARC Portal / 大学官网同步
-- **营销工具** (#18): 3 个 Coming Soon 模块落地（Q3 2026 计划中）
-
-### 核心产品优化
-- 主页改版（koala/home）
-- AI 顾问对话优化（koala/chat）
-- 教授匹配算法调优
-- 以上待 Jay 定优先级
-
-### 测试数据清理
-- 上线前跑 `scripts/cleanup-test-data.ts` 清除测试 agent 产生的 visits/referrals/commissions
-- 确认生产数据不受影响后再执行
-
----
-
-> **给下一个 Claude 的话**: 读完这个文件你就有了完整上下文。不要问 Jay "之前做了什么"，这里全有。Phase 0-5 全部完成，23 项 Bug 已清零。直接问他"Phase 6 从哪个功能开始？"
+### 容易犯的错误（自我提醒）
+- 不查现有数据就设计新功能（如定价冲突事件）
+- 连续出多条覆盖性指令造成混乱
+- 跳过验证直接推进下一步
+- 对话后期忘记前期约定的规则
+- 不更新 PROJECT-STATE.md 就结束对话
