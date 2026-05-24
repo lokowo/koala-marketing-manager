@@ -130,6 +130,11 @@ export default function TermsPage() {
             <p className="text-[#CBD5E1]">Suite 22/26A Lime St, Sydney NSW 2000, Australia</p>
           </div>
         </Section>
+
+        <footer className="pt-6 border-t border-[#334155] flex items-center justify-between text-sm text-[#64748B]">
+          <a href="/" className="hover:text-[#F59E0B] transition">&larr; Back to Home / 返回首页</a>
+          <a href="/privacy-policy" className="hover:text-[#F59E0B] transition">Privacy Policy / 隐私政策 &rarr;</a>
+        </footer>
       </div>
     </main>
   );
