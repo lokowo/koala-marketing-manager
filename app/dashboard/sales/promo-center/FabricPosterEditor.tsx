@@ -8,6 +8,7 @@ interface Props { referralCode: string; channel: string; }
 type PosterSize = '3:4' | '1:1' | '9:16';
 type ThemeId = 'minimal' | 'academic' | 'vibrant';
 type Variant = 'A' | 'B';
+type LayoutPreset = 'compact' | 'standard' | 'spacious';
 
 interface ThemeDef {
   id: ThemeId; name: string; desc: string; font: string;
@@ -42,6 +43,21 @@ const SIZE_CFG: Record<PosterSize, { w: number; h: number; label: string }> = {
   '9:16': { w: 1080, h: 1920, label: '9:16' },
 };
 
+const LAYOUT_CFG: Record<LayoutPreset, { titleY: number; lineExtra: number; titleSubGap: number; subPtGap: number; ptGap: number; label: string; desc: string }> = {
+  compact:  { titleY: 0.11, lineExtra: 4,  titleSubGap: 4,  subPtGap: 24, ptGap: 28, label: '紧凑', desc: '内容多' },
+  standard: { titleY: 0.15, lineExtra: 14, titleSubGap: 8,  subPtGap: 50, ptGap: 40, label: '标准', desc: '默认' },
+  spacious: { titleY: 0.19, lineExtra: 24, titleSubGap: 20, subPtGap: 70, ptGap: 50, label: '宽松', desc: '简约风' },
+};
+
+const TITLE_SIZES = [36, 42, 48, 54, 60];
+const SUB_SIZES = [18, 22, 24, 28, 32];
+const PT_SIZES = [16, 18, 20, 22];
+const TITLE_COLORS: { value: string; label: string; bg: string; fg: string }[] = [
+  { value: '#FFFFFF', label: '白', bg: '#F3F4F6', fg: '#374151' },
+  { value: '#1F2937', label: '黑', bg: '#1E293B', fg: '#FFFFFF' },
+  { value: '#D4A843', label: '金', bg: '#D4A843', fg: '#FFFFFF' },
+];
+
 const CH_OPTS = [
   { v: 'wechat', l: '微信' }, { v: 'xiaohongshu', l: '小红书' }, { v: 'douyin', l: '抖音' },
   { v: 'weibo', l: '微博' }, { v: 'zhihu', l: '知乎' }, { v: 'bilibili', l: 'Bilibili' },
@@ -56,7 +72,7 @@ const CH_LABELS: Record<string, string> = {
   tiktok: 'TikTok推广', instagram: 'Instagram推广', x: 'X推广', telegram: 'Telegram推广', other: '其他渠道',
 };
 
-const SELLING_PTS = [
+const DEFAULT_PTS = [
   '✓ AI 智能匹配澳洲博士导师',
   '✓ 一键生成个性化套磁信',
   '✓ 教授论文对齐研究计划',
@@ -89,6 +105,9 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return lines;
 }
 
+const inputCls = 'w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]';
+const selectCls = inputCls;
+
 export default function FabricPosterEditor({ referralCode, channel }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
@@ -96,9 +115,15 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
   const [variant, setVariant] = useState<Variant>('A');
   const [size, setSize] = useState<PosterSize>('3:4');
   const [titleTxt, setTitleTxt] = useState('用 AI 找到你的理想 PhD 导师');
+  const [titleSize, setTitleSize] = useState(48);
+  const [titleColor, setTitleColor] = useState('#FFFFFF');
   const [subTxt, setSubTxt] = useState('覆盖澳洲38所大学、24,000+位教授');
+  const [subSize, setSubSize] = useState(24);
+  const [pts, setPts] = useState(DEFAULT_PTS);
+  const [ptSize, setPtSize] = useState(20);
   const [ch, setCh] = useState(channel);
   const [font, setFont] = useState(THEMES[1].font);
+  const [layout, setLayout] = useState<LayoutPreset>('standard');
   const [vis, setVis] = useState({ qr: true, url: true, inviteCode: true, channel: true });
   const [extraTexts, setExtraTexts] = useState<string[]>([]);
 
@@ -114,11 +139,12 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     canvas.height = h;
     const ctx = canvas.getContext('2d')!;
     const isDark = theme.isDark;
-    const fg = isDark ? '#FFFFFF' : '#1F2937';
     const fgSub = isDark ? 'rgba(255,255,255,0.8)' : 'rgba(31,41,55,0.6)';
+    const fgPt = isDark ? '#FFFFFF' : '#1F2937';
+    const lc = LAYOUT_CFG[layout];
 
     (async () => {
-      // Step 2: Background
+      // Background
       const bgColors = theme.variants[variant].colors;
       if (bgColors.length > 1) {
         const grad = ctx.createLinearGradient(0, 0, w, h);
@@ -139,7 +165,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
 
       ctx.textBaseline = 'top';
 
-      // Step 4: Logo
+      // Logo
       ctx.save();
       ctx.font = `bold 18px "${font}", sans-serif`;
       ctx.fillStyle = '#F59E0B';
@@ -148,22 +174,23 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
       ctx.fillText('Koala PhD 考拉博士', 60, 40);
       ctx.restore();
 
-      // Step 5: Title
+      // Title
       ctx.save();
-      ctx.font = `bold 48px "${font}", sans-serif`;
-      ctx.fillStyle = fg;
+      ctx.font = `bold ${titleSize}px "${font}", sans-serif`;
+      ctx.fillStyle = titleColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       if (isDark) { ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2; }
       const titleLines = wrapText(ctx, titleTxt, w - 120);
-      let curY = h * 0.15;
-      for (const line of titleLines) { ctx.fillText(line, w / 2, curY); curY += 62; }
+      const lineH = titleSize + lc.lineExtra;
+      let curY = h * lc.titleY;
+      for (const line of titleLines) { ctx.fillText(line, w / 2, curY); curY += lineH; }
       ctx.restore();
 
-      // Step 6: Subtitle
-      curY += 8;
+      // Subtitle
+      curY += lc.titleSubGap;
       ctx.save();
-      ctx.font = `24px "${font}", sans-serif`;
+      ctx.font = `${subSize}px "${font}", sans-serif`;
       ctx.fillStyle = fgSub;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
@@ -171,21 +198,21 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
       ctx.fillText(subTxt, w / 2, curY);
       ctx.restore();
 
-      // Step 7: Selling points
-      curY += 50;
+      // Selling points
+      curY += lc.subPtGap;
       ctx.save();
-      ctx.font = `20px "${font}", sans-serif`;
-      ctx.fillStyle = fg;
+      ctx.font = `${ptSize}px "${font}", sans-serif`;
+      ctx.fillStyle = fgPt;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       if (isDark) { ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; }
-      for (const pt of SELLING_PTS) { ctx.fillText(pt, 80, curY); curY += 40; }
-      for (const txt of extraTexts) { ctx.fillText(txt, 80, curY); curY += 40; }
+      for (const pt of pts) { ctx.fillText(pt, 80, curY); curY += lc.ptGap; }
+      for (const txt of extraTexts) { ctx.fillText(txt, 80, curY); curY += lc.ptGap; }
       ctx.restore();
 
       if (cancelled) return;
 
-      // Step 8: QR Code
+      // QR Code
       const qrSz = Math.min(270, h * 0.19);
       const qrPad = 20;
       const qrCenterY = Math.max(h * 0.62, curY + qrSz / 2 + 30);
@@ -213,7 +240,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
         } catch (e) { console.error('QR failed', e); }
       }
 
-      // Step 9: Scan label + invite code
+      // Scan label + invite code
       const qrBottomY = qrCenterY + qrSz / 2 + qrPad;
       if (vis.qr) {
         ctx.save();
@@ -228,7 +255,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
       if (vis.inviteCode) {
         ctx.save();
         ctx.font = `bold 16px "${font}", sans-serif`;
-        ctx.fillStyle = fg;
+        ctx.fillStyle = fgPt;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         if (isDark) { ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; }
@@ -236,7 +263,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
         ctx.restore();
       }
 
-      // Step 10: Bottom bar
+      // Bottom bar
       const bottomY = h - 60;
       if (vis.url) {
         ctx.save();
@@ -261,17 +288,26 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     })();
 
     return () => { cancelled = true; };
-  }, [ready, themeId, variant, size, titleTxt, subTxt, ch, font, vis, referralCode, extraTexts]);
+  }, [ready, themeId, variant, size, titleTxt, titleSize, titleColor, subTxt, subSize, pts, ptSize, ch, font, layout, vis, referralCode, extraTexts]);
 
   function switchTheme(id: ThemeId) {
     setThemeId(id);
     setVariant('A');
-    setFont(THEMES.find(t => t.id === id)!.font);
+    const t = THEMES.find(th => th.id === id)!;
+    setFont(t.font);
+    setTitleColor(t.isDark ? '#FFFFFF' : '#1F2937');
   }
 
   function resetAll() {
     setTitleTxt('用 AI 找到你的理想 PhD 导师');
+    setTitleSize(48);
+    const theme = THEMES.find(t => t.id === themeId)!;
+    setTitleColor(theme.isDark ? '#FFFFFF' : '#1F2937');
     setSubTxt('覆盖澳洲38所大学、24,000+位教授');
+    setSubSize(24);
+    setPts(DEFAULT_PTS);
+    setPtSize(20);
+    setLayout('standard');
     setExtraTexts([]);
   }
 
@@ -332,35 +368,91 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
       {/* Bottom: Left Panel + Right Preview */}
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="w-full lg:w-[260px] shrink-0 space-y-3 lg:max-h-[calc(100vh-420px)] lg:overflow-y-auto lg:pr-1">
+          {/* 1. Title controls */}
           <Sec title="主标题">
-            <input value={titleTxt} onChange={e => setTitleTxt(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]" />
+            <input value={titleTxt} onChange={e => setTitleTxt(e.target.value)} className={inputCls} />
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] shrink-0">字号</span>
+              <select value={titleSize} onChange={e => setTitleSize(Number(e.target.value))} className={selectCls}>
+                {TITLE_SIZES.map(s => <option key={s} value={s}>{s}px</option>)}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] shrink-0">颜色</span>
+              <div className="flex gap-1 flex-1">
+                {TITLE_COLORS.map(c => (
+                  <button key={c.value} onClick={() => setTitleColor(c.value)}
+                    className={`flex-1 py-1 rounded-md text-[10px] font-medium transition ${titleColor === c.value ? 'ring-2 ring-[#F59E0B] ring-offset-1' : ''}`}
+                    style={{ background: c.bg, color: c.fg }}>{c.label}</button>
+                ))}
+              </div>
+            </div>
           </Sec>
+
+          {/* 2. Subtitle controls */}
           <Sec title="副标题">
-            <input value={subTxt} onChange={e => setSubTxt(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]" />
+            <input value={subTxt} onChange={e => setSubTxt(e.target.value)} className={inputCls} />
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] shrink-0">字号</span>
+              <select value={subSize} onChange={e => setSubSize(Number(e.target.value))} className={selectCls}>
+                {SUB_SIZES.map(s => <option key={s} value={s}>{s}px</option>)}
+              </select>
+            </div>
           </Sec>
+
+          {/* 3. Selling points */}
+          <Sec title="卖点文字">
+            {pts.map((pt, i) => (
+              <input key={i} value={pt} onChange={e => { const v = e.target.value; setPts(prev => prev.map((p, idx) => idx === i ? v : p)); }} className={inputCls} />
+            ))}
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] shrink-0">字号</span>
+              <select value={ptSize} onChange={e => setPtSize(Number(e.target.value))} className={selectCls}>
+                {PT_SIZES.map(s => <option key={s} value={s}>{s}px</option>)}
+              </select>
+            </div>
+          </Sec>
+
+          {/* 4. Extra text */}
           <Sec title="添加文字">
             <button onClick={() => setExtraTexts(prev => [...prev, '自定义文字'])}
               className="w-full py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ 文字</button>
             {extraTexts.map((txt, i) => (
               <div key={i} className="flex gap-1.5 mt-2">
-                <input value={txt} onChange={e => { const v = e.target.value; setExtraTexts(prev => prev.map((t, idx) => idx === i ? v : t)); }}
-                  className="flex-1 rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]" />
+                <input value={txt} onChange={e => { const v = e.target.value; setExtraTexts(prev => prev.map((t, idx) => idx === i ? v : t)); }} className={`flex-1 ${inputCls}`} />
                 <button onClick={() => setExtraTexts(prev => prev.filter((_, idx) => idx !== i))}
                   className="px-2 py-1 rounded-lg text-[10px] bg-[#FEE2E2] dark:bg-[#7F1D1D]/30 text-[#991B1B] dark:text-[#F87171]">✕</button>
               </div>
             ))}
           </Sec>
+
+          {/* 5. Channel + Font */}
           <Sec title="推广渠道">
-            <select value={ch} onChange={e => setCh(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]">
+            <select value={ch} onChange={e => setCh(e.target.value)} className={selectCls}>
               {CH_OPTS.map(c => <option key={c.v} value={c.v}>{c.l}</option>)}
             </select>
           </Sec>
           <Sec title="字体">
-            <select value={font} onChange={e => setFont(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]">
+            <select value={font} onChange={e => setFont(e.target.value)} className={selectCls}>
               <optgroup label="中文">{zhF.map(f => <option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>
               <optgroup label="英文">{enF.map(f => <option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>
             </select>
           </Sec>
+
+          {/* 6. Layout preset */}
+          <Sec title="布局预设">
+            <div className="flex gap-1.5">
+              {(Object.entries(LAYOUT_CFG) as [LayoutPreset, typeof LAYOUT_CFG['standard']][]).map(([k, cfg]) => (
+                <button key={k} onClick={() => setLayout(k)}
+                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium transition ${layout === k ? 'bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#92400E] dark:text-[#F59E0B]' : 'bg-[#F3F4F6] dark:bg-[#334155] text-[#6B7280] dark:text-[#94A3B8] hover:bg-[#E5E7EB] dark:hover:bg-[#475569]'}`}>
+                  {cfg.label}
+                  <span className="block text-[9px] opacity-70">{cfg.desc}</span>
+                </button>
+              ))}
+            </div>
+          </Sec>
+
+          {/* 7. Visibility toggles */}
           <Sec title="显示开关">
             {([['qr', '二维码'], ['url', '网址文字'], ['inviteCode', '邀请码'], ['channel', '渠道标识']] as const).map(([k, label]) => (
               <label key={k} className="flex items-center gap-2 text-[11px] text-[#374151] dark:text-[#CBD5E1] cursor-pointer">
@@ -369,6 +461,8 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
               </label>
             ))}
           </Sec>
+
+          {/* 8. Size */}
           <Sec title="尺寸">
             <div className="flex gap-1.5">
               {(Object.entries(SIZE_CFG) as [PosterSize, typeof SIZE_CFG['3:4']][]).map(([k, cfg]) => (
