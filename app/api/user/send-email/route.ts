@@ -4,6 +4,12 @@ import { supabaseAdmin } from '../../../lib/supabase/server';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
+interface Attachment {
+  filename: string;
+  mimeType: string;
+  base64Data: string;
+}
+
 async function refreshAccessToken(userId: string, refreshToken: string): Promise<string | null> {
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -37,23 +43,46 @@ async function refreshAccessToken(userId: string, refreshToken: string): Promise
   return newAccessToken;
 }
 
-function buildRawEmail(from: string, to: string, subject: string, bodyHtml: string): string {
+function buildRawEmail(
+  from: string,
+  to: string,
+  subject: string,
+  bodyHtml: string,
+  attachments: Attachment[] = [],
+): string {
   const boundary = `boundary_${Date.now()}`;
+  const encodedSubject = `=?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`;
+
   const lines = [
     `From: ${from}`,
     `To: ${to}`,
-    `Subject: =?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`,
+    `Subject: ${encodedSubject}`,
     'MIME-Version: 1.0',
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,
     '',
-    `--${boundary}`,
-    'Content-Type: text/html; charset=UTF-8',
-    'Content-Transfer-Encoding: base64',
-    '',
-    Buffer.from(bodyHtml).toString('base64'),
-    '',
-    `--${boundary}--`,
   ];
+
+  // HTML body part
+  lines.push(`--${boundary}`);
+  lines.push('Content-Type: text/html; charset=UTF-8');
+  lines.push('Content-Transfer-Encoding: base64');
+  lines.push('');
+  lines.push(Buffer.from(bodyHtml).toString('base64'));
+  lines.push('');
+
+  // Attachment parts
+  for (const att of attachments) {
+    const encodedFilename = `=?UTF-8?B?${Buffer.from(att.filename).toString('base64')}?=`;
+    lines.push(`--${boundary}`);
+    lines.push(`Content-Type: ${att.mimeType}; name="${encodedFilename}"`);
+    lines.push('Content-Transfer-Encoding: base64');
+    lines.push(`Content-Disposition: attachment; filename="${encodedFilename}"`);
+    lines.push('');
+    lines.push(att.base64Data);
+    lines.push('');
+  }
+
+  lines.push(`--${boundary}--`);
   return lines.join('\r\n');
 }
 
@@ -70,7 +99,13 @@ export async function POST(req: Request) {
     const user = await getServerUser();
     if (!user) return Response.json({ error: '请先登录' }, { status: 401 });
 
-    const { cold_email_id, to_email, subject, body_html } = await req.json();
+    const { cold_email_id, to_email, subject, body_html, attachments } = await req.json() as {
+      cold_email_id?: string;
+      to_email: string;
+      subject: string;
+      body_html: string;
+      attachments?: Attachment[];
+    };
 
     if (!to_email || !subject || !body_html) {
       return Response.json({ error: '缺少必填字段 (to_email, subject, body_html)' }, { status: 400 });
@@ -97,7 +132,13 @@ export async function POST(req: Request) {
       accessToken = refreshed;
     }
 
-    const rawEmail = buildRawEmail(tokenRow.gmail_address as string, to_email, subject, body_html);
+    const rawEmail = buildRawEmail(
+      tokenRow.gmail_address as string,
+      to_email,
+      subject,
+      body_html,
+      attachments ?? [],
+    );
     const encodedEmail = base64urlEncode(rawEmail);
 
     const sendRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
@@ -153,6 +194,7 @@ export async function POST(req: Request) {
     return Response.json({
       success: true,
       messageId: sendResult.id,
+      attachmentCount: attachments?.length ?? 0,
     });
   } catch (error) {
     console.error('[send-email]', error);
