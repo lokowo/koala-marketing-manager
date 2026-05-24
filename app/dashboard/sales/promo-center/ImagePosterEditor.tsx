@@ -1,14 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { Canvas, FabricImage, Textbox, Rect, Group, FabricObject, Gradient, Shadow } from 'fabric';
+import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { POSTER_FONTS, loadPosterFonts, DEFAULT_ZH_FONT } from './poster-fonts';
 
-// ── Types & Constants ───────────────────────────────────
-
 interface Props { referralCode: string; channel: string; }
-type EK = 'logo'|'title'|'subtitle'|'pt1'|'pt2'|'pt3'|'pt4'|'qr'|'scanLabel'|'inviteCode'|'url'|'channel';
 
 interface ImageBgDef { id: string; src: string; label: string; }
 
@@ -21,352 +17,287 @@ const IMAGE_BGS: ImageBgDef[] = [
   { id: '66', src: '/images/posters/66.png', label: '蓝花楹步道' },
 ];
 
-const CW = 1080, CH = 1440;
+const CW = 1080, CH_H = 1440;
 
 const CH_OPTS = [
-  {v:'wechat',l:'微信'},{v:'xiaohongshu',l:'小红书'},{v:'douyin',l:'抖音'},
-  {v:'weibo',l:'微博'},{v:'zhihu',l:'知乎'},{v:'bilibili',l:'Bilibili'},
-  {v:'email',l:'邮件'},{v:'whatsapp',l:'WhatsApp'},{v:'tiktok',l:'TikTok'},
-  {v:'instagram',l:'Instagram'},{v:'x',l:'X (Twitter)'},{v:'telegram',l:'Telegram'},
-  {v:'other',l:'其他'},
+  { v: 'wechat', l: '微信' }, { v: 'xiaohongshu', l: '小红书' }, { v: 'douyin', l: '抖音' },
+  { v: 'weibo', l: '微博' }, { v: 'zhihu', l: '知乎' }, { v: 'bilibili', l: 'Bilibili' },
+  { v: 'email', l: '邮件' }, { v: 'whatsapp', l: 'WhatsApp' }, { v: 'tiktok', l: 'TikTok' },
+  { v: 'instagram', l: 'Instagram' }, { v: 'x', l: 'X (Twitter)' }, { v: 'telegram', l: 'Telegram' },
+  { v: 'other', l: '其他' },
 ];
 
-const CH_LABELS: Record<string,string> = {
-  wechat:'微信推广',xiaohongshu:'小红书推广',douyin:'抖音推广',weibo:'微博推广',
-  zhihu:'知乎推广',bilibili:'B站推广',email:'邮件推广',whatsapp:'WhatsApp推广',
-  tiktok:'TikTok推广',instagram:'Instagram推广',x:'X推广',telegram:'Telegram推广',other:'其他渠道',
+const CH_LABELS: Record<string, string> = {
+  wechat: '微信推广', xiaohongshu: '小红书推广', douyin: '抖音推广', weibo: '微博推广',
+  zhihu: '知乎推广', bilibili: 'B站推广', email: '邮件推广', whatsapp: 'WhatsApp推广',
+  tiktok: 'TikTok推广', instagram: 'Instagram推广', x: 'X推广', telegram: 'Telegram推广', other: '其他渠道',
 };
 
 const SELLING_PTS = [
-  '✦ AI 智能匹配澳洲博士导师',
-  '✦ 一键生成个性化套磁信',
-  '✦ 教授论文对齐研究计划',
-  '✦ 全程申请进度追踪',
+  '✓ AI 智能匹配澳洲博士导师',
+  '✓ 一键生成个性化套磁信',
+  '✓ 教授论文对齐研究计划',
+  '✓ 全程申请进度追踪',
 ];
 
-type TextColor = '#FFFFFF'|'#1F2937'|'#D4A843';
-const TXT_COLORS: {value:TextColor;label:string}[] = [
-  {value:'#FFFFFF',label:'白'},{value:'#1F2937',label:'黑'},{value:'#D4A843',label:'金'},
-];
-
-const BG_KEY = '__isBg';
-const OV_KEY = '__isOv';
-const QR_KEY = '__isQR';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function meta(o: FabricObject): any { return o as any; }
-
-const sh  = new Shadow({color:'rgba(0,0,0,0.6)',blur:6,offsetX:1,offsetY:2});
-const shSm = new Shadow({color:'rgba(0,0,0,0.4)',blur:3,offsetX:1,offsetY:1});
-
-function computeLayout(w: number, h: number) {
-  const pad = 40;
-  const qrSz = 270, qrPd = 20, qrTotH = qrSz + qrPd * 2;
-  const ptGap = Math.round(h * 0.035);
-  return {
-    pad,
-    logo:   { left: pad, top: pad, fontSize: 18 },
-    title:  { left: w/2, top: h*0.10, fontSize: 48, width: w - pad*2 },
-    sub:    { left: w/2, top: h*0.17, fontSize: 24, width: w - pad*2 },
-    pts:    [0,1,2,3].map(i => ({ left: pad+20, top: h*0.27 + i*ptGap, fontSize: 20, width: w-pad*2-40 })),
-    qrSz, qrPd,
-    qr:     { left: (w-qrSz-qrPd*2)/2, top: h*0.48 },
-    scan:   { left: w/2, top: h*0.48 + qrTotH + 16, fontSize: 14 },
-    invite: { left: w/2, top: h*0.48 + qrTotH + 44, fontSize: 16 },
-    url:    { left: pad, top: h - pad - 14, fontSize: 12 },
-    ch:     { left: w - pad, top: h - pad - 14, fontSize: 12 },
-  };
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }
 
-// ── Component ───────────────────────────────────────────
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const char of text) {
+    const test = line + char;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = char;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
 
 export default function ImagePosterEditor({ referralCode, channel }: Props) {
-  const cRef = useRef<HTMLCanvasElement>(null);
-  const previewRef = useRef<HTMLDivElement>(null);
-  const fcRef = useRef<Canvas|null>(null);
-  const elRef = useRef<Partial<Record<EK,FabricObject>>>({});
-  const initDone = useRef(false);
-
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
   const [bgId, setBgId] = useState('11');
   const [titleTxt, setTitleTxt] = useState('用 AI 找到你的理想 PhD 导师');
   const [subTxt, setSubTxt] = useState('覆盖澳洲38所大学、24,000+位教授');
   const [ch, setCh] = useState(channel);
-  const [gFont, setGFont] = useState(DEFAULT_ZH_FONT);
-  const [vis, setVis] = useState({ qr:true, url:true, inviteCode:true, channel:true });
-  const [selObj, setSelObj] = useState<FabricObject|null>(null);
-  const [tb, setTb] = useState({ fontFamily:DEFAULT_ZH_FONT, fontSize:48, fill:'#FFFFFF' as string, fontWeight:'bold' as string });
+  const [font, setFont] = useState(DEFAULT_ZH_FONT);
+  const [vis, setVis] = useState({ qr: true, url: true, inviteCode: true, channel: true });
+  const [extraTexts, setExtraTexts] = useState<string[]>([]);
 
   useEffect(() => { loadPosterFonts().then(() => setReady(true)); }, []);
 
   useEffect(() => {
-    if (!cRef.current || initDone.current || !ready) return;
-    initDone.current = true;
-    const fc = new Canvas(cRef.current, { width:CW, height:CH, backgroundColor:'#0F1419', selection:true, preserveObjectStacking:true });
-    fc.on('selection:created', e => onSel(e.selected?.[0]??null));
-    fc.on('selection:updated', e => onSel(e.selected?.[0]??null));
-    fc.on('selection:cleared', () => onSel(null));
-    fcRef.current = fc;
-    paintBg(fc, bgId).then(() => buildPreset(fc, CW, CH));
-    requestAnimationFrame(() => applyScale());
-    return () => { fc.dispose(); initDone.current = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready]);
-
-  useEffect(() => {
-    const el = previewRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => applyScale());
-    ro.observe(el);
-    return () => ro.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready]);
-
-  function onSel(obj: FabricObject|null) {
-    if (!obj || !(obj instanceof Textbox)) { setSelObj(null); return; }
-    setSelObj(obj);
-    setTb({ fontFamily:(obj.fontFamily as string)||DEFAULT_ZH_FONT, fontSize:obj.fontSize||48, fill:(obj.fill as string)||'#FFFFFF', fontWeight:(obj.fontWeight as string)||'normal' });
-  }
-
-  function applyScale() {
-    const wrapper = previewRef.current;
-    if (!wrapper) return;
-    const s = wrapper.clientWidth / CW;
-    const cc = wrapper.querySelector('.canvas-container') as HTMLElement;
-    if (cc) {
-      cc.style.transform = `scale(${s})`;
-      cc.style.transformOrigin = 'top left';
-    }
-    wrapper.style.height = `${CH * s}px`;
-  }
-
-  // ── Background: image cover-fit + fog + scrim ─────────
-  async function paintBg(fc: Canvas, id: string) {
-    fc.getObjects().filter(o => meta(o)[BG_KEY]||meta(o)[OV_KEY]).forEach(o => fc.remove(o));
-    const bgDef = IMAGE_BGS.find(b => b.id === id);
-    if (!bgDef) return;
-
-    try {
-      const img = await FabricImage.fromURL(bgDef.src, { crossOrigin: 'anonymous' });
-      const imgW = img.width || 1080, imgH = img.height || 1440;
-      const scale = Math.max(CW / imgW, CH / imgH);
-      img.set({
-        scaleX: scale, scaleY: scale,
-        left: (CW - imgW * scale) / 2,
-        top: (CH - imgH * scale) / 2,
-        selectable: false, evented: false,
-      });
-      meta(img)[BG_KEY] = true;
-      fc.insertAt(0, img);
-    } catch (e) {
-      console.error('Image load failed', e);
-    }
-
-    const fog = new Rect({
-      left:0, top:0, width:CW, height:CH,
-      selectable:false, evented:false,
-      fill: '#0F1419', opacity: 0.50,
-    });
-    meta(fog)[OV_KEY] = true;
-    fc.insertAt(1, fog);
-
-    const topScrim = new Rect({
-      left:0, top:0, width:CW, height: Math.round(CH*0.30),
-      selectable:false, evented:false,
-      fill: new Gradient({
-        type:'linear', coords:{x1:0,y1:0,x2:0,y2:Math.round(CH*0.30)},
-        colorStops:[{offset:0,color:'rgba(15,20,25,0.6)'},{offset:1,color:'rgba(15,20,25,0)'}],
-      }),
-    });
-    meta(topScrim)[OV_KEY] = true;
-    fc.insertAt(2, topScrim);
-
-    const bottomScrim = new Rect({
-      left:0, top: Math.round(CH*0.60), width:CW, height: Math.round(CH*0.40),
-      selectable:false, evented:false,
-      fill: new Gradient({
-        type:'linear', coords:{x1:0,y1:0,x2:0,y2:Math.round(CH*0.40)},
-        colorStops:[{offset:0,color:'rgba(15,20,25,0)'},{offset:1,color:'rgba(15,20,25,0.7)'}],
-      }),
-    });
-    meta(bottomScrim)[OV_KEY] = true;
-    fc.insertAt(3, bottomScrim);
-
-    fc.requestRenderAll();
-  }
-
-  // ── Preset elements ───────────────────────────────────
-  async function buildPreset(fc: Canvas, w: number, h: number) {
-    const L = computeLayout(w, h);
-    const font = gFont;
+    if (!ready || !canvasRef.current) return;
+    let cancelled = false;
+    const canvas = canvasRef.current;
+    const w = CW, h = CH_H;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d')!;
     const fg = '#FFFFFF';
-    const fgSub = 'rgba(255,255,255,0.7)';
-    const els: Partial<Record<EK,FabricObject>> = {};
+    const fgSub = 'rgba(255,255,255,0.8)';
 
-    const logo = new Textbox('Koala PhD 考拉博士', {
-      left:L.logo.left, top:L.logo.top, fontSize:L.logo.fontSize,
-      fontFamily:font, fontWeight:'bold', fill:'#F59E0B', width:360,
-      selectable:false, evented:false, shadow:shSm,
-    });
-    meta(logo).__ek = 'logo'; fc.add(logo); els.logo = logo;
+    (async () => {
+      // Step 2: Background image (cover-fit)
+      const bgDef = IMAGE_BGS.find(b => b.id === bgId);
+      if (bgDef) {
+        try {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = bgDef.src;
+          await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = rej; });
+          if (cancelled) return;
+          const scale = Math.max(w / img.width, h / img.height);
+          const dw = img.width * scale;
+          const dh = img.height * scale;
+          ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+        } catch {
+          ctx.fillStyle = '#0F1419';
+          ctx.fillRect(0, 0, w, h);
+        }
+      } else {
+        ctx.fillStyle = '#0F1419';
+        ctx.fillRect(0, 0, w, h);
+      }
 
-    const title = new Textbox(titleTxt, {
-      left:L.title.left, top:L.title.top, fontSize:L.title.fontSize,
-      fontFamily:font, fontWeight:'bold', fill:fg, width:L.title.width,
-      lineHeight:1.3, textAlign:'center', originX:'center', shadow:sh,
-    });
-    meta(title).__ek = 'title'; fc.add(title); els.title = title;
+      if (cancelled) return;
 
-    const sub = new Textbox(subTxt, {
-      left:L.sub.left, top:L.sub.top, fontSize:L.sub.fontSize,
-      fontFamily:font, fill:fgSub, width:L.sub.width,
-      textAlign:'center', originX:'center', shadow:shSm,
-    });
-    meta(sub).__ek = 'subtitle'; fc.add(sub); els.subtitle = sub;
+      // Step 3: Fog overlay + scrims
+      ctx.fillStyle = '#0F1419';
+      ctx.globalAlpha = 0.50;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = 1;
 
-    SELLING_PTS.forEach((txt,i) => {
-      const k = `pt${i+1}` as EK;
-      const p = L.pts[i];
-      const t = new Textbox(txt, {
-        left:p.left, top:p.top, fontSize:p.fontSize,
-        fontFamily:font, fill:fg, width:p.width, shadow:shSm,
-      });
-      meta(t).__ek = k; fc.add(t); els[k] = t;
-    });
+      const topH = Math.round(h * 0.30);
+      const topGrad = ctx.createLinearGradient(0, 0, 0, topH);
+      topGrad.addColorStop(0, 'rgba(15,20,25,0.6)');
+      topGrad.addColorStop(1, 'rgba(15,20,25,0)');
+      ctx.fillStyle = topGrad;
+      ctx.fillRect(0, 0, w, topH);
 
-    const url = `https://koalaphd.com/?ref=${referralCode}`;
-    try {
-      const qrDataUrl = await QRCode.toDataURL(url, { width:480, margin:2, color:{dark:'#1a2332',light:'#FFFFFF'} });
-      const qrImg = await FabricImage.fromURL(qrDataUrl);
-      qrImg.set({ left:L.qrPd, top:L.qrPd, scaleX:L.qrSz/(qrImg.width||L.qrSz), scaleY:L.qrSz/(qrImg.height||L.qrSz) });
-      const qrBg = new Rect({ left:0,top:0, width:L.qrSz+L.qrPd*2, height:L.qrSz+L.qrPd*2, fill:'#FFFFFF', rx:16, ry:16, shadow: new Shadow({color:'rgba(0,0,0,0.15)',blur:12,offsetX:0,offsetY:4}) });
-      const qrGrp = new Group([qrBg, qrImg], { left:L.qr.left, top:L.qr.top, visible:vis.qr });
-      meta(qrGrp)[QR_KEY] = true; meta(qrGrp).__ek = 'qr';
-      fc.add(qrGrp); els.qr = qrGrp;
-    } catch(e) { console.error('QR failed',e); }
+      const botTop = Math.round(h * 0.60);
+      const botGrad = ctx.createLinearGradient(0, botTop, 0, h);
+      botGrad.addColorStop(0, 'rgba(15,20,25,0)');
+      botGrad.addColorStop(1, 'rgba(15,20,25,0.7)');
+      ctx.fillStyle = botGrad;
+      ctx.fillRect(0, botTop, w, h - botTop);
 
-    const scan = new Textbox('扫码注册', {
-      left:L.scan.left, top:L.scan.top, fontSize:L.scan.fontSize,
-      fontFamily:font, fill:fgSub, width:300, textAlign:'center', originX:'center', shadow:shSm, visible:vis.qr,
-    });
-    meta(scan).__ek = 'scanLabel'; fc.add(scan); els.scanLabel = scan;
+      ctx.textBaseline = 'top';
 
-    const invite = new Textbox(`邀请码: ${referralCode}`, {
-      left:L.invite.left, top:L.invite.top, fontSize:L.invite.fontSize,
-      fontFamily:font, fontWeight:'bold', fill:fg, width:300, textAlign:'center', originX:'center', shadow:shSm, visible:vis.inviteCode,
-    });
-    meta(invite).__ek = 'inviteCode'; fc.add(invite); els.inviteCode = invite;
+      // Step 4: Logo
+      ctx.save();
+      ctx.font = `bold 18px "${font}", sans-serif`;
+      ctx.fillStyle = '#F59E0B';
+      ctx.textAlign = 'left';
+      ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
+      ctx.fillText('Koala PhD 考拉博士', 60, 40);
+      ctx.restore();
 
-    const urlEl = new Textbox('koalaphd.com', {
-      left:L.url.left, top:L.url.top, fontSize:L.url.fontSize,
-      fontFamily:font, fill:fgSub, width:300, shadow:shSm, visible:vis.url,
-    });
-    meta(urlEl).__ek = 'url'; fc.add(urlEl); els.url = urlEl;
+      // Step 5: Title
+      ctx.save();
+      ctx.font = `bold 48px "${font}", sans-serif`;
+      ctx.fillStyle = fg;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+      const titleLines = wrapText(ctx, titleTxt, w - 120);
+      let curY = h * 0.15;
+      for (const line of titleLines) { ctx.fillText(line, w / 2, curY); curY += 62; }
+      ctx.restore();
 
-    const chEl = new Textbox(CH_LABELS[ch]||ch, {
-      left:L.ch.left, top:L.ch.top, fontSize:L.ch.fontSize,
-      fontFamily:font, fill:fgSub, width:300, textAlign:'right', originX:'right', shadow:shSm, visible:vis.channel,
-    });
-    meta(chEl).__ek = 'channel'; fc.add(chEl); els.channel = chEl;
+      // Step 6: Subtitle
+      curY += 8;
+      ctx.save();
+      ctx.font = `24px "${font}", sans-serif`;
+      ctx.fillStyle = fgSub;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
+      ctx.fillText(subTxt, w / 2, curY);
+      ctx.restore();
 
-    elRef.current = els;
-    fc.requestRenderAll();
+      // Step 7: Selling points
+      curY += 50;
+      ctx.save();
+      ctx.font = `20px "${font}", sans-serif`;
+      ctx.fillStyle = fg;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
+      for (const pt of SELLING_PTS) { ctx.fillText(pt, 80, curY); curY += 40; }
+      for (const txt of extraTexts) { ctx.fillText(txt, 80, curY); curY += 40; }
+      ctx.restore();
+
+      if (cancelled) return;
+
+      // Step 8: QR Code
+      const qrSz = 270;
+      const qrPad = 20;
+      const qrCenterY = Math.max(h * 0.62, curY + qrSz / 2 + 30);
+
+      if (vis.qr) {
+        try {
+          const qrUrl = `https://koalaphd.com/?ref=${referralCode}`;
+          const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 480, margin: 2, color: { dark: '#1a2332', light: '#FFFFFF' } });
+          if (cancelled) return;
+          const qrImg = new Image();
+          qrImg.src = qrDataUrl;
+          await new Promise<void>((res, rej) => { qrImg.onload = () => res(); qrImg.onerror = rej; });
+          if (cancelled) return;
+          const qrX = (w - qrSz) / 2;
+          const qrY = qrCenterY - qrSz / 2;
+          ctx.save();
+          ctx.shadowColor = 'rgba(0,0,0,0.15)';
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetY = 4;
+          ctx.fillStyle = '#FFFFFF';
+          roundRect(ctx, qrX - qrPad, qrY - qrPad, qrSz + qrPad * 2, qrSz + qrPad * 2, 16);
+          ctx.fill();
+          ctx.restore();
+          ctx.drawImage(qrImg, qrX, qrY, qrSz, qrSz);
+        } catch (e) { console.error('QR failed', e); }
+      }
+
+      // Step 9: Scan label + invite code
+      const qrBottomY = qrCenterY + qrSz / 2 + qrPad;
+      if (vis.qr) {
+        ctx.save();
+        ctx.font = `14px "${font}", sans-serif`;
+        ctx.fillStyle = fgSub;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
+        ctx.fillText('扫码注册', w / 2, qrBottomY + 16);
+        ctx.restore();
+      }
+      if (vis.inviteCode) {
+        ctx.save();
+        ctx.font = `bold 16px "${font}", sans-serif`;
+        ctx.fillStyle = fg;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
+        ctx.fillText(`邀请码: ${referralCode}`, w / 2, qrBottomY + 44);
+        ctx.restore();
+      }
+
+      // Step 10: Bottom bar
+      const bottomY = h - 60;
+      if (vis.url) {
+        ctx.save();
+        ctx.font = `12px "${font}", sans-serif`;
+        ctx.fillStyle = fgSub;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 2; ctx.shadowOffsetY = 1;
+        ctx.fillText('koalaphd.com', 60, bottomY);
+        ctx.restore();
+      }
+      if (vis.channel) {
+        ctx.save();
+        ctx.font = `12px "${font}", sans-serif`;
+        ctx.fillStyle = fgSub;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 2; ctx.shadowOffsetY = 1;
+        ctx.fillText(CH_LABELS[ch] || ch, w - 60, bottomY);
+        ctx.restore();
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [ready, bgId, titleTxt, subTxt, ch, font, vis, referralCode, extraTexts]);
+
+  function resetAll() {
+    setTitleTxt('用 AI 找到你的理想 PhD 导师');
+    setSubTxt('覆盖澳洲38所大学、24,000+位教授');
+    setExtraTexts([]);
   }
 
-  // ── Sync helpers ──────────────────────────────────────
-  function syncTitle(t:string) { setTitleTxt(t); const e=elRef.current.title; if(e instanceof Textbox){e.set('text',t);fcRef.current?.requestRenderAll();} }
-  function syncSub(t:string) { setSubTxt(t); const e=elRef.current.subtitle; if(e instanceof Textbox){e.set('text',t);fcRef.current?.requestRenderAll();} }
-  function syncCh(c:string) { setCh(c); const e=elRef.current.channel; if(e instanceof Textbox){e.set('text',CH_LABELS[c]||c);fcRef.current?.requestRenderAll();} }
-  function syncFont(f:string) { setGFont(f); const fc=fcRef.current; if(!fc) return; for(const o of fc.getObjects()) if(o instanceof Textbox) o.set('fontFamily',f); fc.requestRenderAll(); }
-
-  // ── Switch background image ──────────────────────────
-  const switchBg = useCallback(async (id:string) => {
-    setBgId(id);
-    const fc=fcRef.current; if(!fc) return;
-    await paintBg(fc, id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Visibility ────────────────────────────────────────
-  function toggleVis(key: keyof typeof vis) {
-    setVis(prev => {
-      const next = {...prev, [key]:!prev[key]};
-      const el = elRef.current[key]; if(el) el.set('visible',next[key]);
-      if(key==='qr') { const s=elRef.current.scanLabel; if(s) s.set('visible',next[key]); }
-      fcRef.current?.requestRenderAll();
-      return next;
-    });
-  }
-
-  // ── Add text ──────────────────────────────────────────
-  function addText() {
-    const fc=fcRef.current; if(!fc) return;
-    const t = new Textbox('双击编辑文字',{ left:CW/2-150,top:CH/2-30,fontSize:28,fontFamily:gFont,fill:'#FFFFFF',width:300,shadow:sh });
-    fc.add(t); fc.setActiveObject(t); fc.requestRenderAll();
-  }
-
-  // ── Regenerate ────────────────────────────────────────
-  async function regenerate() {
-    const fc=fcRef.current; if(!fc) return;
-    fc.getObjects().filter(o => !meta(o)[BG_KEY]&&!meta(o)[OV_KEY]).forEach(o => fc.remove(o));
-    elRef.current = {}; setSelObj(null);
-    await buildPreset(fc, CW, CH);
-  }
-
-  // ── Text editing ──────────────────────────────────────
-  function updateSel(prop:string,val:unknown) {
-    if(!selObj||!(selObj instanceof Textbox)) return;
-    selObj.set(prop as keyof Textbox, val); fcRef.current?.requestRenderAll();
-    setTb(prev=>({...prev,[prop]:val}));
-  }
-
-  function deleteSel() {
-    const fc=fcRef.current; if(!fc||!selObj) return;
-    if(meta(selObj).__ek==='logo') return;
-    fc.remove(selObj);
-    const k=meta(selObj).__ek as EK|undefined;
-    if(k) delete elRef.current[k];
-    setSelObj(null); fc.requestRenderAll();
-  }
-
-  // ── Export ────────────────────────────────────────────
   function exportPNG() {
-    const fc=fcRef.current; if(!fc) return;
-    fc.discardActiveObject(); fc.requestRenderAll();
-    const d=fc.toDataURL({format:'png',quality:1,multiplier:1});
-    const a=document.createElement('a'); a.download=`koala-poster-img-${bgId}-${referralCode}.png`; a.href=d; a.click();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `koala-poster-img-${bgId}-${referralCode}.png`;
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.click();
   }
 
-  // ── Render ────────────────────────────────────────────
   if (!ready) return <Loading />;
 
-  const zhF = POSTER_FONTS.filter(f=>f.category==='zh');
-  const enF = POSTER_FONTS.filter(f=>f.category==='en');
+  const zhF = POSTER_FONTS.filter(f => f.category === 'zh');
+  const enF = POSTER_FONTS.filter(f => f.category === 'en');
 
   return (
     <div className="space-y-4">
-      {/* ── Top: 6 Image Thumbnail Cards ── */}
+      {/* Top: 6 Image Thumbnail Cards */}
       <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
         {IMAGE_BGS.map(bg => {
           const active = bgId === bg.id;
           return (
-            <button
-              key={bg.id}
-              onClick={() => switchBg(bg.id)}
-              className={`relative rounded-xl overflow-hidden aspect-[3/4] transition-all border ${
-                active
-                  ? 'border-[#F59E0B] ring-2 ring-[#F59E0B]/30'
-                  : 'border-[#E5E7EB] dark:border-[#334155] hover:border-[#D1D5DB] dark:hover:border-[#475569]'
-              }`}
-            >
+            <button key={bg.id} onClick={() => setBgId(bg.id)}
+              className={`relative rounded-xl overflow-hidden aspect-[3/4] transition-all border ${active ? 'border-[#F59E0B] ring-2 ring-[#F59E0B]/30' : 'border-[#E5E7EB] dark:border-[#334155] hover:border-[#D1D5DB] dark:hover:border-[#475569]'}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={bg.src} alt={bg.label} className="w-full h-full object-cover"/>
+              <img src={bg.src} alt={bg.label} className="w-full h-full object-cover" />
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
                 <span className="text-[10px] text-white block text-center font-medium">{bg.label}</span>
               </div>
               {active && (
                 <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#F59E0B] flex items-center justify-center">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </div>
               )}
             </button>
@@ -374,105 +305,66 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
         })}
       </div>
 
-      {/* ── Bottom: Left Panel + Right Preview ── */}
+      {/* Bottom: Left Panel + Right Preview */}
       <div className="flex flex-col lg:flex-row gap-4">
-        {/* ── Left panel ── */}
         <div className="w-full lg:w-[260px] shrink-0 space-y-3 lg:max-h-[calc(100vh-420px)] lg:overflow-y-auto lg:pr-1">
-          {/* 1. Title input */}
           <Sec title="主标题">
-            <input value={titleTxt} onChange={e=>syncTitle(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]"/>
+            <input value={titleTxt} onChange={e => setTitleTxt(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]" />
           </Sec>
-
-          {/* 2. Subtitle input */}
           <Sec title="副标题">
-            <input value={subTxt} onChange={e=>syncSub(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]"/>
+            <input value={subTxt} onChange={e => setSubTxt(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]" />
           </Sec>
-
-          {/* 3. Add text only */}
-          <Sec title="添加元素">
-            <button onClick={addText} className="w-full py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ 文字</button>
+          <Sec title="添加文字">
+            <button onClick={() => setExtraTexts(prev => [...prev, '自定义文字'])}
+              className="w-full py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ 文字</button>
+            {extraTexts.map((txt, i) => (
+              <div key={i} className="flex gap-1.5 mt-2">
+                <input value={txt} onChange={e => { const v = e.target.value; setExtraTexts(prev => prev.map((t, idx) => idx === i ? v : t)); }}
+                  className="flex-1 rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]" />
+                <button onClick={() => setExtraTexts(prev => prev.filter((_, idx) => idx !== i))}
+                  className="px-2 py-1 rounded-lg text-[10px] bg-[#FEE2E2] dark:bg-[#7F1D1D]/30 text-[#991B1B] dark:text-[#F87171]">✕</button>
+              </div>
+            ))}
           </Sec>
-
-          {/* 4. Channel + Font */}
           <Sec title="推广渠道">
-            <select value={ch} onChange={e=>syncCh(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]">
-              {CH_OPTS.map(c=><option key={c.v} value={c.v}>{c.l}</option>)}
+            <select value={ch} onChange={e => setCh(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]">
+              {CH_OPTS.map(c => <option key={c.v} value={c.v}>{c.l}</option>)}
             </select>
           </Sec>
-
           <Sec title="字体">
-            <select value={gFont} onChange={e=>syncFont(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]">
-              <optgroup label="中文">{zhF.map(f=><option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>
-              <optgroup label="英文">{enF.map(f=><option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>
+            <select value={font} onChange={e => setFont(e.target.value)} className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]">
+              <optgroup label="中文">{zhF.map(f => <option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>
+              <optgroup label="英文">{enF.map(f => <option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>
             </select>
           </Sec>
-
-          {/* 5. Visibility toggles */}
           <Sec title="显示开关">
-            {([['qr','二维码'],['url','网址文字'],['inviteCode','邀请码'],['channel','渠道标识']] as const).map(([k,label])=>(
+            {([['qr', '二维码'], ['url', '网址文字'], ['inviteCode', '邀请码'], ['channel', '渠道标识']] as const).map(([k, label]) => (
               <label key={k} className="flex items-center gap-2 text-[11px] text-[#374151] dark:text-[#CBD5E1] cursor-pointer">
-                <input type="checkbox" checked={vis[k]} onChange={()=>toggleVis(k)} className="rounded border-[#D1D5DB] text-[#F59E0B] focus:ring-[#F59E0B]"/>
+                <input type="checkbox" checked={vis[k]} onChange={() => setVis(prev => ({ ...prev, [k]: !prev[k] }))} className="rounded border-[#D1D5DB] text-[#F59E0B] focus:ring-[#F59E0B]" />
                 {label}
               </label>
             ))}
           </Sec>
-
-          {/* Text toolbar (shows when text selected) */}
-          {selObj instanceof Textbox && (
-            <div className="rounded-xl p-3 bg-white dark:bg-[#1E293B] border border-[#F59E0B]/40 shadow-sm space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="text-xs font-medium text-[#374151] dark:text-[#CBD5E1]">文字样式</div>
-                <button onClick={deleteSel} className="text-[10px] px-2 py-1 rounded bg-[#FEE2E2] dark:bg-[#7F1D1D]/30 text-[#991B1B] dark:text-[#F87171]">删除</button>
-              </div>
-              <div>
-                <label className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] block mb-1">字体</label>
-                <select value={tb.fontFamily} onChange={e=>updateSel('fontFamily',e.target.value)} className="w-full rounded-lg px-2 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]">
-                  <optgroup label="中文">{zhF.map(f=><option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>
-                  <optgroup label="英文">{enF.map(f=><option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] flex justify-between mb-1"><span>字号</span><span className="font-mono">{tb.fontSize}px</span></label>
-                <input type="range" min={10} max={80} value={tb.fontSize} onChange={e=>updateSel('fontSize',Number(e.target.value))} className="w-full accent-[#F59E0B]"/>
-              </div>
-              <div>
-                <label className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] block mb-1">颜色</label>
-                <div className="flex gap-1.5">
-                  {TXT_COLORS.map(c=>(
-                    <button key={c.value} onClick={()=>updateSel('fill',c.value)}
-                      className={`flex-1 py-1.5 rounded-lg text-[11px] font-medium transition ${tb.fill===c.value?'ring-2 ring-[#F59E0B] ring-offset-1':''}`}
-                      style={{background:c.value==='#FFFFFF'?'#F3F4F6':c.value==='#1F2937'?'#1E293B':'#D4A843',color:c.value==='#FFFFFF'?'#374151':'#FFFFFF'}}>
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button onClick={()=>updateSel('fontWeight',tb.fontWeight==='bold'?'normal':'bold')}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${tb.fontWeight==='bold'?'bg-[#111827] dark:bg-[#F1F5F9] text-white dark:text-[#0F172A]':'bg-[#F3F4F6] dark:bg-[#334155] text-[#6B7280]'}`}>
-                B
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* ── Right: Canvas Preview ── */}
+        {/* Right: Canvas Preview */}
         <div className="flex-1 min-w-0">
-          <div className="rounded-xl bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] p-4 flex items-center justify-center overflow-hidden">
-            <div ref={previewRef} style={{width:'100%',maxWidth:540,overflow:'hidden',position:'relative'}}>
-              <canvas ref={cRef} style={{display:'block',borderRadius:8}}/>
+          <div className="rounded-xl bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] p-4 flex items-center justify-center">
+            <div style={{ width: '100%', maxWidth: 500, aspectRatio: '3 / 4', borderRadius: 12, overflow: 'hidden' }}>
+              <canvas ref={canvasRef} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Bottom bar ── */}
+      {/* Bottom bar */}
       <div className="flex items-center justify-between gap-3 rounded-xl p-3 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
-        <button onClick={regenerate} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0111.47-2.47M14 8a6 6 0 01-11.47 2.47" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M14 2v4h-4M2 14v-4h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <button onClick={resetAll} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0111.47-2.47M14 8a6 6 0 01-11.47 2.47" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M14 2v4h-4M2 14v-4h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
           重新生成
         </button>
         <button onClick={exportPNG} className="flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-xs font-medium bg-[#F59E0B] text-white hover:bg-[#D97706] transition shadow-sm">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2M8 2v9M5 8l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2M8 2v9M5 8l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
           下载 PNG
         </button>
       </div>
@@ -480,10 +372,10 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
   );
 }
 
-function Sec({title,children}:{title:string;children:React.ReactNode}) {
+function Sec({ title, children }: { title: string; children: React.ReactNode }) {
   return <div className="rounded-xl p-3 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155] space-y-2"><div className="text-xs font-medium text-[#374151] dark:text-[#CBD5E1]">{title}</div>{children}</div>;
 }
 
 function Loading() {
-  return <div className="flex items-center justify-center py-20 gap-2 text-sm text-[#6B7280] dark:text-[#94A3B8]"><span className="w-4 h-4 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin"/>字体加载中…</div>;
+  return <div className="flex items-center justify-center py-20 gap-2 text-sm text-[#6B7280] dark:text-[#94A3B8]"><span className="w-4 h-4 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin" />字体加载中…</div>;
 }
