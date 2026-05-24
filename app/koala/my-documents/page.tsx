@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useAuth } from '../components/AuthContext';
 import ResearchProposalCard from '../components/ResearchProposalCard';
 import RecommendationLetterCard from '../components/RecommendationLetterCard';
-import { Plus, Loader2, FileText, MessageSquare, ChevronDown, X, Mail } from 'lucide-react';
+import AcademicCVCard from '../components/AcademicCVCard';
+import { Plus, Loader2, FileText, MessageSquare, ChevronDown, X, Mail, GraduationCap } from 'lucide-react';
 
 interface SavedProfessor {
   professor_id: string;
@@ -32,6 +33,16 @@ interface LetterContent {
     name: string;
     title?: string;
   };
+}
+
+interface CVContent {
+  personal: { name?: string; email?: string; phone?: string; linkedin?: string };
+  education?: Array<{ degree: string; university: string; gpa?: string; dates?: string; thesis?: string }>;
+  research?: Array<{ title: string; lab?: string; supervisor?: string; period?: string; description?: string }>;
+  publications?: Array<{ title: string; journal?: string; year?: number; authors?: string; doi?: string }>;
+  skills?: { technical?: string[]; languages?: string[]; tools?: string[] };
+  awards?: Array<{ title: string; organization?: string; year?: number }>;
+  references?: Array<{ name: string; title?: string; university?: string; email?: string; relationship?: string }>;
 }
 
 interface GeneratedDocument {
@@ -68,7 +79,7 @@ export default function MyDocumentsPage() {
 
   // New document flow
   const [showNewDocFlow, setShowNewDocFlow] = useState(false);
-  const [newDocType, setNewDocType] = useState<'research_proposal' | 'recommendation_letter' | null>(null);
+  const [newDocType, setNewDocType] = useState<'research_proposal' | 'recommendation_letter' | 'cv' | null>(null);
   const [savedProfessors, setSavedProfessors] = useState<SavedProfessor[]>([]);
   const [loadingProfessors, setLoadingProfessors] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -134,11 +145,38 @@ export default function MyDocumentsPage() {
     setRecProfessorId('');
   };
 
-  const handlePickType = (type: 'research_proposal' | 'recommendation_letter') => {
+  const handlePickType = (type: 'research_proposal' | 'recommendation_letter' | 'cv') => {
     setNewDocType(type);
     setGenerateError(null);
     if (type === 'research_proposal' || type === 'recommendation_letter') {
       fetchSavedProfessors();
+    }
+  };
+
+  const [cvGenerating, setCvGenerating] = useState(false);
+
+  const handleGenerateCV = async () => {
+    setCvGenerating(true);
+    setGenerateError(null);
+    try {
+      const res = await fetch('/api/user/cv/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGenerateError(data.error ?? '生成失败');
+        return;
+      }
+      setShowNewDocFlow(false);
+      setNewDocType(null);
+      await fetchDocuments();
+      setExpandedId(data.id);
+    } catch {
+      setGenerateError('网络错误，请重试');
+    } finally {
+      setCvGenerating(false);
     }
   };
 
@@ -242,7 +280,7 @@ export default function MyDocumentsPage() {
       <div className="px-4 pt-6 pb-4 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-light text-gray-900 dark:text-gray-100 tracking-tight">我的文档</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">管理你的研究计划和申请文书</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">管理你的研究计划、申请文书和学术 CV</p>
         </div>
         <button
           onClick={handleNewDoc}
@@ -272,7 +310,7 @@ export default function MyDocumentsPage() {
         <div className="mx-4 mb-4 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.02] overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/5">
             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {!newDocType ? '选择文档类型' : newDocType === 'research_proposal' ? '选择目标导师' : '推荐信信息'}
+              {!newDocType ? '选择文档类型' : newDocType === 'research_proposal' ? '选择目标导师' : newDocType === 'cv' ? '生成学术 CV' : '推荐信信息'}
             </h3>
             <button onClick={() => { setShowNewDocFlow(false); setNewDocType(null); }} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
               <X size={16} />
@@ -307,6 +345,17 @@ export default function MyDocumentsPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">推荐信指导</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">生成推荐信草稿与给推荐人的说明</p>
+                </div>
+                <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 shrink-0 -rotate-90" />
+              </button>
+              <button
+                onClick={() => handlePickType('cv')}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors border border-gray-100 dark:border-white/5"
+              >
+                <GraduationCap size={20} className="text-green-500 dark:text-green-400 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">学术 CV</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">AI 润色生成专业学术简历</p>
                 </div>
                 <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 shrink-0 -rotate-90" />
               </button>
@@ -423,11 +472,31 @@ export default function MyDocumentsPage() {
             </div>
           )}
 
-          {generating && (
+          {/* CV generation */}
+          {newDocType === 'cv' && (
+            <div className="p-4 space-y-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                AI 将根据你的个人资料和教育/工作经历自动生成专业学术 CV。生成后可编辑各分段内容。
+              </p>
+              <button
+                onClick={handleGenerateCV}
+                disabled={cvGenerating}
+                className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-lg bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] hover:opacity-90 transition-opacity disabled:opacity-50 min-h-[44px]"
+              >
+                {cvGenerating ? (
+                  <><Loader2 size={14} className="animate-spin" /> 生成中...</>
+                ) : (
+                  '生成学术 CV'
+                )}
+              </button>
+            </div>
+          )}
+
+          {(generating || cvGenerating) && (
             <div className="px-4 pb-4">
               <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs">
                 <Loader2 size={14} className="animate-spin" />
-                {newDocType === 'recommendation_letter' ? '正在生成推荐信指导，约需 20-30 秒...' : '正在生成研究计划，约需 30-60 秒...'}
+                {newDocType === 'cv' ? '正在生成学术 CV，约需 20-30 秒...' : newDocType === 'recommendation_letter' ? '正在生成推荐信指导，约需 20-30 秒...' : '正在生成研究计划，约需 30-60 秒...'}
               </div>
             </div>
           )}
@@ -468,18 +537,24 @@ export default function MyDocumentsPage() {
                 >
                   {doc.type === 'recommendation_letter'
                     ? <Mail size={18} className="text-amber-500 dark:text-amber-400 shrink-0" />
+                    : doc.type === 'cv'
+                    ? <GraduationCap size={18} className="text-green-500 dark:text-green-400 shrink-0" />
                     : <FileText size={18} className="text-gray-400 dark:text-gray-500 shrink-0" />
                   }
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                       {doc.type === 'recommendation_letter'
                         ? `推荐信 — ${doc.recommender_name || (doc.title?.replace('推荐信 — ', '') || '未命名')}`
+                        : doc.type === 'cv'
+                        ? doc.title || '学术 CV'
                         : doc.title || ('title' in (doc.content ?? {}) ? (doc.content as ProposalContent).title : null) || '未命名文档'
                       }
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
                       {doc.type === 'recommendation_letter'
                         ? `${doc.recommender_title ? doc.recommender_title + ' · ' : ''}${formatDate(doc.created_at)}`
+                        : doc.type === 'cv'
+                        ? formatDate(doc.created_at)
                         : `${doc.professor_name ? doc.professor_name + ' · ' : ''}${formatDate(doc.created_at)}`
                       }
                     </p>
@@ -509,6 +584,13 @@ export default function MyDocumentsPage() {
                       content={doc.content as LetterContent}
                       recommenderName={doc.recommender_name || doc.title?.replace('推荐信 — ', '') || '推荐人'}
                       recommenderTitle={doc.recommender_title}
+                      status={doc.status}
+                      onStatusChange={handleStatusChange}
+                    />
+                  ) : doc.type === 'cv' ? (
+                    <AcademicCVCard
+                      id={doc.id}
+                      content={doc.content as unknown as CVContent}
                       status={doc.status}
                       onStatusChange={handleStatusChange}
                     />

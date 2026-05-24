@@ -183,6 +183,53 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] 服务条款页面 (/terms): 中英双语, 教育辅助工具免责, NSW法律管辖
 - [x] 研究景观公开页 (/koala/insights): 24k+教授数据可视化聚合
 
+### Phase 9.1: Ola 对话 Session 持久化 ✅ 完成 (2026-05-24)
+- [x] /api/ola/conversations 新 API: 从 ai_conversations 读写对话 (GET by mode/sessionId, DELETE)
+- [x] /api/ola/sessions 修复: 从 ai_conversations 查询取代不存在的 chat_messages 表
+- [x] /api/ai/chat saveConversationAsync 改 upsert: 接收前端 sessionId, 同 session 更新同一行
+- [x] page.tsx 初始化: 登录用户从 DB 恢复最近 session 消息 + sessionId
+- [x] page.tsx 模式切换: 切 mode 自动加载该模式最近会话, sessionId 等 remote 返回后才赋值(修复竞态)
+- [x] page.tsx callApi: 发送 sessionId 到后端, 移除已失效的 saveRemoteMessages
+- [x] ChatHistorySidebar: 从 ai_conversations 获取 session 列表, 点击加载对应 session 消息
+- [x] 新对话: 生成新 sessionId + 清空消息, 清除按钮清理 DB + localStorage
+- [x] FAQ 命中也持久化到 ai_conversations (saveFAQConversationAsync), 历史侧栏可见
+
+### Phase 9.2: FAQ 免 LLM 拦截 ✅ 完成 (2026-05-24)
+- [x] ola-faq.ts 已有语义匹配引擎 (tokenize + synonym expansion + keyword overlap score)
+- [x] route.ts FAQ 拦截阈值从 0.5 提升到 0.85, 高置信直接返回跳过 Claude
+- [x] FAQ 命中记录到 ai_conversations (source 可追踪), 不再丢失历史
+- [x] ola_faq 表从 10 条扩充到 15 条, 新增: 导师匹配使用方法、套磁信流程、6模式功能介绍、PhD学制、英语要求
+
+### Phase 9 (P4-1): 学术 CV 生成 ✅ 完成 (2026-05-24)
+- [x] CV 数据收集+生成 API (POST /api/user/cv/generate): 从 user_profiles 取已有数据 + body 补充信息, Claude 润色, 存 generated_documents(type='cv')
+- [x] CV PDF 生成 API (POST /api/user/cv/pdf): @react-pdf/renderer, Times-Roman, A4, 姓名居中+分段横线分隔
+- [x] CV 编辑 API (PATCH /api/user/cv/[id]): 更新 content 各分段, status toggle draft/final
+- [x] AcademicCVCard 组件 (app/koala/components/AcademicCVCard.tsx): 6分段可编辑+AI润色+PDF下载+保存
+- [x] my-documents 页面增加 CV 类型: 新建时选"学术CV"一键生成, 列表展示+编辑
+- [x] ColdEmailCard CV 附件改用 generated_documents 存储的 CV (优先), 兜底旧版 on-the-fly 生成
+- [x] usageTracker Pro 档 CV 限额修正: 3→无限 (与 PROJECT-STATE 定价表对齐)
+
+### Phase 9.3 (P4-2): 90秒 Profile Capture + 邮件 Handoff ✅ 完成 (2026-05-24)
+- [x] 90秒 profile capture: 3+条用户消息后检测 user_profiles 缺失字段, Ola 逐条追问 (研究方向/学历/目标学位/本校), 可跳过
+- [x] 用户回答通过正常 callApi 流入后端 extractAndUpdateProfile, 自动填充 user_profiles
+- [x] PROFILE_QUESTIONS 常量: 4个问题各带快捷回复按钮, 跳过不再追问
+- [x] 邮件 handoff 三触发: 关键词("转人工/真人/顾问"等), 连续2次差评, header 转人工按钮
+- [x] OlaHandoffCard 组件: collect_email → submitting → done 三态, 已登录自动提交, 未登录收集邮箱
+- [x] handoff POST /api/ola/handoff: 插入 handoff_requests + Resend 发邮件通知 info@koalaphd.com
+- [x] 完成状态显示顾问联系时间(24h) + 微信号 KoalaStudyAdvisor
+- [x] handoffCard 消息类型在 message list 中正确渲染 OlaHandoffCard 组件
+
+### Phase 9.4: Ola 浮动吉祥物 ✅ 完成 (2026-05-24)
+- [x] OlaFloatingMascot 独立组件 (app/components/OlaFloatingMascot.tsx)
+- [x] 入场动画: 页面加载 0.3s 后从右侧滑入右下角, 0.4s transition
+- [x] 站立状态: CSS @keyframes float 呼吸浮动 (3s 周期)
+- [x] 气泡消息: 6条预设文案轮播 (匹配导师/套磁信/科研/面试/规划/RP), 4s 显示 + 4s 间隔
+- [x] 气泡点击跳转对应 Ola 聊天模式 (/koala/chat?mode=xxx)
+- [x] 拖拽功能: Pointer Events 实现, 位置持久化到 localStorage
+- [x] 关闭/召唤: 右上角 x 关闭, 右下角小圆按钮召唤, 状态持久化
+- [x] 气泡自适应方向: 左半屏→气泡左对齐, 右半屏→气泡右对齐
+- [x] 深色模式适配, 集成到首页 HomeClient.tsx
+
 ## 待完成项目 (P4 路线图)
 
 ### 高优先级

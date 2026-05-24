@@ -269,18 +269,21 @@ export async function POST(request: NextRequest) {
       console.error('[ola-session]', err)
     );
 
-    // FAQ matching — intercept before LLM if hit
+    // FAQ matching — intercept before LLM if high-confidence hit (≥0.85)
     if (messages.length > 0) {
       const lastUserMsg = messages[messages.length - 1];
       if (lastUserMsg.role === 'user') {
         try {
           const faqMatch = await matchFAQ(lastUserMsg.content);
-          if (faqMatch) {
+          if (faqMatch && faqMatch.score >= 0.85) {
             recordEvent(sessionId, 'faq_hit', {
               faq_id: faqMatch.id,
               category: faqMatch.category,
               score: faqMatch.score,
             }, trackingUserId).catch(() => {});
+
+            // Persist FAQ answer into ai_conversations so history sidebar picks it up
+            saveFAQConversationAsync(sessionId, mode, messages, faqMatch.answer_zh, trackingUserId).catch(() => {});
 
             return Response.json({
               reply: faqMatch.answer_zh,
@@ -869,9 +872,9 @@ H指数：${prof.hIndex ?? '未知'}`;
     try {
       const { getServerUser: getUser } = await import('../../../lib/auth');
       const u = await getUser();
-      saveConversationAsync(mode, messages, cleanedReply, u?.id).catch(() => {});
+      saveConversationAsync(sessionId, mode, messages, cleanedReply, u?.id).catch(() => {});
     } catch {
-      saveConversationAsync(mode, messages, cleanedReply).catch(() => {});
+      saveConversationAsync(sessionId, mode, messages, cleanedReply).catch(() => {});
     }
 
     const userId = body.userId as string | undefined;
@@ -903,19 +906,67 @@ H指数：${prof.hIndex ?? '未知'}`;
   }
 }
 
-async function saveConversationAsync(mode: AIMode, messages: ChatMessage[], reply: string, userId?: string) {
+async function saveConversationAsync(sessionId: string, mode: AIMode, messages: ChatMessage[], reply: string, userId?: string) {
   try {
     const { createClient } = await import('@supabase/supabase-js');
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!url || !key) return;
     const supabase = createClient(url, key);
-    await supabase.from('ai_conversations').insert({
-      session_id: `session_${Date.now()}`,
-      mode,
-      user_id: userId ?? null,
-      messages: [...messages, { role: 'assistant', content: reply }],
-    });
+    const allMessages = [...messages, { role: 'assistant', content: reply }];
+
+    const { data: existing } = await supabase
+      .from('ai_conversations')
+      .select('id')
+      .eq('session_id', sessionId)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('ai_conversations')
+        .update({ messages: allMessages, updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+    } else {
+      await supabase.from('ai_conversations').insert({
+        session_id: sessionId,
+        mode,
+        user_id: userId ?? null,
+        messages: allMessages,
+      });
+    }
+  } catch {}
+}
+
+async function saveFAQConversationAsync(sessionId: string, mode: AIMode, messages: ChatMessage[], faqReply: string, userId?: string | null) {
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) return;
+    const supabase = createClient(url, key);
+    const allMessages = [...messages, { role: 'assistant', content: faqReply }];
+
+    const { data: existing } = await supabase
+      .from('ai_conversations')
+      .select('id')
+      .eq('session_id', sessionId)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('ai_conversations')
+        .update({ messages: allMessages, updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+    } else {
+      await supabase.from('ai_conversations').insert({
+        session_id: sessionId,
+        mode,
+        user_id: userId ?? null,
+        messages: allMessages,
+      });
+    }
   } catch {}
 }
 

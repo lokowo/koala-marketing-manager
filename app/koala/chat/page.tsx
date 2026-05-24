@@ -21,6 +21,7 @@ import { OlaAvatar } from '../components/ola/OlaAvatar';
 import { OlaWelcome } from '../components/ola/OlaWelcome';
 import { OlaRatingPrompt } from '../components/ola/OlaRatingPrompt';
 import { ChatHistorySidebar } from '../components/ola/ChatHistorySidebar';
+import { OlaHandoffCard } from '../components/ola/OlaHandoffCard';
 import { ProfileCard } from '../components/chat/ProfileCard';
 import { ColdEmailCard } from '../components/chat/ColdEmailCard';
 import { UpgradePrompt } from '../components/chat/UpgradePrompt';
@@ -78,6 +79,7 @@ interface Message {
   suggestions?: string[];
   suggestConsultation?: boolean;
   profileData?: ExtractedProfile;
+  handoffCard?: boolean;
   noResults?: boolean;
   timestamp: Date;
 }
@@ -569,55 +571,48 @@ function clearLocalHistory(mode: string) {
   localStorage.removeItem(`${LOCAL_STORAGE_KEY}_${mode}`);
 }
 
-async function loadRemoteHistory(userId: string, mode: string): Promise<Message[]> {
-  try {
-    const res = await fetch(`/api/chat-history?userId=${userId}&mode=${mode}&limit=60`);
-    if (!res.ok) return [];
-    const { messages } = await res.json();
-    if (!messages?.length) return [];
-    return messages.map((m: { id: string; role: 'user' | 'assistant'; content: string; metadata?: Record<string, unknown>; created_at: string }) => ({
-      id: m.id,
-      role: m.role,
-      content: m.content,
-      matchedProfessors: m.metadata?.matchedProfessors,
-      scoreCard: m.metadata?.scoreCard,
-      emailPackage: m.metadata?.emailPackage,
-      citations: m.metadata?.citations,
-      timestamp: new Date(m.created_at),
-    })) as Message[];
-  } catch { return []; }
+interface ConversationData {
+  sessionId: string;
+  mode: string;
+  messages: { role: 'user' | 'assistant'; content: string }[];
 }
 
-async function saveRemoteMessages(userId: string, mode: string, msgs: Message[]) {
+async function loadRemoteConversation(mode: string): Promise<ConversationData | null> {
   try {
-    await fetch('/api/chat-history', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId, mode,
-        messages: msgs.map(m => ({
-          role: m.role,
-          content: m.content,
-          metadata: m.matchedProfessors || m.scoreCard || m.emailPackage || m.citations ? {
-            matchedProfessors: m.matchedProfessors,
-            scoreCard: m.scoreCard,
-            emailPackage: m.emailPackage,
-            citations: m.citations,
-          } : null,
-        })),
-      }),
-    });
-  } catch {}
+    const res = await fetch(`/api/ola/conversations?mode=${encodeURIComponent(mode)}`);
+    if (!res.ok) return null;
+    const { conversation } = await res.json();
+    if (!conversation?.messages?.length) return null;
+    return conversation as ConversationData;
+  } catch { return null; }
 }
 
-async function clearRemoteHistory(userId: string, mode: string) {
+async function loadRemoteSession(sessionId: string): Promise<ConversationData | null> {
   try {
-    await fetch('/api/chat-history', {
+    const res = await fetch(`/api/ola/conversations?sessionId=${encodeURIComponent(sessionId)}`);
+    if (!res.ok) return null;
+    const { conversation } = await res.json();
+    if (!conversation?.messages?.length) return null;
+    return conversation as ConversationData;
+  } catch { return null; }
+}
+
+async function clearRemoteConversation(mode: string) {
+  try {
+    await fetch('/api/ola/conversations', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, mode }),
+      body: JSON.stringify({ mode }),
     });
   } catch {}
+}
+
+function generateSessionId() {
+  return `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function remoteToMessages(msgs: { role: 'user' | 'assistant'; content: string }[]): Message[] {
+  return msgs.map(m => ({ id: msgId(), role: m.role, content: m.content, timestamp: new Date() }));
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -684,6 +679,10 @@ function ChatPageInner() {
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDismissed, setFeedbackDismissed] = useState(false);
+  const [profileCaptureStep, setProfileCaptureStep] = useState<number>(0);
+  const [profileCaptureDone, setProfileCaptureDone] = useState(false);
+  const sessionIdRef = useRef<string>(generateSessionId());
+  const consecutiveUnhelpfulRef = useRef<number>(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autoSentRef = useRef(false);
@@ -729,6 +728,59 @@ function ChatPageInner() {
       if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
     };
   }, [messages, loading, feedbackDismissed]);
+
+  // Profile capture: after 3+ user messages, if key fields are missing, Ola asks
+  const PROFILE_QUESTIONS: { field: string; question: string; replies: string[] }[] = [
+    { field: 'target_field', question: '对了，你感兴趣的研究方向是什么呀？比如 AI、环境科学、金融这些～', replies: ['AI/机器学习', '商科/金融', '工程/材料', '医学/生物'] },
+    { field: 'degree_level', question: '你现在是什么学历呢？本科在读、硕士还是已经毕业了？', replies: ['本科在读', '本科毕业', '硕士在读', '硕士毕业'] },
+    { field: 'target_degree', question: '你的目标是读 PhD 还是 MRes 呢？', replies: ['PhD', 'MRes', '还没想好'] },
+    { field: 'university', question: '你本科/硕士是在哪所学校读的呀？', replies: ['985/211', '双非', '海外本科'] },
+  ];
+
+  useEffect(() => {
+    if (profileCaptureDone || !user || !profile || loading) return;
+    const userMsgCount = messages.filter(m => m.role === 'user').length;
+    if (userMsgCount < 3) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg?.role !== 'assistant') return;
+    // Don't interrupt if last message already has cards
+    if (lastMsg.matchedProfessors?.length || lastMsg.emailPackage || lastMsg.coldEmailData || lastMsg.handoffCard) return;
+
+    // Find the next missing field
+    let nextStep = profileCaptureStep;
+    while (nextStep < PROFILE_QUESTIONS.length) {
+      const q = PROFILE_QUESTIONS[nextStep];
+      const val = profile[q.field as keyof typeof profile];
+      if (!val || (Array.isArray(val) && val.length === 0)) break;
+      nextStep++;
+    }
+
+    if (nextStep >= PROFILE_QUESTIONS.length) {
+      setProfileCaptureDone(true);
+      return;
+    }
+    if (nextStep !== profileCaptureStep) setProfileCaptureStep(nextStep);
+
+    // Only inject after the latest assistant message, with a delay
+    const timer = setTimeout(() => {
+      const q = PROFILE_QUESTIONS[nextStep];
+      setMessages(prev => {
+        const alreadyAsked = prev.some(m => m.content === q.question);
+        if (alreadyAsked) return prev;
+        return [...prev, {
+          id: msgId(),
+          role: 'assistant' as const,
+          content: q.question,
+          quickReplies: [...q.replies, '跳过'],
+          timestamp: new Date(),
+        }];
+      });
+      setProfileCaptureStep(nextStep + 1);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, loading, profileCaptureDone, profile, user]);
 
   // Typewriter effect for the latest assistant message
   useEffect(() => {
@@ -783,10 +835,12 @@ function ChatPageInner() {
   useEffect(() => {
     if (historyLoaded) return;
     if (!user?.id) { setHistoryLoaded(true); return; }
-    loadRemoteHistory(user.id, mode).then(loaded => {
-      if (loaded.length > 0) {
-        setMessages(loaded);
-        setLocalHistory(mode, loaded);
+    loadRemoteConversation(mode).then(conv => {
+      if (conv && conv.messages.length > 0) {
+        const restored = remoteToMessages(conv.messages);
+        setMessages(restored);
+        setLocalHistory(mode, restored);
+        sessionIdRef.current = conv.sessionId;
       }
       setHistoryLoaded(true);
     });
@@ -837,14 +891,20 @@ function ChatPageInner() {
     } else {
       setMessages([{ id: msgId(), role: 'assistant', content: cfg.welcome, timestamp: new Date() }]);
     }
-    // Also try loading from remote in background
+    // Load from remote DB — restore existing sessionId if found, else generate new
     if (user?.id) {
-      loadRemoteHistory(user.id, newMode).then(loaded => {
-        if (loaded.length > 0) {
-          setMessages(loaded);
-          setLocalHistory(newMode, loaded);
+      loadRemoteConversation(newMode).then(conv => {
+        if (conv && conv.messages.length > 0) {
+          const restored = remoteToMessages(conv.messages);
+          setMessages(restored);
+          setLocalHistory(newMode, restored);
+          sessionIdRef.current = conv.sessionId;
+        } else {
+          sessionIdRef.current = generateSessionId();
         }
       });
+    } else {
+      sessionIdRef.current = generateSessionId();
     }
   }
 
@@ -862,6 +922,7 @@ function ChatPageInner() {
       const allMsgs = [...currentMessages, userMsg];
       const body: Record<string, unknown> = {
         mode,
+        sessionId: sessionIdRef.current,
         messages: allMsgs.map(m => ({ role: m.role, content: m.content })),
         userStyleProfile: {
           formality: tonePref === 'professional' ? 'formal' : tonePref === 'direct' ? 'mixed' : 'casual',
@@ -936,7 +997,6 @@ function ChatPageInner() {
       setMessages(prev => {
         const updated = [...prev, assistantMsg];
         setLocalHistory(mode, updated);
-        if (user?.id) saveRemoteMessages(user.id, mode, [userMsg, assistantMsg]);
         return updated;
       });
       if (data.achievement) setToastAchievement(data.achievement);
@@ -984,6 +1044,33 @@ function ChatPageInner() {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, upgradeMsg]);
+      return;
+    }
+
+    // Detect handoff intent
+    if (/转人工|真人|人工客服|人工顾问|真人顾问|找顾问|联系顾问|talk to (a )?human|real person/i.test(txt)) {
+      const userMsg: Message = { id: msgId(), role: 'user', content: txt, timestamp: new Date() };
+      const handoffMsg: Message = {
+        id: msgId(), role: 'assistant',
+        content: '好的，帮你转接真人顾问～',
+        handoffCard: true,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, userMsg, handoffMsg]);
+      setInput('');
+      return;
+    }
+
+    // Handle "跳过" for profile capture questions
+    if (txt === '跳过') {
+      const userMsg: Message = { id: msgId(), role: 'user', content: txt, timestamp: new Date() };
+      const skipMsg: Message = {
+        id: msgId(), role: 'assistant',
+        content: '没问题，随时可以补充~ 有什么想问的尽管说！',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, userMsg, skipMsg]);
+      setInput('');
       return;
     }
 
@@ -1060,6 +1147,20 @@ function ChatPageInner() {
 
   function setFeedback(id: string, rating: FeedbackRating) {
     setMessages(prev => prev.map(m => m.id === id ? { ...m, feedback: rating } : m));
+    if (rating === 'unhelpful') {
+      consecutiveUnhelpfulRef.current++;
+      if (consecutiveUnhelpfulRef.current >= 2) {
+        consecutiveUnhelpfulRef.current = 0;
+        setMessages(prev => [...prev, {
+          id: msgId(), role: 'assistant',
+          content: '看起来我的回答不太够用… 要不帮你转接真人顾问？顾问老师能给更专业的建议～',
+          handoffCard: true,
+          timestamp: new Date(),
+        }]);
+      }
+    } else {
+      consecutiveUnhelpfulRef.current = 0;
+    }
   }
 
   async function handleFile(file: File, fileType: string = 'resume') {
@@ -1118,7 +1219,8 @@ function ChatPageInner() {
     const fresh = [{ id: msgId(), role: 'assistant' as const, content: currentMode.welcome, timestamp: new Date() }];
     setMessages(fresh);
     clearLocalHistory(mode);
-    if (user?.id) clearRemoteHistory(user.id, mode);
+    sessionIdRef.current = generateSessionId();
+    if (user) clearRemoteConversation(mode);
   }
 
   function confirmEmailGeneration() {
@@ -1398,6 +1500,20 @@ function ChatPageInner() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setMessages(prev => [...prev, {
+                id: msgId(), role: 'assistant',
+                content: '帮你转接真人顾问～',
+                handoffCard: true,
+                timestamp: new Date(),
+              }]);
+            }}
+            title="转人工顾问"
+            className="text-[10px] px-2 py-1 rounded-full border border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#8a8078] hover:bg-gray-100 dark:hover:bg-white/5"
+          >
+            转人工
+          </button>
           <button onClick={() => setSidebarOpen(true)} title="对话历史">
             <History className="size-5 text-gray-500 dark:text-[#D4A843]" />
           </button>
@@ -1589,6 +1705,13 @@ function ChatPageInner() {
                     }}
                   />
                 )}
+                {msg.role === 'assistant' && msg.handoffCard && (
+                  <OlaHandoffCard
+                    userId={user?.id}
+                    userEmail={user?.email}
+                    messages={messages.map(m => ({ role: m.role, content: m.content }))}
+                  />
+                )}
                 {msg.role === 'assistant' && msg.quickReplies && msg.quickReplies.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {msg.quickReplies.map(qr => (
@@ -1731,10 +1854,21 @@ function ChatPageInner() {
       {/* History sidebar */}
       <ChatHistorySidebar
         currentMode={mode}
+        currentSessionId={sessionIdRef.current}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onSwitchMode={(m) => switchMode(m as typeof mode)}
         onNewConversation={clearConversation}
+        onLoadSession={async (sid, m) => {
+          const conv = await loadRemoteSession(sid);
+          if (conv && conv.messages.length > 0) {
+            const restored = remoteToMessages(conv.messages);
+            setMessages(restored);
+            setLocalHistory(m, restored);
+            sessionIdRef.current = conv.sessionId;
+            if (m !== mode) setMode(m as AIMode);
+          }
+        }}
       />
 
       {showUpload && <FileUploadSheet onClose={() => setShowUpload(false)} onFile={(f, t) => {

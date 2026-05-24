@@ -34,6 +34,12 @@ body {
   display: none;
 }
 
+/* ── Ola Mascot Float Animation ── */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
 /* ── Admin Dashboard Dark Mode Overrides ── */
 /* Scoped to admin dashboard only — not applied to frontend /koala/ pages */
 /* The admin dashboard removes .dark from html, so these only apply when

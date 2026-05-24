@@ -156,14 +156,12 @@ export function ColdEmailCard({
   const loadAttachmentStatus = useCallback(async () => {
     setAttachmentsLoading(true);
     try {
-      const [proposalRes, cvRes] = await Promise.all([
-        fetch(`/api/user/research-proposal/list`).then(r => r.json()).catch(() => ({ documents: [] })),
-        fetch('/api/user/generate-cv').then(r => r.json()).catch(() => ({ cv: null })),
-      ]);
-      const hasProposal = (proposalRes.documents ?? []).some(
-        (d: { professor_id?: string }) => d.professor_id === professorId
+      const listRes = await fetch('/api/user/research-proposal/list').then(r => r.json()).catch(() => ({ documents: [] }));
+      const docs = listRes.documents ?? [];
+      const hasProposal = docs.some(
+        (d: { professor_id?: string; type?: string }) => d.type !== 'cv' && d.professor_id === professorId
       );
-      const hasCv = !!cvRes.cv;
+      const hasCv = docs.some((d: { type?: string }) => d.type === 'cv');
       setAttachments(prev => prev.map(a => {
         if (a.type === 'research_proposal') return { ...a, available: hasProposal, enabled: hasProposal };
         if (a.type === 'cv') return { ...a, available: hasCv, enabled: hasCv };
@@ -261,7 +259,19 @@ export function ColdEmailCard({
         const buf = await pdfRes.arrayBuffer();
         return Buffer.from(buf).toString('base64');
       } else {
-        const cvRes = await fetch('/api/user/generate-cv').then(r => r.json());
+        const listRes = await fetch('/api/user/research-proposal/list').then(r => r.json()).catch(() => ({ documents: [] }));
+        const cvDoc = (listRes.documents ?? []).find((d: { type: string }) => d.type === 'cv');
+        if (cvDoc?.content) {
+          const pdfRes = await fetch('/api/user/cv/pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: cvDoc.content }),
+          });
+          if (!pdfRes.ok) return null;
+          const buf = await pdfRes.arrayBuffer();
+          return Buffer.from(buf).toString('base64');
+        }
+        const cvRes = await fetch('/api/user/generate-cv').then(r => r.json()).catch(() => ({ cv: null }));
         if (!cvRes.cv) return null;
         const pdfRes = await fetch('/api/user/generate-cv-pdf', {
           method: 'POST',

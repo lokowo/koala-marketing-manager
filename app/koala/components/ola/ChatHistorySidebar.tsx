@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { X, Plus, Search, MessageSquare } from 'lucide-react';
 
 interface SessionInfo {
+  sessionId: string;
   mode: string;
   messageCount: number;
   lastMessageAt: string;
@@ -21,18 +22,22 @@ const MODE_LABELS: Record<string, { label: string; icon: string }> = {
 
 interface ChatHistorySidebarProps {
   currentMode: string;
+  currentSessionId?: string;
   isOpen: boolean;
   onClose: () => void;
   onSwitchMode: (mode: string) => void;
   onNewConversation: () => void;
+  onLoadSession?: (sessionId: string, mode: string) => void;
 }
 
 export function ChatHistorySidebar({
   currentMode,
+  currentSessionId,
   isOpen,
   onClose,
   onSwitchMode,
   onNewConversation,
+  onLoadSession,
 }: ChatHistorySidebarProps) {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,7 +46,7 @@ export function ChatHistorySidebar({
   const fetchSessions = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/ola/sessions');
+      const res = await fetch('/api/ola/conversations?list=true&limit=30');
       if (res.ok) {
         const data = await res.json();
         setSessions(data.sessions ?? []);
@@ -68,7 +73,7 @@ export function ChatHistorySidebar({
 
   function getTitle(session: SessionInfo) {
     if (session.firstUserMessage) {
-      return session.firstUserMessage.slice(0, 24) + (session.firstUserMessage.length > 24 ? '…' : '');
+      return session.firstUserMessage.slice(0, 30) + (session.firstUserMessage.length > 30 ? '…' : '');
     }
     return MODE_LABELS[session.mode]?.label ?? session.mode;
   }
@@ -135,12 +140,19 @@ export function ChatHistorySidebar({
             </p>
           ) : (
             filteredSessions.map(session => {
-              const active = session.mode === currentMode;
+              const active = session.sessionId === currentSessionId;
               const meta = MODE_LABELS[session.mode];
               return (
                 <button
-                  key={session.mode}
-                  onClick={() => { onSwitchMode(session.mode); onClose(); }}
+                  key={session.sessionId}
+                  onClick={() => {
+                    if (onLoadSession) {
+                      onLoadSession(session.sessionId, session.mode);
+                    } else {
+                      onSwitchMode(session.mode);
+                    }
+                    onClose();
+                  }}
                   className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors ${
                     active
                       ? 'bg-[#D4A843]/10 border border-[#D4A843]/20'

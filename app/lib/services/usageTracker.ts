@@ -36,7 +36,7 @@ const TIER_LIMITS: Record<Tier, Record<ActionType, LimitConfig>> = {
     voice: { limit: -1, period: 'daily',  column: 'voice_inputs_used' },
     match: { limit: 10, period: 'daily',  column: 'matches_used' },
     email: { limit: 10, period: 'monthly', column: 'emails_generated' },
-    cv:    { limit: 3,  period: 'total',  column: 'cv_generated' },
+    cv:    { limit: -1, period: 'total',  column: 'cv_generated' },
     research_proposal: { limit: -1, period: 'total', column: 'proposals_generated' },
     recommendation_letter: { limit: -1, period: 'total', column: 'rec_letters_generated' },
   },

@@ -9,6 +9,7 @@ import BannerCarousel from '../../components/BannerCarousel';
 import type { Professor } from '../../lib/types';
 import { useAuth } from '../components/AuthContext';
 import { BRAND, getUniBadge, parseUniversity } from '../../lib/constants';
+import OlaFloatingMascot from '../../components/OlaFloatingMascot';
 
 const CATEGORY_LABELS: Record<string, string> = {
   phd_guide: 'PhD指南',
@@ -757,6 +758,8 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
           &copy; 2026 Koala PhD 考拉博士 &middot; {BRAND.address}
         </div>
       </footer>
+
+      <OlaFloatingMascot />
     </div>
   );
 }
