@@ -82,6 +82,7 @@ function computeLayout(w: number, h: number) {
 
 export default function ImagePosterEditor({ referralCode, channel }: Props) {
   const cRef = useRef<HTMLCanvasElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const fcRef = useRef<Canvas|null>(null);
   const elRef = useRef<Partial<Record<EK,FabricObject>>>({});
   const initDone = useRef(false);
@@ -107,7 +108,18 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
     fc.on('selection:cleared', () => onSel(null));
     fcRef.current = fc;
     paintBg(fc, bgId).then(() => buildPreset(fc, CW, CH));
+    requestAnimationFrame(() => applyZoom(fc));
     return () => { fc.dispose(); initDone.current = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
+
+  useEffect(() => {
+    const el = previewRef.current;
+    const fc = fcRef.current;
+    if (!el || !fc) return;
+    const ro = new ResizeObserver(() => applyZoom(fc));
+    ro.observe(el);
+    return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
@@ -115,6 +127,14 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
     if (!obj || !(obj instanceof Textbox)) { setSelObj(null); return; }
     setSelObj(obj);
     setTb({ fontFamily:(obj.fontFamily as string)||DEFAULT_ZH_FONT, fontSize:obj.fontSize||48, fill:(obj.fill as string)||'#FFFFFF', fontWeight:(obj.fontWeight as string)||'normal' });
+  }
+
+  function applyZoom(fc: Canvas) {
+    const el = previewRef.current;
+    if (!el) return;
+    const scale = el.clientWidth / CW;
+    fc.setZoom(scale);
+    fc.setDimensions({ width: CW * scale, height: CH * scale });
   }
 
   // ── Background: image cover-fit + fog + scrim ─────────
@@ -309,8 +329,12 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
   // ── Export ────────────────────────────────────────────
   function exportPNG() {
     const fc=fcRef.current; if(!fc) return;
-    fc.discardActiveObject(); fc.requestRenderAll();
+    fc.discardActiveObject();
+    fc.setZoom(1);
+    fc.setDimensions({width:CW, height:CH});
+    fc.requestRenderAll();
     const d=fc.toDataURL({format:'png',quality:1,multiplier:1});
+    applyZoom(fc);
     const a=document.createElement('a'); a.download=`koala-poster-img-${bgId}-${referralCode}.png`; a.href=d; a.click();
   }
 
@@ -435,8 +459,8 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
         {/* ── Right: Canvas Preview ── */}
         <div className="flex-1 min-w-0">
           <div className="rounded-xl bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] p-4 flex items-center justify-center overflow-hidden">
-            <div style={{width:'100%',maxWidth:540,aspectRatio:`${CW}/${CH}`,position:'relative'}}>
-              <canvas ref={cRef} style={{width:'100%',height:'100%',display:'block',borderRadius:8}}/>
+            <div ref={previewRef} style={{width:'100%',maxWidth:540}}>
+              <canvas ref={cRef} style={{display:'block',borderRadius:8}}/>
             </div>
           </div>
         </div>

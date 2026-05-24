@@ -124,6 +124,7 @@ function computeLayout(w: number, h: number) {
 
 export default function FabricPosterEditor({ referralCode, channel }: Props) {
   const cRef = useRef<HTMLCanvasElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const fcRef = useRef<Canvas|null>(null);
   const elRef = useRef<Partial<Record<EK,FabricObject>>>({});
   const initDone = useRef(false);
@@ -156,14 +157,34 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     fcRef.current = fc;
     paintBg(fc, bgColors, theme.isDark, size);
     buildPreset(fc, w, h, theme.isDark);
+    requestAnimationFrame(() => applyZoom(fc, w, h));
     return () => { fc.dispose(); initDone.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
+
+  useEffect(() => {
+    const el = previewRef.current;
+    const fc = fcRef.current;
+    if (!el || !fc) return;
+    const {w,h} = SIZE_CFG[size];
+    const ro = new ResizeObserver(() => applyZoom(fc, w, h));
+    ro.observe(el);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, size]);
 
   function onSel(obj: FabricObject|null) {
     if (!obj || !(obj instanceof Textbox)) { setSelObj(null); return; }
     setSelObj(obj);
     setTb({ fontFamily:(obj.fontFamily as string)||gFont, fontSize:obj.fontSize||48, fill:(obj.fill as string)||'#FFFFFF', fontWeight:(obj.fontWeight as string)||'normal' });
+  }
+
+  function applyZoom(fc: Canvas, logicalW: number, logicalH: number) {
+    const el = previewRef.current;
+    if (!el) return;
+    const scale = el.clientWidth / logicalW;
+    fc.setZoom(scale);
+    fc.setDimensions({ width: logicalW * scale, height: logicalH * scale });
   }
 
   // ── Background ────────────────────────────────────────
@@ -341,10 +362,12 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     const fc=fcRef.current; if(!fc) return;
     setSize(sz);
     const {w,h} = SIZE_CFG[sz];
+    fc.setZoom(1);
     fc.setDimensions({width:w,height:h});
     const colors = theme.variants[variant].colors;
     paintBg(fc, colors, theme.isDark, sz);
     relayout(sz);
+    applyZoom(fc, w, h);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [themeId, variant]);
 
@@ -396,15 +419,19 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
   // ── Export ────────────────────────────────────────────
   function exportPNG() {
     const fc=fcRef.current; if(!fc) return;
-    fc.discardActiveObject(); fc.requestRenderAll();
+    fc.discardActiveObject();
+    const {w,h} = SIZE_CFG[size];
+    fc.setZoom(1);
+    fc.setDimensions({width:w, height:h});
+    fc.requestRenderAll();
     const d=fc.toDataURL({format:'png',quality:1,multiplier:1});
+    applyZoom(fc, w, h);
     const a=document.createElement('a'); a.download=`koala-poster-${themeId}-${variant}-${referralCode}.png`; a.href=d; a.click();
   }
 
   // ── Render ────────────────────────────────────────────
   if (!ready) return <Loading />;
 
-  const {w:cW,h:cH} = SIZE_CFG[size];
   const zhF = POSTER_FONTS.filter(f=>f.category==='zh');
   const enF = POSTER_FONTS.filter(f=>f.category==='en');
 
@@ -573,8 +600,8 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
         {/* ── Right: Canvas Preview ── */}
         <div className="flex-1 min-w-0">
           <div className="rounded-xl bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] p-4 flex items-center justify-center overflow-hidden">
-            <div style={{width:'100%',maxWidth:540,aspectRatio:`${cW}/${cH}`,position:'relative'}}>
-              <canvas ref={cRef} style={{width:'100%',height:'100%',display:'block',borderRadius:8}}/>
+            <div ref={previewRef} style={{width:'100%',maxWidth:540}}>
+              <canvas ref={cRef} style={{display:'block',borderRadius:8}}/>
             </div>
           </div>
         </div>
