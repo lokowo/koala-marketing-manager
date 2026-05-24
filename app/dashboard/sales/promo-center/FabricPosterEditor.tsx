@@ -157,17 +157,16 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     fcRef.current = fc;
     paintBg(fc, bgColors, theme.isDark, size);
     buildPreset(fc, w, h, theme.isDark);
-    requestAnimationFrame(() => applyZoom(fc, w, h));
+    requestAnimationFrame(() => applyScale(w, h));
     return () => { fc.dispose(); initDone.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
   useEffect(() => {
     const el = previewRef.current;
-    const fc = fcRef.current;
-    if (!el || !fc) return;
+    if (!el) return;
     const {w,h} = SIZE_CFG[size];
-    const ro = new ResizeObserver(() => applyZoom(fc, w, h));
+    const ro = new ResizeObserver(() => applyScale(w, h));
     ro.observe(el);
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -179,12 +178,16 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     setTb({ fontFamily:(obj.fontFamily as string)||gFont, fontSize:obj.fontSize||48, fill:(obj.fill as string)||'#FFFFFF', fontWeight:(obj.fontWeight as string)||'normal' });
   }
 
-  function applyZoom(fc: Canvas, logicalW: number, logicalH: number) {
-    const el = previewRef.current;
-    if (!el) return;
-    const scale = el.clientWidth / logicalW;
-    fc.setZoom(scale);
-    fc.setDimensions({ width: logicalW * scale, height: logicalH * scale });
+  function applyScale(logicalW: number, logicalH: number) {
+    const wrapper = previewRef.current;
+    if (!wrapper) return;
+    const s = wrapper.clientWidth / logicalW;
+    const cc = wrapper.querySelector('.canvas-container') as HTMLElement;
+    if (cc) {
+      cc.style.transform = `scale(${s})`;
+      cc.style.transformOrigin = 'top left';
+    }
+    wrapper.style.height = `${logicalH * s}px`;
   }
 
   // ── Background ────────────────────────────────────────
@@ -362,12 +365,11 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
     const fc=fcRef.current; if(!fc) return;
     setSize(sz);
     const {w,h} = SIZE_CFG[sz];
-    fc.setZoom(1);
     fc.setDimensions({width:w,height:h});
     const colors = theme.variants[variant].colors;
     paintBg(fc, colors, theme.isDark, sz);
     relayout(sz);
-    applyZoom(fc, w, h);
+    applyScale(w, h);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [themeId, variant]);
 
@@ -419,13 +421,8 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
   // ── Export ────────────────────────────────────────────
   function exportPNG() {
     const fc=fcRef.current; if(!fc) return;
-    fc.discardActiveObject();
-    const {w,h} = SIZE_CFG[size];
-    fc.setZoom(1);
-    fc.setDimensions({width:w, height:h});
-    fc.requestRenderAll();
+    fc.discardActiveObject(); fc.requestRenderAll();
     const d=fc.toDataURL({format:'png',quality:1,multiplier:1});
-    applyZoom(fc, w, h);
     const a=document.createElement('a'); a.download=`koala-poster-${themeId}-${variant}-${referralCode}.png`; a.href=d; a.click();
   }
 
@@ -600,7 +597,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
         {/* ── Right: Canvas Preview ── */}
         <div className="flex-1 min-w-0">
           <div className="rounded-xl bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] p-4 flex items-center justify-center overflow-hidden">
-            <div ref={previewRef} style={{width:'100%',maxWidth:540}}>
+            <div ref={previewRef} style={{width:'100%',maxWidth:540,overflow:'hidden',position:'relative'}}>
               <canvas ref={cRef} style={{display:'block',borderRadius:8}}/>
             </div>
           </div>
