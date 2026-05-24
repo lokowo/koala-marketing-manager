@@ -1,5 +1,5 @@
 # Koala PhD 项目状态文档
-> 最后更新: 2026-05-24 | 版本: V4.0
+> 最后更新: 2026-05-25 | 版本: V4.1
 
 ## 项目概览
 **Koala PhD（考拉博士）** — 澳洲 PhD 留学 AI 智能顾问平台
@@ -219,6 +219,12 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] 完成状态显示顾问联系时间(24h) + 微信号 KoalaStudyAdvisor
 - [x] handoffCard 消息类型在 message list 中正确渲染 OlaHandoffCard 组件
 
+### Phase 9.5: 推荐信系统验证 + chat TS 修复 ✅ 完成 (2026-05-25)
+- [x] 推荐信生成 API 实测 (POST /api/user/recommendation-letter/generate): 修复 DB insert 失败时仍 increment usage 的 bug
+- [x] 推荐信 buildStudentSummary 运算符优先级 bug: `e.endDate ?? e.isCurrent ? ...` → `e.endDate ?? (e.isCurrent ? ...)`
+- [x] 推荐信完整流程验证: generate API + PDF 导出 + RecommendationLetterCard 编辑/保存 + my-documents 页面集成
+- [x] chat/page.tsx TypeScript 验证: `npx tsc --noEmit` 零错误通过
+
 ### Phase 9.4: Ola 浮动吉祥物 ✅ 完成 (2026-05-24)
 - [x] OlaFloatingMascot 独立组件 (app/components/OlaFloatingMascot.tsx)
 - [x] 入场动画: 页面加载 0.3s 后从右侧滑入右下角, 0.4s transition
@@ -241,7 +247,7 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 ### 中优先级
 - [ ] 套磁信 A/B 测试 (同一教授生成多版本,追踪回复率)
 - [ ] 学生端仪表盘 (申请进度可视化 + 时间线)
-- [ ] 推荐信生成 (recommendation letter 已有API,需前端)
+- [x] 推荐信生成 ✅ (API+前端+PDF 已验证完成, Phase 9.5)
 - [ ] 移动端 PWA 优化 (离线缓存 + push notification)
 
 ### 低优先级

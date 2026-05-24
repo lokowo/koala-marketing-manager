@@ -173,14 +173,15 @@ ${memoryPrompt ? `\n## 学生额外信息（从对话中提取）\n${memoryPromp
       .select('id')
       .single();
 
-    if (insertErr) {
+    if (insertErr || !doc) {
       console.error('[recommendation-letter] save error:', insertErr);
+      return Response.json({ error: '推荐信已生成但保存失败，请重试' }, { status: 500 });
     }
 
     await incrementUsage(supabaseAdmin, user.id, 'recommendation_letter');
 
     return Response.json({
-      id: doc?.id ?? null,
+      id: doc.id,
       letter: result.letter,
       cover_note: result.cover_note,
       credits_used: 1,
@@ -210,7 +211,7 @@ function buildStudentSummary(ctx: NonNullable<Awaited<ReturnType<typeof getStude
   if (ctx.education?.length) {
     lines.push('\n### 教育经历');
     for (const e of ctx.education) {
-      lines.push(`- ${e.degree ?? ''} in ${e.major ?? ''} @ ${e.school ?? ''} (${e.startDate ?? ''}–${e.endDate ?? e.isCurrent ? 'Present' : ''})`);
+      lines.push(`- ${e.degree ?? ''} in ${e.major ?? ''} @ ${e.school ?? ''} (${e.startDate ?? ''}–${e.endDate ?? (e.isCurrent ? 'Present' : '')})`);
       if (e.description) lines.push(`  ${e.description}`);
     }
   }
@@ -218,7 +219,7 @@ function buildStudentSummary(ctx: NonNullable<Awaited<ReturnType<typeof getStude
   if (ctx.work?.length) {
     lines.push('\n### 工作/研究经历');
     for (const w of ctx.work) {
-      lines.push(`- ${w.position ?? ''} @ ${w.company ?? ''} (${w.startDate ?? ''}–${w.endDate ?? w.isCurrent ? 'Present' : ''})`);
+      lines.push(`- ${w.position ?? ''} @ ${w.company ?? ''} (${w.startDate ?? ''}–${w.endDate ?? (w.isCurrent ? 'Present' : '')})`);
       if (w.description) lines.push(`  ${w.description}`);
     }
   }
