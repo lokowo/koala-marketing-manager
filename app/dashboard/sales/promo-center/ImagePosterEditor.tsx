@@ -171,22 +171,22 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
     fc.insertAt(1, fog);
 
     const topScrim = new Rect({
-      left:0, top:0, width:CW, height: Math.round(CH*0.45),
+      left:0, top:0, width:CW, height: Math.round(CH*0.30),
       selectable:false, evented:false,
       fill: new Gradient({
-        type:'linear', coords:{x1:0,y1:0,x2:0,y2:Math.round(CH*0.45)},
-        colorStops:[{offset:0,color:'rgba(15,20,25,0.55)'},{offset:0.6,color:'rgba(15,20,25,0.15)'},{offset:1,color:'rgba(15,20,25,0)'}],
+        type:'linear', coords:{x1:0,y1:0,x2:0,y2:Math.round(CH*0.30)},
+        colorStops:[{offset:0,color:'rgba(15,20,25,0.6)'},{offset:1,color:'rgba(15,20,25,0)'}],
       }),
     });
     meta(topScrim)[OV_KEY] = true;
     fc.insertAt(2, topScrim);
 
     const bottomScrim = new Rect({
-      left:0, top: Math.round(CH*0.55), width:CW, height: Math.round(CH*0.45),
+      left:0, top: Math.round(CH*0.60), width:CW, height: Math.round(CH*0.40),
       selectable:false, evented:false,
       fill: new Gradient({
-        type:'linear', coords:{x1:0,y1:0,x2:0,y2:Math.round(CH*0.45)},
-        colorStops:[{offset:0,color:'rgba(15,20,25,0)'},{offset:0.5,color:'rgba(15,20,25,0.40)'},{offset:1,color:'rgba(15,20,25,0.55)'}],
+        type:'linear', coords:{x1:0,y1:0,x2:0,y2:Math.round(CH*0.40)},
+        colorStops:[{offset:0,color:'rgba(15,20,25,0)'},{offset:1,color:'rgba(15,20,25,0.7)'}],
       }),
     });
     meta(bottomScrim)[OV_KEY] = true;
