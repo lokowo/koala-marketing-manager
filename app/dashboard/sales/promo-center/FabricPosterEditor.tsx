@@ -367,7 +367,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
 
       {/* Bottom: Left Panel + Right Preview */}
       <div className="flex flex-col lg:flex-row gap-4">
-        <div className="w-full lg:w-[260px] shrink-0 space-y-3 lg:max-h-[calc(100vh-420px)] lg:overflow-y-auto lg:pr-1">
+        <div className="w-full lg:w-[260px] shrink-0 space-y-3 max-h-[60vh] lg:max-h-[calc(100vh-200px)] overflow-y-auto pr-1">
           {/* 1. Title controls */}
           <Sec title="主标题">
             <input value={titleTxt} onChange={e => setTitleTxt(e.target.value)} className={inputCls} />
