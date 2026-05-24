@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
-import { Copy, Mail, Save, RefreshCw, Pencil, Check, Eye, Lock } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { Copy, Mail, Save, RefreshCw, Pencil, Check, Eye, Lock, Send, Loader2 } from 'lucide-react';
 import { ProfessorPreviewCard, type ProfessorPreviewData } from './ProfessorPreviewCard';
 import { SharePosterTrigger } from '../SharePoster';
 
@@ -37,7 +37,11 @@ interface ColdEmailCardProps {
   onRegenerate: () => void;
   coldEmailId?: string;
   professorId?: string;
+  professorName?: string;
+  professorEmail?: string;
   userPlan?: string;
+  sentAt?: string | null;
+  sentVia?: string | null;
 }
 
 const SCORE_LABELS: { key: keyof MatchScores; label: string }[] = [
@@ -99,7 +103,11 @@ export function ColdEmailCard({
   onRegenerate,
   coldEmailId,
   professorId,
+  professorName,
+  professorEmail,
   userPlan,
+  sentAt: initialSentAt,
+  sentVia: initialSentVia,
 }: ColdEmailCardProps) {
   const { content: cleanBody, hasWatermark } = splitWatermark(initialBody);
   const [subject, setSubject] = useState(initialSubject);
@@ -113,7 +121,56 @@ export function ColdEmailCard({
   const [previewError, setPreviewError] = useState<string | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
 
+  // Gmail send state
+  const [gmailStatus, setGmailStatus] = useState<{ connected: boolean; gmail_address: string | null }>({ connected: false, gmail_address: null });
+  const [sending, setSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(!!initialSentAt);
+  const [sentVia, setSentVia] = useState(initialSentVia ?? null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/user/gmail/status').then(r => r.json()).then(d => {
+      setGmailStatus({ connected: d.connected ?? false, gmail_address: d.gmail_address ?? null });
+    }).catch(() => {});
+  }, []);
+
   const isElite = userPlan === 'elite';
+
+  const handleGmailSend = async () => {
+    if (!professorEmail || !coldEmailId) return;
+    setSending(true);
+    setSendError(null);
+    try {
+      const bodyText = bodyRef.current?.innerText ?? cleanBody;
+      const htmlBody = bodyText.replace(/\n/g, '<br/>');
+      const res = await fetch('/api/user/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cold_email_id: coldEmailId,
+          to_email: professorEmail,
+          subject,
+          body_html: htmlBody,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.code === 'GMAIL_NOT_CONNECTED' || data.code === 'GMAIL_TOKEN_EXPIRED') {
+          setGmailStatus({ connected: false, gmail_address: null });
+        }
+        setSendError(data.error || '发送失败');
+      } else {
+        setEmailSent(true);
+        setSentVia('gmail');
+      }
+    } catch {
+      setSendError('网络错误，请稍后重试');
+    } finally {
+      setSending(false);
+      setShowConfirm(false);
+    }
+  };
 
   const handleProfessorPreview = async () => {
     if (!isElite) return;
@@ -260,31 +317,101 @@ export function ColdEmailCard({
         </div>
       )}
 
-      {/* 4. Action buttons */}
+      {/* 4. Send status */}
+      {emailSent && (
+        <div className="px-4 py-2 border-t border-gray-200 dark:border-white/10 bg-green-50/50 dark:bg-green-500/5">
+          <p className="text-xs text-[#5a8060] dark:text-green-400 flex items-center gap-1.5">
+            <Check size={13} />
+            已通过 {sentVia === 'gmail' ? 'Gmail' : '邮件'} 发送
+            {professorName && <span className="text-gray-400 dark:text-gray-500">— {professorName}</span>}
+          </p>
+        </div>
+      )}
+
+      {/* Confirm dialog */}
+      {showConfirm && (
+        <div className="px-4 py-3 border-t border-gray-200 dark:border-white/10 bg-amber-50/50 dark:bg-amber-500/5">
+          <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">
+            确认通过 <span className="font-medium">{gmailStatus.gmail_address}</span> 发送给{' '}
+            <span className="font-medium">{professorName || professorEmail}</span>？
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={handleGmailSend}
+              disabled={sending}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] disabled:opacity-50"
+            >
+              {sending ? <><Loader2 size={13} className="animate-spin" /> 发送中…</> : '确认发送'}
+            </button>
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="px-3 py-2 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
+      {sendError && (
+        <div className="px-4 py-2 border-t border-gray-200 dark:border-white/10">
+          <p className="text-xs text-[#b06040]">{sendError}</p>
+        </div>
+      )}
+
+      {/* 5. Action buttons */}
       <div className="px-4 py-3 border-t border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {/* Gmail Send */}
+          {emailSent ? (
+            <button
+              disabled
+              className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-green-50 dark:bg-green-500/10 text-[#5a8060] dark:text-green-400 border border-green-200 dark:border-green-500/20 cursor-default"
+            >
+              <Check size={13} /> 已发送
+            </button>
+          ) : gmailStatus.connected && professorEmail ? (
+            <button
+              onClick={() => setShowConfirm(true)}
+              disabled={sending}
+              className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              <Send size={13} /> 发送到教授邮箱
+            </button>
+          ) : (
+            <a
+              href="/api/auth/gmail/connect"
+              className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors no-underline"
+            >
+              <Mail size={13} /> {professorEmail ? '连接 Gmail 后发送' : '教授邮箱未知'}
+            </a>
+          )}
+          {/* Copy */}
           <button
             onClick={handleCopy}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors"
+            className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors"
           >
             {copied ? <><Check size={13} /> 已复制</> : <><Copy size={13} /> 复制全文</>}
           </button>
+          {/* Mailto */}
           <button
             onClick={handleMailto}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors"
+            className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors"
           >
             <Mail size={13} /> 邮件打开
           </button>
+          {/* Save */}
           <button
             onClick={handleSave}
             disabled={saving || saved}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
+            className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
           >
             {saved ? <><Check size={13} /> 已保存</> : saving ? '保存中...' : <><Save size={13} /> 保存草稿</>}
           </button>
+          {/* Regenerate */}
           <button
             onClick={onRegenerate}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+            className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
           >
             <RefreshCw size={13} /> 重新生成
           </button>

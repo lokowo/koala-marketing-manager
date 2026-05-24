@@ -376,6 +376,12 @@ export default function MyProfilePage() {
   const [referralStats, setReferralStats] = useState({ invited: 0, maxInvites: 3, earned: 0 });
   const [inviteCopied, setInviteCopied] = useState(false);
 
+  // Gmail
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [gmailAddress, setGmailAddress] = useState<string | null>(null);
+  const [gmailToast, setGmailToast] = useState<string | null>(null);
+  const [gmailDisconnecting, setGmailDisconnecting] = useState(false);
+
   const loadCredits = useCallback(() => {
     fetch('/api/user/credits').then(r => r.json()).then(d => {
       setCreditBalance(d.balance ?? 0);
@@ -412,6 +418,28 @@ export default function MyProfilePage() {
     const t = setTimeout(() => setRoleToast(null), 3500);
     return () => clearTimeout(t);
   }, [roleToast]);
+
+  useEffect(() => {
+    if (!user) return;
+    // Gmail toast from OAuth callback
+    const params = new URLSearchParams(window.location.search);
+    const gmailParam = params.get('gmail');
+    if (gmailParam === 'connected') {
+      setGmailToast('Gmail 连接成功');
+      setTimeout(() => setGmailToast(null), 3000);
+      window.history.replaceState({}, '', '/koala/my-profile');
+    } else if (gmailParam === 'error') {
+      setGmailToast('Gmail 连接失败，请重试');
+      setTimeout(() => setGmailToast(null), 4000);
+      window.history.replaceState({}, '', '/koala/my-profile');
+    }
+    // Load Gmail status
+    fetch('/api/user/gmail/status').then(r => r.json()).then(d => {
+      setGmailConnected(d.connected ?? false);
+      setGmailAddress(d.gmail_address ?? null);
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -1750,6 +1778,49 @@ export default function MyProfilePage() {
                       </button>
                     ))}
                   </div>
+                </div>
+                {/* Gmail connection */}
+                <div className="px-4 py-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500 dark:text-[#a8b8ac]">📧 Gmail 连接</span>
+                    {gmailConnected ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-[#5a8060] dark:text-green-400 flex items-center gap-1">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#5a8060] dark:bg-green-400" />
+                          {gmailAddress}
+                        </span>
+                        <button
+                          disabled={gmailDisconnecting}
+                          onClick={async () => {
+                            setGmailDisconnecting(true);
+                            try {
+                              await fetch('/api/user/gmail/disconnect', { method: 'POST' });
+                              setGmailConnected(false);
+                              setGmailAddress(null);
+                              setGmailToast('Gmail 已断开');
+                              setTimeout(() => setGmailToast(null), 3000);
+                            } catch {}
+                            setGmailDisconnecting(false);
+                          }}
+                          className="text-[10px] px-2 py-0.5 rounded border border-gray-200 dark:border-white/10 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-500/20 transition-colors"
+                        >
+                          {gmailDisconnecting ? '断开中…' : '断开'}
+                        </button>
+                      </div>
+                    ) : (
+                      <a
+                        href="/api/auth/gmail/connect"
+                        className="text-[11px] font-medium px-3 py-1 rounded-full bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] no-underline"
+                      >
+                        连接 Gmail
+                      </a>
+                    )}
+                  </div>
+                  {gmailToast && (
+                    <p className={`text-[11px] mt-1.5 ${gmailToast.includes('失败') ? 'text-[#b06040]' : 'text-[#5a8060]'}`}>
+                      {gmailToast}
+                    </p>
+                  )}
                 </div>
                 <Link href="/koala/my-profile/academic" className="flex items-center px-4 py-2.5 text-xs no-underline text-gray-500 dark:text-[#a8b8ac]">
                   🎓 学术档案

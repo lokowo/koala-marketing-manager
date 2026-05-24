@@ -14,3 +14,7 @@ ALTER TABLE gmail_tokens ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users manage own tokens" ON gmail_tokens
   FOR ALL USING (auth.uid() = user_id);
+
+-- Add Gmail tracking columns to cold_emails
+ALTER TABLE cold_emails ADD COLUMN IF NOT EXISTS sent_via text;
+ALTER TABLE cold_emails ADD COLUMN IF NOT EXISTS gmail_message_id text;

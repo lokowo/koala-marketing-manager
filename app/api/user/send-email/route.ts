@@ -140,7 +140,12 @@ export async function POST(req: Request) {
 
       await db
         .from('cold_emails')
-        .update({ status: 'sent', sent_at: new Date().toISOString() })
+        .update({
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          sent_via: 'gmail',
+          gmail_message_id: sendResult.id ?? null,
+        })
         .eq('id', cold_email_id)
         .eq('user_id', user.id);
     }

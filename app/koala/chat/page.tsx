@@ -57,6 +57,8 @@ interface ColdEmailData {
   creditsUsed: number;
   creditsRemaining: number;
   professorId: string;
+  professorName?: string;
+  professorEmail?: string;
 }
 
 interface Message {
@@ -1201,6 +1203,8 @@ function ChatPageInner() {
         creditsUsed: data.creditsUsed ?? 1,
         creditsRemaining: data.creditsRemaining ?? 0,
         professorId,
+        professorName: data.professorName ?? professorName,
+        professorEmail: data.professorEmail ?? undefined,
       };
 
       // Replace loading message with result
@@ -1321,6 +1325,8 @@ function ChatPageInner() {
                     creditsUsed: r.creditsUsed ?? 1,
                     creditsRemaining: r.creditsRemaining ?? 0,
                     professorId: r.professorId,
+                    professorName: r.professorName,
+                    professorEmail: r.professorEmail ?? undefined,
                   },
                   timestamp: new Date(),
                 };
@@ -1545,6 +1551,8 @@ function ChatPageInner() {
                       onRegenerate={() => handleGenerateColdEmail(msg.coldEmailData!.professorId, '教授')}
                       coldEmailId={msg.coldEmailData.id}
                       professorId={msg.coldEmailData.professorId}
+                      professorName={msg.coldEmailData.professorName}
+                      professorEmail={msg.coldEmailData.professorEmail}
                       userPlan={profile?.plan_type}
                     />
                   </div>

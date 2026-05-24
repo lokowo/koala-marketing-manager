@@ -31,6 +31,7 @@ export interface ColdEmailResult {
   creditsRemaining: number;
   professorId: string;
   professorName: string;
+  professorEmail: string | null;
   professorUniversity: string;
   error?: string;
 }
@@ -160,7 +161,7 @@ export async function generateColdEmailForProfessor(
 
   const professor = await getProfessor(professorId);
   if (!professor) {
-    return { id: null, subject: '', body: '', highlights: [], matchScores: [], creditsUsed: 0, creditsRemaining: 0, professorId, professorName: 'Unknown', professorUniversity: '', error: '教授不存在' };
+    return { id: null, subject: '', body: '', highlights: [], matchScores: [], creditsUsed: 0, creditsRemaining: 0, professorId, professorName: 'Unknown', professorEmail: null, professorUniversity: '', error: '教授不存在' };
   }
 
   const { data: profile } = await db
@@ -170,7 +171,7 @@ export async function generateColdEmailForProfessor(
     .single();
 
   if (!profile) {
-    return { id: null, subject: '', body: '', highlights: [], matchScores: [], creditsUsed: 0, creditsRemaining: 0, professorId, professorName: professor.name, professorUniversity: professor.university, error: '请先完善个人画像' };
+    return { id: null, subject: '', body: '', highlights: [], matchScores: [], creditsUsed: 0, creditsRemaining: 0, professorId, professorName: professor.name, professorEmail: professor.email || null, professorUniversity: professor.university, error: '请先完善个人画像' };
   }
 
   const [papersRes, grantsRes] = await Promise.all([
@@ -219,7 +220,7 @@ Return a valid JSON object with exactly this structure (no markdown fencing):
   try {
     emailData = JSON.parse(genText.replace(/```json|```/g, ''));
   } catch {
-    return { id: null, subject: '', body: '', highlights: [], matchScores: [], creditsUsed: 0, creditsRemaining: 0, professorId, professorName: professor.name, professorUniversity: professor.university, error: '邮件生成格式错误' };
+    return { id: null, subject: '', body: '', highlights: [], matchScores: [], creditsUsed: 0, creditsRemaining: 0, professorId, professorName: professor.name, professorEmail: professor.email || null, professorUniversity: professor.university, error: '邮件生成格式错误' };
   }
 
   const WATERMARK = '\n\n---\nCrafted with Koala PhD | AI-powered PhD advisor\nProfessor portal: koalaphd.com/professor/claim';
@@ -308,6 +309,7 @@ Return a valid JSON object with exactly this structure (no markdown fencing):
     creditsRemaining: updatedProfile?.credits_remaining ?? 0,
     professorId,
     professorName: professor.name,
+    professorEmail: professor.email || null,
     professorUniversity: professor.university,
   };
 }
