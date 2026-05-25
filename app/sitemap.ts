@@ -4,6 +4,31 @@ import { supabaseAdmin } from './lib/supabase/server';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
+const PAGE_SIZE = 1000;
+
+async function fetchAllProfessors(): Promise<Array<{ slug: string; last_synced_at?: string }>> {
+  const all: Array<{ slug: string; last_synced_at?: string }> = [];
+  let from = 0;
+
+  while (true) {
+    const { data } = await db
+      .from('professors')
+      .select('slug, last_synced_at')
+      .eq('verification_status', 'Verified')
+      .not('slug', 'is', null)
+      .order('slug')
+      .range(from, from + PAGE_SIZE - 1);
+
+    const rows = data ?? [];
+    all.push(...rows);
+
+    if (rows.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  return all;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://koalaphd.com';
 
@@ -23,7 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const [{ data: posts }, { data: professors }] = await Promise.all([
+    const [{ data: posts }, professors] = await Promise.all([
       db
         .from('blog_posts')
         .select('id, slug, published_at, updated_at')
@@ -31,12 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .not('slug', 'is', null)
         .order('published_at', { ascending: false })
         .limit(500),
-      db
-        .from('professors')
-        .select('slug, last_synced_at')
-        .eq('verification_status', 'Verified')
-        .not('slug', 'is', null)
-        .limit(10000),
+      fetchAllProfessors(),
     ]);
 
     const blogPages: MetadataRoute.Sitemap = (posts || []).map((post: { id: string; slug?: string; published_at?: string; updated_at?: string }) => ({
@@ -46,14 +66,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    const professorPages: MetadataRoute.Sitemap = (professors || [])
-      .filter((prof: { slug?: string }) => prof.slug)
-      .map((prof: { slug: string; last_synced_at?: string }) => ({
-        url: `${baseUrl}/professor/${prof.slug}`,
-        lastModified: prof.last_synced_at ? new Date(prof.last_synced_at) : new Date(),
-        changeFrequency: 'monthly' as const,
-        priority: 0.6,
-      }));
+    const professorPages: MetadataRoute.Sitemap = professors.map((prof: { slug: string; last_synced_at?: string }) => ({
+      url: `${baseUrl}/professor/${prof.slug}`,
+      lastModified: prof.last_synced_at ? new Date(prof.last_synced_at) : new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    }));
 
     return [...staticPages, ...professorPages, ...blogPages];
   } catch {
