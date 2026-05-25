@@ -1,5 +1,5 @@
 # Koala PhD 项目状态文档
-> 最后更新: 2026-05-25 | 版本: V4.4
+> 最后更新: 2026-05-25 | 版本: V4.5
 
 ## 项目概览
 **Koala PhD（考拉博士）** — 澳洲 PhD 留学 AI 智能顾问平台
@@ -319,6 +319,14 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] 移除首页重复 OlaFloatingMascot: Shell 已提供 OlaWidget, 首页不再单独渲染
 - [x] 触摸目标 44px 最小化: 聊天发送/附件按钮 size-9→size-11, 首页通知铃 size-9→size-11, 教授库搜索按钮 size-8→size-11, 教授详情返回/收藏按钮 min-h-44px, 博客搜索/分页按钮 min-h-44px
 - [x] KoalaShell 优化: 聊天页不渲染 BottomTabBar + 不添加 pb-88px 底部填充
+
+### 教授 Slug 生成与 SEO 修复 ✅ 完成 (2026-05-25)
+- [x] 为全部 7,888 位 Verified 教授生成唯一 slug（姓名转小写+连字符, 重名追加大学缩写, unaccent 处理特殊字符, 去除 Professor/Dr 等前缀）
+- [x] Pending/Merged 教授不生成 slug, 确保非 Verified 教授无 slug
+- [x] /professor/[slug] 路由添加 verification_status='Verified' 过滤, 非 Verified 教授返回 404
+- [x] sitemap.xml 修复: 教授页仅收录 Verified + slug 非空的教授（使用 /professor/{slug} 格式, 移除旧的 /koala/professors/{id} 格式）; 博客页仅收录已发布且有 slug 的文章; 教授 sitemap 上限提升至 10,000
+- [x] 登录页无"教授库"板块（已确认无需修改）
+- [x] 一次性脚本: scripts/backfill-professor-slugs-20260525.ts
 
 ## 待完成项目 (P4 路线图)
 

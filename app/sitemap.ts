@@ -28,13 +28,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .from('blog_posts')
         .select('id, slug, published_at, updated_at')
         .eq('status', 'published')
+        .not('slug', 'is', null)
         .order('published_at', { ascending: false })
         .limit(500),
       db
         .from('professors')
-        .select('id, slug, last_synced_at')
+        .select('slug, last_synced_at')
         .eq('verification_status', 'Verified')
-        .limit(5000),
+        .not('slug', 'is', null)
+        .limit(10000),
     ]);
 
     const blogPages: MetadataRoute.Sitemap = (posts || []).map((post: { id: string; slug?: string; published_at?: string; updated_at?: string }) => ({
@@ -44,23 +46,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    const professorPages: MetadataRoute.Sitemap = (professors || []).map((prof: { id: string; slug?: string; last_synced_at?: string }) => ({
-      url: `${baseUrl}/koala/professors/${prof.id}`,
-      lastModified: prof.last_synced_at ? new Date(prof.last_synced_at) : new Date(),
-      changeFrequency: 'monthly' as const,
-      priority: 0.6,
-    }));
-
-    const publicProfPages: MetadataRoute.Sitemap = (professors || [])
+    const professorPages: MetadataRoute.Sitemap = (professors || [])
       .filter((prof: { slug?: string }) => prof.slug)
-      .map((prof: { id: string; slug: string; last_synced_at?: string }) => ({
+      .map((prof: { slug: string; last_synced_at?: string }) => ({
         url: `${baseUrl}/professor/${prof.slug}`,
         lastModified: prof.last_synced_at ? new Date(prof.last_synced_at) : new Date(),
         changeFrequency: 'monthly' as const,
-        priority: 0.5,
+        priority: 0.6,
       }));
 
-    return [...staticPages, ...professorPages, ...publicProfPages, ...blogPages];
+    return [...staticPages, ...professorPages, ...blogPages];
   } catch {
     return staticPages;
   }

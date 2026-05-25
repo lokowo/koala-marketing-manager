@@ -50,6 +50,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     .from('professors')
     .select('name, university, research_areas, position_title')
     .eq('slug', slug)
+    .eq('verification_status', 'Verified')
     .maybeSingle();
 
   if (!prof) return { title: 'Professor Not Found' };
@@ -85,6 +86,7 @@ export default async function ProfessorPublicPage({ params }: { params: Promise<
     .from('professors')
     .select('*')
     .eq('slug', slug)
+    .eq('verification_status', 'Verified')
     .maybeSingle();
 
   if (!professor) notFound();
