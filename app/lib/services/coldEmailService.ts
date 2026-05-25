@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { supabaseAdmin } from '../supabase/server';
 import { getProfessor } from './professorService';
 import { refreshProfessorData } from './professorRefreshService';
-import { incrementUsage } from './usageTracker';
+import { checkUsage, incrementUsage } from './usageTracker';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -34,6 +34,7 @@ export interface ColdEmailResult {
   professorEmail: string | null;
   professorUniversity: string;
   error?: string;
+  billingExhausted?: boolean;
 }
 
 export function buildStudentSummary(profile: Record<string, unknown>): string {
@@ -153,15 +154,19 @@ export async function generateColdEmailForProfessor(
   userId: string,
   userEmail: string,
   professorId: string,
-  options?: { skipCreditDeduction?: boolean },
 ): Promise<ColdEmailResult> {
+  const emptyResult = (professorName: string, professorEmail: string | null, professorUniversity: string, error: string, billingExhausted?: boolean): ColdEmailResult => ({
+    id: null, subject: '', body: '', highlights: [], matchScores: [], creditsUsed: 0, creditsRemaining: 0,
+    professorId, professorName, professorEmail, professorUniversity, error, billingExhausted,
+  });
+
   await refreshProfessorData(supabaseAdmin, professorId).catch((err) =>
     console.error('[cold-email] refresh failed:', err),
   );
 
   const professor = await getProfessor(professorId);
   if (!professor) {
-    return { id: null, subject: '', body: '', highlights: [], matchScores: [], creditsUsed: 0, creditsRemaining: 0, professorId, professorName: 'Unknown', professorEmail: null, professorUniversity: '', error: '教授不存在' };
+    return emptyResult('Unknown', null, '', '教授不存在');
   }
 
   const { data: profile } = await db
@@ -171,7 +176,19 @@ export async function generateColdEmailForProfessor(
     .single();
 
   if (!profile) {
-    return { id: null, subject: '', body: '', highlights: [], matchScores: [], creditsUsed: 0, creditsRemaining: 0, professorId, professorName: professor.name, professorEmail: professor.email || null, professorUniversity: professor.university, error: '请先完善个人画像' };
+    return emptyResult(professor.name, professor.email || null, professor.university, '请先完善个人画像');
+  }
+
+  // ── Billing: monthly quota first, then credits ──
+  const quota = await checkUsage(supabaseAdmin, userId, 'email');
+  let usedCredits = false;
+
+  if (!quota.allowed) {
+    const credits = (profile.credits_remaining as number) ?? 0;
+    if (credits <= 0) {
+      return { ...emptyResult(professor.name, professor.email || null, professor.university, '本月申请信额度已用完，请升级订阅或购买积分包'), billingExhausted: true, creditsRemaining: 0 };
+    }
+    usedCredits = true;
   }
 
   const [papersRes, grantsRes] = await Promise.all([
@@ -243,27 +260,27 @@ Return a valid JSON object with exactly this structure (no markdown fencing):
     // Non-critical
   }
 
-  if (!options?.skipCreditDeduction) {
-    await incrementUsage(supabaseAdmin, userId, 'email', {
-      professor_id: professorId,
-      professor_name: professor.name,
+  // ── Execute billing ──
+  await incrementUsage(supabaseAdmin, userId, 'email', {
+    professor_id: professorId,
+    professor_name: professor.name,
+  });
+
+  if (usedCredits) {
+    const newBalance = (profile.credits_remaining as number) - 1;
+    await db
+      .from('user_profiles')
+      .update({ credits_remaining: newBalance })
+      .eq('id', userId);
+
+    await db.from('credit_transactions').insert({
+      user_id: userId,
+      amount: -1,
+      balance_after: newBalance,
+      type: 'cold_email',
+      description: `套磁信生成（额度外） - ${professor.name} (${professor.university})`,
+      reference_id: professorId,
     });
-
-    if (profile.credits_remaining > 0) {
-      await db
-        .from('user_profiles')
-        .update({ credits_remaining: profile.credits_remaining - 1 })
-        .eq('id', userId);
-
-      await db.from('credit_transactions').insert({
-        user_id: userId,
-        amount: -1,
-        balance_after: profile.credits_remaining - 1,
-        type: 'cold_email',
-        description: `套磁信生成 - ${professor.name} (${professor.university})`,
-        reference_id: professorId,
-      });
-    }
   }
 
   const { data: savedEmail } = await db
@@ -305,7 +322,7 @@ Return a valid JSON object with exactly this structure (no markdown fencing):
     body: emailData.body,
     highlights,
     matchScores,
-    creditsUsed: 1,
+    creditsUsed: usedCredits ? 1 : 0,
     creditsRemaining: updatedProfile?.credits_remaining ?? 0,
     professorId,
     professorName: professor.name,

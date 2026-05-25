@@ -83,6 +83,7 @@ export const FREE_LIMITS = {
   dailyAiTurns: 10,
   professorMatchCount: 10,
   freeEmails: 1,
+  monthlyEmails: 1,
   freeCvVersions: 1,
   canUploadFiles: false,
   canViewProfessorDetail: false,
@@ -95,6 +96,7 @@ export const SUBSCRIPTION_TIERS = {
     label: 'Starter',
     price: 19.9,
     monthlyCredits: 10,
+    monthlyEmails: 5,
     popular: false,
     stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_SUB_STARTER || '',
     features: [
@@ -117,6 +119,7 @@ export const SUBSCRIPTION_TIERS = {
     label: 'Pro',
     price: 49.0,
     monthlyCredits: 30,
+    monthlyEmails: 15,
     popular: true,
     stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_SUB_PRO || '',
     features: [
@@ -139,6 +142,7 @@ export const SUBSCRIPTION_TIERS = {
     label: 'Elite',
     price: 99.0,
     monthlyCredits: 100,
+    monthlyEmails: null as unknown as number,
     popular: false,
     stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_SUB_ELITE || '',
     features: [

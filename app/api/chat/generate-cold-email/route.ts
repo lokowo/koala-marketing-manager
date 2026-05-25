@@ -1,7 +1,5 @@
 import { type NextRequest } from 'next/server';
 import { getServerUser } from '../../../lib/auth';
-import { supabaseAdmin } from '../../../lib/supabase/server';
-import { checkUsage } from '../../../lib/services/usageTracker';
 import { generateColdEmailForProfessor } from '../../../lib/services/coldEmailService';
 import { upsertApplicationForEmail } from '../../../lib/services/applicationSync';
 
@@ -19,23 +17,18 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Missing professorId' }, { status: 400 });
     }
 
-    const usage = await checkUsage(supabaseAdmin, user.id, 'email');
-    if (!usage.allowed) {
-      return Response.json(
-        {
-          error: '今日套磁信生成次数已用完',
-          used: usage.used,
-          limit: usage.limit,
-        },
-        { status: 403 },
-      );
-    }
-
     const result = await generateColdEmailForProfessor(
       user.id,
       user.email ?? '',
       professorId,
     );
+
+    if (result.billingExhausted) {
+      return Response.json(
+        { error: result.error, creditsRemaining: result.creditsRemaining },
+        { status: 402 },
+      );
+    }
 
     if (result.error) {
       const status = result.error === '教授不存在' ? 404 : 400;

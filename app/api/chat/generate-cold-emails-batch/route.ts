@@ -1,11 +1,6 @@
 import { getServerUser } from '../../../lib/auth';
-import { supabaseAdmin } from '../../../lib/supabase/server';
-import { checkUsage } from '../../../lib/services/usageTracker';
 import { generateColdEmailForProfessor } from '../../../lib/services/coldEmailService';
 import { upsertApplicationForEmail } from '../../../lib/services/applicationSync';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = supabaseAdmin as any;
 
 export async function POST(request: Request) {
   const user = await getServerUser();
@@ -24,20 +19,6 @@ export async function POST(request: Request) {
     return Response.json({ error: '单次最多批量生成 10 封' }, { status: 400 });
   }
 
-  const usage = await checkUsage(supabaseAdmin, user.id, 'email');
-  if (!usage.allowed) {
-    return Response.json(
-      { error: '今日套磁信生成次数已用完', used: usage.used, limit: usage.limit },
-      { status: 403 },
-    );
-  }
-
-  const { data: profile } = await db
-    .from('user_profiles')
-    .select('credits_remaining')
-    .eq('id', user.id)
-    .single();
-
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
@@ -45,7 +26,7 @@ export async function POST(request: Request) {
         controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
       }
 
-      send('start', { total: professorIds.length, creditsRemaining: profile?.credits_remaining ?? 0 });
+      send('start', { total: professorIds.length });
 
       let generated = 0;
       let failed = 0;
@@ -60,6 +41,28 @@ export async function POST(request: Request) {
             user.email ?? '',
             professorId,
           );
+
+          if (result.billingExhausted) {
+            send('email_error', {
+              professorId,
+              professorName: result.professorName,
+              error: result.error,
+              billingExhausted: true,
+              current: i + 1,
+              total: professorIds.length,
+            });
+            failed++;
+            const remaining = professorIds.length - i - 1;
+            if (remaining > 0) {
+              send('skipped', {
+                count: remaining,
+                reason: '额度与积分均已用完',
+                professorIds: professorIds.slice(i + 1),
+              });
+              failed += remaining;
+            }
+            break;
+          }
 
           if (result.error) {
             send('email_error', {
