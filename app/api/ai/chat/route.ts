@@ -566,6 +566,29 @@ H指数：${prof.hIndex ?? '未知'}`;
       } catch {}
     }
 
+    // CV / 简历 guidance: when user mentions CV, inject completeness context
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1].content;
+      const cvIntent = /cv|简历|resume|学术简历|academic cv|生成.*cv|补全.*cv|完善.*简历/i.test(lastMsg);
+      if (cvIntent && studentCtx) {
+        const cvSections: string[] = [];
+        if (!studentCtx.displayName || !studentCtx.email) cvSections.push('个人信息（姓名/邮箱）');
+        if (!studentCtx.education?.length) cvSections.push('教育背景');
+        if (!studentCtx.hasResearchExperience && !studentCtx.researchDescription) cvSections.push('研究经历');
+        if (!studentCtx.work?.length) cvSections.push('工作/实习经历');
+        if (!studentCtx.hasPublications && !studentCtx.publicationDetails) cvSections.push('论文发表');
+        if (!studentCtx.researchInterests?.length) cvSections.push('技能特长');
+
+        if (cvSections.length > 0) {
+          extraContext += `\n\n## CV 补全引导
+用户提到了 CV/简历。检测到以下板块数据为空：${cvSections.join('、')}。
+请主动引导用户补全这些信息。逐个板块引导，不要一次问太多。示例：
+"我看到你的教育背景已经有了，但研究经历还没有。你有参与过什么研究项目吗？比如本科毕设、实验室实习、或者跟教授合作的课题？跟我说说，我帮你整理成CV格式。"
+收集到信息后，用自然语言确认并告诉用户可以去"我的文档"页面生成完整 CV。`;
+        }
+      }
+    }
+
     // For modes that need professor search, add tool instruction to system prompt
     if (mode === 'path' || mode === 'chat' || mode === 'write' || mode === 'rp' || mode === 'interview') {
       extraContext += `\n\n## 教授推荐规则

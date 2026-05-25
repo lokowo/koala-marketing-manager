@@ -6,7 +6,7 @@ import { useAuth } from '../components/AuthContext';
 import ResearchProposalCard from '../components/ResearchProposalCard';
 import RecommendationLetterCard from '../components/RecommendationLetterCard';
 import AcademicCVCard from '../components/AcademicCVCard';
-import { Plus, Loader2, FileText, MessageSquare, ChevronDown, X, Mail, GraduationCap } from 'lucide-react';
+import { Plus, Loader2, FileText, MessageSquare, ChevronDown, X, Mail, GraduationCap, AlertCircle } from 'lucide-react';
 
 interface SavedProfessor {
   professor_id: string;
@@ -85,6 +85,16 @@ export default function MyDocumentsPage() {
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
+  // CV completeness
+  const [cvCompleteness, setCvCompleteness] = useState<{
+    ready: boolean;
+    completion_percentage: number;
+    missing_required: string[];
+    missing_recommended: string[];
+    sections: Record<string, { status: string; data_count: number }>;
+  } | null>(null);
+  const [loadingCompleteness, setLoadingCompleteness] = useState(false);
+
   // Recommendation letter form
   const [recName, setRecName] = useState('');
   const [recTitle, setRecTitle] = useState('');
@@ -139,17 +149,31 @@ export default function MyDocumentsPage() {
     setShowNewDocFlow(true);
     setNewDocType(null);
     setGenerateError(null);
+    setCvCompleteness(null);
     setRecName('');
     setRecTitle('');
     setRecRelationship('');
     setRecProfessorId('');
   };
 
-  const handlePickType = (type: 'research_proposal' | 'recommendation_letter' | 'cv') => {
+  const handlePickType = async (type: 'research_proposal' | 'recommendation_letter' | 'cv') => {
     setNewDocType(type);
     setGenerateError(null);
+    setCvCompleteness(null);
     if (type === 'research_proposal' || type === 'recommendation_letter') {
       fetchSavedProfessors();
+    }
+    if (type === 'cv') {
+      setLoadingCompleteness(true);
+      try {
+        const res = await fetch('/api/user/cv/completeness');
+        if (res.ok) {
+          const data = await res.json();
+          setCvCompleteness(data);
+        }
+      } catch { /* silent */ } finally {
+        setLoadingCompleteness(false);
+      }
     }
   };
 
@@ -475,20 +499,128 @@ export default function MyDocumentsPage() {
           {/* CV generation */}
           {newDocType === 'cv' && (
             <div className="p-4 space-y-3">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                AI 将根据你的个人资料和教育/工作经历自动生成专业学术 CV。生成后可编辑各分段内容。
-              </p>
-              <button
-                onClick={handleGenerateCV}
-                disabled={cvGenerating}
-                className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-lg bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] hover:opacity-90 transition-opacity disabled:opacity-50 min-h-[44px]"
-              >
-                {cvGenerating ? (
-                  <><Loader2 size={14} className="animate-spin" /> 生成中...</>
-                ) : (
-                  '生成学术 CV'
-                )}
-              </button>
+              {loadingCompleteness ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 size={20} className="animate-spin text-gray-400 dark:text-gray-500" />
+                </div>
+              ) : cvCompleteness && cvCompleteness.completion_percentage < 60 ? (
+                /* Low completeness — guide user to Ola */
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-500/10">
+                    <AlertCircle size={16} className="text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-800 dark:text-amber-300">学术资料还不够完整</p>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                        当前完整度 {cvCompleteness.completion_percentage}%，建议先补全以下信息，生成的 CV 质量更高
+                      </p>
+                    </div>
+                  </div>
+                  {/* Missing sections */}
+                  <div className="space-y-1.5">
+                    {[...cvCompleteness.missing_required, ...cvCompleteness.missing_recommended].map(key => {
+                      const labels: Record<string, string> = {
+                        personal: '个人信息',
+                        education: '教育背景',
+                        research: '研究经历',
+                        work: '工作/实习经历',
+                        publications: '论文发表',
+                        skills: '技能特长',
+                      };
+                      const prompts: Record<string, string> = {
+                        personal: '我想补全CV中的个人信息部分，请帮我整理',
+                        education: '我想补全CV中的教育背景部分，请帮我整理',
+                        research: '我想补全CV中的研究经历部分，请帮我整理',
+                        work: '我想补全CV中的工作经历部分，请帮我整理',
+                        publications: '我想补全CV中的论文发表部分，请帮我整理',
+                        skills: '我想补全CV中的技能特长部分，请帮我整理',
+                      };
+                      const isRequired = cvCompleteness.missing_required.includes(key);
+                      return (
+                        <Link
+                          key={key}
+                          href={`/koala/chat?mode=rp&msg=${encodeURIComponent(prompts[key] ?? '')}`}
+                          className="flex items-center justify-between px-3 py-2 rounded-lg border border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors no-underline"
+                        >
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {labels[key] ?? key}
+                            {isRequired && <span className="ml-1.5 text-[10px] text-red-500 dark:text-red-400 font-medium">必填</span>}
+                          </span>
+                          <span className="text-xs text-blue-500 dark:text-blue-400 font-medium shrink-0">去补全 →</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  {/* Still allow generating with low completeness */}
+                  <button
+                    onClick={handleGenerateCV}
+                    disabled={cvGenerating}
+                    className="w-full flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors disabled:opacity-50 min-h-[40px]"
+                  >
+                    {cvGenerating ? (
+                      <><Loader2 size={13} className="animate-spin" /> 生成中...</>
+                    ) : (
+                      '仍然生成（内容可能不完整）'
+                    )}
+                  </button>
+                </div>
+              ) : (
+                /* Sufficient completeness — normal generate flow */
+                <div className="space-y-3">
+                  {cvCompleteness && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500 dark:text-gray-400">资料完整度</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{cvCompleteness.completion_percentage}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-green-500 dark:bg-green-400 transition-all"
+                          style={{ width: `${cvCompleteness.completion_percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    AI 将根据你的个人资料和教育/工作经历自动生成专业学术 CV。生成后可编辑各分段内容。
+                  </p>
+                  <button
+                    onClick={handleGenerateCV}
+                    disabled={cvGenerating}
+                    className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-lg bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] hover:opacity-90 transition-opacity disabled:opacity-50 min-h-[44px]"
+                  >
+                    {cvGenerating ? (
+                      <><Loader2 size={14} className="animate-spin" /> 生成中...</>
+                    ) : (
+                      '生成学术 CV'
+                    )}
+                  </button>
+                  {/* Show missing recommended sections as suggestions */}
+                  {cvCompleteness && cvCompleteness.missing_recommended.length > 0 && (
+                    <div className="pt-1">
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1.5">想让 CV 更完整？补全以下板块：</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {cvCompleteness.missing_recommended.map(key => {
+                          const labels: Record<string, string> = {
+                            research: '研究经历',
+                            work: '工作经历',
+                            publications: '论文',
+                            skills: '技能',
+                          };
+                          return (
+                            <Link
+                              key={key}
+                              href={`/koala/chat?mode=rp&msg=${encodeURIComponent(`我想补全CV中的${labels[key] ?? key}部分，请帮我整理`)}`}
+                              className="inline-flex items-center px-2.5 py-1 text-[11px] font-medium rounded-full border border-gray-200 dark:border-white/10 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors no-underline"
+                            >
+                              + {labels[key] ?? key}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

@@ -634,14 +634,18 @@ function ChatPageInner() {
   const { user, profile, showLogin, refreshProfile } = useAuth();
   const [mode, setMode] = useState<AIMode>(() => {
     const action = searchParams.get('action');
+    const modeParam = searchParams.get('mode');
     if (action === 'outreach') return 'write';
     if (action === 'interview') return 'interview';
     if (action === 'research') return 'research';
+    if (modeParam && ['path', 'research', 'chat', 'write', 'rp', 'interview'].includes(modeParam)) return modeParam as AIMode;
     return 'path';
   });
   const [messages, setMessages] = useState<Message[]>(() => {
     const action = searchParams.get('action');
-    const modeKey = action === 'outreach' ? 'write' : action === 'interview' ? 'interview' : action === 'research' ? 'research' : 'path';
+    const modeParam = searchParams.get('mode');
+    let modeKey: string = action === 'outreach' ? 'write' : action === 'interview' ? 'interview' : action === 'research' ? 'research' : 'path';
+    if (modeParam && ['path', 'research', 'chat', 'write', 'rp', 'interview'].includes(modeParam)) modeKey = modeParam;
     const cfg = MODES.find(m => m.key === modeKey)!;
     // Try loading from localStorage immediately (server-rendered safe)
     const cached = getLocalHistory(modeKey);
@@ -852,6 +856,7 @@ function ChatPageInner() {
     const action = searchParams.get('action');
     const profName = searchParams.get('name');
     const profId = searchParams.get('prof');
+    const msgParam = searchParams.get('msg');
     if (action === 'outreach' && profName) {
       const decodedName = decodeURIComponent(profName);
       return { msg: `请帮我给 ${decodedName} 教授写一封申请信`, profId: profId ?? undefined };
@@ -859,6 +864,9 @@ function ChatPageInner() {
     if (action === 'interview' && profName) {
       const decodedName = decodeURIComponent(profName);
       return { msg: `请帮我模拟和 ${decodedName} 教授的面试`, profId: profId ?? undefined };
+    }
+    if (msgParam) {
+      return { msg: decodeURIComponent(msgParam) };
     }
     return null;
   });

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Save, Check, Loader2, Download, Sparkles, ChevronDown, ChevronUp, Plus, Trash2, X,
+  Save, Check, Loader2, Download, Sparkles, ChevronDown, ChevronUp, Plus, Trash2, X, MessageSquare,
 } from 'lucide-react';
+import Link from 'next/link';
 
 interface CVPersonal {
   name?: string;
@@ -94,6 +95,29 @@ export default function AcademicCVCard({
   // AI enhance state
   const [enhancingKey, setEnhancingKey] = useState<string | null>(null);
   const [enhancedPreview, setEnhancedPreview] = useState<{ key: string; text: string } | null>(null);
+
+  // CV completeness
+  const cvCompletionPct = (() => {
+    let filled = 0;
+    let total = 7;
+    if (content.personal?.name && content.personal?.email) filled++;
+    if ((content.education ?? []).length > 0) filled++;
+    if ((content.research ?? []).length > 0) filled++;
+    if ((content.publications ?? []).length > 0) filled++;
+    const s = content.skills;
+    if (s && ((s.technical?.length ?? 0) + (s.languages?.length ?? 0) + (s.tools?.length ?? 0) > 0)) filled++;
+    if ((content.awards ?? []).length > 0) filled++;
+    if ((content.references ?? []).length > 0) filled++;
+    return Math.round((filled / total) * 100);
+  })();
+
+  const emptySections = SECTIONS.filter(({ key }) => {
+    if (key === 'skills') {
+      const s = content.skills;
+      return !s || ((s.technical?.length ?? 0) + (s.languages?.length ?? 0) + (s.tools?.length ?? 0) === 0);
+    }
+    return !(content[key] as unknown[] | undefined)?.length;
+  });
 
   const toggleCollapse = (key: string) => {
     setCollapsedSections(prev => {
@@ -279,6 +303,19 @@ export default function AcademicCVCard({
           >
             {status === 'final' ? '定稿' : '草稿'}
           </button>
+        </div>
+        {/* Completeness bar */}
+        <div className="mt-2.5 space-y-1">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-gray-400 dark:text-gray-500">CV 完整度</span>
+            <span className={`font-medium ${cvCompletionPct >= 80 ? 'text-green-600 dark:text-green-400' : cvCompletionPct >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>{cvCompletionPct}%</span>
+          </div>
+          <div className="h-1 rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${cvCompletionPct >= 80 ? 'bg-green-500 dark:bg-green-400' : cvCompletionPct >= 50 ? 'bg-amber-500 dark:bg-amber-400' : 'bg-red-400 dark:bg-red-500'}`}
+              style={{ width: `${cvCompletionPct}%` }}
+            />
+          </div>
         </div>
       </div>
 
@@ -485,9 +522,17 @@ export default function AcademicCVCard({
 
                   {/* Empty state */}
                   {key !== 'skills' && !(content[key] as unknown[] | undefined)?.length && (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">
-                      暂无内容，点击"添加"按钮新增
-                    </p>
+                    <div className="text-center py-4 space-y-2">
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        暂无内容，点击"添加"按钮手动新增
+                      </p>
+                      <Link
+                        href={`/koala/chat?mode=rp&msg=${encodeURIComponent(`我想补全CV中的${label}部分，请帮我整理`)}`}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-medium rounded-full border border-gray-200 dark:border-white/10 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors no-underline"
+                      >
+                        <MessageSquare size={11} /> 让 Ola 帮我补全
+                      </Link>
+                    </div>
                   )}
                 </div>
               )}
@@ -495,6 +540,24 @@ export default function AcademicCVCard({
           );
         })}
       </div>
+
+      {/* Empty sections hint */}
+      {emptySections.length > 0 && (
+        <div className="px-4 py-2.5 border-t border-gray-100 dark:border-white/5">
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1.5">想让 CV 更完整？补全空板块：</p>
+          <div className="flex flex-wrap gap-1.5">
+            {emptySections.map(({ key, label }) => (
+              <Link
+                key={key}
+                href={`/koala/chat?mode=rp&msg=${encodeURIComponent(`我想补全CV中的${label}部分，请帮我整理`)}`}
+                className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full border border-gray-200 dark:border-white/10 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors no-underline"
+              >
+                + {label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/[0.01] flex-wrap">
