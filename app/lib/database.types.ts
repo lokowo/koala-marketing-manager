@@ -214,24 +214,6 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['feedback']['Insert']>;
       };
-      user_credits: {
-        Row: {
-          id: string;
-          user_id: string;
-          credit_balance: number;
-          subscription_tier: string | null;
-          subscription_monthly_credits: number;
-          subscription_expires_at: string | null;
-          total_credits_purchased: number;
-          total_credits_used: number;
-          created_at: string;
-        };
-        Insert: Omit<Database['public']['Tables']['user_credits']['Row'], 'id' | 'created_at'> & {
-          id?: string;
-          created_at?: string;
-        };
-        Update: Partial<Database['public']['Tables']['user_credits']['Insert']>;
-      };
       outreach_emails: {
         Row: {
           id: string;

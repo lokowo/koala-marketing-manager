@@ -1,5 +1,5 @@
 # Koala PhD 项目状态文档
-> 最后更新: 2026-05-25 | 版本: V4.6
+> 最后更新: 2026-05-25 | 版本: V4.7
 
 ## 项目概览
 **Koala PhD（考拉博士）** — 澳洲 PhD 留学 AI 智能顾问平台
@@ -354,6 +354,12 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] coldEmailService 移除"有积分就顺手扣"逻辑, 改为仅在月额度用完时扣积分
 - [x] 批量路由 generate-cold-emails-batch 逐封计费, 额度/积分耗尽时已生成的正常返回 + 剩余明确标记 skipped + 中断循环
 - [x] 单封路由 generate-cold-email 移除冗余 checkUsage 预检, 计费由 service 层统一处理, billingExhausted 映射为 402
+
+### 删除废弃死表 user_credits ✅ 完成 (2026-05-25)
+- [x] 全仓库 grep 确认 0 处应用代码读写 user_credits（仅 database.types.ts 类型定义 + 非运行时文件）
+- [x] Migration: DROP TABLE IF EXISTS public.user_credits（无 CASCADE，0 行数据，0 外键依赖）
+- [x] database.types.ts 移除 user_credits 的 Row/Insert/Update 类型定义
+- [x] scripts/check-data.ts 移除 user_credits 引用
 
 ## 待完成项目 (P4 路线图)
 

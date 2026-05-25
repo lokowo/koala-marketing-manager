@@ -14,7 +14,7 @@ loadEnv();
 const REQUIRED_TABLES = [
   'professors', 'grants', 'papers', 'leads',
   'ai_conversations', 'feedback', 'blog_posts',
-  'knowledge_chunks', 'user_credits', 'outreach_emails',
+  'knowledge_chunks', 'outreach_emails',
   'user_achievements', 'daily_tasks', 'professor_matches',
   'followup_reminders', 'sensitive_words',
 ];
