@@ -1,5 +1,5 @@
 # Koala PhD 项目状态文档
-> 最后更新: 2026-05-25 | 版本: V4.7
+> 最后更新: 2026-05-26 | 版本: V4.8
 
 ## 项目概览
 **Koala PhD（考拉博士）** — 澳洲 PhD 留学 AI 智能顾问平台
@@ -354,6 +354,14 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] coldEmailService 移除"有积分就顺手扣"逻辑, 改为仅在月额度用完时扣积分
 - [x] 批量路由 generate-cold-emails-batch 逐封计费, 额度/积分耗尽时已生成的正常返回 + 剩余明确标记 skipped + 中断循环
 - [x] 单封路由 generate-cold-email 移除冗余 checkUsage 预检, 计费由 service 层统一处理, billingExhausted 映射为 402
+
+### Phase 2 转化引导 UI ✅ 完成 (2026-05-26)
+- [x] UpgradePrompt 组件升级: 支持自定义 message + 多 CTA 按钮配置, 深色模式金色主题
+- [x] AI 对话 403 处理: callApi 识别 daily_limit_reached, 在消息流展示升级引导(单按钮"升级订阅")
+- [x] 套磁信 402 处理: 单封/批量生成 billingExhausted 展示双按钮("升级订阅" + "购买积分包")
+- [x] 批量生成 SSE skipped 事件: 部分完成时展示"已生成 X 封, 剩余 Y 位教授因额度用尽未生成" + 升级引导
+- [x] 积分余额指示器: write 模式 header 显示当前积分余额(从 /api/user/credits 加载), 点击跳转 pricing
+- [x] 积分初始值改为从 API 获取(之前硬编码 10)
 
 ### 删除废弃死表 user_credits ✅ 完成 (2026-05-25)
 - [x] 全仓库 grep 确认 0 处应用代码读写 user_credits（仅 database.types.ts 类型定义 + 非运行时文件）
