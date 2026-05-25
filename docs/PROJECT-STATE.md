@@ -256,6 +256,15 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] 全站文案: "24,000+位教授" → "覆盖全澳38所大学" (首页hero/CTA/SEO/海报/邮件/FAQ/AI persona 共15处)
 - [x] 首页底部计数器: 移除教授具体数量卡片, 保留"38 澳洲大学"和"30s 智能匹配"
 
+### 博客生成系统性能优化 ✅ 完成 (2026-05-25)
+- [x] 性能审计: generate 25-40s (Sonnet中文15-30s + Haiku翻译+SEO并行5-10s), generate-professor 30-65s (web验证10-30s + Sonnet中文15-30s + Haiku并行5s)
+- [x] 优化一并行化: generate翻译+SEO已并行; generate-professor papers+grants DB读取改 Promise.allSettled 并行; 翻译+SEO增加 withTimeout 60s 包裹
+- [x] 优化二封面图Fire-and-Forget: 新增 cover_image_status 列 (none/generating/done/failed); generate-cover 成功写done、失败写failed; 文章insert时预设generating; 前端可通过 GET /api/blog/[id] 轮询状态
+- [x] 优化三错误隔离: 批量生成单篇独立try-catch、失败不中断后续; 所有AI调用增加 withTimeout (中文120s/翻译+SEO 60s/JSON修复30s/验证60s); safeParseJSON 统一清洗 markdown code fences + 末尾逗号
+- [x] generate-professor maxDuration=300 + safeParseJSON + withTimeout + cookie转发封面图请求
+- [x] professors/[id]/generate-blog maxDuration=300
+- [x] 友好错误信息: 超时→504+中文描述, JSON异常→提示重试, 429→"操作太频繁"
+
 ## 待完成项目 (P4 路线图)
 
 ### 高优先级

@@ -3,6 +3,8 @@ import { getServerUser } from '../../../../lib/auth';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
 import { aiLimiter, safeLimit } from '../../../../lib/ratelimit';
 
+export const maxDuration = 300;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 

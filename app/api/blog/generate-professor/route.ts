@@ -4,8 +4,35 @@ import { supabaseAdmin } from '../../../lib/supabase/server';
 import { getServerUser } from '../../../lib/auth';
 import { logAdminAction } from '../../../lib/worklog';
 
+export const maxDuration = 300;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
+
+function safeParseJSON(text: string): Record<string, unknown> {
+  let cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) cleaned = jsonMatch[0];
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    try {
+      cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
+      return JSON.parse(cleaned);
+    } catch {
+      throw new Error(`JSON 解析失败: ${cleaned.substring(0, 200)}`);
+    }
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label}超时（${Math.round(ms / 1000)}秒）`)), ms)
+    ),
+  ]);
+}
 
 const TOP_JOURNALS = ['Nature', 'Science', 'Cell', 'Nature Materials', 'Nature Energy',
   'Nature Chemistry', 'Nature Communications', 'PNAS', 'Advanced Materials',
@@ -43,28 +70,23 @@ export async function POST(req: NextRequest) {
   const positionTitle = professor.position_title || professor.title || 'Researcher';
   const researchAreas = (professor.research_areas || professor.research_tags || []).join(', ');
 
-  // Step 2: Read papers (top 10 by citations)
-  let papers: { title: string; year: number; journal: string; citation_count: number; doi_url?: string }[] = [];
-  try {
-    const { data } = await db
-      .from('papers')
+  // Step 2: Read papers + grants in parallel
+  const [papersResult, grantsResult] = await Promise.allSettled([
+    db.from('papers')
       .select('title, year, journal, citation_count, doi_url')
       .eq('professor_id', professorId)
       .order('citation_count', { ascending: false })
-      .limit(10);
-    papers = data || [];
-  } catch { /* papers table may not exist */ }
-
-  // Step 3: Read grants
-  let grants: { grant_name: string; funding_body: string; year: number; amount: number; project_title: string; phd_relevance: string; industry_scholarship_potential: string }[] = [];
-  try {
-    const { data } = await db
-      .from('grants')
+      .limit(10),
+    db.from('grants')
       .select('grant_name, funding_body, year, amount, project_title, phd_relevance, industry_scholarship_potential')
       .eq('lead_professor_id', professorId)
-      .order('year', { ascending: false });
-    grants = data || [];
-  } catch { /* grants table may not exist */ }
+      .order('year', { ascending: false }),
+  ]);
+
+  const papers: { title: string; year: number; journal: string; citation_count: number; doi_url?: string }[] =
+    papersResult.status === 'fulfilled' ? (papersResult.value.data || []) : [];
+  const grants: { grant_name: string; funding_body: string; year: number; amount: number; project_title: string; phd_relevance: string; industry_scholarship_potential: string }[] =
+    grantsResult.status === 'fulfilled' ? (grantsResult.value.data || []) : [];
 
   // Build context for AI
   const papersContext = papers.length > 0
@@ -81,11 +103,11 @@ export async function POST(req: NextRequest) {
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-  // Step 3.5: Verify professor identity via web search before generating
+  // Step 3.5: Verify professor identity via web search (with timeout)
   let verifiedProfileUrl = professor.profile_url || '';
   let verifiedGoogleScholarUrl = professor.google_scholar_url || '';
   try {
-    const verifyResponse = await anthropic.messages.create({
+    const verifyResponse = await withTimeout(anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1000,
       tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
@@ -112,34 +134,29 @@ export async function POST(req: NextRequest) {
       "warning": "any discrepancy found, e.g. 'This person is at Max Planck, not UNSW'"
     }`,
       }],
-    });
+    }), 60000, '教授身份验证');
 
     let verifyText = '';
     for (const block of verifyResponse.content) {
       if (block.type === 'text') { verifyText = block.text; break; }
     }
     if (verifyText) {
-      const cleaned = verifyText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const verifiedData = JSON.parse(jsonMatch[0]);
-        if (verifiedData.warning || !verifiedData.verified) {
-          return Response.json({
-            error: `身份验证警告：${verifiedData.warning || '无法确认该教授信息'}`,
-            suggestion: '请核实教授姓名和大学后重试',
-          }, { status: 400 });
-        }
-        if (verifiedData.correctedInfo?.profileUrl) verifiedProfileUrl = verifiedData.correctedInfo.profileUrl;
-        if (verifiedData.correctedInfo?.googleScholarUrl) verifiedGoogleScholarUrl = verifiedData.correctedInfo.googleScholarUrl;
+      const verifiedData = safeParseJSON(verifyText) as { verified?: boolean; warning?: string; correctedInfo?: { profileUrl?: string; googleScholarUrl?: string } };
+      if (verifiedData.warning || !verifiedData.verified) {
+        return Response.json({
+          error: `身份验证警告：${verifiedData.warning || '无法确认该教授信息'}`,
+          suggestion: '请核实教授姓名和大学后重试',
+        }, { status: 400 });
+      }
+      if (verifiedData.correctedInfo?.profileUrl) verifiedProfileUrl = verifiedData.correctedInfo.profileUrl;
+      if (verifiedData.correctedInfo?.googleScholarUrl) verifiedGoogleScholarUrl = verifiedData.correctedInfo.googleScholarUrl;
 
-        // Update professor record with verified URLs
-        if (verifiedProfileUrl || verifiedGoogleScholarUrl) {
-          const updates: Record<string, string> = {};
-          if (verifiedProfileUrl && !professor.profile_url) updates.profile_url = verifiedProfileUrl;
-          if (verifiedGoogleScholarUrl && !professor.google_scholar_url) updates.google_scholar_url = verifiedGoogleScholarUrl;
-          if (Object.keys(updates).length > 0) {
-            await db.from('professors').update(updates).eq('id', professorId);
-          }
+      if (verifiedProfileUrl || verifiedGoogleScholarUrl) {
+        const updates: Record<string, string> = {};
+        if (verifiedProfileUrl && !professor.profile_url) updates.profile_url = verifiedProfileUrl;
+        if (verifiedGoogleScholarUrl && !professor.google_scholar_url) updates.google_scholar_url = verifiedGoogleScholarUrl;
+        if (Object.keys(updates).length > 0) {
+          await db.from('professors').update(updates).eq('id', professorId);
         }
       }
     }
@@ -147,10 +164,10 @@ export async function POST(req: NextRequest) {
     console.error('[generate-professor] Verification failed (non-blocking):', (e as Error).message);
   }
 
-  // Step 4: Generate Chinese article (Sonnet)
+  // Step 4: Generate Chinese article (Sonnet, with timeout)
   let zhData: { titleZh: string; excerptZh: string; contentZh: string; tags: string[] };
   try {
-    const zhResponse = await anthropic.messages.create({
+    const zhResponse = await withTimeout(anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4096,
       messages: [{ role: 'user', content: `请为以下教授撰写一篇800-1200字的中文教授推荐文章。
@@ -201,71 +218,71 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
 
 返回JSON：{"titleZh": "中文标题", "excerptZh": "100字摘要", "contentZh": "正文markdown", "tags": ["标签1","标签2",...]}` }],
       system: 'You MUST return ONLY valid JSON. All string values must use proper JSON escaping: use \\n for newlines, \\" for quotes inside strings. Do not use markdown code fences. Do not add any text before or after the JSON object.',
-    });
+    }), 120000, '教授中文文章生成');
 
     let zhText = '';
     for (const block of zhResponse.content) {
       if (block.type === 'text') { zhText = block.text; break; }
     }
 
-    const stripped = zhText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
-    const candidate = jsonMatch ? jsonMatch[0] : stripped;
-
     try {
-      zhData = JSON.parse(candidate);
+      zhData = safeParseJSON(zhText) as typeof zhData;
     } catch {
-      const fixResponse = await anthropic.messages.create({
+      const fixResponse = await withTimeout(anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 6000,
         messages: [{
           role: 'user',
-          content: `The following text is malformed JSON. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), contentZh (string), tags (array of strings). Ensure all string values properly escape quotes and newlines.\n\n${candidate.slice(0, 8000)}`,
+          content: `The following text is malformed JSON. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), contentZh (string), tags (array of strings). Ensure all string values properly escape quotes and newlines.\n\n${zhText.slice(0, 8000)}`,
         }],
         system: 'Return ONLY valid JSON. No markdown, no explanation, no code fences.',
-      });
+      }), 30000, 'JSON修复');
       const fixText = fixResponse.content[0].type === 'text' ? fixResponse.content[0].text : '';
-      const fixCleaned = fixText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      const fixMatch = fixCleaned.match(/\{[\s\S]*\}/);
-      zhData = JSON.parse(fixMatch ? fixMatch[0] : fixCleaned);
+      zhData = safeParseJSON(fixText) as typeof zhData;
     }
   } catch (e) {
-    console.error('[generate-professor] Chinese article failed:', (e as Error).message, (e as Error).stack);
-    return Response.json({ error: 'Chinese article generation failed', details: (e as Error).message }, { status: 500 });
+    console.error('[generate-professor] Chinese article failed:', (e as Error).message);
+    const msg = e instanceof Error ? e.message : '';
+    if (msg.includes('超时')) {
+      return Response.json({ error: `教授文章生成超时：${msg}，请重试` }, { status: 504 });
+    }
+    return Response.json({ error: '教授文章生成失败，请稍后重试', details: msg }, { status: 500 });
   }
 
   // Step 5+6 (parallel, Haiku): Translate + SEO
   let enData = { titleEn: '', excerptEn: '', contentEn: '' };
   let seo = { seoTitleZh: '', seoDescriptionZh: '', seoKeywordsZh: '' };
 
-  const [enResult, seoResult] = await Promise.allSettled([
-    anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 3000,
-      messages: [{ role: 'user', content: `Translate this Chinese professor profile article to English. Keep markdown format.\n\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\nContent:\n${zhData.contentZh}\n\nReturn JSON: {"titleEn": "...", "excerptEn": "...", "contentEn": "..."}` }],
-      system: 'Professional translator. Return valid JSON only, no markdown code blocks.',
-    }),
-    anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 500,
-      messages: [{ role: 'user', content: `Generate Chinese SEO metadata for a professor profile article.\nProfessor: ${profName} at ${university}\nResearch: ${researchAreas}\nTitle: ${zhData.titleZh}\n\nReturn JSON: {"seoTitleZh": "max 60 chars Chinese", "seoDescriptionZh": "max 160 chars Chinese", "seoKeywordsZh": "comma-separated Chinese keywords, include 澳洲PhD and professor name"}` }],
-      system: 'Return valid JSON only, no markdown code blocks.',
-    }),
-  ]);
-
-  function cleanJson(t: string) { return t.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim(); }
+  const [enResult, seoResult] = await withTimeout(
+    Promise.allSettled([
+      anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 3000,
+        messages: [{ role: 'user', content: `Translate this Chinese professor profile article to English. Keep markdown format.\n\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\nContent:\n${zhData.contentZh}\n\nReturn JSON: {"titleEn": "...", "excerptEn": "...", "contentEn": "..."}` }],
+        system: 'Professional translator. Return valid JSON only, no markdown code blocks.',
+      }),
+      anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 500,
+        messages: [{ role: 'user', content: `Generate Chinese SEO metadata for a professor profile article.\nProfessor: ${profName} at ${university}\nResearch: ${researchAreas}\nTitle: ${zhData.titleZh}\n\nReturn JSON: {"seoTitleZh": "max 60 chars Chinese", "seoDescriptionZh": "max 160 chars Chinese", "seoKeywordsZh": "comma-separated Chinese keywords, include 澳洲PhD and professor name"}` }],
+        system: 'Return valid JSON only, no markdown code blocks.',
+      }),
+    ]),
+    60000,
+    '翻译与SEO生成',
+  );
 
   if (enResult.status === 'fulfilled') {
     try {
       const enText = enResult.value.content[0].type === 'text' ? enResult.value.content[0].text : '{}';
-      enData = JSON.parse(cleanJson(enText));
+      enData = safeParseJSON(enText) as typeof enData;
     } catch { /* defaults */ }
   }
 
   if (seoResult.status === 'fulfilled') {
     try {
       const seoText = seoResult.value.content[0].type === 'text' ? seoResult.value.content[0].text : '{}';
-      seo = JSON.parse(cleanJson(seoText));
+      seo = safeParseJSON(seoText) as typeof seo;
     } catch { /* defaults */ }
   }
 
@@ -307,6 +324,7 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
     seo_keywords_zh: seo.seoKeywordsZh || null,
     reading_time_zh: readingTimeZh,
     cover_image_url: null,
+    cover_image_status: !!process.env.OPENAI_API_KEY ? 'generating' : 'none',
   };
 
   const { data: post, error } = await db.from('blog_posts').insert(row).select().single();
@@ -315,17 +333,19 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
     return Response.json({ error: error.message }, { status: 500 });
   }
 
-  if (post?.id) {
+  const imageAvailable = !!process.env.OPENAI_API_KEY;
+  if (post?.id && imageAvailable) {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const cookieHeader = req.headers.get('cookie') || '';
     fetch(`${baseUrl}/api/blog/generate-cover`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Cookie: cookieHeader },
       body: JSON.stringify({ postId: post.id }),
     }).catch(err => console.error('[generate-professor] Cover image trigger failed:', err));
 
     fetch(`${baseUrl}/api/blog/generate-images`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Cookie: cookieHeader },
       body: JSON.stringify({ postId: post.id, imageCount: 1 }),
     }).catch(err => console.error('[generate-professor] Inline image trigger failed:', err));
   }

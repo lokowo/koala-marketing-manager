@@ -39,11 +39,12 @@ async function callWithRetry(fn: () => Promise<any>, maxRetries = 3): Promise<an
 export async function POST(req: NextRequest) {
   let adminUser: { user: { id: string } };
   try { adminUser = await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
+  let postId: string | undefined;
   try {
     const allowed = await safeLimit(aiLimiter, adminUser.user.id);
     if (!allowed) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
 
-    const { postId } = await req.json();
+    ({ postId } = await req.json());
     console.log('[generate-cover] Starting for post:', postId);
     console.log('[generate-cover] OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY, '| prefix:', process.env.OPENAI_API_KEY?.slice(0, 8));
     console.log('[generate-cover] ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
 
     if (!process.env.OPENAI_API_KEY) {
       console.error('[generate-cover] OPENAI_API_KEY not configured');
+      if (postId) await db.from('blog_posts').update({ cover_image_status: 'failed' }).eq('id', postId);
       return Response.json({ error: '封面图生成暂不可用（API key 未配置）' }, { status: 503 });
     }
 
@@ -143,6 +145,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!imageB64) {
+      await db.from('blog_posts').update({ cover_image_status: 'failed' }).eq('id', postId);
       return Response.json({ error: '封面图生成失败，请检查 OpenAI API key 是否有效' }, { status: 500 });
     }
 
@@ -177,11 +180,11 @@ export async function POST(req: NextRequest) {
     const { data: urlData } = db.storage.from('blog-images').getPublicUrl(fileName);
     permanentUrl = urlData.publicUrl;
 
-    // Step 4: Update blog_posts
+    // Step 4: Update blog_posts with URL + status
     console.log('[generate-cover] Step 4: Updating DB with URL:', permanentUrl.slice(0, 80) + '...');
     const { error: updateErr } = await db
       .from('blog_posts')
-      .update({ cover_image_url: permanentUrl })
+      .update({ cover_image_url: permanentUrl, cover_image_status: 'done' })
       .eq('id', postId);
 
     if (updateErr) {
@@ -194,6 +197,7 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
     console.error('[generate-cover] Fatal error:', errMsg);
+    if (postId) await db.from('blog_posts').update({ cover_image_status: 'failed' }).eq('id', postId).catch(() => {});
     return Response.json({ error: errMsg }, { status: 500 });
   }
 }

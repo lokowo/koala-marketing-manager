@@ -217,6 +217,7 @@ export async function POST(req: NextRequest) {
       reading_time_zh: readingTimeZh,
       reading_time_en: readingTimeEn,
       cover_image_url: null,
+      cover_image_status: !!process.env.OPENAI_API_KEY ? 'generating' : 'none',
     };
 
     const { data: post, error } = await db.from('blog_posts').insert(row).select().single();
