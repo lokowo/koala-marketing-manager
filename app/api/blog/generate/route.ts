@@ -239,11 +239,11 @@ export async function POST(req: NextRequest) {
       }).catch(err => console.error('[generate] Auto cover failed:', err));
 
       const imgCount = imageCount && imageCount > 0 ? imageCount : 2;
-      fetch(`${baseUrl}/api/blog/generate-images`, {
+      fetch(`${baseUrl}/api/blog/auto-illustrate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Cookie: cookieHeader },
         body: JSON.stringify({ postId: post.id, imageCount: imgCount }),
-      }).catch(err => console.error('[generate] Auto images failed:', err));
+      }).catch(err => console.error('[generate] Auto illustrate failed:', err));
     }
 
     await logAdminAction(user.id, 'blog_generate', 'blog_post', post?.id, { topic, category, style });

@@ -343,11 +343,11 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
       body: JSON.stringify({ postId: post.id }),
     }).catch(err => console.error('[generate-professor] Cover image trigger failed:', err));
 
-    fetch(`${baseUrl}/api/blog/generate-images`, {
+    fetch(`${baseUrl}/api/blog/auto-illustrate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Cookie: cookieHeader },
       body: JSON.stringify({ postId: post.id, imageCount: 1 }),
-    }).catch(err => console.error('[generate-professor] Inline image trigger failed:', err));
+    }).catch(err => console.error('[generate-professor] Auto illustrate failed:', err));
   }
 
   await logAdminAction(user.id, 'blog_generate_professor', 'blog_post', post?.id, { professorId, profName });
