@@ -123,6 +123,7 @@ export async function GET(req: Request) {
               <img src={qrDataUrl} width={170} height={170} />
             </div>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'white', marginTop: 10 }}>扫码注册</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 6 }}>📷 请使用手机相机扫码（微信扫码可能无法登录）</div>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 5, background: 'rgba(255,255,255,0.1)', padding: '4px 14px', borderRadius: 8, letterSpacing: 2 }}>{code}</div>
           </div>
 

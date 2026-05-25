@@ -275,9 +275,12 @@ export default function SharePoster({
                       </p>
                     </div>
                     {qrDataUrl && (
-                      <div className="rounded-lg overflow-hidden bg-white p-1.5 shadow-lg">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={qrDataUrl} alt="QR" className="size-20" />
+                      <div className="flex flex-col items-center">
+                        <div className="rounded-lg overflow-hidden bg-white p-1.5 shadow-lg">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={qrDataUrl} alt="QR" className="size-20" />
+                        </div>
+                        <p className="text-[8px] text-white/40 text-center mt-1 leading-tight">📷 手机相机扫码（微信扫码可能无法登录）</p>
                       </div>
                     )}
                   </div>

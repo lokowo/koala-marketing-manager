@@ -84,11 +84,14 @@ export default function ShareCard({ shareCode, surveyId, title, brandColor = '#D
             return (
               <div key={qr.id} className="bg-slate-50 rounded-xl p-4">
                 <div className="flex items-start gap-4">
-                  <img
-                    src={qr.qr_image_url || fallbackQrImg}
-                    alt="QR Code"
-                    className="w-28 h-28 rounded-lg border border-slate-200 bg-white"
-                  />
+                  <div className="flex-shrink-0 flex flex-col items-center">
+                    <img
+                      src={qr.qr_image_url || fallbackQrImg}
+                      alt="QR Code"
+                      className="w-28 h-28 rounded-lg border border-slate-200 bg-white"
+                    />
+                    <p className="text-[9px] text-gray-400 text-center mt-1 max-w-[112px] leading-tight">📷 请使用手机相机扫码（微信扫码可能无法登录）</p>
+                  </div>
                   <div className="flex-1 min-w-0 space-y-2">
                     <div className="text-sm font-medium text-slate-700">{qr.label || title}</div>
                     <div className="text-xs text-slate-400 font-mono break-all">{qrUrl}</div>

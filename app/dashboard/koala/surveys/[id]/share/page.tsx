@@ -128,13 +128,16 @@ export default function SurveySharePage({ params }: { params: Promise<{ id: stri
             return (
               <div key={link.id} className="bg-white rounded-xl border border-slate-200 p-5">
                 <div className="flex items-start gap-5">
-                  <img
-                    src={link.qr_image_url || fallbackQr}
-                    alt="QR Code"
-                    width={200}
-                    height={200}
-                    className="rounded-lg border border-slate-200 bg-white flex-shrink-0"
-                  />
+                  <div className="flex-shrink-0 flex flex-col items-center">
+                    <img
+                      src={link.qr_image_url || fallbackQr}
+                      alt="QR Code"
+                      width={200}
+                      height={200}
+                      className="rounded-lg border border-slate-200 bg-white"
+                    />
+                    <p className="text-[10px] text-gray-400 text-center mt-1.5">📷 请使用手机相机扫码（微信扫码可能无法登录）</p>
+                  </div>
                   <div className="flex-1 min-w-0 space-y-3">
                     <div>
                       <p className="text-sm font-medium text-slate-700 mb-1">{link.label || '我的推广码'}</p>

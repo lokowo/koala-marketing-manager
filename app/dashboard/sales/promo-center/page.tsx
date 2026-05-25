@@ -189,6 +189,7 @@ export default function PromoCenterPage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={qrImageUrl} alt="推广二维码" width={240} height={240} className="rounded" />
             </div>
+            <p className="text-[10px] text-gray-400 text-center">📷 请使用手机相机扫码（微信扫码可能无法登录）</p>
             <div className="text-[10px] text-[#374151] dark:text-[#CBD5E1] text-center">
               {CHANNELS.find(c => c.value === selectedChannel)?.label} · {referralCode}
             </div>

@@ -249,6 +249,16 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
         ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
         ctx.fillText('扫码注册', w / 2, qrBottomY + 16);
         ctx.restore();
+        ctx.save();
+        ctx.font = `11px "${font}", sans-serif`;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.globalAlpha = 0.5;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
+        ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', w / 2, qrBottomY + 36);
+        ctx.globalAlpha = 1;
+        ctx.restore();
       }
       if (vis.inviteCode) {
         ctx.save();

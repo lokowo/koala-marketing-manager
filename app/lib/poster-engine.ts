@@ -459,6 +459,14 @@ export async function renderPoster(canvas: HTMLCanvasElement, opts: PosterOption
     const qrUrl = `https://www.koalaphd.com/koala/auth?ref=${opts.refCode}&ch=${opts.channel}`;
     await drawQRCode(ctx, qrUrl, zones.qrArea, tmpl);
     drawCaptionLine(ctx, `扫码注册 · ${getChannelName(opts.channel)}渠道`, zones.captionLine, tmpl);
+    ctx.save();
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillStyle = tmpl.textColor;
+    ctx.globalAlpha = 0.4;
+    ctx.textAlign = 'center';
+    ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', zones.captionLine.centerX, zones.captionLine.y + 26);
+    ctx.globalAlpha = 1;
+    ctx.restore();
   } else {
     drawRefCodeBox(ctx, opts.refCode, zones.qrArea, tmpl);
   }
