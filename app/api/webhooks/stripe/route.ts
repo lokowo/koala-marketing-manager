@@ -88,10 +88,11 @@ async function handleCreditPackPurchase(session: Stripe.Checkout.Session, userId
   const { CREDIT_PACKAGES } = await import('../../../lib/constants');
   const pack = CREDIT_PACKAGES.find(p => p.stripePriceId === priceId);
   if (pack) {
+    const actualPaid = typeof session.amount_total === 'number' ? session.amount_total / 100 : pack.priceAUD;
     const result = await tryCreateCommission({
       userId, stripePaymentId: (session.payment_intent as string) || `checkout_${session.id}`,
       stripeCheckoutSessionId: session.id, productType: pack.id,
-      productName: `${pack.label} — ${pack.credits} 积分`, paymentAmount: pack.priceAUD,
+      productName: `${pack.label} — ${pack.credits} 积分`, paymentAmount: actualPaid,
     });
     if (result.created) {
       const { data: ref } = await db.from('sales_referrals').select('agent_id').eq('referred_user_id', userId).maybeSingle();
@@ -119,10 +120,11 @@ async function handleNewSubscription(session: Stripe.Checkout.Session, userId: s
   await db.from('user_profiles').update({ plan_type: tier.id, updated_at: new Date().toISOString() }).eq('id', userId);
   await syncUsageTrackingTier(userId, tier.id);
   await addCredits(userId, tier.monthlyCredits, 'subscription_credit', `${tier.label} 订阅首月 ${tier.monthlyCredits} 积分`, referenceId);
+  const actualSubPaid = typeof session.amount_total === 'number' ? session.amount_total / 100 : tier.price;
   const subResult = await tryCreateCommission({
     userId, stripePaymentId: (session.payment_intent as string) || `sub_${subscriptionId}`,
     stripeCheckoutSessionId: session.id, productType: `sub_${tier.id}`,
-    productName: `${tier.label} 月度订阅`, paymentAmount: tier.price,
+    productName: `${tier.label} 月度订阅`, paymentAmount: actualSubPaid,
   });
   if (subResult.created) {
     const { data: ref } = await db.from('sales_referrals').select('agent_id').eq('referred_user_id', userId).maybeSingle();

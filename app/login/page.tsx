@@ -33,10 +33,27 @@ function LoginForm() {
   }
 
   async function handleGoogle() {
-    await supabase.auth.signInWithOAuth({
+    const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/koala/auth/callback?next=/dashboard/koala` },
+      options: {
+        redirectTo: `${window.location.origin}/koala/auth/callback?next=/dashboard/koala`,
+        skipBrowserRedirect: true,
+      },
     });
+    if (oauthErr || !data?.url) {
+      setError('Google 登录暂不可用，请使用邮箱登录');
+      return;
+    }
+    try {
+      const check = await fetch(data.url, { method: 'GET', redirect: 'manual' });
+      if (check.type === 'opaqueredirect' || check.status === 302 || check.status === 303) {
+        window.location.href = data.url;
+      } else {
+        setError('Google 登录暂不可用，请使用邮箱登录');
+      }
+    } catch {
+      window.location.href = data.url;
+    }
   }
 
   return (
