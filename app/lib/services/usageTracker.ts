@@ -17,7 +17,7 @@ const TIER_LIMITS: Record<Tier, Record<ActionType, LimitConfig>> = {
     chat:  { limit: 10, period: 'daily',  column: 'chat_turns_used' },
     voice: { limit: 5,  period: 'daily',  column: 'voice_inputs_used' },
     match: { limit: 3,  period: 'daily',  column: 'matches_used' },
-    email: { limit: 1,  period: 'total',  column: 'emails_generated' },
+    email: { limit: 1,  period: 'monthly', column: 'emails_generated' },
     cv:    { limit: 1,  period: 'total',  column: 'cv_generated' },
     research_proposal: { limit: 1, period: 'total', column: 'proposals_generated' },
     recommendation_letter: { limit: 1, period: 'total', column: 'rec_letters_generated' },
@@ -35,7 +35,7 @@ const TIER_LIMITS: Record<Tier, Record<ActionType, LimitConfig>> = {
     chat:  { limit: -1, period: 'daily',  column: 'chat_turns_used' },
     voice: { limit: -1, period: 'daily',  column: 'voice_inputs_used' },
     match: { limit: 10, period: 'daily',  column: 'matches_used' },
-    email: { limit: 10, period: 'monthly', column: 'emails_generated' },
+    email: { limit: 15, period: 'monthly', column: 'emails_generated' },
     cv:    { limit: -1, period: 'total',  column: 'cv_generated' },
     research_proposal: { limit: -1, period: 'total', column: 'proposals_generated' },
     recommendation_letter: { limit: -1, period: 'total', column: 'rec_letters_generated' },
@@ -193,4 +193,4 @@ export async function incrementUsage(
   }
 }
 
-export { TIER_LIMITS, type Tier, type ActionType };
+export { TIER_LIMITS, getUserTier, type Tier, type ActionType };

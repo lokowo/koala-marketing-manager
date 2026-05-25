@@ -294,6 +294,15 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] saved_professors 补策略: user manage own (FOR ALL USING auth.uid()=user_id WITH CHECK auth.uid()=user_id)
 - [x] 总计: 16张表启用RLS, 创建28条策略, 通过3次Supabase migration执行
 
+### BUG-1: AI 对话无额度限制修复 ✅ 完成 (2026-05-25)
+- [x] 问题: /api/ai/chat 只有 IP 防刷限流，无按用户每日额度检查，免费用户可无限消耗 Anthropic API
+- [x] 修复: POST 处理器生成回复前增加 usageTracker.checkUsage('chat') 调用
+- [x] 逻辑: free 用户每日 10 轮 (FREE_LIMITS.dailyAiTurns)，starter/pro/elite 不限 (limit=-1 跳过检查)
+- [x] 计数: 成功回复后 fire-and-forget 调用 incrementUsage 写入 user_usage_tracking.chat_turns_used
+- [x] 403 响应: `{ error: 'daily_limit_reached', reply: '今日免费对话次数已用完...', usageInfo }`
+- [x] 保留: IP 防刷限流器 (safeLimit) 不变，匿名用户 3 条 localStorage 前端逻辑不变
+- [x] 修复 usageTracker.ts 重复导出 checkUsage 的 TypeScript 编译错误
+
 ### P4-7 续: Admin UI 四类问题修复 ✅ 完成 (2026-05-25)
 - [x] 假数据页面: feedback/page.tsx 改为从 /api/admin/feedback-stats 查询 feedback 表真实统计; leads/page.tsx 改为"功能开发中"占位
 - [x] 空占位页: professors/verified 和 professors/sync 改为"功能开发中"带图标说明

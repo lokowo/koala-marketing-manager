@@ -268,6 +268,31 @@ export async function POST(request: NextRequest) {
 
     const sessionId = (body.sessionId as string) || `session_${Date.now()}`;
 
+    // Daily usage check — free users limited to FREE_LIMITS.dailyAiTurns (10/day)
+    if (trackingUserId) {
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const usageDb = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        );
+        const { checkUsage } = await import('../../../lib/services/usageTracker');
+        const usage = await checkUsage(usageDb, trackingUserId, 'chat');
+        if (!usage.allowed) {
+          return Response.json(
+            {
+              error: 'daily_limit_reached',
+              reply: `今日免费对话次数已用完（${usage.used}/${usage.limit}），升级订阅可不限次对话`,
+              usageInfo: { used: usage.used, limit: usage.limit },
+            },
+            { status: 403 },
+          );
+        }
+      } catch (err) {
+        console.error('[AI Chat] usage check failed, allowing request:', err);
+      }
+    }
+
     // Session tracking (fire-and-forget)
     upsertSession(sessionId, { userId: trackingUserId ?? undefined, mode }).catch(err =>
       console.error('[ola-session]', err)
@@ -925,6 +950,20 @@ H指数：${prof.hIndex ?? '未知'}`;
       extractAndSaveMemories(resolvedUserId, messages, sessionId).catch(err =>
         console.error('[memory extraction] Failed:', err)
       );
+    }
+
+    // Increment daily chat usage for logged-in users (fire-and-forget)
+    const chatUserId = userId || trackingUserId;
+    if (chatUserId) {
+      import('@supabase/supabase-js').then(({ createClient }) => {
+        const usageDb = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        );
+        return import('../../../lib/services/usageTracker').then(({ incrementUsage }) =>
+          incrementUsage(usageDb, chatUserId, 'chat')
+        );
+      }).catch(err => console.error('[AI Chat] usage increment failed:', err));
     }
 
     return Response.json(result);
