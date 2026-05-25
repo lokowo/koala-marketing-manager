@@ -162,14 +162,14 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs:
       <div className="px-4 lg:px-0 pt-4 flex items-center justify-between">
         <button
           onClick={() => router.back()}
-          className="text-xs flex items-center gap-1 text-[#1A1A2E] dark:text-[#D4A843]"
+          className="text-xs flex items-center gap-1 min-h-[44px] min-w-[44px] justify-center text-[#1A1A2E] dark:text-[#D4A843]"
         >
           ← 返回
         </button>
         <button
           onClick={toggleBookmark}
           disabled={savingBookmark}
-          className={`text-xs flex items-center gap-1 px-3 py-1.5 rounded-full ${saved ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] border border-[#1A1A2E] dark:border-[#D4A843]' : 'bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] border border-amber-300 dark:border-[rgba(212,168,67,0.25)]'}`}
+          className={`text-xs flex items-center gap-1 px-3 min-h-[44px] rounded-full ${saved ? 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] border border-[#1A1A2E] dark:border-[#D4A843]' : 'bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] border border-amber-300 dark:border-[rgba(212,168,67,0.25)]'}`}
         >
           {saved ? '🔖 已收藏' : '🔖 收藏'}
         </button>

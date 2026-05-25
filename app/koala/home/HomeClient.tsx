@@ -9,7 +9,7 @@ import BannerCarousel from '../../components/BannerCarousel';
 import type { Professor } from '../../lib/types';
 import { useAuth } from '../components/AuthContext';
 import { BRAND, getUniBadge, parseUniversity } from '../../lib/constants';
-import OlaFloatingMascot from '../../components/OlaFloatingMascot';
+
 
 const CATEGORY_LABELS: Record<string, string> = {
   phd_guide: 'PhD指南',
@@ -195,7 +195,7 @@ export default function HomeClient({ initialProfessors, initialUserCount, initia
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowNotif(!showNotif)}
-            className={`relative size-9 flex justify-center items-center rounded-full transition-colors ${showNotif ? 'bg-amber-50 dark:bg-[#D4A843]/10' : ''}`}
+            className={`relative size-11 flex justify-center items-center rounded-full transition-colors ${showNotif ? 'bg-amber-50 dark:bg-[#D4A843]/10' : ''}`}
           >
             <Bell className="size-[18px] text-gray-400 dark:text-[#a8b8ac]" />
             {unreadCount > 0 && (
@@ -238,9 +238,9 @@ export default function HomeClient({ initialProfessors, initialUserCount, initia
           ) : (
             <button
               onClick={() => showLogin()}
-              className="size-9 rounded-full flex items-center justify-center bg-[#e8e4dc] dark:bg-[#e8e4dc]"
+              className="size-10 rounded-full flex items-center justify-center bg-[#1A1A2E] dark:bg-[#D4A843]"
             >
-              <span className="text-xs font-medium text-white">登录</span>
+              <span className="text-xs font-medium text-white dark:text-[#080c10]">登录</span>
             </button>
           )}
         </div>
@@ -754,7 +754,6 @@ export default function HomeClient({ initialProfessors, initialUserCount, initia
         </div>
       </footer>
 
-      <OlaFloatingMascot />
     </div>
   );
 }

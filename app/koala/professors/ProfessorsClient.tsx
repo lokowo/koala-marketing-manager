@@ -553,7 +553,7 @@ function ProfessorsPageInner({ initialProfessors, initialTotal }: ProfessorsClie
             onTranscript={(text) => setSearch(prev => prev + text)}
             size="sm"
           />
-          <button type="button" onClick={triggerSearch} className="size-8 rounded-lg flex items-center justify-center shrink-0 relative z-10 bg-[#1A1A2E] dark:bg-[#D4A843] active:scale-90 transition-transform cursor-pointer">
+          <button type="button" onClick={triggerSearch} className="size-11 rounded-lg flex items-center justify-center shrink-0 relative z-10 bg-[#1A1A2E] dark:bg-[#D4A843] active:scale-90 transition-transform cursor-pointer">
             <Search className="size-4 text-white dark:text-[#080c10]" />
           </button>
         </div>

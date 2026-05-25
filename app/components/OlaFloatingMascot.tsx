@@ -17,9 +17,16 @@ const SPEECH_BUBBLES = [
 const STORAGE_KEY_POS = 'ola-mascot-pos';
 const STORAGE_KEY_HIDDEN = 'ola-mascot-hidden';
 
-const MASCOT_SIZE = 64;
+const MASCOT_SIZE_MOBILE = 48;
+const MASCOT_SIZE_DESKTOP = 64;
 const DEFAULT_BOTTOM = 80;
 const DEFAULT_RIGHT = 24;
+
+function getMascotSize() {
+  if (typeof window === 'undefined') return MASCOT_SIZE_DESKTOP;
+  return window.innerWidth < 1024 ? MASCOT_SIZE_MOBILE : MASCOT_SIZE_DESKTOP;
+}
+
 
 export default function OlaFloatingMascot() {
   const router = useRouter();
@@ -30,6 +37,7 @@ export default function OlaFloatingMascot() {
   const [showBubble, setShowBubble] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [initialized, setInitialized] = useState(false);
+  const [mascotSize, setMascotSize] = useState(MASCOT_SIZE_DESKTOP);
 
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -37,6 +45,9 @@ export default function OlaFloatingMascot() {
   const hasDragged = useRef(false);
 
   useEffect(() => {
+    const size = getMascotSize();
+    setMascotSize(size);
+
     const wasHidden = localStorage.getItem(STORAGE_KEY_HIDDEN) === 'true';
     setHidden(wasHidden);
 
@@ -47,14 +58,14 @@ export default function OlaFloatingMascot() {
         setPos({ x: p.x, y: p.y });
       } catch {
         setPos({
-          x: window.innerWidth - MASCOT_SIZE - DEFAULT_RIGHT,
-          y: window.innerHeight - MASCOT_SIZE - DEFAULT_BOTTOM,
+          x: window.innerWidth - size - DEFAULT_RIGHT,
+          y: window.innerHeight - size - DEFAULT_BOTTOM,
         });
       }
     } else {
       setPos({
-        x: window.innerWidth - MASCOT_SIZE - DEFAULT_RIGHT,
-        y: window.innerHeight - MASCOT_SIZE - DEFAULT_BOTTOM,
+        x: window.innerWidth - size - DEFAULT_RIGHT,
+        y: window.innerHeight - size - DEFAULT_BOTTOM,
       });
     }
     setInitialized(true);
@@ -111,10 +122,10 @@ export default function OlaFloatingMascot() {
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging.current) return;
     hasDragged.current = true;
-    const nx = Math.max(0, Math.min(window.innerWidth - MASCOT_SIZE, e.clientX - dragOffset.current.x));
-    const ny = Math.max(0, Math.min(window.innerHeight - MASCOT_SIZE, e.clientY - dragOffset.current.y));
+    const nx = Math.max(0, Math.min(window.innerWidth - mascotSize, e.clientX - dragOffset.current.x));
+    const ny = Math.max(0, Math.min(window.innerHeight - mascotSize, e.clientY - dragOffset.current.y));
     setPos({ x: nx, y: ny });
-  }, []);
+  }, [mascotSize]);
 
   const onPointerUp = useCallback(() => {
     if (!dragging.current) return;
@@ -137,9 +148,10 @@ export default function OlaFloatingMascot() {
   const handleRecall = useCallback(() => {
     setHidden(false);
     localStorage.removeItem(STORAGE_KEY_HIDDEN);
+    const size = getMascotSize();
     setPos({
-      x: window.innerWidth - MASCOT_SIZE - DEFAULT_RIGHT,
-      y: window.innerHeight - MASCOT_SIZE - DEFAULT_BOTTOM,
+      x: window.innerWidth - size - DEFAULT_RIGHT,
+      y: window.innerHeight - size - DEFAULT_BOTTOM,
     });
     localStorage.removeItem(STORAGE_KEY_POS);
     setTimeout(() => {
@@ -212,7 +224,7 @@ export default function OlaFloatingMascot() {
       {/* Mascot */}
       <div
         className="relative cursor-grab active:cursor-grabbing group"
-        style={{ width: MASCOT_SIZE, height: MASCOT_SIZE }}
+        style={{ width: mascotSize, height: mascotSize }}
       >
         {/* Close button */}
         <button
@@ -232,8 +244,8 @@ export default function OlaFloatingMascot() {
           <Image
             src="/images/ola/ola-welcome.svg"
             alt="Ola"
-            width={MASCOT_SIZE}
-            height={MASCOT_SIZE}
+            width={mascotSize}
+            height={mascotSize}
             className="size-full object-cover pointer-events-none"
             draggable={false}
           />

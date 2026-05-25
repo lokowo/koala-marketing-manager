@@ -110,7 +110,7 @@ export default function BlogPage() {
             />
             <button
               onClick={doSearch}
-              className="px-3 py-1 rounded-lg text-xs font-medium flex-shrink-0 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
+              className="px-4 py-2.5 min-h-[44px] rounded-lg text-xs font-medium flex-shrink-0 bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
             >
               搜索
             </button>
@@ -253,7 +253,7 @@ export default function BlogPage() {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors border ${
+              className={`px-4 py-2.5 min-h-[44px] rounded-lg text-xs font-medium transition-colors border ${
                 page <= 1
                   ? 'text-gray-300 dark:text-[#4a5a5e] border-gray-100 dark:border-[#D4A843]/[0.08] cursor-not-allowed'
                   : 'text-[#1A1A2E] dark:text-[#D4A843] border-[#1A1A2E]/20 dark:border-[#D4A843]/20'
@@ -267,7 +267,7 @@ export default function BlogPage() {
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors border ${
+              className={`px-4 py-2.5 min-h-[44px] rounded-lg text-xs font-medium transition-colors border ${
                 page >= totalPages
                   ? 'text-gray-300 dark:text-[#4a5a5e] border-gray-100 dark:border-[#D4A843]/[0.08] cursor-not-allowed'
                   : 'text-[#1A1A2E] dark:text-[#D4A843] border-[#1A1A2E]/20 dark:border-[#D4A843]/20'
