@@ -5,8 +5,35 @@ import { getServerUser } from '../../../lib/auth';
 import { logAdminAction } from '../../../lib/worklog';
 import { aiLimiter, safeLimit } from '../../../lib/ratelimit';
 
+export const maxDuration = 300;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
+
+function safeParseJSON(text: string): Record<string, unknown> {
+  let cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) cleaned = jsonMatch[0];
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    try {
+      cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
+      return JSON.parse(cleaned);
+    } catch {
+      throw new Error(`JSON 解析失败: ${cleaned.substring(0, 200)}`);
+    }
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label}超时（${Math.round(ms / 1000)}秒）`)), ms)
+    ),
+  ]);
+}
 
 const CATEGORIES: Record<string, { zh: string; en: string }> = {
   phd_guide: { zh: 'PhD指南', en: 'PhD Guide' },
@@ -76,63 +103,69 @@ export async function POST(req: NextRequest) {
     const catLabel = CATEGORIES[category]?.zh || 'PhD指南';
     const stylePrompt = STYLE_PROMPTS[style] || STYLE_PROMPTS.casual;
 
-    const zhResponse = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 5000,
-      messages: [{ role: 'user', content: `请根据以下主题写一篇博客文章。\n\n主题：${topic}\n分类：${catLabel}\n${stylePrompt}\n\n要求：\n- Markdown格式，1200-2000字\n- 80%是主题本身的深度分析，20%自然关联到澳洲PhD申请\n- 包含真实数据和统计（如有）\n- 自然融入SEO关键词：澳洲、PhD、博士、留学、scholarship、申请、supervisor\n- Koala PhD提及最多1-2句放在文章末尾\n- 语气像考拉学长：温暖专业的学长分享\n\n请返回JSON格式：\n{"titleZh": "中文标题", "excerptZh": "100字摘要", "contentZh": "正文markdown", "tags": ["标签1","标签2",...], "imageKeywords": ["封面图关键词"]}` }],
-      system: SYSTEM_PROMPT,
-    });
+    const zhResponse = await withTimeout(
+      anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 5000,
+        messages: [{ role: 'user', content: `请根据以下主题写一篇博客文章。\n\n主题：${topic}\n分类：${catLabel}\n${stylePrompt}\n\n要求：\n- Markdown格式，1200-2000字\n- 80%是主题本身的深度分析，20%自然关联到澳洲PhD申请\n- 包含真实数据和统计（如有）\n- 自然融入SEO关键词：澳洲、PhD、博士、留学、scholarship、申请、supervisor\n- Koala PhD提及最多1-2句放在文章末尾\n- 语气像考拉学长：温暖专业的学长分享\n\n请返回JSON格式：\n{"titleZh": "中文标题", "excerptZh": "100字摘要", "contentZh": "正文markdown", "tags": ["标签1","标签2",...], "imageKeywords": ["封面图关键词"]}` }],
+        system: SYSTEM_PROMPT,
+      }),
+      120000,
+      '中文文章生成',
+    );
 
     const zhText = zhResponse.content[0].type === 'text' ? zhResponse.content[0].text : '';
     let zhData: { titleZh: string; excerptZh: string; contentZh: string; tags: string[]; imageKeywords?: string[] };
 
-    const stripped = zhText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
-    const candidate = jsonMatch ? jsonMatch[0] : stripped;
-
     try {
-      zhData = JSON.parse(candidate);
+      zhData = safeParseJSON(zhText) as typeof zhData;
     } catch {
       try {
-        const fixResponse = await anthropic.messages.create({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 6000,
-          messages: [{
-            role: 'user',
-            content: `The following text is malformed JSON. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), contentZh (string), tags (array of strings), imageKeywords (array of strings, optional). Ensure all string values properly escape quotes and newlines.\n\n${candidate.slice(0, 8000)}`,
-          }],
-          system: 'Return ONLY valid JSON. No markdown, no explanation, no code fences.',
-        });
+        const fixResponse = await withTimeout(
+          anthropic.messages.create({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 6000,
+            messages: [{
+              role: 'user',
+              content: `The following text is malformed JSON. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), contentZh (string), tags (array of strings), imageKeywords (array of strings, optional). Ensure all string values properly escape quotes and newlines.\n\n${zhText.slice(0, 8000)}`,
+            }],
+            system: 'Return ONLY valid JSON. No markdown, no explanation, no code fences.',
+          }),
+          30000,
+          'JSON修复',
+        );
         const fixText = fixResponse.content[0].type === 'text' ? fixResponse.content[0].text : '';
-        const fixCleaned = fixText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-        const fixMatch = fixCleaned.match(/\{[\s\S]*\}/);
-        zhData = JSON.parse(fixMatch ? fixMatch[0] : fixCleaned);
+        zhData = safeParseJSON(fixText) as typeof zhData;
       } catch {
         console.error('[blog/generate] JSON fix failed — zhText length:', zhText.length, 'preview:', zhText.slice(0, 100));
-        return Response.json({ error: 'AI generation failed - invalid JSON response', raw: zhText.slice(0, 200) }, { status: 500 });
+        return Response.json({ error: 'AI 返回格式异常，请重试', raw: zhText.slice(0, 200) }, { status: 500 });
       }
     }
 
-    const [enResponse, seoZhResponse, seoEnResponse] = await Promise.all([
-      anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 3000,
-        messages: [{ role: 'user', content: `Translate the following Chinese blog article to English. Keep the same structure and markdown format.\n\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\nContent:\n${zhData.contentZh}\n\nReturn JSON: {"titleEn": "...", "excerptEn": "...", "contentEn": "..."}` }],
-        system: 'You are a professional translator. Return valid JSON only.',
-      }),
-      anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 500,
-        messages: [{ role: 'user', content: `Generate SEO metadata in Chinese for this blog article about Australian PhD study.\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\n\nReturn JSON: {"seoTitle": "max 60 chars", "seoDescription": "max 160 chars", "seoKeywords": "comma-separated, include: 澳洲PhD, 博士留学, scholarship"}` }],
-        system: 'Return valid JSON only.',
-      }),
-      anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 500,
-        messages: [{ role: 'user', content: `Generate SEO metadata in English for this blog article about Australian PhD study.\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\n\nReturn JSON: {"seoTitle": "max 60 chars", "seoDescription": "max 160 chars", "seoKeywords": "comma-separated, include: Australia PhD, scholarship, supervisor"}` }],
-        system: 'Return valid JSON only.',
-      }),
-    ]);
+    const [enResponse, seoZhResponse, seoEnResponse] = await withTimeout(
+      Promise.all([
+        anthropic.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 3000,
+          messages: [{ role: 'user', content: `Translate the following Chinese blog article to English. Keep the same structure and markdown format.\n\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\nContent:\n${zhData.contentZh}\n\nReturn JSON: {"titleEn": "...", "excerptEn": "...", "contentEn": "..."}` }],
+          system: 'You are a professional translator. Return valid JSON only.',
+        }),
+        anthropic.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 500,
+          messages: [{ role: 'user', content: `Generate SEO metadata in Chinese for this blog article about Australian PhD study.\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\n\nReturn JSON: {"seoTitle": "max 60 chars", "seoDescription": "max 160 chars", "seoKeywords": "comma-separated, include: 澳洲PhD, 博士留学, scholarship"}` }],
+          system: 'Return valid JSON only.',
+        }),
+        anthropic.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 500,
+          messages: [{ role: 'user', content: `Generate SEO metadata in English for this blog article about Australian PhD study.\nTitle: ${zhData.titleZh}\nExcerpt: ${zhData.excerptZh}\n\nReturn JSON: {"seoTitle": "max 60 chars", "seoDescription": "max 160 chars", "seoKeywords": "comma-separated, include: Australia PhD, scholarship, supervisor"}` }],
+          system: 'Return valid JSON only.',
+        }),
+      ]),
+      60000,
+      '翻译与SEO生成',
+    );
 
     const enText = enResponse.content[0].type === 'text' ? enResponse.content[0].text : '{}';
     const seoZhText = seoZhResponse.content[0].type === 'text' ? seoZhResponse.content[0].text : '{}';
@@ -142,10 +175,9 @@ export async function POST(req: NextRequest) {
     let seoZh = { seoTitle: '', seoDescription: '', seoKeywords: '' };
     let seoEn = { seoTitle: '', seoDescription: '', seoKeywords: '' };
 
-    function cleanJson(t: string) { return t.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim(); }
-    try { enData = JSON.parse(cleanJson(enText)); } catch { /* use defaults */ }
-    try { seoZh = JSON.parse(cleanJson(seoZhText)); } catch { /* use defaults */ }
-    try { seoEn = JSON.parse(cleanJson(seoEnText)); } catch { /* use defaults */ }
+    try { enData = safeParseJSON(enText) as typeof enData; } catch { /* use defaults */ }
+    try { seoZh = safeParseJSON(seoZhText) as typeof seoZh; } catch { /* use defaults */ }
+    try { seoEn = safeParseJSON(seoEnText) as typeof seoEn; } catch { /* use defaults */ }
 
     const charCount = (zhData.contentZh || '').length;
     const readingTimeZh = Math.max(3, Math.ceil(charCount / 400));
@@ -194,7 +226,8 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    if (post?.id) {
+    const imageAvailable = !!process.env.OPENAI_API_KEY;
+    if (post?.id && imageAvailable) {
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin;
       const cookieHeader = req.headers.get('cookie') || '';
 
@@ -217,7 +250,10 @@ export async function POST(req: NextRequest) {
     return Response.json({
       success: true,
       post,
-      message: '文章已生成，图片正在后台生成中...',
+      message: imageAvailable
+        ? '文章已生成，封面图正在后台生成中...'
+        : '文章已生成（封面图生成暂不可用，请检查 OpenAI API key）',
+      imageAvailable,
       meta: {
         imageCount: imageCount || 0,
         imageKeywords: zhData.imageKeywords,
@@ -226,6 +262,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('[blog/generate]', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : '';
+    if (msg.includes('超时')) {
+      return Response.json({ error: `文章生成超时：${msg}，请重试` }, { status: 504 });
+    }
+    return Response.json({ error: '文章生成失败，请稍后重试' }, { status: 500 });
   }
 }

@@ -5,6 +5,8 @@ import { supabaseAdmin } from '../../../lib/supabase/server';
 import { requireAdmin } from '../../../lib/auth';
 import { aiLimiter, safeLimit } from '../../../lib/ratelimit';
 
+export const maxDuration = 300;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
@@ -48,6 +50,11 @@ export async function POST(req: NextRequest) {
 
     if (!postId) {
       return Response.json({ error: 'postId required' }, { status: 400 });
+    }
+
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('[generate-cover] OPENAI_API_KEY not configured');
+      return Response.json({ error: '封面图生成暂不可用（API key 未配置）' }, { status: 503 });
     }
 
     const { data: post, error: fetchErr } = await db
@@ -136,7 +143,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!imageB64) {
-      return Response.json({ error: 'All image models failed' }, { status: 500 });
+      return Response.json({ error: '封面图生成失败，请检查 OpenAI API key 是否有效' }, { status: 500 });
     }
 
     // Step 3: Upload to Supabase Storage

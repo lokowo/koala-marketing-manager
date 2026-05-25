@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import { requireAdmin } from '../../../lib/auth';
 
+export const maxDuration = 300;
+
 export async function POST(req: NextRequest) {
   try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
   try {
@@ -20,7 +22,10 @@ export async function POST(req: NextRequest) {
       try {
         const res = await fetch(new URL('/api/blog/generate', req.url).toString(), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: req.headers.get('cookie') || '',
+          },
           body: JSON.stringify({
             topic: topic.title || topic,
             category: topic.category || 'phd_guide',

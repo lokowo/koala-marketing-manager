@@ -150,8 +150,13 @@ export default function BatchGeneratePage() {
             } : item
           ));
         } else {
+          const friendlyError = res.status === 504
+            ? '生成超时，请减少批量数量或重试'
+            : res.status === 429
+            ? '操作太频繁，请稍后重试'
+            : data.error || '生成失败';
           setItems(prev => prev.map((item, idx) =>
-            idx === i ? { ...item, status: 'failed', error: data.error || '生成失败' } : item
+            idx === i ? { ...item, status: 'failed', error: friendlyError } : item
           ));
         }
       } catch (e) {
@@ -161,8 +166,12 @@ export default function BatchGeneratePage() {
           ));
           break;
         }
+        const errMsg = (e as Error).message;
+        const friendlyError = errMsg.includes('Failed to fetch') || errMsg.includes('network')
+          ? '网络超时，请检查网络后重试'
+          : errMsg;
         setItems(prev => prev.map((item, idx) =>
-          idx === i ? { ...item, status: 'failed', error: (e as Error).message } : item
+          idx === i ? { ...item, status: 'failed', error: friendlyError } : item
         ));
       }
     }

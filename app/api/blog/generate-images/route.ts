@@ -4,6 +4,8 @@ import { supabaseAdmin } from '../../../lib/supabase/server';
 import { requireAdmin } from '../../../lib/auth';
 import { aiLimiter, safeLimit } from '../../../lib/ratelimit';
 
+export const maxDuration = 300;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
@@ -47,7 +49,11 @@ export async function POST(req: NextRequest) {
 
     let prompts: { suggestedHeading: string; promptEn: string }[] = [];
     try {
-      const parsed = JSON.parse(cleaned);
+      let jsonStr = cleaned;
+      const arrMatch = cleaned.match(/\[[\s\S]*\]/);
+      if (arrMatch) jsonStr = arrMatch[0];
+      try { JSON.parse(jsonStr); } catch { jsonStr = jsonStr.replace(/,\s*([}\]])/g, '$1'); }
+      const parsed = JSON.parse(jsonStr);
       prompts = parsed.slice(0, imageCount).map((p: { suggestedHeading?: string; insertAfterHeading?: string; promptEn: string }, i: number) => ({
         index: i,
         suggestedHeading: p.suggestedHeading || p.insertAfterHeading || '',
