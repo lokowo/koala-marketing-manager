@@ -309,6 +309,12 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] SECURITY DEFINER 函数收权: get_sales_funnel / get_survey_analytics_aggregate / get_survey_analytics_full 从 anon + PUBLIC 移除 EXECUTE，仅保留 authenticated + service_role + postgres
 - [x] get_professor_match_count 保持不变（公开统计数据）
 - [x] Migration: supabase/migrations/20260525_rls_audit_17_tables.sql
+- [x] 横向越权收紧: 3 个 SECURITY DEFINER 函数加函数体内鉴权 + REVOKE EXECUTE FROM authenticated
+  - get_sales_funnel: 放行 service_role/postgres直连 + admin/super_admin + 本人(auth.uid()=p_sales_user_id)
+  - get_survey_analytics_aggregate/full: 放行 service_role/postgres直连 + admin/super_admin + 问卷归属销售(surveys.created_by=auth.uid())
+  - 3 个函数均加 SET search_path = public, pg_temp (消除 function_search_path_mutable 告警)
+  - REVOKE EXECUTE FROM authenticated 作为双保险（所有调用路径已确认走 service_role）
+  - Migration: supabase/migrations/20260525_harden_sales_survey_rpc_functions.sql
 
 ### 移动端体验审计与修复 ✅ 完成 (2026-05-25)
 - [x] 375px 全页面审查: 首页、教授库、教授详情、Ola聊天、定价、登录、博客 共7个核心页面
