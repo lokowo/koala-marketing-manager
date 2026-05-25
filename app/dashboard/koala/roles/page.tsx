@@ -41,12 +41,17 @@ export default function RolesPage() {
       setRejectingId(appId);
       return;
     }
+    if (action === 'reject' && !confirm('确定要拒绝此申请吗？此操作不可撤销。')) return;
     setActionLoading(appId);
-    await fetch('/api/admin/roles', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ applicationId: appId, action, rejectReason: action === 'reject' ? rejectReason : undefined }),
-    });
+    try {
+      await fetch('/api/admin/roles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId: appId, action, rejectReason: action === 'reject' ? rejectReason : undefined }),
+      });
+    } catch (err) {
+      alert((err as Error).message || '操作失败');
+    }
     setActionLoading(null);
     setRejectingId(null);
     setRejectReason('');

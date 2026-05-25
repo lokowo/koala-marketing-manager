@@ -24,6 +24,7 @@ export default function TopicsPage() {
   const [editing, setEditing] = useState<Topic | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: '', description: '', researchField: '' });
+  const [error, setError] = useState('');
 
   const fetchTopics = useCallback(async () => {
     try {
@@ -31,8 +32,12 @@ export default function TopicsPage() {
       if (res.ok) {
         const { data } = await res.json();
         setTopics(data || []);
+      } else {
+        setError('加载主题列表失败');
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      setError((err as Error).message || '加载主题列表失败');
+    }
     setLoading(false);
   }, []);
 
@@ -76,7 +81,9 @@ export default function TopicsPage() {
         }
       }
       setShowModal(false);
-    } catch { /* ignore */ }
+    } catch (err) {
+      alert((err as Error).message || '操作失败');
+    }
     setSaving(false);
   }
 
@@ -86,8 +93,12 @@ export default function TopicsPage() {
       const res = await fetch(`/api/topics/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setTopics(prev => prev.filter(t => t.id !== id));
+      } else {
+        alert('删除失败');
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      alert((err as Error).message || '删除失败');
+    }
   }
 
   const filtered = topics.filter(t => {
@@ -118,6 +129,11 @@ export default function TopicsPage() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">话题管理</h1>

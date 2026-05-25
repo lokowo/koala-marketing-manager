@@ -28,17 +28,24 @@ export default function AnalyticsPage() {
   const [tab, setTab] = useState<Tab>('overview');
   const [data, setData] = useState<AnyObj | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     setLoading(true);
+    setError('');
     fetch(`/api/admin/analytics?days=${range}`)
-      .then(r => r.ok ? r.json() : {})
+      .then(r => { if (!r.ok) throw new Error('加载失败'); return r.json(); })
       .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(err => { setError(err.message || '加载分析数据失败'); setLoading(false); });
   }, [range]);
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">数据分析</h2>

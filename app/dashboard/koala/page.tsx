@@ -60,12 +60,13 @@ const PIE_COLORS = ['#F59E0B', '#3B82F6', '#94A3B8'];
 export default function KoalaDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [trendRange, setTrendRange] = useState<'7' | '30' | '90'>('30');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetch('/api/admin/dashboard-overview')
-      .then(r => r.ok ? r.json() : null)
+      .then(r => { if (!r.ok) throw new Error('加载失败'); return r.json(); })
       .then(setData)
-      .catch(() => {});
+      .catch(err => setError(err.message || '加载仪表盘数据失败'));
   }, []);
 
   const trendData = data?.user_trend
@@ -111,6 +112,11 @@ export default function KoalaDashboard() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
+      )}
       <div>
         <h2 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">管理总览</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Koala PhD 运营概览</p>

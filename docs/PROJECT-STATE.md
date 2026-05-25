@@ -300,6 +300,16 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] 破坏性操作二次确认: 博客删除 confirm("此操作不可撤销"); 销售等级/状态变更 confirm; 角色拒绝 confirm
 - [x] 静默吞错修复: dashboard、analytics、growth、revenue、sales-overview、topics、publishing 共7个页面的 .catch(()=>{}) 改为错误状态 + 红色错误提示栏
 
+### 移动端体验审计与修复 ✅ 完成 (2026-05-25)
+- [x] 375px 全页面审查: 首页、教授库、教授详情、Ola聊天、定价、登录、博客 共7个核心页面
+- [x] 聊天页输入框修复: 移除 BottomTabBar 在聊天页的显示, 避免输入框被遮挡; 添加 safe-area-inset-bottom 适配 iPhone
+- [x] 首页登录按钮修复: 白字 on 浅米色背景不可读 → 改为深色按钮 + 增大到 size-10 (40px)
+- [x] OlaFloatingMascot 移动端缩小: 64px → 48px (lg 断点以下), 防止遮挡内容
+- [x] OlaWidget 移动端缩小: size md → sm + 减小 padding/border (lg 断点以下)
+- [x] 移除首页重复 OlaFloatingMascot: Shell 已提供 OlaWidget, 首页不再单独渲染
+- [x] 触摸目标 44px 最小化: 聊天发送/附件按钮 size-9→size-11, 首页通知铃 size-9→size-11, 教授库搜索按钮 size-8→size-11, 教授详情返回/收藏按钮 min-h-44px, 博客搜索/分页按钮 min-h-44px
+- [x] KoalaShell 优化: 聊天页不渲染 BottomTabBar + 不添加 pb-88px 底部填充
+
 ## 待完成项目 (P4 路线图)
 
 ### 高优先级

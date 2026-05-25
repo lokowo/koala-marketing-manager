@@ -85,12 +85,26 @@ export default function SalesAgentsPage() {
   }
 
   async function updateAgent(id: string, updates: { status?: string; tier?: string }) {
-    const res = await fetch(`/api/admin/sales-agents/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
-    if (res.ok) loadAgents();
+    const desc = updates.tier ? `等级变更为 ${TIER_CFG[updates.tier]?.label || updates.tier}` : `状态变更为 ${STATUS_CFG[updates.status || '']?.label || updates.status}`;
+    if (!confirm(`确定要执行此操作吗？（${desc}）此操作不可撤销。`)) {
+      loadAgents();
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/sales-agents/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        loadAgents();
+      } else {
+        const err = await res.json();
+        alert(err.error || '操作失败');
+      }
+    } catch (err) {
+      alert((err as Error).message || '操作失败');
+    }
   }
 
   return (

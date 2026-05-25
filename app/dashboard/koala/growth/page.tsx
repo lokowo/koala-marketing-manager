@@ -34,12 +34,13 @@ function Delta({ current, previous }: { current: number; previous: number }) {
 export default function GrowthPage() {
   const [data, setData] = useState<AnyObj | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetch('/api/admin/growth')
-      .then(r => r.ok ? r.json() : null)
+      .then(r => { if (!r.ok) throw new Error('加载失败'); return r.json(); })
       .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(err => { setError(err.message || '加载增长数据失败'); setLoading(false); });
   }, []);
 
   if (loading) return (
@@ -69,12 +70,16 @@ export default function GrowthPage() {
   if (!data) return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <div className="h-7 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-        <div className="h-4 w-48 bg-gray-100 dark:bg-gray-700/50 rounded animate-pulse" />
+        <h2 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">增长分析</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">用户增长趋势与渠道分析</p>
       </div>
-      <div className="py-12 text-center">
-        <div className="inline-block h-5 w-40 bg-red-100 dark:bg-red-900/30 rounded animate-pulse" />
-      </div>
+      {error ? (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
+      ) : (
+        <div className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">暂无数据</div>
+      )}
     </div>
   );
 

@@ -23,10 +23,13 @@ export default function PublishingPage() {
   const [formData, setFormData] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
+  const [error, setError] = useState('');
+
   useEffect(() => {
     fetch('/api/publishing')
-      .then(r => r.json())
-      .then(({ data, stats }) => { setRecords(data); setStats(stats); setLoading(false); });
+      .then(r => { if (!r.ok) throw new Error('加载失败'); return r.json(); })
+      .then(({ data, stats }) => { setRecords(data); setStats(stats); setLoading(false); })
+      .catch(err => { setError(err.message || '加载发布数据失败'); setLoading(false); });
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -43,17 +46,21 @@ export default function PublishingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const res = await fetch('/api/publishing', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
-    });
-    const { data } = await res.json();
-    setRecords(prev => [...prev, data]);
-    // Refresh stats
-    fetch('/api/publishing').then(r => r.json()).then(({ stats }) => setStats(stats));
-    setShowForm(false);
-    setFormData(emptyForm);
+    try {
+      const res = await fetch('/api/publishing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error('提交失败');
+      const { data } = await res.json();
+      setRecords(prev => [...prev, data]);
+      fetch('/api/publishing').then(r => r.json()).then(({ stats }) => setStats(stats)).catch(() => {});
+      setShowForm(false);
+      setFormData(emptyForm);
+    } catch (err) {
+      setError((err as Error).message || '提交失败');
+    }
     setSaving(false);
   };
 
@@ -61,6 +68,11 @@ export default function PublishingPage() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
+      )}
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">

@@ -108,10 +108,14 @@ export default function BlogPage() {
   useEffect(() => { fetchCounts(); }, [fetchCounts]);
 
   async function handleDelete(id: string) {
-    if (!confirm('确定删除这篇文章？')) return;
-    await fetch('/api/blog', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-    fetchPosts();
-    fetchCounts();
+    if (!confirm('确定要删除这篇文章吗？此操作不可撤销。')) return;
+    try {
+      await fetch('/api/blog', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+      fetchPosts();
+      fetchCounts();
+    } catch (err) {
+      showToast((err as Error).message || '删除失败');
+    }
   }
 
   async function handlePublish(id: string) {

@@ -49,12 +49,13 @@ const KPI_META = [
 export default function SalesOverviewPage() {
   const [data, setData] = useState<KpiOverviewData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetch('/api/admin/sales-kpi-overview')
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error('加载失败'); return r.json(); })
       .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(err => { setError(err.message || '加载销售数据失败'); setLoading(false); });
   }, []);
 
   if (loading) {
@@ -62,7 +63,18 @@ export default function SalesOverviewPage() {
   }
 
   if (!data) {
-    return <p className="text-sm text-[#94A3B8] dark:text-[#64748B] py-12 text-center">加载失败</p>;
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">销售 KPI 总览</h1>
+        {error ? (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-sm text-red-700 dark:text-red-400">
+            {error}
+          </div>
+        ) : (
+          <p className="text-sm text-[#94A3B8] dark:text-[#64748B] py-12 text-center">暂无数据</p>
+        )}
+      </div>
+    );
   }
 
   const { team_totals, agents } = data;

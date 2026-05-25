@@ -21,16 +21,17 @@ export default function RevenuePage() {
   const [revenue, setRevenue] = useState<RevenueData | null>(null);
   const [subs, setSubs] = useState<SubData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/admin/revenue').then(r => r.ok ? r.json() : null),
-      fetch('/api/admin/subscribers').then(r => r.ok ? r.json() : null),
+      fetch('/api/admin/revenue').then(r => { if (!r.ok) throw new Error('收入数据加载失败'); return r.json(); }),
+      fetch('/api/admin/subscribers').then(r => { if (!r.ok) throw new Error('订阅数据加载失败'); return r.json(); }),
     ]).then(([rev, sub]) => {
       setRevenue(rev);
       setSubs(sub);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(err => { setError(err.message || '加载收入数据失败'); setLoading(false); });
   }, []);
 
   if (loading) return (
@@ -65,6 +66,11 @@ export default function RevenuePage() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
+      )}
       <div>
         <h1 className="text-2xl font-light tracking-tight text-gray-900 dark:text-gray-100">收入分析</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">收入、订阅与交易数据</p>
