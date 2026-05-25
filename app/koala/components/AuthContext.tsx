@@ -224,16 +224,7 @@ function LoginModal({
                   setError('Google 登录暂不可用，请使用邮箱登录');
                   return;
                 }
-                try {
-                  const check = await fetch(data.url, { method: 'GET', redirect: 'manual' });
-                  if (check.type === 'opaqueredirect' || check.status === 302 || check.status === 303) {
-                    window.location.href = data.url;
-                  } else {
-                    setError('Google 登录暂不可用，请使用邮箱登录');
-                  }
-                } catch {
-                  window.location.href = data.url;
-                }
+                window.location.href = data.url;
               }}
               className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl text-sm font-medium transition mb-4"
               style={{ background: '#fff', color: '#374151', border: '1px solid rgba(201,169,110,0.2)' }}

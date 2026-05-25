@@ -44,16 +44,7 @@ function LoginForm() {
       setError('Google 登录暂不可用，请使用邮箱登录');
       return;
     }
-    try {
-      const check = await fetch(data.url, { method: 'GET', redirect: 'manual' });
-      if (check.type === 'opaqueredirect' || check.status === 302 || check.status === 303) {
-        window.location.href = data.url;
-      } else {
-        setError('Google 登录暂不可用，请使用邮箱登录');
-      }
-    } catch {
-      window.location.href = data.url;
-    }
+    window.location.href = data.url;
   }
 
   return (

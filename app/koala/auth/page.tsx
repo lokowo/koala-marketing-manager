@@ -368,16 +368,7 @@ function AuthPageInner() {
                 setError('Google 登录暂不可用，请使用邮箱登录');
                 return;
               }
-              try {
-                const check = await fetch(data.url, { method: 'GET', redirect: 'manual' });
-                if (check.type === 'opaqueredirect' || check.status === 302 || check.status === 303) {
-                  window.location.href = data.url;
-                } else {
-                  setError('Google 登录暂不可用，请使用邮箱登录');
-                }
-              } catch {
-                window.location.href = data.url;
-              }
+              window.location.href = data.url;
             }}
             className="w-full flex items-center justify-center gap-3 py-2.5 rounded-xl text-sm font-medium transition bg-white border border-gray-300 dark:border-white/20 text-gray-700 dark:text-[#e8e4dc] hover:shadow-md hover:bg-gray-50 dark:hover:bg-white/10"
           >
