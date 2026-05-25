@@ -1029,22 +1029,31 @@ function ChatPageInner() {
   const sendMessage = useCallback(async (text?: string) => {
     const txt = (text ?? input).trim();
     if (!txt || loading) return;
+
+    // Free trial: anonymous users get 3 messages before login required
     if (!user) {
-      showLogin();
-      return;
+      const FREE_MSG_LIMIT = 3;
+      const count = parseInt(localStorage.getItem('ola_free_msgs') || '0', 10);
+      if (count >= FREE_MSG_LIMIT) {
+        showLogin();
+        return;
+      }
+      localStorage.setItem('ola_free_msgs', String(count + 1));
     }
 
-    // Check chat_turn usage
-    const chatUsage = await checkUsage(supabase, user.id, 'chat');
-    if (!chatUsage.allowed) {
-      const upgradeMsg: Message = {
-        id: msgId(), role: 'assistant',
-        content: `你今天的对话次数已用完（${chatUsage.used}/${chatUsage.limit}）`,
-        upgradePrompt: { feature: '对话', remaining: 0 },
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, upgradeMsg]);
-      return;
+    // Check chat_turn usage (logged-in users only)
+    if (user) {
+      const chatUsage = await checkUsage(supabase, user.id, 'chat');
+      if (!chatUsage.allowed) {
+        const upgradeMsg: Message = {
+          id: msgId(), role: 'assistant',
+          content: `你今天的对话次数已用完（${chatUsage.used}/${chatUsage.limit}）`,
+          upgradePrompt: { feature: '对话', remaining: 0 },
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, upgradeMsg]);
+        return;
+      }
     }
 
     // Detect handoff intent

@@ -187,6 +187,14 @@ function LoginModal({
         {/* Drag handle */}
         <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: '#d8c8a8' }} />
 
+        {/* Value proposition */}
+        <div className="text-center mb-5">
+          <div className="text-2xl mb-2">🐨</div>
+          <p className="text-sm leading-relaxed" style={{ color: '#a8b8ac' }}>
+            登录后解锁完整功能：智能匹配导师、生成学术CV、一键发送套磁信
+          </p>
+        </div>
+
         {registered ? (
           <div className="text-center py-6">
             <div className="text-4xl mb-3">📬</div>

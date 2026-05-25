@@ -265,6 +265,15 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] professors/[id]/generate-blog maxDuration=300
 - [x] 友好错误信息: 超时→504+中文描述, JSON异常→提示重试, 429→"操作太频繁"
 
+### Phase 10: 免登录浏览 + 登录转化机制 ✅ 完成 (2026-05-25)
+- [x] 免登录页面: 首页、教授库列表/详情、博客、定价页、研究洞察、隐私政策 (无 middleware 拦截)
+- [x] Ola 聊天免登录体验: 未登录用户可发送 3 条消息 (localStorage 计数), 第 4 条触发登录弹窗
+- [x] 核心功能登录门: 教授匹配结果展示免费可看, 套磁信生成/发送/批量需登录, CV/RP生成需登录, 我的文档/申请追踪需登录
+- [x] 登录弹窗优化: 统一使用 AuthContext 弹窗 (非跳转), 新增价值主张文案 "登录后解锁完整功能：智能匹配导师、生成学术CV、一键发送套磁信"
+- [x] matches 页面 LoginPrompt 改为弹窗式 (showLogin) 而非跳转 /koala/auth
+- [x] Google OAuth 按钮条件渲染: 仅在 Supabase 启用 Google provider 时显示 (防止 400 错误)
+- [x] OAuth callback cookie 修复: 使用 req.cookies + response.cookies 确保 session 随 redirect 传递
+
 ## 待完成项目 (P4 路线图)
 
 ### 高优先级

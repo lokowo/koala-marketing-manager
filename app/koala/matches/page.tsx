@@ -222,18 +222,20 @@ function OutreachEmailCard({ email }: { email: OutreachEmail }) {
 }
 
 
-function LoginPrompt() {
+function LoginPrompt({ onLogin }: { onLogin: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center px-6">
       <span className="text-5xl mb-4">🐨</span>
       <p className="text-sm font-semibold mb-1 text-gray-900 dark:text-[#e8e4dc]">登录后查看你的匹配</p>
-      <p className="text-xs mb-6 text-gray-500 dark:text-[#6a7a7e]">收藏的教授、发送的申请信都在这里</p>
-      <Link
-        href="/koala/auth"
-        className="px-6 py-2.5 rounded-2xl text-sm font-semibold no-underline bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] border border-amber-200 dark:border-[#D4A843]/30"
+      <p className="text-xs mb-4 text-gray-500 dark:text-[#6a7a7e]">
+        登录后解锁完整功能：智能匹配导师、生成学术CV、一键发送套磁信
+      </p>
+      <button
+        onClick={onLogin}
+        className="px-6 py-2.5 rounded-2xl text-sm font-semibold bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] border border-amber-200 dark:border-[#D4A843]/30"
       >
         登录 / 注册
-      </Link>
+      </button>
     </div>
   );
 }
@@ -241,7 +243,7 @@ function LoginPrompt() {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function MatchesPage() {
-  const { user } = useAuth();
+  const { user, showLogin } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('saved');
   const [saved, setSaved] = useState<SavedEntry[]>([]);
   const [emails, setEmails] = useState<OutreachEmail[]>([]);
@@ -345,7 +347,7 @@ export default function MatchesPage() {
         {activeTab === 'saved' && (
           <>
             {!user ? (
-              <LoginPrompt />
+              <LoginPrompt onLogin={showLogin} />
             ) : loadingSaved ? (
               <div className="space-y-3">
                 {[1, 2, 3].map(i => (
@@ -372,7 +374,7 @@ export default function MatchesPage() {
         {activeTab === 'sent' && (
           <>
             {!user ? (
-              <LoginPrompt />
+              <LoginPrompt onLogin={showLogin} />
             ) : loadingEmails ? (
               <div className="space-y-3">
                 {[1, 2, 3].map(i => (
