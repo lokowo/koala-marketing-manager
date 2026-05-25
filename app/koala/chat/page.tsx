@@ -1114,6 +1114,7 @@ function ChatPageInner() {
 
     const isEmailRequest = mode === 'write' && /申请信|email|生成|帮我写/i.test(txt) && messages.length > 1;
     if (isEmailRequest) {
+      if (!user) { showLogin(); return; }
       setPendingEmailText(txt);
       setShowCreditConfirm(true);
       return;
@@ -1492,7 +1493,7 @@ function ChatPageInner() {
   const formatTime = (d: Date) => d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="flex flex-col bg-white dark:bg-[#080c10]" style={{ height: '100dvh', paddingBottom: 60 }}>
+    <div className="flex flex-col bg-white dark:bg-[#080c10]" style={{ height: '100dvh' }}>
 
       {/* Achievement toast */}
       {toastAchievement && (
@@ -1605,41 +1606,67 @@ function ChatPageInner() {
                 </div>
 
                 {msg.role === 'assistant' && msg.scoreCard && <ScoreCardBlock card={msg.scoreCard} />}
-                {msg.role === 'assistant' && msg.matchedProfessors?.map((p, i) => (
-                  <ProfessorMatchCard
-                    key={i}
-                    match={p}
-                    onGenerateEmail={handleGenerateColdEmail}
-                    selectable={msg.matchedProfessors!.length > 1}
-                    selected={selectedProfessorIds.has(p.professorId)}
-                    onToggleSelect={toggleProfessorSelect}
-                  />
-                ))}
                 {msg.role === 'assistant' && msg.matchedProfessors && msg.matchedProfessors.length > 0 && (
-                  <div className="flex items-center justify-between mt-1.5 ml-1">
-                    <p className="text-[11px] text-gray-400 dark:text-[#8a8078]">
-                      不是你要找的教授？告诉我正确的教授名字和大学
-                    </p>
-                    <SharePosterTrigger
-                      label="分享"
-                      matchCount={msg.matchedProfessors.length}
-                      className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md text-gray-400 dark:text-[#8a8078] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-                    />
-                  </div>
-                )}
-                {msg.role === 'assistant' && msg.matchedProfessors && msg.matchedProfessors.length > 1 && (
-                  <button
-                    onClick={() => {
-                      const ids = selectedProfessorIds.size > 0
-                        ? Array.from(selectedProfessorIds)
-                        : msg.matchedProfessors!.map(p => p.professorId);
-                      handleBatchColdEmails(ids);
-                    }}
-                    disabled={batchGenerating}
-                    className="mt-2 w-full py-2 rounded-xl text-xs font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] disabled:opacity-50"
-                  >
-                    {batchGenerating ? '⏳ 生成中...' : `📨 批量生成套磁信（${selectedProfessorIds.size > 0 ? selectedProfessorIds.size : msg.matchedProfessors!.length} 封）`}
-                  </button>
+                  user ? (
+                    <>
+                      {msg.matchedProfessors.map((p, i) => (
+                        <ProfessorMatchCard
+                          key={i}
+                          match={p}
+                          onGenerateEmail={handleGenerateColdEmail}
+                          selectable={msg.matchedProfessors!.length > 1}
+                          selected={selectedProfessorIds.has(p.professorId)}
+                          onToggleSelect={toggleProfessorSelect}
+                        />
+                      ))}
+                      <div className="flex items-center justify-between mt-1.5 ml-1">
+                        <p className="text-[11px] text-gray-400 dark:text-[#8a8078]">
+                          不是你要找的教授？告诉我正确的教授名字和大学
+                        </p>
+                        <SharePosterTrigger
+                          label="分享"
+                          matchCount={msg.matchedProfessors.length}
+                          className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md text-gray-400 dark:text-[#8a8078] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                        />
+                      </div>
+                      {msg.matchedProfessors.length > 1 && (
+                        <button
+                          onClick={() => {
+                            const ids = selectedProfessorIds.size > 0
+                              ? Array.from(selectedProfessorIds)
+                              : msg.matchedProfessors!.map(p => p.professorId);
+                            handleBatchColdEmails(ids);
+                          }}
+                          disabled={batchGenerating}
+                          className="mt-2 w-full py-2 rounded-xl text-xs font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] disabled:opacity-50"
+                        >
+                          {batchGenerating ? '⏳ 生成中...' : `📨 批量生成套磁信（${selectedProfessorIds.size > 0 ? selectedProfessorIds.size : msg.matchedProfessors!.length} 封）`}
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <ProfessorMatchCard
+                        match={msg.matchedProfessors[0]}
+                        onGenerateEmail={handleGenerateColdEmail}
+                      />
+                      {msg.matchedProfessors.length > 1 && (
+                        <div className="relative mt-2">
+                          <div className="rounded-xl p-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 opacity-40 blur-[2px] pointer-events-none">
+                            <div className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">🎓 {msg.matchedProfessors[1].name}</div>
+                            <div className="text-[11px] mt-0.5 text-gray-500 dark:text-[#8a8078]">{msg.matchedProfessors[1].institution}</div>
+                          </div>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => showLogin()}
+                        className="mt-2 w-full py-3 rounded-xl text-xs font-semibold bg-[#1A1A2E] dark:bg-[#c9a96e] text-white dark:text-[#080c10] flex items-center justify-center gap-2"
+                      >
+                        <span>🔒</span>
+                        <span>登录查看全部 {msg.matchedProfessors.length} 位匹配教授</span>
+                      </button>
+                    </>
+                  )
                 )}
                 {msg.role === 'assistant' && msg.citations && msg.citations.length > 0 && (
                   <ExtendedReadingPanel
@@ -1815,7 +1842,7 @@ function ChatPageInner() {
       )}
 
       {/* Input bar */}
-      <div className="flex-shrink-0 border-t border-gray-200 dark:border-white/[0.08] bg-gray-50 dark:bg-[#0d1520]">
+      <div className="flex-shrink-0 border-t border-gray-200 dark:border-white/[0.08] bg-gray-50 dark:bg-[#0d1520]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {/* Attached file preview */}
         {attachedFile && (
           <div className="flex items-center gap-2 mx-4 mt-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
@@ -1828,7 +1855,7 @@ function ChatPageInner() {
         <div className="flex p-4 items-center gap-2">
           <button
             onClick={() => setShowUpload(true)}
-            className="size-9 shrink-0 rounded-full flex justify-center items-center bg-gray-100 dark:bg-white/5"
+            className="size-11 shrink-0 rounded-full flex justify-center items-center bg-gray-100 dark:bg-white/5"
           >
             <Plus className="size-5 text-gray-700 dark:text-[#e8e4dc]" />
           </button>
@@ -1858,7 +1885,7 @@ function ChatPageInner() {
           <button
             onClick={() => sendMessage()}
             disabled={!input.trim() || loading}
-            className={`size-9 shrink-0 rounded-full flex justify-center items-center ${input.trim() && !loading ? 'bg-[#1A1A2E] dark:bg-[#D4A843]' : 'bg-gray-200 dark:bg-white/[0.08]'}`}
+            className={`size-11 shrink-0 rounded-full flex justify-center items-center ${input.trim() && !loading ? 'bg-[#1A1A2E] dark:bg-[#D4A843]' : 'bg-gray-200 dark:bg-white/[0.08]'}`}
           >
             <Send className="size-4 fill-white text-white" />
           </button>
