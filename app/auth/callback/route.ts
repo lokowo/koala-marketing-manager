@@ -1,5 +1,4 @@
 import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
@@ -9,17 +8,18 @@ export async function GET(req: NextRequest) {
   const type = url.searchParams.get('type');
   const next = url.searchParams.get('next') || '/koala/home';
 
-  const cookieStore = await cookies();
+  const response = NextResponse.redirect(new URL(next, req.url));
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return cookieStore.getAll(); },
+        getAll() { return req.cookies.getAll(); },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
         },
       },
     }
@@ -31,5 +31,5 @@ export async function GET(req: NextRequest) {
     await supabase.auth.verifyOtp({ token_hash, type: type as 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email' });
   }
 
-  return NextResponse.redirect(new URL(next, req.url));
+  return response;
 }
