@@ -113,6 +113,8 @@ function LoginModal({
   const [loading, setLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [isWebView, setIsWebView] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -122,6 +124,11 @@ function LoginModal({
         .then(r => r.json())
         .then(settings => { if (settings?.external?.google) setGoogleEnabled(true); })
         .catch(() => {});
+    }
+
+    const ua = navigator.userAgent;
+    if (/MicroMessenger|WeChat|Instagram|FBAN|FBAV|Line\/|QQ\/|MQQBrowser|Weibo|Snapchat|Twitter/i.test(ua)) {
+      setIsWebView(true);
     }
   }, []);
 
@@ -229,7 +236,7 @@ function LoginModal({
               ))}
             </div>
 
-            {googleEnabled && (
+            {googleEnabled && !isWebView && (
               <>
                 <button
                   type="button"
@@ -260,6 +267,21 @@ function LoginModal({
                   <div className="flex-1 h-px" style={{ background: 'rgba(201,169,110,0.1)' }} />
                 </div>
               </>
+            )}
+            {isWebView && (
+              <div className="mb-4 rounded-2xl p-3" style={{ background: 'rgba(212,168,67,0.08)', border: '1px solid rgba(212,168,67,0.15)' }}>
+                <p className="text-xs text-center mb-2" style={{ color: '#D4A843' }}>
+                  请在 Safari 或 Chrome 中打开以使用 Google 登录
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                  className="w-full py-2 rounded-lg text-xs font-medium"
+                  style={{ background: 'rgba(212,168,67,0.15)', color: '#D4A843' }}
+                >
+                  {copied ? '已复制链接 ✓' : '复制链接到浏览器打开'}
+                </button>
+              </div>
             )}
 
             <form onSubmit={tab === 'login' ? handleLogin : handleRegister} className="space-y-3">

@@ -49,6 +49,8 @@ function AuthPageInner() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [isWebView, setIsWebView] = useState(false);
+  const [copied, setCopied] = useState(false);
   const autoVerifyDone = useRef(false);
 
   useEffect(() => {
@@ -66,6 +68,11 @@ function AuthPageInner() {
         .then(r => r.json())
         .then(settings => { if (settings?.external?.google) setGoogleEnabled(true); })
         .catch(() => {});
+    }
+
+    const ua = navigator.userAgent;
+    if (/MicroMessenger|WeChat|Instagram|FBAN|FBAV|Line\/|QQ\/|MQQBrowser|Weibo|Snapchat|Twitter/i.test(ua)) {
+      setIsWebView(true);
     }
   }, [refCode]);
 
@@ -363,7 +370,7 @@ function AuthPageInner() {
 
         {/* Form */}
         <div className="rounded-2xl p-6 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_4px_24px_rgba(125,99,64,0.08)]">
-          {googleEnabled && (
+          {googleEnabled && !isWebView && (
             <>
               <button
                 type="button"
@@ -392,6 +399,20 @@ function AuthPageInner() {
                 <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
               </div>
             </>
+          )}
+          {isWebView && (
+            <div className="mb-4 rounded-xl p-3 bg-amber-50 dark:bg-[rgba(212,168,67,0.08)] border border-amber-200 dark:border-[rgba(212,168,67,0.15)]">
+              <p className="text-xs text-center text-amber-700 dark:text-[#D4A843] mb-2">
+                请在 Safari 或 Chrome 中打开以使用 Google 登录
+              </p>
+              <button
+                type="button"
+                onClick={() => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                className="w-full py-2 rounded-lg text-xs font-medium bg-amber-100 dark:bg-[rgba(212,168,67,0.15)] text-amber-700 dark:text-[#D4A843]"
+              >
+                {copied ? '已复制链接 ✓' : '复制链接到浏览器打开'}
+              </button>
+            </div>
           )}
 
         <form

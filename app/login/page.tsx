@@ -12,6 +12,8 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [isWebView, setIsWebView] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -25,6 +27,11 @@ function LoginForm() {
         .then(r => r.json())
         .then(settings => { if (settings?.external?.google) setGoogleEnabled(true); })
         .catch(() => {});
+    }
+
+    const ua = navigator.userAgent;
+    if (/MicroMessenger|WeChat|Instagram|FBAN|FBAV|Line\/|QQ\/|MQQBrowser|Weibo|Snapchat|Twitter/i.test(ua)) {
+      setIsWebView(true);
     }
   }, [router]);
 
@@ -59,7 +66,7 @@ function LoginForm() {
 
   return (
     <div className="bg-slate-900 rounded-2xl p-8 space-y-5 border border-white/10">
-      {googleEnabled && (
+      {googleEnabled && !isWebView && (
         <>
           <button
             type="button"
@@ -75,6 +82,20 @@ function LoginForm() {
             <div className="flex-1 h-px bg-white/10" />
           </div>
         </>
+      )}
+      {isWebView && (
+        <div className="rounded-lg p-3 bg-amber-900/20 border border-amber-500/20">
+          <p className="text-xs text-center text-amber-400 mb-2">
+            请在 Safari 或 Chrome 中打开以使用 Google 登录
+          </p>
+          <button
+            type="button"
+            onClick={() => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+            className="w-full py-2 rounded-lg text-xs font-medium bg-amber-500/10 text-amber-400"
+          >
+            {copied ? '已复制链接 ✓' : '复制链接到浏览器打开'}
+          </button>
+        </div>
       )}
 
     <form onSubmit={handleSubmit} className="space-y-5">
