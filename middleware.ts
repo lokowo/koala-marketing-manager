@@ -69,11 +69,11 @@ export async function middleware(request: NextRequest) {
         || request.headers.get('x-real-ip') || 'unknown';
       const ua = request.headers.get('user-agent') || '';
       const cutoff = new Date(Date.now() - 86400000).toISOString();
-      // Layer 1: self-scan — agent scanning their own code
       const isSelfScan = user && user.id === agent.user_id;
 
+      console.log('[MW:visit] sales agent matched', { ref, agentId: agent.id, isSelfScan, ip });
+
       if (!isSelfScan) {
-        // Layer 2: cookie dedup — same visitor + agent within 24h
         const { count: cookieDups } = await db.from('sales_visits')
           .select('id', { count: 'exact', head: true })
           .eq('visitor_fingerprint', visitorFp)
@@ -81,7 +81,6 @@ export async function middleware(request: NextRequest) {
           .gte('visited_at', cutoff);
 
         if (!cookieDups || cookieDups === 0) {
-          // Layer 3: IP rate limit — ≥5 from same IP + agent in 24h
           const { count: ipCount } = await db.from('sales_visits')
             .select('id', { count: 'exact', head: true })
             .eq('ip', ip)
@@ -89,8 +88,9 @@ export async function middleware(request: NextRequest) {
             .gte('visited_at', cutoff);
 
           if ((ipCount || 0) < 5) {
-            // Layer 4: suspicious marking — ≥3 from same IP is suspicious
-            await db.from('sales_visits').insert({
+            const now = new Date();
+            const hourBucket = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours()).toISOString();
+            const { error: insertErr } = await db.from('sales_visits').insert({
               agent_id: agent.id,
               channel: ch || 'unknown',
               visitor_fingerprint: visitorFp,
@@ -98,12 +98,14 @@ export async function middleware(request: NextRequest) {
               ip,
               user_agent: ua,
               is_suspicious: (ipCount || 0) >= 3,
+              hour_bucket: hourBucket,
             });
+            console.log('[MW:visit] sales_visits insert', insertErr ? `ERROR: ${insertErr.message}` : 'OK');
           }
         }
       }
     } else {
-      // Not a sales agent code — record as user referral visit
+      console.log('[MW:visit] not a sales agent, checking referral code', { ref: ref.toUpperCase() });
       const { data: referrerProfile } = await db
         .from('user_profiles')
         .select('id, referral_code')
@@ -117,20 +119,24 @@ export async function middleware(request: NextRequest) {
           .eq('code', ref.toUpperCase())
           .single();
         if (codeRow) {
-          await db.from('referral_visits').insert({
+          const { error: insertErr } = await db.from('referral_visits').insert({
             referral_code: ref.toUpperCase(),
             referrer_user_id: codeRow.user_id,
             landing_page: request.nextUrl.pathname,
             visitor_fingerprint: visitorFp,
           });
+          console.log('[MW:visit] referral_visits insert (via referral_codes)', insertErr ? `ERROR: ${insertErr.message}` : 'OK');
+        } else {
+          console.log('[MW:visit] no matching referral code found for', ref.toUpperCase());
         }
       } else {
-        await db.from('referral_visits').insert({
+        const { error: insertErr } = await db.from('referral_visits').insert({
           referral_code: ref.toUpperCase(),
           referrer_user_id: referrerProfile.id,
           landing_page: request.nextUrl.pathname,
           visitor_fingerprint: visitorFp,
         });
+        console.log('[MW:visit] referral_visits insert (via user_profiles)', insertErr ? `ERROR: ${insertErr.message}` : 'OK');
       }
     }
   }
