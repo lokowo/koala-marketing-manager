@@ -68,23 +68,34 @@ export async function extractMemories(
   const userMessages = messages.filter(m => m.role === 'user');
   if (userMessages.length === 0) return [];
 
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error('[memoryService] extractMemories skipped: no ANTHROPIC_API_KEY');
+    return [];
+  }
+
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const conversationText = messages
     .map(m => `[${m.role}]: ${m.content}`)
     .join('\n\n');
 
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1000,
-    system: EXTRACTION_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content: `从以下对话中提取用户的关键事实：\n\n${conversationText}`,
-      },
-    ],
-  });
+  let response;
+  try {
+    response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1000,
+      system: EXTRACTION_PROMPT,
+      messages: [
+        {
+          role: 'user',
+          content: `从以下对话中提取用户的关键事实：\n\n${conversationText}`,
+        },
+      ],
+    });
+  } catch (err) {
+    console.error('[memoryService] Failed to call AI for memory extraction:', err);
+    return [];
+  }
 
   const raw = (response.content[0] as { type: 'text'; text: string }).text.trim();
   const cleaned = raw.replace(/```json|```/g, '').trim();
@@ -251,7 +262,14 @@ export async function syncToProfile(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<void> {
-  const memories = await loadMemories(supabase, userId);
+  let memories: GroupedMemories;
+  try {
+    memories = await loadMemories(supabase, userId);
+  } catch (err) {
+    console.error('[memoryService] syncToProfile failed to load memories:', err);
+    return;
+  }
+
   const entries = Object.entries(memories);
   if (entries.length === 0) return;
 
@@ -259,12 +277,19 @@ export async function syncToProfile(
     .map(([cat, mems]) => `[${cat}] ${mems.map(m => m.memory_text).join('; ')}`)
     .join('\n');
 
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error('[memoryService] syncToProfile skipped: no ANTHROPIC_API_KEY');
+    return;
+  }
+
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 600,
-    system: `将以下用户记忆碎片合成为结构化 JSON，用于 user_profiles 表更新。
+  let response;
+  try {
+    response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 600,
+      system: `将以下用户记忆碎片合成为结构化 JSON，用于 user_profiles 表更新。
 只包含有明确信息的字段，不确定的不要填。返回纯 JSON。
 
 可用字段（全部可选）：
@@ -290,13 +315,17 @@ export async function syncToProfile(
   "research_interests": ["研究兴趣数组"],
   "language_preference": "语言偏好"
 }`,
-    messages: [
-      {
-        role: 'user',
-        content: `用户记忆碎片：\n${allTexts}`,
-      },
-    ],
-  });
+      messages: [
+        {
+          role: 'user',
+          content: `用户记忆碎片：\n${allTexts}`,
+        },
+      ],
+    });
+  } catch (err) {
+    console.error('[memoryService] syncToProfile AI call failed:', err);
+    return;
+  }
 
   try {
     const raw = (response.content[0] as { type: 'text'; text: string }).text.trim();

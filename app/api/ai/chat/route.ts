@@ -19,6 +19,10 @@ import { getOlaPersonaPrompt } from '../../../lib/prompts/ola-persona';
 import { getDeadlineContext } from '../../../lib/ola/ola-deadlines';
 import { loadMemories, formatMemoriesForPrompt, extractMemories, saveMemories, syncToProfile } from '../../../lib/services/memoryService';
 
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error('[AI Chat] ANTHROPIC_API_KEY is not configured');
+}
+
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ─── Tool definitions for Claude ─────────────────────────────────────────────
@@ -337,16 +341,20 @@ export async function POST(request: NextRequest) {
       }
     } catch { /* anonymous user */ }
 
-    // Load user memories for prompt injection
+    // Load user memories for prompt injection (graceful degradation — never block chat)
     let memoryPrompt = '';
     if (trackingUserId) {
       try {
-        const { createClient } = await import('@supabase/supabase-js');
-        const memDb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-        const memories = await loadMemories(memDb, trackingUserId);
-        memoryPrompt = formatMemoriesForPrompt(memories);
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (url && key) {
+          const { createClient } = await import('@supabase/supabase-js');
+          const memDb = createClient(url, key);
+          const memories = await loadMemories(memDb, trackingUserId);
+          memoryPrompt = formatMemoriesForPrompt(memories);
+        }
       } catch (err) {
-        console.error('[memory load]', err);
+        console.error('[memoryService] Failed to load memories, continuing without:', err);
       }
     }
 
@@ -897,11 +905,19 @@ H指数：${prof.hIndex ?? '未知'}`;
     }
 
     return Response.json(result);
-  } catch (e) {
+  } catch (e: unknown) {
     console.error('[AI Chat]', e);
+    const errMsg = e instanceof Error ? e.message : String(e);
+    const isAuthError = errMsg.includes('API key') || errMsg.includes('authentication') || errMsg.includes('401');
+    const isRateLimit = errMsg.includes('429') || errMsg.includes('rate');
+    const reply = isAuthError
+      ? '抱歉，AI 服务配置异常，请联系管理员。'
+      : isRateLimit
+        ? '请求过于频繁，请稍后再试。'
+        : '抱歉，AI 服务暂时不可用，请稍后再试。';
     return Response.json(
-      { error: 'AI service error', reply: '抱歉，AI 服务暂时不可用，请稍后再试。' },
-      { status: 500 }
+      { error: 'AI service error', reply },
+      { status: isRateLimit ? 429 : 500 }
     );
   }
 }
@@ -1021,20 +1037,36 @@ async function extractAndSaveMemories(
   conversationId?: string,
 ) {
   try {
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) return;
 
-    const extracted = await extractMemories(messages, userId, conversationId);
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(url, key);
+
+    let extracted: Awaited<ReturnType<typeof extractMemories>> = [];
+    try {
+      extracted = await extractMemories(messages, userId, conversationId);
+    } catch (err) {
+      console.error('[memoryService] Failed to extract memories, skipping:', err);
+      return;
+    }
     if (extracted.length === 0) return;
 
-    await saveMemories(supabase, userId, extracted, conversationId);
-    console.log(`[memory extraction] Saved ${extracted.length} memories for ${userId}`);
+    try {
+      await saveMemories(supabase, userId, extracted, conversationId);
+      console.log(`[memory extraction] Saved ${extracted.length} memories for ${userId}`);
+    } catch (err) {
+      console.error('[memoryService] Failed to save memories, skipping sync:', err);
+      return;
+    }
 
-    await syncToProfile(supabase, userId);
+    try {
+      await syncToProfile(supabase, userId);
+    } catch (err) {
+      console.error('[memoryService] Failed to sync profile, non-critical:', err);
+    }
   } catch (err) {
-    console.error('[memory extraction]', err);
+    console.error('[memoryService] Unexpected error in extractAndSaveMemories:', err);
   }
 }
