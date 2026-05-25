@@ -92,7 +92,7 @@ export default async function HomePage() {
     alternateName: 'Koala Study Advisors',
     url: 'https://koalaphd.com',
     logo: 'https://koalaphd.com/koala-logo.svg',
-    description: '覆盖澳洲38所大学、24,000+位教授与研究员，一键生成套磁信。PhD 申请、奖学金、导师推荐。',
+    description: '覆盖全澳38所大学导师与学者，一键生成套磁信。PhD 申请、奖学金、导师推荐。',
     address: {
       '@type': 'PostalAddress',
       streetAddress: 'Suite 22/26A Lime St',

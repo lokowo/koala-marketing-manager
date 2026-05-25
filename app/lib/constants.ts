@@ -1,5 +1,5 @@
 export const STATS = {
-  profCountLabel: '24,000+',
+  profCountLabel: '覆盖全澳 38 所大学',
   uniCount: 38,
   uniCountLabel: '38',
 } as const;

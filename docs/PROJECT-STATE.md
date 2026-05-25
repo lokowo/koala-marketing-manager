@@ -1,5 +1,5 @@
 # Koala PhD 项目状态文档
-> 最后更新: 2026-05-25 | 版本: V4.1
+> 最后更新: 2026-05-25 | 版本: V4.2
 
 ## 项目概览
 **Koala PhD（考拉博士）** — 澳洲 PhD 留学 AI 智能顾问平台
@@ -41,7 +41,7 @@
 
 ## 竞品分析
 - ApplyKite (50,000+ 用户): 全球平台，关键词匹配，澳洲深度不足
-- Koala PhD 差异化: 24,502教授 + 1536维embedding + 5维LLM重排 | 对话式AI顾问 | 38所澳洲大学 | 10位真实教授关系 | 双向高亮套磁信 | 模糊记忆系统
+- Koala PhD 差异化: 全澳38所大学(7,886 Verified教授 / 24,489总量，数据审计清洗中) + 1536维embedding + 5维LLM重排 | 对话式AI顾问 | 10位真实教授关系 | 双向高亮套磁信 | 模糊记忆系统
 
 ## 技术架构
 
@@ -160,7 +160,7 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] 6个数据库 migration (Supabase直接执行)
 - [x] 测试数据硬删除 (sales_visits清零, referrals保留真实3条)
 - [x] Footer 确认正确
-- [x] 首页多维推荐 + 全站文案统一(24,000+)
+- [x] 首页多维推荐 + 全站文案统一(覆盖全澳38所大学)
 
 ### Phase 7 (P2): 增长功能
 - [x] 后台定期同步 cron job (每周日凌晨3点)
@@ -181,7 +181,7 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] 左侧面板滚动修复: 所有断点可滚动到底部所有控制项
 - [x] 隐私政策页面 (/privacy-policy): 中英双语, Gmail集成声明, 数据删除权利
 - [x] 服务条款页面 (/terms): 中英双语, 教育辅助工具免责, NSW法律管辖
-- [x] 研究景观公开页 (/koala/insights): 24k+教授数据可视化聚合
+- [x] 研究景观公开页 (/koala/insights): 全澳38所大学教授数据可视化聚合
 
 ### Phase 9.1: Ola 对话 Session 持久化 ✅ 完成 (2026-05-24)
 - [x] /api/ola/conversations 新 API: 从 ai_conversations 读写对话 (GET by mode/sessionId, DELETE)
@@ -235,6 +235,26 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] 关闭/召唤: 右上角 x 关闭, 右下角小圆按钮召唤, 状态持久化
 - [x] 气泡自适应方向: 左半屏→气泡左对齐, 右半屏→气泡右对齐
 - [x] 深色模式适配, 集成到首页 HomeClient.tsx
+
+### E2E 端到端测试脚本 ✅ 完成 (2026-05-25)
+- [x] scripts/e2e-test.ts: 7步完整用户流程测试 (npx tsx scripts/e2e-test.ts)
+  - Step 1: 聊天启动 (POST /api/ai/chat, mode=path)
+  - Step 2: Profile capture (3轮对话 + DB验证)
+  - Step 3: 教授匹配 (matchedProfessors 结构化返回)
+  - Step 4: Academic CV 生成 (POST /api/user/cv/generate)
+  - Step 5: Research Proposal 生成 (POST /api/user/research-proposal/generate, 6段结构验证)
+  - Step 6: 套磁信生成 (POST /api/chat/generate-cold-email, subject+body验证)
+  - Step 7: cold_emails 表记录验证 (status=draft)
+- [x] 认证方案: Supabase auth cookie 构建 (base64url + chunking, 兼容 @supabase/ssr v0.10)
+- [x] 测试用户自动创建/复用 (test@koalaphd.com, elite tier)
+- [x] 修复 cold_emails 表缺失 student_snapshot / professor_snapshot 列的 bug
+
+### 教授数据审计 + 文案更新 (2026-05-25)
+- [x] 数据审计: 38所大学, 24,489条, 仅7,886 Verified(32.2%), 16,334条 OpenAlex-only 可疑数据(66.7%)
+- [x] Adelaide 脏数据: 2,065条粒子物理论文合著者被 OpenAlex 误关联(同一批 research_areas)
+- [x] 批量升级: 9条 UNSW Pending+有官网来源+有邮箱的记录升级为 Verified (→ 7,886 Verified)
+- [x] 全站文案: "24,000+位教授" → "覆盖全澳38所大学" (首页hero/CTA/SEO/海报/邮件/FAQ/AI persona 共15处)
+- [x] 首页底部计数器: 移除教授具体数量卡片, 保留"38 澳洲大学"和"30s 智能匹配"
 
 ## 待完成项目 (P4 路线图)
 

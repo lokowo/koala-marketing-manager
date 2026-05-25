@@ -13,7 +13,7 @@ const SEED_TEMPLATES = [
   <img src="https://koalaphd.com/images/ola/ola-welcome.svg" alt="Ola" width="80" style="margin-bottom: 16px;" />
   <h2 style="color: #1a2332;">嗨，小欧在等你！</h2>
   <p style="color: #584838; line-height: 1.8;">你注册已经3天了，但还没有搜索过教授。</p>
-  <p style="color: #584838; line-height: 1.8;">我们覆盖澳洲38所大学、24,000+位教授与研究员，让小欧帮你找到最匹配的导师吧！</p>
+  <p style="color: #584838; line-height: 1.8;">我们覆盖全澳 38 所大学的导师与学者，让小欧帮你找到最匹配的导师吧！</p>
   <a href="https://koalaphd.com/koala/professors" style="display: inline-block; background: #1A1A2E; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px;">开始搜索教授 →</a>
   <hr style="margin-top: 32px; border: none; border-top: 1px solid #e5e5e5;" />
   <p style="font-size: 12px; color: #907858;">如不想收到此类邮件，请<a href="https://koalaphd.com/koala/settings?unsubscribe=ola" style="color: #907858;">点击退订</a></p>
@@ -22,7 +22,7 @@ const SEED_TEMPLATES = [
   <img src="https://koalaphd.com/images/ola/ola-welcome.svg" alt="Ola" width="80" style="margin-bottom: 16px;" />
   <h2 style="color: #1a2332;">Hey, Ola is waiting for you!</h2>
   <p style="color: #584838; line-height: 1.8;">You signed up 3 days ago but haven't searched for any professors yet.</p>
-  <p style="color: #584838; line-height: 1.8;">Covering 38 Australian universities with 24,000+ professors and researchers. Let Ola help you find the best match!</p>
+  <p style="color: #584838; line-height: 1.8;">Covering all 38 Australian universities with verified academics. Let Ola help you find the best match!</p>
   <a href="https://koalaphd.com/koala/professors" style="display: inline-block; background: #1A1A2E; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px;">Start Searching →</a>
   <hr style="margin-top: 32px; border: none; border-top: 1px solid #e5e5e5;" />
   <p style="font-size: 12px; color: #907858;">Don't want these emails? <a href="https://koalaphd.com/koala/settings?unsubscribe=ola" style="color: #907858;">Unsubscribe</a></p>

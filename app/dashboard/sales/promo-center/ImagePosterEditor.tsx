@@ -93,7 +93,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
   const [titleTxt, setTitleTxt] = useState('用 AI 找到你的理想 PhD 导师');
   const [titleSize, setTitleSize] = useState(48);
   const [titleColor, setTitleColor] = useState('#FFFFFF');
-  const [subTxt, setSubTxt] = useState('覆盖澳洲38所大学、24,000+位教授');
+  const [subTxt, setSubTxt] = useState('覆盖全澳38所大学导师与学者');
   const [subSize, setSubSize] = useState(24);
   const [pts, setPts] = useState(DEFAULT_PTS);
   const [ptSize, setPtSize] = useState(20);
@@ -292,7 +292,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
     setTitleTxt('用 AI 找到你的理想 PhD 导师');
     setTitleSize(48);
     setTitleColor('#FFFFFF');
-    setSubTxt('覆盖澳洲38所大学、24,000+位教授');
+    setSubTxt('覆盖全澳38所大学导师与学者');
     setSubSize(24);
     setPts(DEFAULT_PTS);
     setPtSize(20);

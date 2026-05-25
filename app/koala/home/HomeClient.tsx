@@ -81,11 +81,10 @@ interface HomeClientProps {
   postingProfIds?: string[];
 }
 
-export default function HomeClient({ initialProfessors, initialProfCount, initialUserCount, initialBlogPosts, professorLabels = {}, postingProfIds = [] }: HomeClientProps) {
+export default function HomeClient({ initialProfessors, initialUserCount, initialBlogPosts, professorLabels = {}, postingProfIds = [] }: HomeClientProps) {
   const router = useRouter();
   const { user, profile, showLogin, signOut } = useAuth();
   const [professors] = useState<Professor[]>(initialProfessors);
-  const profCount = initialProfCount > 0 ? initialProfCount.toLocaleString() : '4,200+';
   const [showNotif, setShowNotif] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -316,7 +315,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                   AI 导师匹配 · 免费使用
                 </div>
                 <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold leading-snug mb-3 text-[#1A1A2E] dark:text-[#e8e4dc]">
-                  {profCount} 位澳洲导师与学者<br />AI 帮你找最匹配的那个
+                  覆盖全澳 38 所大学<br />AI 帮你找最匹配的导师
                 </h1>
                 <p className="text-xs lg:text-sm leading-relaxed mb-6 text-gray-500 dark:text-[#6a7a7e]">
                   告诉 Koala 你的背景和兴趣，30 秒内获得个性化导师推荐
@@ -361,8 +360,8 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
               },
               {
                 icon: '🎯', step: '02', title: 'AI 匹配',
-                desc: `从 ${profCount} 位导师与学者中，根据你的背景和研究兴趣精准推荐最佳导师`,
-                features: [`${profCount} 导师与学者`, '实时招生状态'],
+                desc: '从全澳 38 所大学的导师与学者中，根据你的背景和研究兴趣精准推荐最佳导师',
+                features: ['覆盖全澳 38 所大学', '实时招生状态'],
                 extra: '⚡ 30 秒出结果',
                 primary: false,
                 iconBg: 'bg-[#4ECDC4]/15 dark:bg-[#4ECDC4]/20',
@@ -701,7 +700,7 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
                 还在犹豫？先聊聊你的想法
               </h2>
               <p className="text-gray-300 mb-6 text-base md:text-lg">
-                免费匹配导师，不满意随时退出。覆盖澳洲 38 所大学、{profCount} 位教授与研究员。
+                免费匹配导师，不满意随时退出。覆盖全澳 38 所大学导师与学者。
               </p>
               <div className="flex flex-wrap gap-3 md:gap-4">
                 <Link
@@ -721,15 +720,11 @@ export default function HomeClient({ initialProfessors, initialProfCount, initia
 
             <div className="hidden md:flex gap-5">
               <div className="text-center px-5 py-4 bg-white/5 rounded-xl min-w-[100px]">
-                <div className="text-2xl lg:text-3xl font-bold text-[#D4A843]">{profCount}</div>
-                <div className="text-xs text-gray-400 mt-1">导师与学者</div>
-              </div>
-              <div className="text-center px-5 py-4 bg-white/5 rounded-xl min-w-[100px]">
-                <div className="text-2xl lg:text-3xl font-bold text-[#4ECDC4]">38</div>
+                <div className="text-2xl lg:text-3xl font-bold text-[#D4A843]">38</div>
                 <div className="text-xs text-gray-400 mt-1">澳洲大学</div>
               </div>
               <div className="text-center px-5 py-4 bg-white/5 rounded-xl min-w-[100px]">
-                <div className="text-2xl lg:text-3xl font-bold text-white">30s</div>
+                <div className="text-2xl lg:text-3xl font-bold text-[#4ECDC4]">30s</div>
                 <div className="text-xs text-gray-400 mt-1">智能匹配</div>
               </div>
             </div>

@@ -217,7 +217,7 @@ export default function SharePoster({
                       className="text-white/60 text-xs leading-relaxed"
                       style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}
                     >
-                      覆盖澳洲 38 所大学、24,000+ 位教授与学者
+                      覆盖全澳 38 所大学导师与学者
                       <br />
                       AI 驱动精准匹配，一键生成套磁信
                     </p>

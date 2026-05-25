@@ -10,7 +10,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: '澳洲 PhD 研究洞察',
-  description: '覆盖澳洲 38 所大学、24,000+ 位教授与研究员的研究方向分布、大学分组及招生趋势数据。用 AI 找到你的理想导师。',
+  description: '覆盖全澳 38 所大学导师与学者的研究方向分布、大学分组及招生趋势数据。用 AI 找到你的理想导师。',
   keywords: [
     '澳洲PhD', 'PhD研究方向', '澳洲大学排名', 'Go8', '澳洲博士',
     'Australian PhD', 'research landscape', 'PhD supervisor Australia',
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: '澳洲 PhD 研究洞察 | Koala PhD',
-    description: '24,000+ 位澳洲学者研究方向分布、38 所大学招生趋势一图看懂',
+    description: '全澳 38 所大学学者研究方向分布、招生趋势一图看懂',
     type: 'article',
   },
 };
