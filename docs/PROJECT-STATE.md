@@ -1,5 +1,5 @@
 # Koala PhD 项目状态文档
-> 最后更新: 2026-05-25 | 版本: V4.2
+> 最后更新: 2026-05-25 | 版本: V4.3
 
 ## 项目概览
 **Koala PhD（考拉博士）** — 澳洲 PhD 留学 AI 智能顾问平台
@@ -56,6 +56,18 @@ Semantic Scholar API(免费) + ARC Data Portal(免费JSON) + OpenAlex(免费key)
 ### 模糊记忆系统: 3层
 Layer 1 模糊记忆(user_memories) → Layer 2 结构化合成(user_profiles) → Layer 3 可视化知识卡
 - 详见 docs/MEMORY-TECH.md
+
+### SEO 配置 (2026-05-25 全站审计优化)
+- **sitemap.xml**: 动态生成，包含 12 个静态页 + 所有已发布博客 + 所有 Verified 教授 (koala/professors/[id]) + 所有有 slug 的教授公开页 (professor/[slug])
+- **robots.txt**: 允许 / , 禁止 /dashboard/ /api/ /koala/my-profile /koala/matches /koala/auth/ /s/ /login
+- **JSON-LD Structured Data**:
+  - 首页: EducationalOrganization + WebSite (含 SearchAction)
+  - 博客文章: Article + BreadcrumbList
+  - 教授详情 (koala/professors/[id]): Person + BreadcrumbList
+  - 教授公开页 (professor/[slug]): Person + BreadcrumbList
+- **Canonical URLs**: 所有公开页面配置 canonical; 教授双路径 (koala/professors/[id] 和 professor/[slug]) 统一 canonical 指向 professor/[slug]
+- **OpenGraph + Twitter Card**: 所有公开页面配置, 博客文章支持动态封面图, 教授页使用 summary card
+- **Meta 关键词**: 围绕 "澳洲PhD申请" "Australian PhD supervisor" "博士导师匹配" "套磁信" 配置中英文 keywords
 
 ### 套磁信生成: 7环节
 教授刷新 → 学生画像 → 匹配选择 → Prompt组装(学生+教授+论文+grants) → LLM生成 → 双向标注 → 积分扣除 → 存cold_emails
@@ -281,6 +293,12 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] Batch 3 低优先 (7表): ola_faq, ola_email_templates, ola_milestones, ola_triggers (public read + admin write), ola_trigger_logs (admin read), universities + university_deadlines (public read + admin write)
 - [x] saved_professors 补策略: user manage own (FOR ALL USING auth.uid()=user_id WITH CHECK auth.uid()=user_id)
 - [x] 总计: 16张表启用RLS, 创建28条策略, 通过3次Supabase migration执行
+
+### P4-7 续: Admin UI 四类问题修复 ✅ 完成 (2026-05-25)
+- [x] 假数据页面: feedback/page.tsx 改为从 /api/admin/feedback-stats 查询 feedback 表真实统计; leads/page.tsx 改为"功能开发中"占位
+- [x] 空占位页: professors/verified 和 professors/sync 改为"功能开发中"带图标说明
+- [x] 破坏性操作二次确认: 博客删除 confirm("此操作不可撤销"); 销售等级/状态变更 confirm; 角色拒绝 confirm
+- [x] 静默吞错修复: dashboard、analytics、growth、revenue、sales-overview、topics、publishing 共7个页面的 .catch(()=>{}) 改为错误状态 + 红色错误提示栏
 
 ## 待完成项目 (P4 路线图)
 

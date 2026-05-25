@@ -12,8 +12,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/koala/home`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/koala/blog`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/koala/professors`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${baseUrl}/koala/insights`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/koala/chat`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/koala/pricing`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/koala/tools`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${baseUrl}/koala/tools/niv`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${baseUrl}/koala/discover`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.5 },
+    { url: `${baseUrl}/terms`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.2 },
+    { url: `${baseUrl}/privacy-policy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.2 },
   ];
 
   try {
@@ -26,7 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .limit(500),
       db
         .from('professors')
-        .select('id, last_synced_at')
+        .select('id, slug, last_synced_at')
         .eq('verification_status', 'Verified')
         .limit(5000),
     ]);
@@ -38,14 +44,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    const professorPages: MetadataRoute.Sitemap = (professors || []).map((prof: { id: string; last_synced_at?: string }) => ({
+    const professorPages: MetadataRoute.Sitemap = (professors || []).map((prof: { id: string; slug?: string; last_synced_at?: string }) => ({
       url: `${baseUrl}/koala/professors/${prof.id}`,
       lastModified: prof.last_synced_at ? new Date(prof.last_synced_at) : new Date(),
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     }));
 
-    return [...staticPages, ...professorPages, ...blogPages];
+    const publicProfPages: MetadataRoute.Sitemap = (professors || [])
+      .filter((prof: { slug?: string }) => prof.slug)
+      .map((prof: { id: string; slug: string; last_synced_at?: string }) => ({
+        url: `${baseUrl}/professor/${prof.slug}`,
+        lastModified: prof.last_synced_at ? new Date(prof.last_synced_at) : new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: 0.5,
+      }));
+
+    return [...staticPages, ...professorPages, ...publicProfPages, ...blogPages];
   } catch {
     return staticPages;
   }

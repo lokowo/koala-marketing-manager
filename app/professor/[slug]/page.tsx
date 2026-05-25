@@ -54,9 +54,27 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   if (!prof) return { title: 'Professor Not Found' };
 
+  const areas = (prof.research_areas ?? []).slice(0, 3).join(', ');
+  const title = `${prof.name} — ${prof.university} | Koala PhD`;
+  const description = `${prof.position_title || 'Researcher'} at ${prof.university}. Research: ${areas}. Find PhD supervisor info, publications, and contact details.`;
+
   return {
-    title: `${prof.name} — ${prof.university} | Koala PhD`,
-    description: `${prof.position_title || 'Researcher'} at ${prof.university}. Research: ${(prof.research_areas ?? []).slice(0, 3).join(', ')}`,
+    title,
+    description,
+    openGraph: {
+      title: `${prof.name} — ${prof.university}`,
+      description: `${prof.position_title || 'Researcher'}. Research: ${areas}`,
+      type: 'profile',
+      url: `https://koalaphd.com/professor/${slug}`,
+    },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
+    },
+    alternates: {
+      canonical: `https://koalaphd.com/professor/${slug}`,
+    },
   };
 }
 
@@ -88,11 +106,50 @@ export default async function ProfessorPublicPage({ params }: { params: Promise<
     .select('*', { count: 'exact', head: true })
     .eq('lead_professor_id', prof.id);
 
+  const sameAs = [
+    prof.google_scholar_url,
+    prof.profile_url,
+  ].filter(Boolean);
+
+  const personJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: prof.name,
+    jobTitle: prof.position_title || 'Academic',
+    affiliation: {
+      '@type': 'Organization',
+      name: prof.university,
+    },
+    url: `https://koalaphd.com/professor/${prof.slug}`,
+    ...(sameAs.length > 0 && { sameAs }),
+    ...(prof.research_areas.length > 0 && { knowsAbout: prof.research_areas }),
+  };
+
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://koalaphd.com' },
+      { '@type': 'ListItem', position: 2, name: 'Professors', item: 'https://koalaphd.com/koala/professors' },
+      { '@type': 'ListItem', position: 3, name: prof.name },
+    ],
+  };
+
   return (
-    <ProfessorPublicClient
-      professor={prof}
-      papers={papers}
-      activeGrantCount={grantCount ?? 0}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      <ProfessorPublicClient
+        professor={prof}
+        papers={papers}
+        activeGrantCount={grantCount ?? 0}
+      />
+    </>
   );
 }

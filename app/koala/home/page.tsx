@@ -87,12 +87,13 @@ export default async function HomePage() {
 
   const orgJsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'Organization',
+    '@type': 'EducationalOrganization',
     name: 'Koala PhD',
     alternateName: 'Koala Study Advisors',
     url: 'https://koalaphd.com',
     logo: 'https://koalaphd.com/koala-logo.svg',
-    description: '覆盖全澳38所大学导师与学者，一键生成套磁信。PhD 申请、奖学金、导师推荐。',
+    image: 'https://koalaphd.com/og-image.png',
+    description: 'AI-powered Australian PhD supervisor matching platform. Browse 38 universities, get free professor matching, and generate customized cold emails. 覆盖全澳38所大学导师与学者，一键生成套磁信。',
     address: {
       '@type': 'PostalAddress',
       streetAddress: 'Suite 22/26A Lime St',
@@ -100,6 +101,17 @@ export default async function HomePage() {
       addressRegion: 'NSW',
       postalCode: '2000',
       addressCountry: 'AU',
+    },
+    email: 'info@koalastudy.net',
+    sameAs: [
+      'https://www.instagram.com/dr.koalaau',
+      'https://www.xiaohongshu.com/user/profile/dr.koalaau',
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'customer service',
+      email: 'info@koalastudy.net',
+      availableLanguage: ['Chinese', 'English'],
     },
   };
 

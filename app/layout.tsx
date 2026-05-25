@@ -15,10 +15,26 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Koala Marketing Manager",
-  description: "Koala PhD marketing manager with bilingual UI",
+  metadataBase: new URL('https://koalaphd.com'),
+  title: {
+    default: 'Koala PhD — AI-Powered Australian PhD Supervisor Matching',
+    template: '%s | Koala PhD',
+  },
+  description: 'Find your ideal Australian PhD supervisor with AI-powered matching. Browse 38 universities, generate cold emails, and get free PhD application guidance.',
+  keywords: ['Australian PhD', 'PhD supervisor', 'PhD application', '澳洲PhD', '博士申请', '导师推荐', '套磁信', 'scholarship Australia'],
   verification: {
     google: 'MNBTFnPgqdYoqogqXdHbKauY1flu9aA5YKvsDLb97bo',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'zh_CN',
+    alternateLocale: 'en_AU',
+    siteName: 'Koala PhD',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Koala PhD — AI PhD Advisor' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: ['/og-image.png'],
   },
 };
 

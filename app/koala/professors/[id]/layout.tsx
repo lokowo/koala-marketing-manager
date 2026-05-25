@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const { data: prof } = await db
     .from('professors')
-    .select('name, university, position_title, research_areas, h_index')
+    .select('name, university, position_title, research_areas, h_index, slug')
     .eq('id', id)
     .single();
 
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const areas = (prof.research_areas || []).slice(0, 3).join('、');
   const title = `${prof.name} — ${prof.university} | 澳洲PhD导师`;
-  const description = `${prof.name}，${prof.university} ${prof.position_title || '教授'}。研究方向：${areas}。H-index: ${prof.h_index || '未知'}。`;
+  const description = `${prof.name}，${prof.university} ${prof.position_title || '教授'}。研究方向：${areas}。H-index: ${prof.h_index || '未知'}。查看论文、研究方向和联系方式。`;
 
   return {
     title,
@@ -27,6 +27,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `${prof.name} — ${prof.university}`,
       description: `研究方向：${areas}`,
+      type: 'profile',
+      url: `https://koalaphd.com/koala/professors/${id}`,
+    },
+    twitter: {
+      card: 'summary',
+      title: `${prof.name} — ${prof.university}`,
+      description: `研究方向：${areas}`,
+    },
+    alternates: {
+      canonical: prof.slug
+        ? `https://koalaphd.com/professor/${prof.slug}`
+        : `https://koalaphd.com/koala/professors/${id}`,
     },
   };
 }

@@ -2,7 +2,13 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Terms of Service | Koala PhD',
-  description: 'Koala PhD terms of service — rules and guidelines for using our platform.',
+  description: 'Koala PhD terms of service — rules and guidelines for using our AI PhD supervisor matching platform. 服务条款。',
+  alternates: { canonical: 'https://koalaphd.com/terms' },
+  openGraph: {
+    title: 'Terms of Service | Koala PhD',
+    description: 'Terms of service for Koala PhD platform.',
+    url: 'https://koalaphd.com/terms',
+  },
 };
 
 export default function TermsPage() {

@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/dashboard/', '/api/', '/koala/my-profile', '/koala/matches'],
+        disallow: ['/dashboard/', '/api/', '/koala/my-profile', '/koala/matches', '/koala/auth/', '/s/', '/login'],
       },
     ],
     sitemap: 'https://koalaphd.com/sitemap.xml',

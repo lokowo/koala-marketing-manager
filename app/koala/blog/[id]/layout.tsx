@@ -35,9 +35,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const description = post.seo_description_zh || post.excerpt_zh || post.excerpt_en || '';
     const image = post.cover_image_url || '/og-image.png';
 
+    const canonical = `https://koalaphd.com/koala/blog/${post.slug || id}`;
+
     return {
       title,
       description,
+      alternates: {
+        canonical,
+      },
       openGraph: {
         title,
         description,
@@ -46,6 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         authors: ['Koala PhD'],
         images: [{ url: image, width: 1200, height: 630 }],
         tags: post.tags || [],
+        url: canonical,
       },
       twitter: {
         card: 'summary_large_image',

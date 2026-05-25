@@ -2,7 +2,13 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | Koala PhD',
-  description: 'Koala PhD privacy policy — how we collect, use, and protect your data.',
+  description: 'Koala PhD privacy policy — how we collect, use, and protect your data. 隐私政策。',
+  alternates: { canonical: 'https://koalaphd.com/privacy-policy' },
+  openGraph: {
+    title: 'Privacy Policy | Koala PhD',
+    description: 'How Koala PhD collects, uses, and protects your personal information.',
+    url: 'https://koalaphd.com/privacy-policy',
+  },
 };
 
 export default function PrivacyPolicyPage() {
