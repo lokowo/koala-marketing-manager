@@ -35,37 +35,21 @@ export async function POST(req: NextRequest) {
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-    const IMAGE_MODELS = ['gpt-image-2', 'gpt-image-1', 'dall-e-3'];
-    const imgPrompt = `Photorealistic editorial photograph: ${promptEn}. Professional DSLR, natural lighting, sharp focus. Absolutely NO text, NO words, NO letters, NO watermarks anywhere in the image.`;
+    const imgPrompt = `Editorial photograph captured on Kodak Portra 400 film with a Hasselblad 500C medium format camera. Natural ambient lighting, subtle film grain, organic color rendering with warm undertones. Shallow depth of field, f/2.8. No AI artifacts, no synthetic textures, no CGI elements. Subject: ${promptEn}. Style: photojournalistic documentary aesthetic, as published in National Geographic or The New York Times Magazine. Absolutely NO text, NO words, NO letters, NO watermarks anywhere in the image.`;
 
     let imageB64: string | undefined;
 
-    for (const model of IMAGE_MODELS) {
-      try {
-        if (model === 'dall-e-3') {
-          const response = await callWithRetry(() => openai.images.generate({
-            model: 'dall-e-3',
-            prompt: imgPrompt,
-            n: 1,
-            size: '1024x1024',
-            quality: 'standard',
-            response_format: 'b64_json',
-          }));
-          imageB64 = response.data?.[0]?.b64_json ?? undefined;
-        } else {
-          const response = await callWithRetry(() => openai.images.generate({
-            model,
-            prompt: imgPrompt,
-            n: 1,
-            size: '1024x1024',
-            quality: 'low',
-          }));
-          imageB64 = response.data?.[0]?.b64_json ?? undefined;
-        }
-        if (imageB64) break;
-      } catch (err) {
-        console.error(`[generate-single-image] Model ${model} failed:`, (err as Error).message);
-      }
+    try {
+      const response = await callWithRetry(() => openai.images.generate({
+        model: 'gpt-image-2',
+        prompt: imgPrompt,
+        n: 1,
+        size: '1024x1024',
+        quality: 'high',
+      }));
+      imageB64 = response.data?.[0]?.b64_json ?? undefined;
+    } catch (err) {
+      console.error('[generate-single-image] gpt-image-2 failed:', (err as Error).message);
     }
 
     if (!imageB64) {

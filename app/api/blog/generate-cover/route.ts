@@ -11,15 +11,15 @@ export const maxDuration = 300;
 const db = supabaseAdmin as any;
 
 const CATEGORY_IMAGE_CONTEXT: Record<string, string> = {
-  phd_guide: 'students reading in a sunlit modern university library with floor-to-ceiling windows warm wood tones',
-  application: 'neat organized desk with laptop notebook and coffee soft morning light through window minimalist',
-  scholarship: 'aerial view of beautiful Australian university campus with green lawns and sandstone buildings',
-  visa: 'modern airport terminal with natural light clean architecture',
-  supervisor: 'bright modern university office with bookshelves plants natural light warm atmosphere',
-  research: 'clean modern research laboratory with glass equipment natural light organized workspace',
-  student_life: 'cozy university campus courtyard with trees autumn light',
-  news: 'modern glass university building exterior at golden hour dramatic sky architectural photography',
-  professor_spotlight: 'elegant university corridor with arched windows warm sunlight streaming in academic atmosphere',
+  phd_guide: 'university students studying in a sunlit heritage library with tall arched windows, warm wood reading desks, scattered open textbooks',
+  application: 'organized writing desk with a leather-bound notebook, fountain pen, and a cup of flat white, soft morning light through sheer curtains',
+  scholarship: 'aerial view of a sandstone Australian university quad with manicured lawns, jacaranda trees in bloom, students walking paths',
+  visa: 'passport and boarding pass resting on a weathered leather satchel at an airport gate, natural window light',
+  supervisor: 'a cluttered but warm professor office with overflowing bookshelves, a green desk lamp, and handwritten notes on a whiteboard',
+  research: 'modern chemistry laboratory bench with glass flasks, amber liquid, and natural light from high clerestory windows',
+  student_life: 'outdoor university courtyard café with autumn leaves, students in conversation, dappled afternoon light through eucalyptus trees',
+  news: 'imposing sandstone university façade at golden hour, dramatic cumulus clouds, long shadows across the forecourt',
+  professor_spotlight: 'sunlit university corridor with arched Gothic Revival windows casting geometric shadow patterns on terrazzo floors',
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 200,
         system: 'Return ONLY a valid JSON array of 3-5 English strings. No markdown, no explanation.',
-        messages: [{ role: 'user', content: `Extract 3-5 English photography keywords for a cover image from this article title: "${title}"` }],
+        messages: [{ role: 'user', content: `Extract 3-5 English documentary photography keywords for a film-aesthetic cover image from this article title: "${title}". Focus on tangible objects, textures, and scenes — not abstract concepts.` }],
       });
       const kwText = kwRes.content[0].type === 'text' ? kwRes.content[0].text : '[]';
       keywords = JSON.parse(kwText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
@@ -94,53 +94,48 @@ export async function POST(req: NextRequest) {
       keywords = ['university', 'research', 'Australia'];
     }
 
-    // Step 2: Generate image with model fallback chain
+    // Step 2: Generate image with gpt-image-2
     const categoryContext = CATEGORY_IMAGE_CONTEXT[category] || CATEGORY_IMAGE_CONTEXT.news;
-    const coverPrompt = `Background/scene: ${categoryContext}. Subject: ${keywords.join(', ')}. Key details: Professional editorial photography, golden hour natural lighting, shallow depth of field, clean composition, magazine cover quality. Constraints: Absolutely NO text, NO words, NO letters, NO numbers, NO watermarks, NO logos, NO signs anywhere in the image. No clearly visible human faces. Photorealistic style, not illustrated or CGI. IMPORTANT: The image must contain ZERO text of any kind.`;
+    const coverPrompt = `Editorial photograph captured on Kodak Portra 400 film with a Hasselblad 500C medium format camera. Natural ambient lighting, subtle film grain, organic color rendering with warm undertones. Shallow depth of field, f/2.8. No AI artifacts, no synthetic textures, no CGI elements. Subject: ${categoryContext}, ${keywords.join(', ')}. Style: photojournalistic documentary aesthetic, as published in National Geographic or The New York Times Magazine. Constraints: Absolutely NO text, NO words, NO letters, NO numbers, NO watermarks, NO logos, NO signs anywhere in the image. No clearly visible human faces. The image must contain ZERO text of any kind.`;
 
-    console.log('[generate-cover] Step 2: Generating image with fallback chain...');
+    console.log('[generate-cover] Step 2: Generating image with gpt-image-2...');
     console.log('[generate-cover] Prompt length:', coverPrompt.length);
 
-    const IMAGE_MODELS = ['gpt-image-1'];
     let imageB64: string | undefined;
-    let usedModel = '';
+    const usedModel = 'gpt-image-2';
 
-    for (const model of IMAGE_MODELS) {
-      try {
-        console.log(`[generate-cover] Trying model: ${model}`);
+    try {
+      console.log('[generate-cover] Trying model: gpt-image-2');
 
-        const response = await callWithRetry(() => openai.images.generate({
-          model,
-          prompt: coverPrompt,
-          n: 1,
-          size: '1536x1024',
-          quality: 'high',
-        }));
+      const response = await callWithRetry(() => openai.images.generate({
+        model: 'gpt-image-2',
+        prompt: coverPrompt,
+        n: 1,
+        size: '1536x1024',
+        quality: 'high',
+      }));
 
-        const item = response.data?.[0];
-        if (item?.b64_json) {
-          console.log(`[generate-cover] ${model} returned b64_json directly`);
-          imageB64 = item.b64_json;
-        } else if (item?.url) {
-          console.log(`[generate-cover] ${model} returned URL, fetching...`);
-          const imgRes = await fetch(item.url);
-          if (imgRes.ok) {
-            const arrBuf = await imgRes.arrayBuffer();
-            imageB64 = Buffer.from(arrBuf).toString('base64');
-          }
+      const item = response.data?.[0];
+      if (item?.b64_json) {
+        console.log('[generate-cover] gpt-image-2 returned b64_json directly');
+        imageB64 = item.b64_json;
+      } else if (item?.url) {
+        console.log('[generate-cover] gpt-image-2 returned URL, fetching...');
+        const imgRes = await fetch(item.url);
+        if (imgRes.ok) {
+          const arrBuf = await imgRes.arrayBuffer();
+          imageB64 = Buffer.from(arrBuf).toString('base64');
         }
+      }
 
-        if (imageB64) {
-          usedModel = model;
-          console.log(`[generate-cover] Success with model: ${model}`);
-          break;
-        }
-      } catch (err) {
-        const errDetail = err instanceof Error ? err.message : String(err);
-        console.error(`[generate-cover] Model ${model} failed:`, errDetail);
-        if (err && typeof err === 'object' && 'status' in err) {
-          console.error(`[generate-cover] ${model} HTTP status:`, (err as { status: number }).status);
-        }
+      if (imageB64) {
+        console.log('[generate-cover] Success with gpt-image-2');
+      }
+    } catch (err) {
+      const errDetail = err instanceof Error ? err.message : String(err);
+      console.error('[generate-cover] gpt-image-2 failed:', errDetail);
+      if (err && typeof err === 'object' && 'status' in err) {
+        console.error('[generate-cover] HTTP status:', (err as { status: number }).status);
       }
     }
 

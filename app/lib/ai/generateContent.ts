@@ -62,7 +62,7 @@ You MUST respond with a single valid JSON object — no markdown code fences, no
 
 ### imagePrompt (图片生成Prompt)
 - Detailed English prompt for DALL-E or Midjourney
-- Include: style (photorealistic / editorial illustration), subject, setting, mood, lighting, color palette
+- Include: style (Kodak Portra 400 film / documentary editorial), subject, setting, mood, lighting, color palette
 - Australian academic aesthetic — campus, lab, nature, multicultural
 - Avoid stock-photo clichés; aim for editorial magazine quality
 - 60–120 words

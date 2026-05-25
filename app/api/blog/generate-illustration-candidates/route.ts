@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       system: 'Return ONLY a valid JSON array. No markdown code blocks, no explanation.',
       messages: [{
         role: 'user',
-        content: `Given this article title and content, extract ${count} distinct visual keywords/themes that would make good illustrations. For each, provide a short keyword label and a detailed image prompt (30-50 words, photorealistic, NO text in image).
+        content: `Given this article title and content, extract ${count} distinct visual keywords/themes that would make good illustrations. For each, provide a short keyword label and a detailed image prompt (30-50 words, film photography aesthetic, documentary style, NO text in image).
 
 Title: ${title}
 Content: ${(content || '').slice(0, 2000)}
@@ -62,41 +62,25 @@ Return JSON array: [{"keyword": "short label", "promptEn": "detailed scene descr
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-    const IMAGE_MODELS = ['gpt-image-2', 'gpt-image-1', 'dall-e-3'];
 
     const imageResults: Array<{ url: string; prompt: string; keyword: string }> = [];
 
     for (const kw of keywords) {
-      const imgPrompt = `Photorealistic editorial photograph: ${kw.promptEn}. Professional DSLR, natural lighting, sharp focus. Absolutely NO text, NO words, NO letters, NO watermarks anywhere in the image.`;
+      const imgPrompt = `Editorial photograph captured on Kodak Portra 400 film with a Hasselblad 500C medium format camera. Natural ambient lighting, subtle film grain, organic color rendering with warm undertones. Shallow depth of field, f/2.8. No AI artifacts, no synthetic textures, no CGI elements. Subject: ${kw.promptEn}. Style: photojournalistic documentary aesthetic, as published in National Geographic or The New York Times Magazine. Absolutely NO text, NO words, NO letters, NO watermarks anywhere in the image.`;
 
       let imageB64: string | undefined;
 
-      for (const model of IMAGE_MODELS) {
-        try {
-          if (model === 'dall-e-3') {
-            const response = await callWithRetry(() => openai.images.generate({
-              model: 'dall-e-3',
-              prompt: imgPrompt,
-              n: 1,
-              size: '1024x1024',
-              quality: 'standard',
-              response_format: 'b64_json',
-            }));
-            imageB64 = response.data?.[0]?.b64_json ?? undefined;
-          } else {
-            const response = await callWithRetry(() => openai.images.generate({
-              model,
-              prompt: imgPrompt,
-              n: 1,
-              size: '1024x1024',
-              quality: 'low',
-            }));
-            imageB64 = response.data?.[0]?.b64_json ?? undefined;
-          }
-          if (imageB64) break;
-        } catch {
-          continue;
-        }
+      try {
+        const response = await callWithRetry(() => openai.images.generate({
+          model: 'gpt-image-2',
+          prompt: imgPrompt,
+          n: 1,
+          size: '1024x1024',
+          quality: 'high',
+        }));
+        imageB64 = response.data?.[0]?.b64_json ?? undefined;
+      } catch {
+        // continue to next keyword
       }
 
       if (!imageB64) continue;

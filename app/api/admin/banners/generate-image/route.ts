@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const fullPrompt = basePrompt + prompt.trim();
 
     const response = await openai.images.generate({
-      model: 'gpt-image-1',
+      model: 'gpt-image-2',
       prompt: fullPrompt,
       size: size || '1536x1024',
       quality: 'high',
