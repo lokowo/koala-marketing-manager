@@ -269,18 +269,28 @@ function LoginModal({
               </>
             )}
             {isWebView && (
-              <div className="mb-4 rounded-2xl p-3" style={{ background: 'rgba(212,168,67,0.08)', border: '1px solid rgba(212,168,67,0.15)' }}>
-                <p className="text-xs text-center mb-2" style={{ color: '#D4A843' }}>
-                  请在 Safari 或 Chrome 中打开以使用 Google 登录
+              <div className="mb-4 rounded-2xl p-4" style={{ background: 'rgba(212,168,67,0.08)', border: '1px solid rgba(212,168,67,0.15)' }}>
+                <p className="text-sm text-center mb-3" style={{ color: '#D4A843' }}>
+                  当前浏览器不支持 Google 登录，请点击下方按钮在系统浏览器中打开
                 </p>
-                <button
-                  type="button"
-                  onClick={() => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                  className="w-full py-2 rounded-lg text-xs font-medium"
-                  style={{ background: 'rgba(212,168,67,0.15)', color: '#D4A843' }}
-                >
-                  {copied ? '已复制链接 ✓' : '复制链接到浏览器打开'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                    className="flex-1 py-2.5 rounded-lg text-xs font-medium"
+                    style={{ background: 'rgba(212,168,67,0.15)', color: '#D4A843', border: '1px solid rgba(212,168,67,0.2)' }}
+                  >
+                    {copied ? '已复制 ✓' : '复制链接'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { window.open(window.location.href, '_blank') || (window.location.href = window.location.href); }}
+                    className="flex-1 py-2.5 rounded-lg text-xs font-medium"
+                    style={{ background: 'rgba(212,168,67,0.25)', color: '#e8d8a0' }}
+                  >
+                    在浏览器中打开
+                  </button>
+                </div>
               </div>
             )}
 

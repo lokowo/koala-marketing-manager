@@ -84,17 +84,26 @@ function LoginForm() {
         </>
       )}
       {isWebView && (
-        <div className="rounded-lg p-3 bg-amber-900/20 border border-amber-500/20">
-          <p className="text-xs text-center text-amber-400 mb-2">
-            请在 Safari 或 Chrome 中打开以使用 Google 登录
+        <div className="rounded-lg p-4 bg-amber-900/20 border border-amber-500/20">
+          <p className="text-sm text-center text-amber-400 mb-3">
+            当前浏览器不支持 Google 登录，请点击下方按钮在系统浏览器中打开
           </p>
-          <button
-            type="button"
-            onClick={() => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-            className="w-full py-2 rounded-lg text-xs font-medium bg-amber-500/10 text-amber-400"
-          >
-            {copied ? '已复制链接 ✓' : '复制链接到浏览器打开'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+              className="flex-1 py-2.5 rounded-lg text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20"
+            >
+              {copied ? '已复制 ✓' : '复制链接'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { window.open(window.location.href, '_blank') || (window.location.href = window.location.href); }}
+              className="flex-1 py-2.5 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-300"
+            >
+              在浏览器中打开
+            </button>
+          </div>
         </div>
       )}
 

@@ -401,17 +401,26 @@ function AuthPageInner() {
             </>
           )}
           {isWebView && (
-            <div className="mb-4 rounded-xl p-3 bg-amber-50 dark:bg-[rgba(212,168,67,0.08)] border border-amber-200 dark:border-[rgba(212,168,67,0.15)]">
-              <p className="text-xs text-center text-amber-700 dark:text-[#D4A843] mb-2">
-                请在 Safari 或 Chrome 中打开以使用 Google 登录
+            <div className="mb-4 rounded-xl p-4 bg-amber-50 dark:bg-[rgba(212,168,67,0.08)] border border-amber-200 dark:border-[rgba(212,168,67,0.15)]">
+              <p className="text-sm text-center text-amber-700 dark:text-[#D4A843] mb-3">
+                当前浏览器不支持 Google 登录，请点击下方按钮在系统浏览器中打开
               </p>
-              <button
-                type="button"
-                onClick={() => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                className="w-full py-2 rounded-lg text-xs font-medium bg-amber-100 dark:bg-[rgba(212,168,67,0.15)] text-amber-700 dark:text-[#D4A843]"
-              >
-                {copied ? '已复制链接 ✓' : '复制链接到浏览器打开'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                  className="flex-1 py-2.5 rounded-lg text-xs font-medium bg-amber-100 dark:bg-[rgba(212,168,67,0.15)] text-amber-700 dark:text-[#D4A843] border border-amber-200 dark:border-[rgba(212,168,67,0.2)]"
+                >
+                  {copied ? '已复制 ✓' : '复制链接'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { window.open(window.location.href, '_blank') || (window.location.href = window.location.href); }}
+                  className="flex-1 py-2.5 rounded-lg text-xs font-medium bg-amber-200 dark:bg-[rgba(212,168,67,0.25)] text-amber-800 dark:text-[#e8d8a0]"
+                >
+                  在浏览器中打开
+                </button>
+              </div>
             </div>
           )}
 
