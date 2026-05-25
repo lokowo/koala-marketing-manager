@@ -75,7 +75,7 @@ interface Message {
   feedback?: FeedbackRating;
   emailPackage?: EmailPackageData;
   coldEmailData?: ColdEmailData;
-  upgradePrompt?: { feature: string; remaining: number };
+  upgradePrompt?: { feature: string; remaining: number; message?: string; actions?: { label: string; href: string }[] };
   suggestions?: string[];
   suggestConsultation?: boolean;
   profileData?: ExtractedProfile;
@@ -698,6 +698,13 @@ function ChatPageInner() {
   const currentMode = MODES.find(m => m.key === mode)!;
 
   useEffect(() => {
+    if (!user) return;
+    fetch('/api/user/credits').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.balance != null) setCredits(d.balance);
+    }).catch(() => {});
+  }, [user]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, typewriterText]);
 
@@ -967,6 +974,17 @@ function ChatPageInner() {
         extractionPromise,
       ]);
       const data = await res.json();
+
+      if (res.status === 403 && data.error === 'daily_limit_reached') {
+        const upgradeMsg: Message = {
+          id: msgId(), role: 'assistant',
+          content: data.reply || `今日免费对话次数已用完（${data.usageInfo?.used ?? '?'}/${data.usageInfo?.limit ?? '?'}）`,
+          upgradePrompt: { feature: '对话', remaining: 0, message: data.reply },
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, upgradeMsg]);
+        return;
+      }
 
       // If extraction succeeded, clear the pending flag
       const extractedProfile: ExtractedProfile | undefined =
@@ -1261,8 +1279,16 @@ function ChatPageInner() {
     if (!usage.allowed) {
       const upgradeMsg: Message = {
         id: msgId(), role: 'assistant',
-        content: `抱歉，你今天的套磁信免费次数已经用完了（${usage.used}/${usage.limit}）`,
-        upgradePrompt: { feature: '套磁信', remaining: 0 },
+        content: `本月套磁信额度已用完（${usage.used}/${usage.limit}）`,
+        upgradePrompt: {
+          feature: '套磁信',
+          remaining: 0,
+          message: `本月套磁信额度已用完（${usage.used}/${usage.limit}）`,
+          actions: [
+            { label: '升级订阅', href: '/koala/pricing' },
+            { label: '购买积分包', href: '/koala/pricing#credits' },
+          ],
+        },
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, upgradeMsg]);
@@ -1287,11 +1313,19 @@ function ChatPageInner() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ error: '生成失败' }));
-        if (res.status === 403) {
+        if (res.status === 402 || res.status === 403) {
           setMessages(prev => prev.map(m => m.id === loadingMsg.id ? {
             ...m,
-            content: errData.error || '今日套磁信生成次数已用完',
-            upgradePrompt: { feature: '套磁信', remaining: 0 },
+            content: errData.error || '套磁信额度已用完',
+            upgradePrompt: {
+              feature: '套磁信',
+              remaining: 0,
+              message: errData.error,
+              actions: [
+                { label: '升级订阅', href: '/koala/pricing' },
+                { label: '购买积分包', href: '/koala/pricing#credits' },
+              ],
+            },
           } : m));
           return;
         }
@@ -1381,9 +1415,17 @@ function ChatPageInner() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ error: '批量生成失败' }));
+        const isQuotaError = res.status === 402 || res.status === 403;
         setMessages(prev => prev.map(m => m.id === progressMsgId ? {
           ...m, content: errData.error || '批量生成失败',
-          upgradePrompt: res.status === 403 ? { feature: '套磁信', remaining: 0 } : undefined,
+          upgradePrompt: isQuotaError ? {
+            feature: '套磁信', remaining: 0,
+            message: errData.error,
+            actions: [
+              { label: '升级订阅', href: '/koala/pricing' },
+              { label: '购买积分包', href: '/koala/pricing#credits' },
+            ],
+          } : undefined,
         } : m));
         return;
       }
@@ -1453,12 +1495,37 @@ function ChatPageInner() {
                 setMessages(prev => [...prev, emailMsg]);
                 setCredits(r.creditsRemaining ?? 0);
               } else if (eventType === 'email_error') {
-                const errMsg: Message = {
+                if (data.billingExhausted) {
+                  const errMsg: Message = {
+                    id: msgId(), role: 'assistant',
+                    content: `❌ ${data.professorName}: ${data.error}`,
+                    timestamp: new Date(),
+                  };
+                  setMessages(prev => [...prev, errMsg]);
+                } else {
+                  const errMsg: Message = {
+                    id: msgId(), role: 'assistant',
+                    content: `❌ ${data.professorName}: ${data.error}`,
+                    timestamp: new Date(),
+                  };
+                  setMessages(prev => [...prev, errMsg]);
+                }
+              } else if (eventType === 'skipped') {
+                const skippedMsg: Message = {
                   id: msgId(), role: 'assistant',
-                  content: `❌ ${data.professorName}: ${data.error}`,
+                  content: `剩余 ${data.count} 位教授因本月额度用尽未生成`,
+                  upgradePrompt: {
+                    feature: '套磁信',
+                    remaining: 0,
+                    message: `已生成部分套磁信，剩余 ${data.count} 位教授因额度用尽未生成`,
+                    actions: [
+                      { label: '升级订阅', href: '/koala/pricing' },
+                      { label: '购买积分包', href: '/koala/pricing#credits' },
+                    ],
+                  },
                   timestamp: new Date(),
                 };
-                setMessages(prev => [...prev, errMsg]);
+                setMessages(prev => [...prev, skippedMsg]);
               } else if (eventType === 'done') {
                 setMessages(prev => prev.map(m => m.id === progressMsgId ? {
                   ...m, content: `批量生成完成！成功 ${data.totalGenerated} 封${data.totalFailed > 0 ? `，失败 ${data.totalFailed} 封` : ''}。`,
@@ -1518,6 +1585,15 @@ function ChatPageInner() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {user && mode === 'write' && (
+            <Link
+              href="/koala/pricing#credits"
+              className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium border border-amber-200 dark:border-[#c9a96e]/30 text-amber-700 dark:text-[#c9a96e] bg-amber-50 dark:bg-[#c9a96e]/10 hover:bg-amber-100 dark:hover:bg-[#c9a96e]/20 transition-colors"
+            >
+              <Sparkles size={10} />
+              <span>{credits} 积分</span>
+            </Link>
+          )}
           <button
             onClick={() => {
               setMessages(prev => [...prev, {
@@ -1719,7 +1795,12 @@ function ChatPageInner() {
                 )}
                 {msg.role === 'assistant' && msg.upgradePrompt && (
                   <div className="mt-2">
-                    <UpgradePrompt feature={msg.upgradePrompt.feature} remaining={msg.upgradePrompt.remaining} />
+                    <UpgradePrompt
+                      feature={msg.upgradePrompt.feature}
+                      remaining={msg.upgradePrompt.remaining}
+                      message={msg.upgradePrompt.message}
+                      actions={msg.upgradePrompt.actions}
+                    />
                   </div>
                 )}
                 {msg.role === 'assistant' && msg.suggestConsultation && <ConsultationBanner />}
