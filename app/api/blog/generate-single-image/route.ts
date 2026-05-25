@@ -4,6 +4,8 @@ import { supabaseAdmin } from '../../../lib/supabase/server';
 import { requireAdmin } from '../../../lib/auth';
 import { aiLimiter, safeLimit } from '../../../lib/ratelimit';
 
+export const maxDuration = 300;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
@@ -34,7 +36,7 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'postId and promptEn required' }, { status: 400 });
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY!, timeout: 150000 });
     const imgPrompt = `Editorial photograph captured on Kodak Portra 400 film with a Hasselblad 500C medium format camera. Natural ambient lighting, subtle film grain, organic color rendering with warm undertones. Shallow depth of field, f/2.8. No AI artifacts, no synthetic textures, no CGI elements. Subject: ${promptEn}. Style: photojournalistic documentary aesthetic, as published in National Geographic or The New York Times Magazine. Absolutely NO text, NO words, NO letters, NO watermarks anywhere in the image.`;
 
     let imageB64: string | undefined;
@@ -47,9 +49,21 @@ export async function POST(req: NextRequest) {
         size: '1024x1024',
         quality: 'high',
       }));
-      imageB64 = response.data?.[0]?.b64_json ?? undefined;
+      const item = response.data?.[0];
+      if (item?.b64_json) {
+        imageB64 = item.b64_json;
+      } else if (item?.url) {
+        const imgRes = await fetch(item.url);
+        if (imgRes.ok) {
+          const arrBuf = await imgRes.arrayBuffer();
+          imageB64 = Buffer.from(arrBuf).toString('base64');
+        }
+      }
     } catch (err) {
       console.error('[generate-single-image] gpt-image-2 failed:', (err as Error).message);
+      if (err && typeof err === 'object' && 'status' in err) {
+        console.error('[generate-single-image] HTTP status:', (err as { status: number }).status);
+      }
     }
 
     if (!imageB64) {

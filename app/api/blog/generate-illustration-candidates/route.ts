@@ -4,6 +4,8 @@ import OpenAI from 'openai';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { requireAdmin } from '../../../lib/auth';
 
+export const maxDuration = 300;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
@@ -61,56 +63,69 @@ Return JSON array: [{"keyword": "short label", "promptEn": "detailed scene descr
       return Response.json({ error: 'No keywords found', images: [] });
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('[generate-illustration-candidates] OPENAI_API_KEY not configured');
+      return Response.json({ error: 'OpenAI API key 未配置' }, { status: 503 });
+    }
 
-    const imageResults: Array<{ url: string; prompt: string; keyword: string }> = [];
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY!, timeout: 150000 });
 
-    for (const kw of keywords) {
+    const generateOne = async (kw: { keyword: string; promptEn: string }, idx: number) => {
       const imgPrompt = `Editorial photograph captured on Kodak Portra 400 film with a Hasselblad 500C medium format camera. Natural ambient lighting, subtle film grain, organic color rendering with warm undertones. Shallow depth of field, f/2.8. No AI artifacts, no synthetic textures, no CGI elements. Subject: ${kw.promptEn}. Style: photojournalistic documentary aesthetic, as published in National Geographic or The New York Times Magazine. Absolutely NO text, NO words, NO letters, NO watermarks anywhere in the image.`;
 
-      let imageB64: string | undefined;
+      const response = await callWithRetry(() => openai.images.generate({
+        model: 'gpt-image-2',
+        prompt: imgPrompt,
+        n: 1,
+        size: '1024x1024',
+        quality: 'high',
+      }));
 
-      try {
-        const response = await callWithRetry(() => openai.images.generate({
-          model: 'gpt-image-2',
-          prompt: imgPrompt,
-          n: 1,
-          size: '1024x1024',
-          quality: 'high',
-        }));
-        imageB64 = response.data?.[0]?.b64_json ?? undefined;
-      } catch {
-        // continue to next keyword
+      const item = response.data?.[0];
+      let imageB64 = item?.b64_json;
+      if (!imageB64 && item?.url) {
+        const imgRes = await fetch(item.url);
+        if (imgRes.ok) {
+          const arrBuf = await imgRes.arrayBuffer();
+          imageB64 = Buffer.from(arrBuf).toString('base64');
+        }
       }
-
-      if (!imageB64) continue;
+      if (!imageB64) throw new Error('No image data returned');
 
       const imgBuffer = Buffer.from(imageB64, 'base64');
-      const fileName = `illustrations/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+      const fileName = `illustrations/${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 8)}.png`;
 
       const { error: uploadErr } = await db.storage
         .from('blog-images')
         .upload(fileName, imgBuffer, { contentType: 'image/png', upsert: true });
 
       if (uploadErr) {
-        try {
-          await db.storage.createBucket('blog-images', { public: true });
-          const { error: retryErr } = await db.storage
-            .from('blog-images')
-            .upload(fileName, imgBuffer, { contentType: 'image/png', upsert: true });
-          if (retryErr) continue;
-        } catch { continue; }
+        await db.storage.createBucket('blog-images', { public: true }).catch(() => {});
+        const { error: retryErr } = await db.storage
+          .from('blog-images')
+          .upload(fileName, imgBuffer, { contentType: 'image/png', upsert: true });
+        if (retryErr) throw retryErr;
       }
 
       const { data: urlData } = db.storage.from('blog-images').getPublicUrl(fileName);
+      return { url: urlData.publicUrl, prompt: kw.promptEn, keyword: kw.keyword };
+    };
 
-      imageResults.push({
-        url: urlData.publicUrl,
-        prompt: kw.promptEn,
-        keyword: kw.keyword,
-      });
+    console.log(`[generate-illustration-candidates] Generating ${keywords.length} images in parallel...`);
+    const results = await Promise.allSettled(
+      keywords.map((kw, i) => generateOne(kw, i))
+    );
+
+    const imageResults: Array<{ url: string; prompt: string; keyword: string }> = [];
+    for (const r of results) {
+      if (r.status === 'fulfilled') {
+        imageResults.push(r.value);
+      } else {
+        console.error('[generate-illustration-candidates] Image failed:', r.reason?.message || r.reason);
+      }
     }
 
+    console.log(`[generate-illustration-candidates] ${imageResults.length}/${keywords.length} images succeeded`);
     return Response.json({ images: imageResults });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
