@@ -300,6 +300,16 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] 破坏性操作二次确认: 博客删除 confirm("此操作不可撤销"); 销售等级/状态变更 confirm; 角色拒绝 confirm
 - [x] 静默吞错修复: dashboard、analytics、growth、revenue、sales-overview、topics、publishing 共7个页面的 .catch(()=>{}) 改为错误状态 + 红色错误提示栏
 
+### RLS 二次审计: 17 张无策略表 + survey_answers + 函数权限 ✅ 完成 (2026-05-25)
+- [x] 代码审计: 17 张 RLS 启用但无策略的表，逐表确认全部由 supabaseAdmin (service_role) 访问
+- [x] 判定: RLS + 无策略 = deny-all for anon/authenticated = 正确安全状态，无需补策略
+- [x] 4 张重点表确认: email_verifications / sales_customers / user_roles / feedback — 全部 service_role only，无需改 client
+- [x] 表注释: 17 张表添加 COMMENT ON TABLE 说明 RLS deny-all 原因，供未来审计参考
+- [x] survey_answers 修复: 删除 public_update_answers USING(true) 策略（任意用户可改任意答案），所有写操作走 service_role
+- [x] SECURITY DEFINER 函数收权: get_sales_funnel / get_survey_analytics_aggregate / get_survey_analytics_full 从 anon + PUBLIC 移除 EXECUTE，仅保留 authenticated + service_role + postgres
+- [x] get_professor_match_count 保持不变（公开统计数据）
+- [x] Migration: supabase/migrations/20260525_rls_audit_17_tables.sql
+
 ### 移动端体验审计与修复 ✅ 完成 (2026-05-25)
 - [x] 375px 全页面审查: 首页、教授库、教授详情、Ola聊天、定价、登录、博客 共7个核心页面
 - [x] 聊天页输入框修复: 移除 BottomTabBar 在聊天页的显示, 避免输入框被遮挡; 添加 safe-area-inset-bottom 适配 iPhone
