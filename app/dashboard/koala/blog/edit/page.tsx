@@ -394,7 +394,7 @@ function BlogEditPageInner() {
         body: JSON.stringify({
           title: form.title_zh || form.title_en,
           content: form.content_zh.slice(0, 3000),
-          count: 4,
+          count: 2,
         }),
       });
       const data = await res.json();
@@ -965,7 +965,6 @@ function BlogEditPageInner() {
                 >
                   <option value="1">1 张</option>
                   <option value="2">2 张</option>
-                  <option value="3">3 张</option>
                 </select>
                 <button
                   onClick={generateInlineImages}
@@ -987,7 +986,7 @@ function BlogEditPageInner() {
                       disabled={generatingIllustrations}
                       className="px-4 py-2 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
                     >
-                      {generatingIllustrations ? '⏳ 生成候选插图中...' : '🔄 生成候选插图（4张）'}
+                      {generatingIllustrations ? '⏳ 生成候选插图中...' : '🔄 生成候选插图（2张）'}
                     </button>
                   </div>
 
@@ -998,7 +997,7 @@ function BlogEditPageInner() {
                   {generatingIllustrations && (
                     <div className="py-8 text-center">
                       <div className="inline-block w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mb-2" />
-                      <p className="text-xs text-slate-500">正在根据文章关键词生成 4 张候选插图...</p>
+                      <p className="text-xs text-slate-500">正在根据文章关键词生成 2 张候选插图...</p>
                     </div>
                   )}
 

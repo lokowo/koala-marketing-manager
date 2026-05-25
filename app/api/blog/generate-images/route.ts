@@ -16,9 +16,10 @@ export async function POST(req: NextRequest) {
     const allowed = await safeLimit(aiLimiter, adminUser.user.id);
     if (!allowed) return Response.json({ error: '操作太频繁，请稍后再试' }, { status: 429 });
 
-    const { postId, imageCount } = await req.json();
+    const { postId, imageCount: rawCount } = await req.json();
+    const imageCount = Math.min(Math.max(1, rawCount || 1), 2);
 
-    if (!postId || !imageCount || imageCount < 1) {
+    if (!postId) {
       return Response.json({ prompts: [] });
     }
 
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
       system: 'Return ONLY a valid JSON array. No markdown code blocks, no explanation.',
       messages: [{
         role: 'user',
-        content: `Given this article, suggest ${imageCount} image placements. For each return: suggestedHeading (exact ## heading text from the article, without the ## prefix), promptEn (30-50 word photorealistic scene description, NO text in image).\n\nArticle:\n${post.content_zh.slice(0, 3000)}\n\nReturn JSON array: [{"suggestedHeading": "...", "promptEn": "..."}]`,
+        content: `Given this article, suggest exactly ${imageCount} image placements (maximum 2). Space them evenly throughout the article. For each return: suggestedHeading (exact ## heading text from the article, without the ## prefix), promptEn (30-50 word photorealistic scene description, NO text in image).\n\nArticle:\n${post.content_zh.slice(0, 3000)}\n\nReturn JSON array: [{"suggestedHeading": "...", "promptEn": "..."}]`,
       }],
     });
 

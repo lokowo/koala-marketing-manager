@@ -25,7 +25,8 @@ async function callWithRetry(fn: () => Promise<any>, maxRetries = 3): Promise<an
 export async function POST(req: NextRequest) {
   try { await requireAdmin(); } catch { return Response.json({ error: 'Forbidden' }, { status: 403 }); }
   try {
-    const { title, content, count = 4 } = await req.json();
+    const { title, content, count: rawCount = 2 } = await req.json();
+    const count = Math.min(Math.max(1, rawCount), 2);
 
     if (!title && !content) {
       return Response.json({ error: 'title or content required' }, { status: 400 });
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
       system: 'Return ONLY a valid JSON array. No markdown code blocks, no explanation.',
       messages: [{
         role: 'user',
-        content: `Given this article title and content, extract ${count} distinct visual keywords/themes that would make good illustrations. For each, provide a short keyword label and a detailed image prompt (30-50 words, film photography aesthetic, documentary style, NO text in image).
+        content: `Given this article title and content, extract exactly ${count} (maximum 2) distinct visual keywords/themes that would make good illustrations. For each, provide a short keyword label and a detailed image prompt (30-50 words, film photography aesthetic, documentary style, NO text in image).
 
 Title: ${title}
 Content: ${(content || '').slice(0, 2000)}
