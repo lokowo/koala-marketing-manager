@@ -274,6 +274,14 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] Google OAuth 按钮条件渲染: 仅在 Supabase 启用 Google provider 时显示 (防止 400 错误)
 - [x] OAuth callback cookie 修复: 使用 req.cookies + response.cookies 确保 session 随 redirect 传递
 
+### P4-7: RLS 全表审计修复 ✅ 完成 (2026-05-25)
+- [x] 审计报告: docs/P4-7-ADMIN-AUDIT.md (15张无RLS表 + 18张无策略表 + 57 Admin页面审计)
+- [x] Batch 1 高优先 (4表): admin_message_threads + admin_messages (admin读写), handoff_requests (user insert own + admin read/update), ola_sessions (user read own)
+- [x] Batch 2 中优先 (4表): system_settings + brand_settings (public read + super_admin write), ola_conversation_events + ola_email_logs (admin read)
+- [x] Batch 3 低优先 (7表): ola_faq, ola_email_templates, ola_milestones, ola_triggers (public read + admin write), ola_trigger_logs (admin read), universities + university_deadlines (public read + admin write)
+- [x] saved_professors 补策略: user manage own (FOR ALL USING auth.uid()=user_id WITH CHECK auth.uid()=user_id)
+- [x] 总计: 16张表启用RLS, 创建28条策略, 通过3次Supabase migration执行
+
 ## 待完成项目 (P4 路线图)
 
 ### 高优先级
