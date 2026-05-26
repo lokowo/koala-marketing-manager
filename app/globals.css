@@ -54,8 +54,8 @@ body {
   animation: ola-bg-breathe 4s ease-in-out infinite;
 }
 .ola-bg-mascot.empty-state {
-  opacity: 0.2;
-  animation: ola-bg-breathe 3s ease-in-out infinite;
+  opacity: 0;
+  animation: none;
 }
 .ola-bg-mascot.ola-bg-send {
   animation: ola-bg-send-pulse 0.3s ease-out;

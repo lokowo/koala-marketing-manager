@@ -16,7 +16,7 @@ interface OlaWelcomeProps {
 export function OlaWelcome({ onSend }: OlaWelcomeProps) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-10">
-      <OlaAvatar assetId="b-02-confident-pose" size="lg" />
+      <OlaAvatar assetId="h-03-encouragement-nobg" size="lg" round={false} className="w-[200px] h-auto" />
       <h2 className="mt-4 text-lg font-bold text-gray-900 dark:text-[#e8e4dc]">
         嗨！我是学姐小欧 ✨
       </h2>
