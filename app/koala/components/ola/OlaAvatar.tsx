@@ -49,11 +49,14 @@ interface OlaAvatarProps {
   state?: OlaState;
   size?: OlaSize;
   className?: string;
+  /** When true, clips image to a circle (default: auto-detect from asset prefix — h-* = true, b-* = false) */
+  round?: boolean;
 }
 
-export function OlaAvatar({ assetId, emotionTag, state, size = 'md', className }: OlaAvatarProps) {
+export function OlaAvatar({ assetId, emotionTag, state, size = 'md', className, round }: OlaAvatarProps) {
   const px = SIZE_MAP[size];
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [resolvedAssetId, setResolvedAssetId] = useState<string | undefined>(assetId);
   const [ready, setReady] = useState(allAssetsFetched);
 
   useEffect(() => {
@@ -69,14 +72,15 @@ export function OlaAvatar({ assetId, emotionTag, state, size = 'md', className }
 
     // Priority: assetId > emotionTag > legacy state mapping > default
     let url: string | undefined;
+    let resolved = assetId;
     if (assetId) {
       url = assetCache.get(`id:${assetId}`);
     }
     if (!url && emotionTag) {
       url = assetCache.get(`emotion:${emotionTag}`);
+      if (url) resolved = emotionTag;
     }
     if (!url && state) {
-      // Map legacy OlaState to emotion_tag
       const stateToEmotion: Record<OlaState, string> = {
         welcome: 'cozy',
         thinking: 'confident',
@@ -88,12 +92,15 @@ export function OlaAvatar({ assetId, emotionTag, state, size = 'md', className }
         focus: 'determined',
       };
       url = assetCache.get(`emotion:${stateToEmotion[state]}`);
+      if (url) resolved = stateToEmotion[state];
     }
     if (!url) {
       url = assetCache.get(`id:${DEFAULT_ASSET_ID}`);
+      resolved = DEFAULT_ASSET_ID;
     }
 
     setImageUrl(url ?? null);
+    setResolvedAssetId(resolved);
   }, [ready, assetId, emotionTag, state]);
 
   // Fallback to legacy SVG while loading or if no DB image found
@@ -111,13 +118,17 @@ export function OlaAvatar({ assetId, emotionTag, state, size = 'md', className }
     );
   }
 
+  // Auto-detect: body images (b-*) are transparent full-body PNGs — no circular clip
+  const isBodyImage = resolvedAssetId?.startsWith('b-');
+  const shouldRound = round ?? !isBodyImage;
+
   return (
     <Image
       src={imageUrl}
       alt="Ola"
       width={px}
       height={px}
-      className={`rounded-full object-cover ${className ?? ''}`}
+      className={`${shouldRound ? 'rounded-full object-cover' : 'object-contain'} ${className ?? ''}`}
       unoptimized
     />
   );

@@ -543,7 +543,7 @@ function ThinkingBubble({ mode }: { mode: string }) {
   return (
     <div className="flex justify-start mb-1">
       <div className="mt-1 mr-2 flex-shrink-0">
-        <OlaAvatar state="thinking" size="sm" />
+        <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" />
       </div>
       <div className="px-3.5 py-2.5 text-sm bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-[#8a8078]" style={{ borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <span className="animate-pulse">
@@ -679,6 +679,8 @@ function ChatPageInner() {
   const [historyLoaded, setHistoryLoaded] = useState(!user);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [bgAnim, setBgAnim] = useState<'idle' | 'send' | 'reply'>('idle');
+  const bgIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [credits, setCredits] = useState<number>(10);
   const [showCreditConfirm, setShowCreditConfirm] = useState(false);
@@ -1003,6 +1005,8 @@ function ChatPageInner() {
     setMessages(prev => [...prev, userMsg]);
     setListenPulse(p => p + 1);
     setLoading(true);
+    setBgAnim('send');
+    if (bgIdleTimer.current) clearTimeout(bgIdleTimer.current);
 
     try {
       const allMsgs = [...currentMessages, userMsg];
@@ -1139,6 +1143,8 @@ function ChatPageInner() {
       });
     } finally {
       setLoading(false);
+      setBgAnim('reply');
+      bgIdleTimer.current = setTimeout(() => setBgAnim('idle'), 5000);
     }
   }, [mode, tonePref, user, profileCollectionPending, refreshProfile]);
 
@@ -1773,12 +1779,19 @@ function ChatPageInner() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-0.5">
+      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-0.5 relative">
+        {/* Background mascot layer */}
+        <div
+          className={`ola-bg-mascot ${(messages.length === 1 && messages[0].role === 'assistant' && !loading) ? 'empty-state' : ''} ${bgAnim === 'send' ? 'ola-bg-send' : bgAnim === 'reply' ? 'ola-bg-reply' : ''}`}
+        >
+          <OlaAvatar assetId="b-02-confident-pose" size="xl" className="h-full w-auto" />
+        </div>
+
         {/* Welcome screen when no conversation yet */}
         {messages.length === 1 && messages[0].role === 'assistant' && !loading ? (
-          <OlaWelcome onSend={(msg) => sendMessage(msg)} />
+          <div className="relative z-[1]"><OlaWelcome onSend={(msg) => sendMessage(msg)} /></div>
         ) : (
-        <>
+        <div className="relative z-[1]">
         <div className="flex items-center gap-2 py-2 mb-1">
           <div className="flex-1 h-px bg-gray-200 dark:bg-white/[0.08]" />
           <span className="text-[11px] flex-shrink-0 text-gray-400 dark:text-[#5a5550]">今天 {formatTime(messages[0]?.timestamp ?? new Date())}</span>
@@ -1790,7 +1803,7 @@ function ChatPageInner() {
             <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-0.5`}>
               {msg.role === 'assistant' && (
                 <div className="mt-1 mr-2 flex-shrink-0">
-                  <OlaAvatar assetId={msg.olaAssetId} emotionTag={msg.olaEmotionTag} state="welcome" size="sm" />
+                  <OlaAvatar assetId={msg.olaAssetId || 'h-09-bubbly-boba-nobg'} emotionTag={msg.olaEmotionTag} size="sm" />
                 </div>
               )}
               <div className="flex flex-col max-w-[80%]">
@@ -2064,7 +2077,7 @@ function ChatPageInner() {
         {showFeedback && !feedbackDismissed && (
           <div className="flex justify-start mb-0.5">
             <div className="mt-1 mr-2 flex-shrink-0">
-              <OlaAvatar state="welcome" size="sm" />
+              <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" />
             </div>
             <div className="max-w-[80%]">
               <FeedbackCard
@@ -2076,7 +2089,7 @@ function ChatPageInner() {
         )}
 
         <div ref={bottomRef} />
-        </>
+        </div>
         )}
       </div>
 
