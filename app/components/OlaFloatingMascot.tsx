@@ -45,6 +45,24 @@ const PROF_FREE: SalesBubble[] = [
   { text: '这位教授的学生反馈我帮你查查？', action: '/koala/chat?mode=path' },
 ];
 
+// Drag interaction bubbles
+const DRAG_BUBBLES = [
+  '哎呦你要把我放哪儿哦～',
+  '慢点移！学姐头晕！😵',
+  '别把学姐藏起来！',
+  '你是不是想把学姐扔掉😢',
+];
+
+// Hover / tap interaction bubbles
+const IDLE_INTERACT_BUBBLES = [
+  '有什么需要帮忙的吗？😊',
+  '点我聊天呀～',
+  '学姐在这守着你呢！',
+  '想我了？嘻嘻～',
+  '别戳了，痒！🤭',
+  '你好呀～今天申请顺利吗？',
+];
+
 // ─── Constants ───────────────────────────────────────
 
 const STORAGE_KEY_POS = 'ola-mascot-pos';
@@ -54,14 +72,20 @@ const SESSION_COUNT_KEY = 'ola-sales-session-count';
 const MAX_SALES_PER_SESSION = 2;
 const COOLDOWN_AFTER_DISMISS = 24 * 60 * 60 * 1000;
 
-const MASCOT_SIZE_MOBILE = 48;
-const MASCOT_SIZE_DESKTOP = 64;
+const MASCOT_SIZE_MOBILE = 60;
+const MASCOT_SIZE_DESKTOP = 80;
 const DEFAULT_BOTTOM = 80;
 const DEFAULT_RIGHT = 24;
+const LONG_PRESS_MS = 300;
 
 function getMascotSize() {
   if (typeof window === 'undefined') return MASCOT_SIZE_DESKTOP;
   return window.innerWidth < 1024 ? MASCOT_SIZE_MOBILE : MASCOT_SIZE_DESKTOP;
+}
+
+function isMobile() {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth < 1024;
 }
 
 function isInCooldown(): boolean {
@@ -75,6 +99,10 @@ function isInCooldown(): boolean {
 function incrementSessionCount() {
   const count = parseInt(sessionStorage.getItem(SESSION_COUNT_KEY) || '0');
   sessionStorage.setItem(SESSION_COUNT_KEY, String(count + 1));
+}
+
+function pickRandom(arr: string[]): string {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 // ─── Component ───────────────────────────────────────
@@ -93,14 +121,24 @@ export default function OlaFloatingMascot() {
   const [initialized, setInitialized] = useState(false);
   const [mascotSize, setMascotSize] = useState(MASCOT_SIZE_DESKTOP);
 
+  // Drag interaction state
+  const [dragBubbleText, setDragBubbleText] = useState<string | null>(null);
+  // Hover/tap interaction state
+  const [interactBubbleText, setInteractBubbleText] = useState<string | null>(null);
+
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const mascotRef = useRef<HTMLDivElement>(null);
   const hasDragged = useRef(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressReady = useRef(false);
+  const dragBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const interactBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── Mode detection ──────────────────────────────
 
-  const isExpertPage = pathname?.startsWith('/koala/chat') || pathname?.startsWith('/koala/tools');
+  const isOnChatPage = pathname?.startsWith('/koala/chat');
+  const isExpertPage = isOnChatPage || pathname?.startsWith('/koala/tools');
   const isSalesMode = !isExpertPage;
   const isProfessorPage = pathname?.startsWith('/professor/') || pathname?.startsWith('/koala/professors/');
 
@@ -145,7 +183,12 @@ export default function OlaFloatingMascot() {
     if (saved) {
       try {
         const p = JSON.parse(saved);
-        setPos({ x: p.x, y: p.y });
+        const maxX = window.innerWidth - size;
+        const maxY = window.innerHeight - size;
+        setPos({
+          x: Math.max(0, Math.min(maxX, p.x)),
+          y: Math.max(0, Math.min(maxY, p.y)),
+        });
       } catch {
         setPos({
           x: window.innerWidth - size - DEFAULT_RIGHT,
@@ -164,7 +207,7 @@ export default function OlaFloatingMascot() {
   // ─── Appearance with mode-aware delay ────────────
 
   useEffect(() => {
-    if (!initialized || hidden) return;
+    if (!initialized || hidden || isOnChatPage) return;
     setVisible(false);
     setEntered(false);
     const t = setTimeout(() => {
@@ -172,8 +215,15 @@ export default function OlaFloatingMascot() {
       setTimeout(() => setEntered(true), 50);
     }, initialDelay);
     return () => clearTimeout(t);
-    // re-run when page mode changes
-  }, [initialized, hidden, initialDelay]);
+  }, [initialized, hidden, initialDelay, isOnChatPage]);
+
+  // Hide when entering chat page
+  useEffect(() => {
+    if (isOnChatPage) {
+      setVisible(false);
+      setEntered(false);
+    }
+  }, [isOnChatPage]);
 
   // ─── Bubble cycling ──────────────────────────────
 
@@ -217,26 +267,77 @@ export default function OlaFloatingMascot() {
 
   // ─── Drag handlers ──────────────────────────────
 
+  const showDragBubble = useCallback(() => {
+    setDragBubbleText(pickRandom(DRAG_BUBBLES));
+    if (dragBubbleTimer.current) clearTimeout(dragBubbleTimer.current);
+    dragBubbleTimer.current = setTimeout(() => setDragBubbleText(null), 2000);
+  }, []);
+
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('[data-close-btn]')) return;
-    dragging.current = true;
-    hasDragged.current = false;
-    dragOffset.current = {
-      x: e.clientX - pos.x,
-      y: e.clientY - pos.y,
-    };
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-  }, [pos]);
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const currentPos = { ...pos };
+
+    if (isMobile()) {
+      // Mobile: require long press before drag starts
+      longPressReady.current = false;
+      hasDragged.current = false;
+      longPressTimer.current = setTimeout(() => {
+        longPressReady.current = true;
+        dragging.current = true;
+        dragOffset.current = {
+          x: startX - currentPos.x,
+          y: startY - currentPos.y,
+        };
+        try { navigator.vibrate?.(50); } catch {}
+        showDragBubble();
+        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+      }, LONG_PRESS_MS);
+    } else {
+      // Desktop: immediate drag
+      dragging.current = true;
+      hasDragged.current = false;
+      dragOffset.current = {
+        x: e.clientX - currentPos.x,
+        y: e.clientY - currentPos.y,
+      };
+      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    }
+  }, [pos, showDragBubble]);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
+    // Cancel long press if finger moves before timer fires
+    if (longPressTimer.current && !longPressReady.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+
     if (!dragging.current) return;
     hasDragged.current = true;
     const nx = Math.max(0, Math.min(window.innerWidth - mascotSize, e.clientX - dragOffset.current.x));
     const ny = Math.max(0, Math.min(window.innerHeight - mascotSize, e.clientY - dragOffset.current.y));
     setPos({ x: nx, y: ny });
-  }, [mascotSize]);
+
+    // Vibrate periodically during mobile drag
+    if (isMobile()) {
+      try { navigator.vibrate?.(50); } catch {}
+    }
+
+    // Show random drag bubble occasionally
+    if (!dragBubbleText && Math.random() < 0.02) {
+      showDragBubble();
+    }
+  }, [mascotSize, dragBubbleText, showDragBubble]);
 
   const onPointerUp = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    longPressReady.current = false;
+
     if (!dragging.current) return;
     dragging.current = false;
     if (hasDragged.current) {
@@ -246,6 +347,27 @@ export default function OlaFloatingMascot() {
       });
     }
   }, []);
+
+  // ─── Hover / tap interaction ─────────────────────
+
+  const showInteractBubble = useCallback(() => {
+    if (dragging.current || showBubble || dragBubbleText) return;
+    setInteractBubbleText(pickRandom(IDLE_INTERACT_BUBBLES));
+    if (interactBubbleTimer.current) clearTimeout(interactBubbleTimer.current);
+    interactBubbleTimer.current = setTimeout(() => setInteractBubbleText(null), 2500);
+  }, [showBubble, dragBubbleText]);
+
+  const handleMouseEnter = useCallback(() => {
+    if (isMobile()) return;
+    showInteractBubble();
+  }, [showInteractBubble]);
+
+  const handleTap = useCallback(() => {
+    if (hasDragged.current) return;
+    if (isMobile()) {
+      showInteractBubble();
+    }
+  }, [showInteractBubble]);
 
   // ─── Close / Recall ──────────────────────────────
 
@@ -285,9 +407,22 @@ export default function OlaFloatingMascot() {
     router.push('/koala/chat');
   }, [router]);
 
+  // ─── Cleanup timers ──────────────────────────────
+
+  useEffect(() => {
+    return () => {
+      if (dragBubbleTimer.current) clearTimeout(dragBubbleTimer.current);
+      if (interactBubbleTimer.current) clearTimeout(interactBubbleTimer.current);
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    };
+  }, []);
+
   // ─── Render ──────────────────────────────────────
 
   if (!initialized) return null;
+
+  // Hide on chat page
+  if (isOnChatPage) return null;
 
   if (hidden) {
     return (
@@ -307,6 +442,11 @@ export default function OlaFloatingMascot() {
   const isOnLeft = pos.x < window.innerWidth / 2;
   const currentBubble = activeBubbles[bubbleIndex];
 
+  // Determine which bubble to show: drag > interact > sales
+  const activeBubbleText = dragBubbleText ?? interactBubbleText;
+  const showSalesBubble = !activeBubbleText && showBubble && hasBubbles && currentBubble;
+  const showAnyBubble = !!activeBubbleText || showSalesBubble;
+
   return (
     <div
       ref={mascotRef}
@@ -318,24 +458,37 @@ export default function OlaFloatingMascot() {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
     >
-      {/* Speech bubble */}
-      {hasBubbles && currentBubble && (
+      {/* Speech bubble — drag / interact / sales */}
+      {showAnyBubble && (
         <div
           className={`absolute bottom-[calc(100%+8px)] whitespace-nowrap transition-all duration-300 ${
             isOnLeft ? 'left-0' : 'right-0'
-          } ${showBubble ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1 pointer-events-none'}`}
+          } opacity-100 translate-y-0`}
         >
-          <button
-            onClick={handleBubbleClick}
-            className="relative px-3 py-2 rounded-xl bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md text-xs text-gray-700 dark:text-[#e8e4dc] hover:border-blue-300 dark:hover:border-blue-500/30 transition-colors cursor-pointer"
-          >
-            {currentBubble.text}
-            <span
-              className={`absolute -bottom-[6px] size-3 rotate-45 bg-white dark:bg-[#1a2332] border-b border-r border-gray-200 dark:border-white/10 ${
-                isOnLeft ? 'left-5' : 'right-5'
-              }`}
-            />
-          </button>
+          {activeBubbleText ? (
+            <div
+              className="relative px-3 py-2 rounded-xl bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md text-xs text-gray-700 dark:text-[#e8e4dc]"
+            >
+              {activeBubbleText}
+              <span
+                className={`absolute -bottom-[6px] size-3 rotate-45 bg-white dark:bg-[#1a2332] border-b border-r border-gray-200 dark:border-white/10 ${
+                  isOnLeft ? 'left-5' : 'right-5'
+                }`}
+              />
+            </div>
+          ) : showSalesBubble && currentBubble ? (
+            <button
+              onClick={handleBubbleClick}
+              className="relative px-3 py-2 rounded-xl bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md text-xs text-gray-700 dark:text-[#e8e4dc] hover:border-blue-300 dark:hover:border-blue-500/30 transition-colors cursor-pointer"
+            >
+              {currentBubble.text}
+              <span
+                className={`absolute -bottom-[6px] size-3 rotate-45 bg-white dark:bg-[#1a2332] border-b border-r border-gray-200 dark:border-white/10 ${
+                  isOnLeft ? 'left-5' : 'right-5'
+                }`}
+              />
+            </button>
+          ) : null}
         </div>
       )}
 
@@ -343,6 +496,8 @@ export default function OlaFloatingMascot() {
       <div
         className="relative cursor-grab active:cursor-grabbing group"
         style={{ width: mascotSize, height: mascotSize }}
+        onMouseEnter={handleMouseEnter}
+        onTouchStart={handleTap}
       >
         {/* Close button */}
         <button
@@ -357,7 +512,9 @@ export default function OlaFloatingMascot() {
         {/* Ola image with breathing animation */}
         <div
           onClick={handleMascotClick}
-          className="size-full rounded-full overflow-hidden bg-white dark:bg-[#1a2332] border-2 border-white dark:border-white/10 shadow-lg animate-[float_3s_ease-in-out_infinite]"
+          className={`size-full rounded-full overflow-hidden bg-white dark:bg-[#1a2332] border-2 border-white dark:border-white/10 shadow-lg ${
+            dragging.current ? '' : 'animate-[float_3s_ease-in-out_infinite]'
+          }`}
         >
           <Image
             src="/images/ola/ola-welcome.svg"
