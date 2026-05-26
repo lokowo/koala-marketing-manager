@@ -98,11 +98,12 @@ Rules:
 3. Quantify outcomes when possible
 4. Do NOT fabricate any data — only polish what the user provides
 5. If information is missing, use "[To be added]" placeholder
-6. Dates: "YYYY" or "YYYY - YYYY" or "YYYY - Present"
-7. GPA: "X.XX/Y.YY" format
-8. Merge data from both the user profile and supplementary input, deduplicating by content similarity
-9. For research descriptions, expand brief entries into 2-3 professional bullet points
-10. Order sections: Education → Research Experience → Publications → Skills → Awards → References
+6. CRITICAL: If the user has no publications (has_publications is false, or publications array is empty/missing), do NOT generate a publications section at all. Never invent papers, journal names, or DOIs.
+7. Dates: "YYYY" or "YYYY - YYYY" or "YYYY - Present"
+8. GPA: "X.XX/Y.YY" format
+9. Merge data from both the user profile and supplementary input, deduplicating by content similarity
+10. For research descriptions, expand brief entries into 2-3 professional bullet points
+11. Order sections: Education → Research Experience → Publications (only if provided) → Skills → Awards → References
 
 Output strictly this JSON structure (no markdown code blocks):
 {
