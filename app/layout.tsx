@@ -17,11 +17,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL('https://koalaphd.com'),
   title: {
-    default: 'Koala PhD — AI-Powered Australian PhD Supervisor Matching',
+    default: 'Koala PhD | 澳洲PhD申请AI平台 — 导师匹配·套磁信·奖学金',
     template: '%s | Koala PhD',
   },
-  description: 'Find your ideal Australian PhD supervisor with AI-powered matching. Browse 38 universities, generate cold emails, and get free PhD application guidance.',
-  keywords: ['Australian PhD', 'PhD supervisor', 'PhD application', '澳洲PhD', '博士申请', '导师推荐', '套磁信', 'scholarship Australia'],
+  description: '澳洲PhD申请AI平台。覆盖全澳38所大学教授数据库，AI智能导师匹配，一键生成套磁信。免费PhD路径评估、科研方向深潜、奖学金信息。Find your ideal Australian PhD supervisor with AI-powered matching.',
+  keywords: ['澳洲PhD', 'PhD申请', '澳洲博士', '教授匹配', 'AI申请', '套磁信', '导师推荐', 'PhD supervisor', 'Australian PhD', 'scholarship Australia'],
+  alternates: {
+    canonical: 'https://koalaphd.com',
+  },
   verification: {
     google: 'MNBTFnPgqdYoqogqXdHbKauY1flu9aA5YKvsDLb97bo',
   },
@@ -30,10 +33,12 @@ export const metadata: Metadata = {
     locale: 'zh_CN',
     alternateLocale: 'en_AU',
     siteName: 'Koala PhD',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Koala PhD — AI PhD Advisor' }],
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Koala PhD — 澳洲PhD申请AI平台' }],
   },
   twitter: {
     card: 'summary_large_image',
+    title: 'Koala PhD | 澳洲PhD申请AI平台',
+    description: '覆盖全澳38所大学教授，AI导师匹配，一键生成套磁信。',
     images: ['/og-image.png'],
   },
 };

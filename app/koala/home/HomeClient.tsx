@@ -211,7 +211,7 @@ export default function HomeClient({ initialProfessors, initialUserCount, initia
                 className="size-9 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
               >
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                  <Image src={profile.avatar_url} alt="用户头像" fill className="object-cover" sizes="36px" />
                 ) : (
                   (user.email || '?')[0].toUpperCase()
                 )}

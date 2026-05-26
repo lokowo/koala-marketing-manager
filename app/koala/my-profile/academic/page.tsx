@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, Check, Camera, X, Plus } from 'lucide-react';
 import { useAuth } from '../../components/AuthContext';
 import { supabase } from '../../../lib/supabase/client';
@@ -254,7 +255,7 @@ export default function AcademicProfilePage() {
           <div className="flex items-center gap-4">
             <div className="relative cursor-pointer group shrink-0" onClick={() => !avatarUploading && fileRef.current?.click()}>
               {data.avatar_url ? (
-                <img src={data.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover" />
+                <Image src={data.avatar_url} alt="学术头像" width={64} height={64} className="rounded-full object-cover" />
               ) : (
                 <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-xl font-medium text-blue-700 dark:text-blue-300">
                   {(data.display_name || user.email || '?')[0].toUpperCase()}

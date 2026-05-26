@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth, type UserProfile } from '../components/AuthContext';
 import { supabase } from '../../lib/supabase/client';
@@ -937,7 +938,7 @@ export default function MyProfilePage() {
             {/* Avatar */}
             <div className="relative cursor-pointer group flex-shrink-0" onClick={() => !avatarUploading && avatarFileRef.current?.click()}>
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="rounded-full object-cover" style={{ width: 56, height: 56 }} />
+                <Image src={profile.avatar_url} alt="我的头像" width={56} height={56} className="rounded-full object-cover" />
               ) : (
                 <div className="rounded-full flex items-center justify-center text-xl font-bold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]" style={{ width: 56, height: 56 }}>
                   {initials}

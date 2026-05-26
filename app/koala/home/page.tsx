@@ -1,8 +1,28 @@
+import type { Metadata } from 'next';
 import { getFeaturedProfessors, countProfessors } from '../../lib/services/professorService';
 import { supabaseAdmin } from '../../lib/supabase/server';
 import HomeClient from './HomeClient';
 
 export const revalidate = 300;
+
+export const metadata: Metadata = {
+  title: '首页 — 澳洲PhD申请AI平台 | Koala PhD',
+  description: '覆盖全澳38所大学教授数据库，AI智能导师匹配，一键生成套磁信。免费PhD路径评估、导师推荐、奖学金信息和科研方向深潜。',
+  keywords: ['澳洲PhD', '博士申请', '导师匹配', 'AI PhD advisor', '套磁信', '奖学金', '教授推荐'],
+  alternates: { canonical: 'https://koalaphd.com/koala/home' },
+  openGraph: {
+    title: 'Koala PhD — 你的澳洲PhD申请AI平台',
+    description: '覆盖全澳38所大学教授，AI导师匹配，一键生成套磁信。',
+    url: 'https://koalaphd.com/koala/home',
+    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Koala PhD — 澳洲PhD申请AI平台',
+    description: '覆盖全澳38所大学教授，AI导师匹配，一键生成套磁信。',
+    images: ['/og-image.png'],
+  },
+};
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;

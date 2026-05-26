@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import type { Professor } from '../../../lib/types';
 import { OPPORTUNITY_LABELS, parseUniversity } from '../../../lib/constants';
@@ -414,7 +415,7 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs:
             {relatedBlogs.map(blog => (
               <Link key={blog.id} href={`/koala/blog/${blog.slug}`} className="flex items-start gap-3 group">
                 {blog.cover_image && (
-                  <img src={blog.cover_image} alt="" className="w-14 h-10 rounded-lg object-cover flex-shrink-0" />
+                  <Image src={blog.cover_image} alt={blog.title || '文章封面'} width={56} height={40} className="rounded-lg object-cover flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium text-gray-800 dark:text-[#e8e4dc] group-hover:text-[#D4A843] dark:group-hover:text-[#D4A843] leading-snug line-clamp-2">{blog.title}</div>
