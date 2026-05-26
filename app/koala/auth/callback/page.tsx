@@ -5,36 +5,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase/client';
 import { Suspense } from 'react';
 
-interface DebugInfo {
-  step: string;
-  code: string | null;
-  exchangeResult: string | null;
-  exchangeError: string | null;
-  sessionAfterExchange: string | null;
-  getSessionResult: string | null;
-  getUserResult: string | null;
-  cookies: string | null;
-  timestamp: string;
-}
+const isDev = process.env.NODE_ENV === 'development';
 
 function CallbackHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const handled = useRef(false);
-  const [debug, setDebug] = useState<DebugInfo>({
-    step: '初始化...',
-    code: null,
-    exchangeResult: null,
-    exchangeError: null,
-    sessionAfterExchange: null,
-    getSessionResult: null,
-    getUserResult: null,
-    cookies: null,
-    timestamp: new Date().toISOString(),
-  });
-  const [ready, setReady] = useState(false);
-  const nextUrl = useRef('/koala/home');
-  const refCode = useRef('');
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+  const [failed, setFailed] = useState(false);
+
+  function log(msg: string) {
+    setDebugLog(prev => [...prev, `[${new Date().toISOString().slice(11, 23)}] ${msg}`]);
+  }
 
   useEffect(() => {
     if (handled.current) return;
@@ -43,151 +25,118 @@ function CallbackHandler() {
     const code = searchParams.get('code');
     const next = searchParams.get('next') || '/koala/home';
     const ref = searchParams.get('ref') || '';
-    nextUrl.current = next;
-    refCode.current = ref;
-
-    setDebug(prev => ({ ...prev, code: code ? `${code.slice(0, 12)}...` : 'null' }));
 
     async function handleCallback() {
       if (!code) {
-        setDebug(prev => ({ ...prev, step: '❌ 无 code 参数', exchangeError: 'URL 中没有 code 参数' }));
-        setReady(true);
+        log('❌ URL 中没有 code 参数');
+        setFailed(true);
         return;
       }
 
-      // Step 1: Exchange code for session
-      setDebug(prev => ({ ...prev, step: '🔄 正在交换 code...' }));
+      log(`code: ${code.slice(0, 12)}...`);
+      log(`origin: ${window.location.origin}`);
+      log(`cookie domain 检查: ${document.cookie.split(';').filter(c => c.trim().startsWith('sb-')).length} 个 sb-* cookie`);
+
+      // Exchange code for session
       try {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error) {
-          setDebug(prev => ({
-            ...prev,
-            step: '❌ exchangeCodeForSession 失败',
-            exchangeError: `${error.message} (status: ${(error as unknown as Record<string, unknown>).status || 'unknown'})`,
-            exchangeResult: JSON.stringify(error, null, 2),
-          }));
-        } else {
-          setDebug(prev => ({
-            ...prev,
-            step: '✅ exchangeCodeForSession 成功',
-            exchangeResult: data?.session ? `user: ${data.session.user.email}, expires: ${new Date((data.session.expires_at || 0) * 1000).toISOString()}` : 'no session in response',
-            sessionAfterExchange: data?.session ? `access_token: ${data.session.access_token.slice(0, 20)}...` : 'null',
-          }));
-
-          if (data?.session?.user) {
-            fetch('/api/auth/oauth-complete', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ref }),
-            }).catch(() => {});
+          log(`❌ exchange 失败: ${error.message}`);
+          if (isDev) {
+            setFailed(true);
+            return;
           }
+          router.replace('/koala/auth?error=oauth_failed');
+          return;
+        }
+
+        log(`✅ exchange 成功: ${data.session?.user?.email || 'no email'}`);
+
+        if (data?.session?.user) {
+          fetch('/api/auth/oauth-complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ref }),
+          }).catch(() => {});
         }
       } catch (e) {
-        setDebug(prev => ({
-          ...prev,
-          step: '❌ exchangeCodeForSession 抛出异常',
-          exchangeError: e instanceof Error ? e.message : String(e),
-        }));
+        log(`❌ exchange 异常: ${e instanceof Error ? e.message : String(e)}`);
+        if (isDev) {
+          setFailed(true);
+          return;
+        }
+        router.replace('/koala/auth?error=oauth_failed');
+        return;
       }
 
-      // Step 2: Verify with getSession
-      setDebug(prev => ({ ...prev, step: prev.step + ' → 🔍 检查 getSession...' }));
-      try {
-        const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
-        setDebug(prev => ({
-          ...prev,
-          getSessionResult: sessionErr
-            ? `error: ${sessionErr.message}`
-            : sessionData?.session
-              ? `✅ session exists, user: ${sessionData.session.user.email}`
-              : '❌ session is null',
-        }));
-      } catch (e) {
-        setDebug(prev => ({ ...prev, getSessionResult: `exception: ${e instanceof Error ? e.message : String(e)}` }));
+      // Verify session is readable
+      const { data: sessionData } = await supabase.auth.getSession();
+      log(sessionData?.session ? `✅ getSession 有效` : `⚠️ getSession 为空`);
+
+      // Production: auto-redirect
+      if (!isDev) {
+        router.replace(next);
+        return;
       }
 
-      // Step 3: Verify with getUser
-      try {
-        const { data: userData, error: userErr } = await supabase.auth.getUser();
-        setDebug(prev => ({
-          ...prev,
-          getUserResult: userErr
-            ? `error: ${userErr.message}`
-            : userData?.user
-              ? `✅ user: ${userData.user.email} (id: ${userData.user.id.slice(0, 8)}...)`
-              : '❌ user is null',
-        }));
-      } catch (e) {
-        setDebug(prev => ({ ...prev, getUserResult: `exception: ${e instanceof Error ? e.message : String(e)}` }));
-      }
-
-      // Step 4: Check cookies
-      setDebug(prev => ({
-        ...prev,
-        cookies: document.cookie
-          .split(';')
-          .map(c => c.trim())
-          .filter(c => c.startsWith('sb-'))
-          .map(c => `${c.split('=')[0]}=${c.split('=')[1]?.slice(0, 20)}...`)
-          .join('\n') || '(no sb-* cookies found)',
-        step: '✅ 调试完成 — 请截图后点击继续',
-      }));
-
-      setReady(true);
+      // Dev: show log and wait
+      log(`✅ 完成，目标: ${next}`);
     }
 
     handleCallback();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Production: show spinner while processing
+  if (!isDev && !failed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#080c10]">
+        <div className="text-center">
+          <div className="w-10 h-10 mx-auto rounded-full border-2 border-t-transparent animate-spin border-[#D4A843] mb-4" />
+          <p className="text-sm text-gray-500 dark:text-[#6a7a7e]">正在完成登录…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Dev mode or failed: show debug log
   return (
     <div className="min-h-screen bg-[#080c10] text-white p-4">
       <div className="max-w-lg mx-auto">
-        <h1 className="text-lg font-bold mb-4 text-[#D4A843]">🔧 OAuth Callback 调试面板</h1>
-        <p className="text-xs text-gray-400 mb-4">请截图此页面发给开发者</p>
+        <h1 className="text-lg font-bold mb-4 text-[#D4A843]">
+          {isDev ? '🔧 OAuth Callback (Dev)' : '登录遇到问题'}
+        </h1>
 
-        <div className="space-y-3 text-xs font-mono">
-          <DebugRow label="状态" value={debug.step} />
-          <DebugRow label="时间" value={debug.timestamp} />
-          <DebugRow label="code" value={debug.code} />
-          <DebugRow label="exchange 结果" value={debug.exchangeResult} />
-          <DebugRow label="exchange 错误" value={debug.exchangeError} highlight={!!debug.exchangeError} />
-          <DebugRow label="session (交换后)" value={debug.sessionAfterExchange} />
-          <DebugRow label="getSession()" value={debug.getSessionResult} />
-          <DebugRow label="getUser()" value={debug.getUserResult} />
-          <DebugRow label="sb-* cookies" value={debug.cookies} />
-          <DebugRow label="Supabase URL" value={process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/https?:\/\//, '').slice(0, 30) || 'not set'} />
-          <DebugRow label="目标页面" value={nextUrl.current} />
+        <div className="rounded-lg p-4 mb-4 font-mono text-xs space-y-1" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          {debugLog.length === 0 && <p className="text-gray-500">处理中...</p>}
+          {debugLog.map((line, i) => (
+            <p key={i} className={line.includes('❌') ? 'text-red-400' : line.includes('✅') ? 'text-green-400' : 'text-gray-300'}>
+              {line}
+            </p>
+          ))}
         </div>
 
-        {ready && (
+        {failed && (
           <button
-            onClick={() => router.replace(nextUrl.current)}
-            className="mt-6 w-full py-3 rounded-xl text-sm font-bold"
+            onClick={() => router.replace('/koala/auth')}
+            className="w-full py-3 rounded-xl text-sm font-bold"
             style={{ background: '#D4A843', color: '#080c10' }}
           >
-            继续前往 {nextUrl.current}
+            返回登录页
           </button>
         )}
 
-        {!ready && (
-          <div className="mt-6 flex items-center justify-center gap-2">
-            <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin border-[#D4A843]" />
-            <span className="text-sm text-gray-400">处理中...</span>
-          </div>
+        {isDev && !failed && debugLog.length > 0 && (
+          <button
+            onClick={() => router.replace(searchParams.get('next') || '/koala/home')}
+            className="w-full py-3 rounded-xl text-sm font-bold"
+            style={{ background: '#D4A843', color: '#080c10' }}
+          >
+            继续
+          </button>
         )}
       </div>
-    </div>
-  );
-}
-
-function DebugRow({ label, value, highlight }: { label: string; value: string | null; highlight?: boolean }) {
-  if (!value) return null;
-  return (
-    <div className="rounded-lg p-3" style={{ background: highlight ? 'rgba(176,96,64,0.2)' : 'rgba(255,255,255,0.05)' }}>
-      <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: '#6a7a7e' }}>{label}</div>
-      <div className="whitespace-pre-wrap break-all" style={{ color: highlight ? '#e88060' : '#e8e4dc' }}>{value}</div>
     </div>
   );
 }
@@ -195,7 +144,7 @@ function DebugRow({ label, value, highlight }: { label: string; value: string | 
 export default function CallbackPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[#080c10]">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#080c10]">
         <div className="w-10 h-10 mx-auto rounded-full border-2 border-t-transparent animate-spin border-[#D4A843]" />
       </div>
     }>
