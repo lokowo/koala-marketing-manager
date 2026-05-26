@@ -50,6 +50,10 @@
     {
       "path": "/api/cron/fetch-sydney-events",
       "schedule": "0 18 * * 0"
+    },
+    {
+      "path": "/api/cron/ola-evolution",
+      "schedule": "0 17 * * 0"
     }
   ]
 }
