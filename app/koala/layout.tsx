@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     default: 'Koala PhD — 找到你的澳洲博导',
     template: '%s | Koala PhD',
   },
-  description: '覆盖全澳38所大学导师与学者，一键生成套磁信。PhD 申请、奖学金、导师推荐，考拉学长帮你搞定。',
+  description: '覆盖全澳38所大学导师与学者，一键生成套磁信。PhD 申请、奖学金、导师推荐，Ola学姐帮你搞定。',
   keywords: ['澳洲PhD', 'PhD申请', '博士申请', '澳洲留学', '导师推荐', '套磁信', 'Australian PhD', 'PhD supervisor', 'scholarship Australia'],
   authors: [{ name: 'Koala PhD' }],
   creator: 'Koala PhD',

@@ -14,7 +14,7 @@ export const BRAND = {
   xiaohongshu: 'DrKoalaAU',
   instagram: 'DrKoalaAU',
   tagline: 'Koala — 陪你从申请到毕业，每一步都在。',
-  aiName: '考拉学长',
+  aiName: 'Ola学姐',
   aiSubtitle: '你的澳洲学术内线',
   positioning: '澳洲 PhD 留学 AI 智能顾问平台',
 } as const;

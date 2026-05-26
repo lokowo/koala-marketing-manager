@@ -26,7 +26,7 @@ function ChatPDF({ messages, date }: { messages: ChatMsg[]; date: string }) {
       React.createElement(Text, { style: styles.subtitle }, date),
       ...messages.map((msg, i) =>
         React.createElement(View, { key: i, style: styles.msgRow },
-          React.createElement(Text, { style: styles.roleLabel }, msg.role === 'user' ? '你' : '小欧 Ola'),
+          React.createElement(Text, { style: styles.roleLabel }, msg.role === 'user' ? '你' : '学姐小欧'),
           React.createElement(View, { style: msg.role === 'user' ? styles.userBubble : styles.assistantBubble },
             React.createElement(Text, { style: styles.msgText }, msg.content)
           )

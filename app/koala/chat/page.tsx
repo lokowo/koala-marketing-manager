@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Settings, Plus, Send, Sparkles, Mic, MicOff } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { ChevronLeft, Settings, Plus, Send, Sparkles, Mic, MicOff } from 'lucide-react';
 import VoiceInputButton from '../../components/VoiceInputButton';
 import Link from 'next/link';
 import { useAuth } from '../components/AuthContext';
@@ -649,6 +649,7 @@ export default function ChatPage() {
 
 function ChatPageInner() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { user, profile, showLogin, refreshProfile } = useAuth();
   const [mode, setMode] = useState<AIMode>(() => {
     const action = searchParams.get('action');
@@ -1667,13 +1668,19 @@ function ChatPageInner() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 bg-gray-50 dark:bg-[#0d1520] border-b border-gray-200 dark:border-white/10">
         <div className="flex items-center gap-2">
-          <OlaAvatar state="welcome" size="sm" className="flex-shrink-0" />
+          <button
+            onClick={() => router.push('/koala/home')}
+            className="lg:hidden p-1 -ml-1 text-gray-500 dark:text-[#a8b8ac]"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+          <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" className="flex-shrink-0" />
           <div className="flex flex-col">
             <span className="font-bold text-base leading-6 tracking-wide text-[#1A1A2E] dark:text-[#D4A843]">
               Ola AI
             </span>
             <span className="text-[10px] text-amber-600 dark:text-[#D4A843]/70">
-              小欧 · 在线
+              学姐小欧 · 在线
             </span>
           </div>
         </div>

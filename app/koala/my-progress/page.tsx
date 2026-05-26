@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { KoalaAvatar as KoalaAvatarImg } from '../components/KoalaAvatar';
+import { OlaAvatar } from '../components/ola/OlaAvatar';
 
 interface DashboardData {
   readinessScore: number;
@@ -231,7 +231,7 @@ export default function MyProgressPage() {
               href="/koala/chat"
               className="block text-center py-2 rounded-xl text-[11px] font-medium no-underline mt-1 bg-amber-50 dark:bg-[#D4A843]/6 text-amber-700 dark:text-[#D4A843]"
             >
-              继续和考拉学长聊 →
+              继续和Ola学姐聊 →
             </Link>
           </div>
         )}
@@ -240,10 +240,10 @@ export default function MyProgressPage() {
         {!data || score === 0 ? (
           <div className="text-center py-6">
             <div className="flex justify-center mb-3">
-              <KoalaAvatarImg size={56} />
+              <OlaAvatar assetId="b-02-confident-pose" size="lg" className="size-14" />
             </div>
             <div className="text-sm font-semibold mb-1 text-gray-900 dark:text-[#e8e4dc]">开始你的 PhD 之旅</div>
-            <p className="text-xs mb-4 text-gray-500 dark:text-[#6a7a7e]">和考拉学长聊聊，AI 会自动帮你记录进度</p>
+            <p className="text-xs mb-4 text-gray-500 dark:text-[#6a7a7e]">和Ola学姐聊聊，AI 会自动帮你记录进度</p>
             <Link
               href="/koala/chat"
               className="inline-block px-6 py-2.5 rounded-xl text-sm font-semibold no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
+import { OlaAvatar } from '../koala/components/ola/OlaAvatar';
 import { X } from 'lucide-react';
 import { useAuth } from '../koala/components/AuthContext';
 
@@ -432,7 +432,7 @@ export default function OlaFloatingMascot() {
         style={{ bottom: DEFAULT_BOTTOM, right: DEFAULT_RIGHT }}
         aria-label="召唤 Ola"
       >
-        <Image src="/images/ola/ola-welcome.svg" alt="Ola" width={24} height={24} />
+        <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" className="size-6" />
       </button>
     );
   }
@@ -516,14 +516,7 @@ export default function OlaFloatingMascot() {
             dragging.current ? '' : 'animate-[float_3s_ease-in-out_infinite]'
           }`}
         >
-          <Image
-            src="/images/ola/ola-welcome.svg"
-            alt="Ola"
-            width={mascotSize}
-            height={mascotSize}
-            className="size-full object-cover pointer-events-none"
-            draggable={false}
-          />
+          <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="md" className="size-full pointer-events-none" />
         </div>
       </div>
     </div>

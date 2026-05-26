@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Users, BookOpen, UserCircle, CreditCard, Mail, ClipboardList, FileText, Bell, Settings } from 'lucide-react';
+import { Home, Users, UserCircle, CreditCard, Mail, ClipboardList, FileText, Bell, Settings } from 'lucide-react';
 import { APP_VERSION } from '../../lib/version';
 import { useTheme } from '../../lib/theme';
 import { useAuth } from './AuthContext';
@@ -85,6 +85,12 @@ export default function BottomTabBar() {
         )}
 
         <div className="relative flex justify-around items-end px-4 pb-6 pt-2 max-w-[480px] mx-auto">
+          {/* 首页 */}
+          <Link href="/koala/home" className="flex flex-col items-center flex-1 gap-1 no-underline">
+            <Home className={`size-5 ${isActive('/koala/home') ? 'text-[#1A1A2E] dark:text-[#D4A843]' : 'text-gray-400 dark:text-[#5a6a6e]'}`} strokeWidth={isActive('/koala/home') ? 2.2 : 1.5} />
+            <span className={`text-[10px] tracking-wide ${isActive('/koala/home') ? 'text-[#1A1A2E] dark:text-[#D4A843] font-semibold' : 'text-gray-400 dark:text-[#5a6a6e]'}`}>首页</span>
+          </Link>
+
           {/* Ola AI — center raised button */}
           <Link
             href="/koala/chat"
@@ -101,23 +107,17 @@ export default function BottomTabBar() {
                 : '#1A1A2E',
             }}
           >
-            <OlaAvatar state="welcome" size="sm" className="size-7 rounded-full" />
+            <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" className="size-7 rounded-full" />
             <span className={`font-semibold text-[9px] ${olaActive ? 'text-white dark:text-[#0a0e14]' : 'text-white dark:text-[#D4A843]'}`}>Ola</span>
-          </Link>
-
-          {/* Left side: 教授库 */}
-          <Link href="/koala/professors" className="flex flex-col items-center flex-1 gap-1 no-underline">
-            <Users className={`size-5 ${isActive('/koala/professors') ? 'text-[#1A1A2E] dark:text-[#D4A843]' : 'text-gray-400 dark:text-[#5a6a6e]'}`} strokeWidth={isActive('/koala/professors') ? 2.2 : 1.5} />
-            <span className={`text-[10px] tracking-wide ${isActive('/koala/professors') ? 'text-[#1A1A2E] dark:text-[#D4A843] font-semibold' : 'text-gray-400 dark:text-[#5a6a6e]'}`}>教授库</span>
           </Link>
 
           {/* Center spacer for Ola button */}
           <div className="flex-1" />
 
-          {/* Right side: 博客 */}
-          <Link href="/koala/blog" className="flex flex-col items-center flex-1 gap-1 no-underline">
-            <BookOpen className={`size-5 ${isActive('/koala/blog') ? 'text-[#1A1A2E] dark:text-[#D4A843]' : 'text-gray-400 dark:text-[#5a6a6e]'}`} strokeWidth={isActive('/koala/blog') ? 2.2 : 1.5} />
-            <span className={`text-[10px] tracking-wide ${isActive('/koala/blog') ? 'text-[#1A1A2E] dark:text-[#D4A843] font-semibold' : 'text-gray-400 dark:text-[#5a6a6e]'}`}>博客</span>
+          {/* 教授库 */}
+          <Link href="/koala/professors" className="flex flex-col items-center flex-1 gap-1 no-underline">
+            <Users className={`size-5 ${isActive('/koala/professors') ? 'text-[#1A1A2E] dark:text-[#D4A843]' : 'text-gray-400 dark:text-[#5a6a6e]'}`} strokeWidth={isActive('/koala/professors') ? 2.2 : 1.5} />
+            <span className={`text-[10px] tracking-wide ${isActive('/koala/professors') ? 'text-[#1A1A2E] dark:text-[#D4A843] font-semibold' : 'text-gray-400 dark:text-[#5a6a6e]'}`}>教授库</span>
           </Link>
 
           {/* 我的 — opens panel */}

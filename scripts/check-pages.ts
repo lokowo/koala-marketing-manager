@@ -25,7 +25,7 @@ const PAGES: PageCheck[] = [
   {
     path: '/koala/home',
     name: '首页',
-    mustContain: ['考拉学长', '开始对话', '教授'],
+    mustContain: ['Koala PhD', '开始', '教授'],
     mustNotContain: ['Stanford', 'MIT', 'Harvard', '保录取', 'Error'],
   },
   {

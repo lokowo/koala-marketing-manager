@@ -158,7 +158,7 @@ function ResultCard({ score, answers }: { score: number; answers: Record<string,
           href="/koala/chat"
           className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-center no-underline bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
         >
-          🐨 和考拉学长聊签证规划
+          ✨ 和Ola学姐聊签证规划
         </Link>
         <Link
           href="/koala/tools"

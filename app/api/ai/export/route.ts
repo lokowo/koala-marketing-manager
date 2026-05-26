@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
       interview: '模拟面试',
     };
 
-    const exportTitle = title ?? `考拉学长对话记录 — ${modeLabel[mode] ?? mode}`;
+    const exportTitle = title ?? `Ola学姐对话记录 — ${modeLabel[mode] ?? mode}`;
     const timestamp = new Date().toLocaleDateString('zh-CN');
 
     let md = `# ${exportTitle}\n\n`;
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
     md += `---\n\n`;
 
     for (const msg of messages) {
-      const role = msg.role === 'user' ? '**你**' : '**考拉学长**';
+      const role = msg.role === 'user' ? '**你**' : '**Ola学姐**';
       md += `${role}\n\n${msg.content}\n\n---\n\n`;
     }
 
