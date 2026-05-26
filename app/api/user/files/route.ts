@@ -1,5 +1,6 @@
 import { getServerUser } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { getUserTier } from '../../../lib/services/usageTracker';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -41,6 +42,11 @@ export async function POST(req: Request) {
   try {
     const user = await getServerUser();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const tier = await getUserTier(supabaseAdmin, user.id);
+    if (tier === 'free') {
+      return Response.json({ error: '文件上传为付费功能，请升级订阅', upgrade: true }, { status: 403 });
+    }
 
     const formData = await req.formData();
     const file = formData.get('file') as File | null;

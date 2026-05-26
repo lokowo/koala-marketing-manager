@@ -10,7 +10,7 @@ import { searchProfessorsForAI, getProfessor } from '../../../lib/services/profe
 import { findOrCreateProfessor } from '../../../lib/services/professorAutoAdd';
 import type { Professor } from '../../../lib/types';
 import { getStudentContext, buildStudentContextPrompt } from '../../../lib/server/student-context';
-import { aiLimiter, safeLimit } from '../../../lib/ratelimit';
+import { aiLimiter, anonDailyLimiter, safeLimit } from '../../../lib/ratelimit';
 import { matchFAQ } from '../../../lib/ola/ola-faq';
 import { upsertSession } from '../../../lib/ola/ola-session';
 import { recordEvent } from '../../../lib/ola/ola-events';
@@ -267,6 +267,17 @@ export async function POST(request: NextRequest) {
     }
 
     const sessionId = (body.sessionId as string) || `session_${Date.now()}`;
+
+    // Anonymous daily limit: 10 requests/day per IP (backend enforcement)
+    if (!trackingUserId) {
+      const anonAllowed = await safeLimit(anonDailyLimiter, `anon:${ip}`);
+      if (!anonAllowed) {
+        return Response.json({
+          error: 'daily_limit_reached',
+          reply: '今日免费体验次数已用完，登录后可继续使用',
+        }, { status: 403 });
+      }
+    }
 
     // Daily usage check — free users limited to FREE_LIMITS.dailyAiTurns (10/day)
     if (trackingUserId) {
@@ -696,6 +707,24 @@ H指数：${prof.hIndex ?? '未知'}`;
         if (toolUseBlock && toolUseBlock.type === 'tool_use' && toolUseBlock.name === 'searchProfessors') {
           const toolInput = toolUseBlock.input as { researchArea: string; university?: string; universityGroup?: string; scholarshipRequired?: boolean; limit?: number };
 
+          // Check match usage for logged-in users
+          if (trackingUserId) {
+            try {
+              const { createClient } = await import('@supabase/supabase-js');
+              const matchDb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+              const { checkUsage: checkMatchUsage } = await import('../../../lib/services/usageTracker');
+              const matchUsage = await checkMatchUsage(matchDb, trackingUserId, 'match');
+              if (!matchUsage.allowed) {
+                return Response.json({
+                  reply: `今日教授匹配次数已用完（${matchUsage.used}/${matchUsage.limit}），升级订阅可获得更多匹配次数`,
+                  matchedProfessors: [],
+                }, { status: 200 });
+              }
+            } catch (err) {
+              console.error('[AI Chat] match usage check failed:', err);
+            }
+          }
+
           let toolResult: string;
           try {
             // Extract userId from request headers/auth if available
@@ -732,6 +761,16 @@ H指数：${prof.hIndex ?? '未知'}`;
                 query: toolInput.researchArea,
                 university: toolInput.university ?? null,
               }, trackingUserId).catch(() => {});
+
+              // Increment match usage
+              if (trackingUserId) {
+                import('@supabase/supabase-js').then(({ createClient }) => {
+                  const matchDb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+                  return import('../../../lib/services/usageTracker').then(({ incrementUsage }) =>
+                    incrementUsage(matchDb, trackingUserId!, 'match')
+                  );
+                }).catch(err => console.error('[AI Chat] match increment failed:', err));
+              }
             }
 
             if (searchResults.length === 0) {

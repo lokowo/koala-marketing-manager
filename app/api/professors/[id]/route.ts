@@ -3,6 +3,8 @@ import { getProfessor, updateProfessor, deleteProfessor } from '../../../lib/ser
 import { getServerUser } from '../../../lib/auth';
 import { logAdminAction } from '../../../lib/worklog';
 import { notifySuperAdmins } from '../../../lib/notifications';
+import { supabaseAdmin } from '../../../lib/supabase/server';
+import { getUserTier } from '../../../lib/services/usageTracker';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -10,6 +12,21 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
   const { id } = await ctx.params;
   const professor = await getProfessor(id);
   if (!professor) return Response.json({ error: 'Not found' }, { status: 404 });
+
+  let tier: string = 'free';
+  try {
+    const user = await getServerUser();
+    if (user) {
+      tier = await getUserTier(supabaseAdmin, user.id);
+    }
+  } catch { /* anonymous = free */ }
+
+  if (tier === 'free') {
+    return Response.json({
+      data: { ...professor, email: professor.email ? '升级查看邮箱' : null },
+    });
+  }
+
   return Response.json({ data: professor });
 }
 

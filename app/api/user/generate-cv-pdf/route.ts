@@ -2,6 +2,8 @@ import ReactPDF from '@react-pdf/renderer';
 import React from 'react';
 import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 import { getServerUser } from '../../../lib/auth';
+import { supabaseAdmin } from '../../../lib/supabase/server';
+import { getUserTier } from '../../../lib/services/usageTracker';
 
 const styles = StyleSheet.create({
   page: {
@@ -215,6 +217,11 @@ export async function POST(req: Request) {
   try {
     const user = await getServerUser();
     if (!user) return Response.json({ error: '请先登录' }, { status: 401 });
+
+    const tier = await getUserTier(supabaseAdmin, user.id);
+    if (tier === 'free') {
+      return Response.json({ error: 'PDF 下载为付费功能，请升级订阅', upgrade: true }, { status: 403 });
+    }
 
     const { cv, photoUrl } = await req.json() as { cv: CVData; photoUrl?: string };
 

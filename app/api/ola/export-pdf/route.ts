@@ -39,6 +39,17 @@ function ChatPDF({ messages, date }: { messages: ChatMsg[]; date: string }) {
 
 export async function POST(req: Request) {
   try {
+    const { getServerUser } = await import('../../../lib/auth');
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: '请先登录' }, { status: 401 });
+
+    const { supabaseAdmin } = await import('../../../lib/supabase/server');
+    const { getUserTier } = await import('../../../lib/services/usageTracker');
+    const tier = await getUserTier(supabaseAdmin, user.id);
+    if (tier === 'free') {
+      return Response.json({ error: 'PDF 导出为付费功能，请升级订阅', upgrade: true }, { status: 403 });
+    }
+
     const { messages } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {

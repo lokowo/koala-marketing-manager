@@ -59,7 +59,8 @@ function getApplicationTips(professor: Professor): string[] {
 
 export default function ProfessorDetailClient({ professor, papers, relatedBlogs: initialRelatedBlogs, similarProfessors }: { professor: Professor; papers: Paper[]; relatedBlogs: RelatedBlog[]; similarProfessors: SimilarProfessor[] }) {
   const router = useRouter();
-  const { user, showLogin } = useAuth();
+  const { user, profile: userProfile, showLogin } = useAuth();
+  const isPaid = userProfile?.plan_type && userProfile.plan_type !== 'free';
   const [saved, setSaved] = useState(false);
   const [savingBookmark, setSavingBookmark] = useState(false);
   const [aiSummary, setAiSummary] = useState<string | null>(professor.aiSummary ?? null);
@@ -351,9 +352,15 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs:
           <h2 className="text-xs font-semibold mb-2 text-gray-900 dark:text-[#e8e4dc]">联系方式</h2>
           <div className="space-y-2">
             {professor.email && (
-              <a href={`mailto:${professor.email}`} className="flex items-center gap-2 text-xs text-[#1A1A2E] dark:text-[#D4A843]">
-                <span>📧</span><span>{professor.email}</span>
-              </a>
+              isPaid ? (
+                <a href={`mailto:${professor.email}`} className="flex items-center gap-2 text-xs text-[#1A1A2E] dark:text-[#D4A843]">
+                  <span>📧</span><span>{professor.email}</span>
+                </a>
+              ) : (
+                <Link href="/koala/pricing" className="flex items-center gap-2 text-xs text-gray-400 dark:text-[#6a7a7e] no-underline hover:text-[#D4A843] transition-colors">
+                  <span>🔒</span><span>升级查看联系方式</span>
+                </Link>
+              )
             )}
             {professor.profileUrl && (
               <a href={professor.profileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-[#1A1A2E] dark:text-[#D4A843]">

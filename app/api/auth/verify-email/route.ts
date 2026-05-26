@@ -89,6 +89,19 @@ async function awardReferralVerificationCredits(userId: string): Promise<void> {
   const alreadyAwarded = await idempotentCheck(refId);
   if (alreadyAwarded) return;
 
+  // Anti-abuse: referrer total person cap — max 3 successful referrals
+  const { data: totalReferrals } = await db
+    .from('credit_transactions')
+    .select('id')
+    .eq('user_id', referrerId)
+    .eq('type', 'earn_referral_verify');
+
+  const totalReferralCount = totalReferrals?.length ?? 0;
+  if (totalReferralCount >= 3) {
+    console.log('[verify-email] referrer total cap reached:', referrerId, totalReferralCount, '>= 3');
+    return;
+  }
+
   // Anti-abuse: referrer monthly cap of 200 credits from referrals
   const monthStart = new Date();
   monthStart.setDate(1);
