@@ -93,7 +93,8 @@ async function getPrivilegedRole(
 
 async function getUserTier(supabase: SupabaseClient, userId: string): Promise<Tier> {
   const privileged = await getPrivilegedRole(supabase, userId);
-  if (privileged) return 'pro';
+  if (privileged === 'admin' || privileged === 'super_admin') return 'elite';
+  if (privileged === 'sales') return 'pro';
 
   const { data } = await db(supabase)
     .from('user_profiles')

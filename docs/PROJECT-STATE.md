@@ -382,7 +382,7 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 ### 销售自动 Pro 权限 ✅ 完成 (2026-05-26)
 - [x] sales_agents 表新增 is_active 布尔字段 (默认 true)
 - [x] user_roles CHECK 约束更新,增加 'sales' 角色
-- [x] usageTracker.ts: getUserTier() 对 sales/admin/super_admin 角色返回 'pro' 等级 (需 is_active=true)
+- [x] usageTracker.ts: getUserTier() 对 sales 返回 'pro',对 admin/super_admin 返回 'elite' (sales 需 is_active=true)
 - [x] usageTracker.ts: checkUsage() 对特权角色直接返回 allowed=true,跳过所有限额检查
 - [x] 教授邮箱显示、文件上传、CV PDF 导出、Ola PDF 导出均自动获得 Pro 权限 (通过 getUserTier 统一生效)
 - [x] PATCH /api/admin/sales-agents/[id] 支持 is_active 字段更新
