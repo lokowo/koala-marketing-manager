@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Copy, Mail, Save, RefreshCw, Pencil, Check, Eye, Lock, Send, Loader2, Paperclip, FileText, ChevronRight, ChevronLeft, AlertCircle, Download, X } from 'lucide-react';
 import { ProfessorPreviewCard, type ProfessorPreviewData } from './ProfessorPreviewCard';
 import { SharePosterTrigger } from '../SharePoster';
+import { useGmail } from '../GmailContext';
+import { GmailAuthPrompt } from '../GmailAuthPrompt';
 
 interface Highlight {
   text: string;
@@ -132,7 +134,8 @@ export function ColdEmailCard({
 
   // 3-step send flow
   const [sendStep, setSendStep] = useState<SendStep | null>(null);
-  const [gmailStatus, setGmailStatus] = useState<{ connected: boolean; gmail_address: string | null; token_expired?: boolean }>({ connected: false, gmail_address: null });
+  const gmail = useGmail();
+  const [showGmailPrompt, setShowGmailPrompt] = useState(false);
   const [sending, setSending] = useState(false);
   const [emailSent, setEmailSent] = useState(!!initialSentAt);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -146,11 +149,11 @@ export function ColdEmailCard({
 
   const isElite = userPlan === 'elite';
 
-  useEffect(() => {
-    fetch('/api/user/gmail/status').then(r => r.json()).then(d => {
-      setGmailStatus({ connected: d.connected ?? false, gmail_address: d.gmail_address ?? null, token_expired: d.token_expired });
-    }).catch(() => {});
-  }, []);
+  const gmailStatus = {
+    connected: gmail.connected,
+    gmail_address: gmail.gmail_address,
+    token_expired: gmail.token_expired,
+  };
 
   // Check available attachments when entering step 2
   const loadAttachmentStatus = useCallback(async () => {
@@ -324,7 +327,7 @@ export function ColdEmailCard({
       const data = await res.json();
       if (!res.ok) {
         if (data.code === 'GMAIL_NOT_CONNECTED' || data.code === 'GMAIL_TOKEN_EXPIRED') {
-          setGmailStatus({ connected: false, gmail_address: null });
+          gmail.checkStatus();
         }
         setSendError(data.error || '发送失败');
       } else {
@@ -360,6 +363,16 @@ export function ColdEmailCard({
   };
 
   const startSendFlow = () => {
+    if (!gmailStatus.connected || gmailStatus.token_expired) {
+      setShowGmailPrompt(true);
+      return;
+    }
+    setSendStep('compose');
+    setSendError(null);
+  };
+
+  const skipGmailAndSend = () => {
+    setShowGmailPrompt(false);
     setSendStep('compose');
     setSendError(null);
   };
@@ -412,6 +425,32 @@ export function ColdEmailCard({
           <button onClick={onRegenerate} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-colors">
             <RefreshCw size={12} /> 重新生成
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Gmail auth prompt (shown before entering send flow)
+  if (showGmailPrompt) {
+    return (
+      <div className="mt-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.04] shadow-sm overflow-hidden">
+        {/* Scores */}
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-white/10">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {SCORE_LABELS.map(({ key, label }) => {
+              const pct = matchScores[key];
+              const c = scoreColor(pct);
+              return (
+                <div key={key} className={`flex-1 min-w-[88px] rounded-lg border px-2.5 py-2 text-center ${c.bg} ${c.border}`}>
+                  <p className={`text-lg font-medium tabular-nums ${c.text}`}>{pct}%</p>
+                  <p className="text-[10px] leading-tight text-gray-500 dark:text-gray-400 mt-0.5">{label}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <div className="px-4 py-4">
+          <GmailAuthPrompt onSkip={skipGmailAndSend} />
         </div>
       </div>
     );
@@ -607,7 +646,7 @@ export function ColdEmailCard({
                   <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">
                     连接你的 Gmail 后，可直接从你的邮箱发送。教授看到的是你的真实邮箱地址，回复率更高。
                   </p>
-                  <a href="/api/auth/gmail/connect"
+                  <a href={gmail.connectUrl()}
                     className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-[#4285f4] text-white no-underline hover:bg-[#3367d6] transition-colors">
                     <Mail size={13} /> 连接 Gmail
                   </a>
@@ -620,7 +659,7 @@ export function ColdEmailCard({
                   <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5 mb-2">
                     <AlertCircle size={13} /> Gmail 连接已失效，可能已在 Google 设置中撤销授权
                   </p>
-                  <a href="/api/auth/gmail/connect"
+                  <a href={gmail.connectUrl()}
                     className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-[#4285f4] text-white no-underline hover:bg-[#3367d6] transition-colors">
                     重新连接 Gmail
                   </a>

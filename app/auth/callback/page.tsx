@@ -18,18 +18,34 @@ function CallbackHandler() {
     const tokenHash = searchParams.get('token_hash');
     const type = searchParams.get('type');
     const next = searchParams.get('next') || '/koala/home';
+    const ref = searchParams.get('ref') || '';
 
     async function handleCallback() {
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
           console.error('[auth-callback] exchange failed:', error.message);
+          router.replace('/koala/auth?error=oauth_failed');
+          return;
+        }
+
+        if (data?.session?.user) {
+          fetch('/api/auth/oauth-complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ref }),
+          }).catch(() => {});
         }
       } else if (tokenHash && type) {
-        await supabase.auth.verifyOtp({
+        const { error } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
           type: type as 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email',
         });
+        if (error) {
+          console.error('[auth-callback] OTP verify failed:', error.message);
+          router.replace('/koala/auth?error=verify_failed');
+          return;
+        }
       }
 
       router.replace(next);

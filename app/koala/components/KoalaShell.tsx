@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { ThemeProvider } from '../../lib/theme';
 import { AuthProvider } from './AuthContext';
+import { GmailProvider } from './GmailContext';
 import TopNavBar from './TopNavBar';
 import BottomTabBar from './BottomTabBar';
 import { OlaWidget } from './ola/OlaWidget';
@@ -42,7 +43,9 @@ export default function KoalaShell({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <ShellInner>{children}</ShellInner>
+        <GmailProvider>
+          <ShellInner>{children}</ShellInner>
+        </GmailProvider>
       </AuthProvider>
     </ThemeProvider>
   );
