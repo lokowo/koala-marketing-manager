@@ -18,6 +18,8 @@ import { detectEmotion, getEmotionPromptSuffix } from '../../../lib/ola/ola-emot
 import { getOlaPersonaPrompt } from '../../../lib/prompts/ola-persona';
 import { getDeadlineContext } from '../../../lib/ola/ola-deadlines';
 import { loadMemories, formatMemoriesForPrompt, extractMemories, saveMemories, syncToProfile } from '../../../lib/services/memoryService';
+import { logConversation, parseOlaStateTag, detectUserReaction } from '../../../lib/services/olaConversationLogger';
+import { getOrCreateMemory, updateIntimacy, updateMemoryFromConversation, buildOlaMemoryPrompt, type OlaUserMemory } from '../../../lib/services/olaMemoryService';
 
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error('[AI Chat] ANTHROPIC_API_KEY is not configured');
@@ -398,6 +400,24 @@ export async function POST(request: NextRequest) {
       extraContext += '\n\n' + memoryPrompt;
     }
 
+    // Load Ola user memory (intimacy, MBTI, personal details, memorable events)
+    let olaMemory: OlaUserMemory | null = null;
+    if (trackingUserId) {
+      try {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (url && key) {
+          const { createClient } = await import('@supabase/supabase-js');
+          const olaDb = createClient(url, key);
+          olaMemory = await getOrCreateMemory(olaDb, trackingUserId);
+          const olaMemoryPrompt = buildOlaMemoryPrompt(olaMemory);
+          extraContext += '\n\n' + olaMemoryPrompt;
+        }
+      } catch (err) {
+        console.error('[olaMemory] Failed to load, continuing without:', err);
+      }
+    }
+
     // Profile completeness check for intent-triggered collection
     const profileAlreadyCompleted = !!studentCtx?.profileCompletedAt;
     const profileComplete = profileAlreadyCompleted || (studentCtx ? (studentCtx.profileCompleteness ?? 0) >= 50 : false);
@@ -676,6 +696,7 @@ H指数：${prof.hIndex ?? '未知'}`;
       content: m.content,
     }));
 
+    const llmStartTime = Date.now();
     let rawReply = '';
     let toolSearchedProfessors: Professor[] = [];
     let toolPapersMap: Record<string, ToolPaper[]> = {};
@@ -989,6 +1010,52 @@ H指数：${prof.hIndex ?? '未知'}`;
       extractAndSaveMemories(resolvedUserId, messages, sessionId).catch(err =>
         console.error('[memory extraction] Failed:', err)
       );
+    }
+
+    // Log to ola_conversation_logs (fire-and-forget, authenticated users only)
+    {
+      const logUserId = userId || trackingUserId;
+      if (logUserId && messages.length > 0) {
+        const lastUserMsg = messages[messages.length - 1];
+        if (lastUserMsg.role === 'user') {
+          const olaTag = parseOlaStateTag(rawReply);
+          const prevMsg = messages.length >= 3 ? messages[messages.length - 3] : undefined;
+          const reaction = detectUserReaction(lastUserMsg.content, prevMsg?.role === 'assistant' ? mode : undefined);
+          logConversation({
+            userId: logUserId,
+            sessionId,
+            userMessage: lastUserMsg.content,
+            olaResponse: cleanedReply,
+            olaMode: mode,
+            emotionTag: olaTag.emotionTag,
+            imageUsed: olaTag.imageUsed,
+            userReaction: reaction,
+            responseTimeMs: Date.now() - llmStartTime,
+            triggeredBy: 'chat',
+          }).catch(err => console.error('[olaConversationLogger]', err));
+        }
+      }
+    }
+
+    // Ola memory updates: intimacy + extract personal info (fire-and-forget)
+    {
+      const memUserId = userId || trackingUserId;
+      if (memUserId && messages.length > 0) {
+        const lastUserMsg = messages[messages.length - 1];
+        if (lastUserMsg.role === 'user') {
+          const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+          const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+          if (url && key) {
+            import('@supabase/supabase-js').then(({ createClient }) => {
+              const db = createClient(url, key);
+              updateIntimacy(db, memUserId).catch(err =>
+                console.error('[olaMemory] intimacy update failed:', err));
+              updateMemoryFromConversation(db, memUserId, lastUserMsg.content, cleanedReply).catch(err =>
+                console.error('[olaMemory] memory extraction failed:', err));
+            }).catch(() => {});
+          }
+        }
+      }
     }
 
     // Increment daily chat usage for logged-in users (fire-and-forget)

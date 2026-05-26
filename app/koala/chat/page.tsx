@@ -739,6 +739,26 @@ function ChatPageInner() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, typewriterText]);
 
+  // Session-end beacon: notify backend when user leaves
+  useEffect(() => {
+    const sid = sessionIdRef.current;
+    const sendEnd = () => {
+      const payload = JSON.stringify({ sessionId: sid });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/ola/session-end', new Blob([payload], { type: 'application/json' }));
+      } else {
+        fetch('/api/ola/session-end', { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json' }, keepalive: true }).catch(() => {});
+      }
+    };
+    const onVisChange = () => { if (document.visibilityState === 'hidden') sendEnd(); };
+    document.addEventListener('visibilitychange', onVisChange);
+    window.addEventListener('beforeunload', sendEnd);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisChange);
+      window.removeEventListener('beforeunload', sendEnd);
+    };
+  }, []);
+
   // Rating idle timer: show after 5+ messages and 30s idle
   useEffect(() => {
     if (ratingShownRef.current || loading) return;
