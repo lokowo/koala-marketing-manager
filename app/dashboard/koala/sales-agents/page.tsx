@@ -8,6 +8,7 @@ interface Agent {
   referral_code: string;
   status: 'active' | 'suspended' | 'terminated';
   tier: string;
+  is_active: boolean;
   created_at: string;
   user_profiles: { display_name: string; email: string; avatar_url: string | null } | null;
 }
@@ -36,6 +37,7 @@ export default function SalesAgentsPage() {
   const [selectedUser, setSelectedUser] = useState<{ id: string; email: string } | null>(null);
   const [newTier, setNewTier] = useState('standard');
   const [creating, setCreating] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const loadAgents = useCallback(async () => {
     setLoading(true);
@@ -107,6 +109,31 @@ export default function SalesAgentsPage() {
     }
   }
 
+  async function toggleActive(agent: Agent) {
+    const next = !agent.is_active;
+    const msg = next
+      ? `确定要启用 ${agent.user_profiles?.display_name || agent.referral_code} 的 Pro 权限吗？`
+      : `确定要停用 ${agent.user_profiles?.display_name || agent.referral_code} 的 Pro 权限吗？停用后该销售将回到其原始订阅等级的限额。`;
+    if (!confirm(msg)) return;
+    setTogglingId(agent.id);
+    try {
+      const res = await fetch(`/api/admin/sales-agents/${agent.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: next }),
+      });
+      if (res.ok) {
+        loadAgents();
+      } else {
+        const err = await res.json();
+        alert(err.error || '操作失败');
+      }
+    } catch (err) {
+      alert((err as Error).message || '操作失败');
+    }
+    setTogglingId(null);
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -140,6 +167,7 @@ export default function SalesAgentsPage() {
                   <th className="text-left px-4 py-2.5 font-medium">推广码</th>
                   <th className="text-center px-4 py-2.5 font-medium">状态</th>
                   <th className="text-center px-4 py-2.5 font-medium">等级</th>
+                  <th className="text-center px-4 py-2.5 font-medium">Pro 权限</th>
                   <th className="text-left px-4 py-2.5 font-medium">创建时间</th>
                   <th className="text-center px-4 py-2.5 font-medium">ID</th>
                 </tr>
@@ -188,6 +216,15 @@ export default function SalesAgentsPage() {
                             <option key={t} value={t}>{TIER_CFG[t]?.label || t}</option>
                           ))}
                         </select>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => toggleActive(agent)}
+                          disabled={togglingId === agent.id}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${agent.is_active ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'} ${togglingId === agent.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${agent.is_active ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                        </button>
                       </td>
                       <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         {new Date(agent.created_at).toLocaleDateString('zh-CN')}

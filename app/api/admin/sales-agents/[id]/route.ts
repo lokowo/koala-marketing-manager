@@ -47,12 +47,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const { id } = await params;
     const body = await req.json();
 
-    const updates: Record<string, string> = {};
+    const updates: Record<string, unknown> = {};
     if (body.status && ['active', 'suspended', 'terminated'].includes(body.status)) {
       updates.status = body.status;
     }
     if (body.tier) {
       updates.tier = body.tier;
+    }
+    if (typeof body.is_active === 'boolean') {
+      updates.is_active = body.is_active;
     }
 
     if (Object.keys(updates).length === 0) {

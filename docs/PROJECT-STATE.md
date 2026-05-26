@@ -379,6 +379,16 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] database.types.ts 移除 user_credits 的 Row/Insert/Update 类型定义
 - [x] scripts/check-data.ts 移除 user_credits 引用
 
+### 销售自动 Pro 权限 ✅ 完成 (2026-05-26)
+- [x] sales_agents 表新增 is_active 布尔字段 (默认 true)
+- [x] user_roles CHECK 约束更新,增加 'sales' 角色
+- [x] usageTracker.ts: getUserTier() 对 sales/admin/super_admin 角色返回 'pro' 等级 (需 is_active=true)
+- [x] usageTracker.ts: checkUsage() 对特权角色直接返回 allowed=true,跳过所有限额检查
+- [x] 教授邮箱显示、文件上传、CV PDF 导出、Ola PDF 导出均自动获得 Pro 权限 (通过 getUserTier 统一生效)
+- [x] PATCH /api/admin/sales-agents/[id] 支持 is_active 字段更新
+- [x] admin 后台销售人员管理页新增 "Pro 权限" 列 + 开关按钮 (含二次确认)
+- [x] 停用后销售回到其原始 subscription tier 限额
+
 ## 待完成项目 (P4 路线图)
 
 ### 高优先级

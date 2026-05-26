@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS user_roles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role TEXT NOT NULL CHECK (role IN ('super_admin', 'admin', 'viewer')),
+  role TEXT NOT NULL CHECK (role IN ('super_admin', 'admin', 'sales', 'viewer')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id)
 );

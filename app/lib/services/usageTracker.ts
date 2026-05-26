@@ -5,6 +5,7 @@ import { type SupabaseClient } from '@supabase/supabase-js';
 type ActionType = 'chat' | 'voice' | 'match' | 'email' | 'cv' | 'research_proposal' | 'recommendation_letter';
 type Tier = 'free' | 'starter' | 'pro' | 'elite';
 type Period = 'daily' | 'monthly' | 'total';
+type PrivilegedRole = 'sales' | 'admin' | 'super_admin';
 
 interface LimitConfig {
   limit: number; // -1 = unlimited
@@ -65,7 +66,35 @@ function monthStart(): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(supabase: SupabaseClient): any { return supabase; }
 
+async function getPrivilegedRole(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<PrivilegedRole | null> {
+  const { data: roleRow } = await db(supabase)
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const role = roleRow?.role as string | null;
+  if (!role || !['sales', 'admin', 'super_admin'].includes(role)) return null;
+
+  if (role === 'sales') {
+    const { data: agent } = await db(supabase)
+      .from('sales_agents')
+      .select('is_active')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (!agent?.is_active) return null;
+  }
+
+  return role as PrivilegedRole;
+}
+
 async function getUserTier(supabase: SupabaseClient, userId: string): Promise<Tier> {
+  const privileged = await getPrivilegedRole(supabase, userId);
+  if (privileged) return 'pro';
+
   const { data } = await db(supabase)
     .from('user_profiles')
     .select('plan_type')
@@ -126,6 +155,9 @@ export async function checkUsage(
   actionType: string,
 ): Promise<{ allowed: boolean; used: number; limit: number }> {
   try {
+    const privileged = await getPrivilegedRole(supabase, userId);
+    if (privileged) return { allowed: true, used: 0, limit: -1 };
+
     const tier = await getUserTier(supabase, userId);
     const action = actionType as ActionType;
     const config = TIER_LIMITS[tier]?.[action];
@@ -193,4 +225,4 @@ export async function incrementUsage(
   }
 }
 
-export { TIER_LIMITS, getUserTier, type Tier, type ActionType };
+export { TIER_LIMITS, getUserTier, getPrivilegedRole, type Tier, type ActionType };
