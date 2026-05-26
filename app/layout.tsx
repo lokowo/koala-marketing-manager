@@ -41,6 +41,10 @@ export const metadata: Metadata = {
     description: '覆盖全澳38所大学教授，AI导师匹配，一键生成套磁信。',
     images: ['/og-image.png'],
   },
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-icon.png',
+  },
 };
 
 export default function RootLayout({
