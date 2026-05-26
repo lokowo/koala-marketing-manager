@@ -1,0 +1,381 @@
+import Anthropic from '@anthropic-ai/sdk';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface OlaUserMemory {
+  id: string;
+  user_id: string;
+  intimacy_score: number;
+  total_conversations: number;
+  first_chat_at: string | null;
+  last_chat_at: string | null;
+  consecutive_days: number;
+  mbti_type: string | null;
+  mbti_answers: Record<string, string> | null;
+  language_style: MbtiLanguageStyle | null;
+  nickname: string | null;
+  gender: string | null;
+  age: number | null;
+  city: string | null;
+  hobbies: string[] | null;
+  pets: string | null;
+  relationship_status: string | null;
+  emotional_state: string | null;
+  life_details: string | null;
+  memorable_events: MemorableEvent[];
+  subscription_prompts_shown: number;
+  subscription_prompts_ignored: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MemorableEvent {
+  event: string;
+  date: string;
+  follow_up: boolean;
+}
+
+export interface MbtiLanguageStyle {
+  empathy: number;
+  directness: number;
+  humor: number;
+  formality: number;
+  detail: number;
+}
+
+// ─── MBTI System ────────────────────────────────────────────────────────────
+
+export const MBTI_QUESTIONS = [
+  { id: 'EI', question: '你周末是喜欢出去浪还是在家待着？', dimension: 'E/I' as const },
+  { id: 'TF', question: '做决定的时候你是跟着感觉走还是列pros and cons？', dimension: 'T/F' as const },
+  { id: 'JP', question: '你是提前规划型还是随机应变型？', dimension: 'J/P' as const },
+  { id: 'SN', question: '聊天的时候你喜欢聊具体的事还是聊想法和可能性？', dimension: 'S/N' as const },
+] as const;
+
+const MBTI_STYLES: Record<string, MbtiLanguageStyle> = {
+  INTJ: { empathy: 0.3, directness: 0.9, humor: 0.2, formality: 0.7, detail: 0.9 },
+  INTP: { empathy: 0.3, directness: 0.7, humor: 0.5, formality: 0.4, detail: 0.9 },
+  ENTJ: { empathy: 0.4, directness: 0.9, humor: 0.3, formality: 0.6, detail: 0.8 },
+  ENTP: { empathy: 0.4, directness: 0.7, humor: 0.8, formality: 0.3, detail: 0.6 },
+  INFJ: { empathy: 0.9, directness: 0.4, humor: 0.4, formality: 0.5, detail: 0.7 },
+  INFP: { empathy: 0.9, directness: 0.3, humor: 0.5, formality: 0.2, detail: 0.4 },
+  ENFJ: { empathy: 0.9, directness: 0.6, humor: 0.6, formality: 0.5, detail: 0.5 },
+  ENFP: { empathy: 0.8, directness: 0.4, humor: 0.9, formality: 0.2, detail: 0.3 },
+  ISTJ: { empathy: 0.3, directness: 0.8, humor: 0.1, formality: 0.8, detail: 0.9 },
+  ISFJ: { empathy: 0.8, directness: 0.4, humor: 0.2, formality: 0.7, detail: 0.7 },
+  ESTJ: { empathy: 0.3, directness: 0.9, humor: 0.3, formality: 0.8, detail: 0.8 },
+  ESFJ: { empathy: 0.8, directness: 0.5, humor: 0.5, formality: 0.6, detail: 0.5 },
+  ISTP: { empathy: 0.2, directness: 0.8, humor: 0.4, formality: 0.3, detail: 0.7 },
+  ISFP: { empathy: 0.7, directness: 0.3, humor: 0.4, formality: 0.2, detail: 0.4 },
+  ESTP: { empathy: 0.3, directness: 0.8, humor: 0.7, formality: 0.2, detail: 0.5 },
+  ESFP: { empathy: 0.6, directness: 0.5, humor: 0.9, formality: 0.1, detail: 0.3 },
+};
+
+export function getMbtiLanguageStyle(mbtiType: string): MbtiLanguageStyle | null {
+  return MBTI_STYLES[mbtiType.toUpperCase()] ?? null;
+}
+
+// ─── Core Service Functions ─────────────────────────────────────────────────
+
+export async function getOrCreateMemory(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<OlaUserMemory> {
+  const { data } = await supabase
+    .from('ola_user_memory' as 'user_profiles')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (data) return data as unknown as OlaUserMemory;
+
+  const { data: created, error } = await supabase
+    .from('ola_user_memory' as 'user_profiles')
+    .insert({ user_id: userId } as never)
+    .select('*')
+    .single();
+
+  if (error) throw new Error(`Failed to create ola_user_memory: ${error.message}`);
+  return created as unknown as OlaUserMemory;
+}
+
+export async function updateIntimacy(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  const memory = await getOrCreateMemory(supabase, userId);
+  const now = new Date();
+  const lastChat = memory.last_chat_at ? new Date(memory.last_chat_at) : null;
+
+  let consecutiveDays = memory.consecutive_days;
+  if (lastChat) {
+    const diffMs = now.getTime() - lastChat.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    if (diffHours >= 20 && diffHours <= 48) {
+      consecutiveDays += 1;
+    } else if (diffHours > 48) {
+      consecutiveDays = 1;
+    }
+  } else {
+    consecutiveDays = 1;
+  }
+
+  const updates: Record<string, unknown> = {
+    intimacy_score: memory.intimacy_score + 1,
+    total_conversations: memory.total_conversations + 1,
+    last_chat_at: now.toISOString(),
+    consecutive_days: consecutiveDays,
+    updated_at: now.toISOString(),
+  };
+
+  if (!memory.first_chat_at) {
+    updates.first_chat_at = now.toISOString();
+  }
+
+  await supabase
+    .from('ola_user_memory' as 'user_profiles')
+    .update(updates as never)
+    .eq('user_id', userId);
+}
+
+export async function addMemorableEvent(
+  supabase: SupabaseClient,
+  userId: string,
+  event: MemorableEvent,
+): Promise<void> {
+  const memory = await getOrCreateMemory(supabase, userId);
+  const events = [...(memory.memorable_events || []), event];
+
+  await supabase
+    .from('ola_user_memory' as 'user_profiles')
+    .update({
+      memorable_events: events,
+      updated_at: new Date().toISOString(),
+    } as never)
+    .eq('user_id', userId);
+}
+
+// ─── AI-Powered Memory Extraction ──────────────────────────────────────────
+
+const EXTRACTION_PROMPT = `你是 Ola 学姐的记忆模块。从对话中提取用户的个人信息，用于让学姐"记住"这个朋友。
+
+只提取用户（role=user）明确说出的信息。不推测、不编造。
+
+返回纯 JSON（不要 markdown），格式：
+{
+  "nickname": "用户提到的昵称或希望被叫的名字，如没有则null",
+  "gender": "male/female/other，如没有则null",
+  "age": 数字或null,
+  "city": "用户所在城市，如没有则null",
+  "hobbies": ["爱好列表"] 或 null,
+  "pets": "宠物描述，如没有则null",
+  "relationship_status": "感情状态，如没有则null",
+  "emotional_state": "当前情绪状态描述，如没有则null",
+  "life_details": "其他生活细节摘要，如没有则null",
+  "new_events": [{"event":"事件描述","follow_up":true/false}] 或 []
+}
+
+只包含本轮对话中新出现的信息，已知信息不要重复。null表示没检测到。
+new_events 中 follow_up=true 表示学姐下次应该主动关心的事（如考试、面试、提交deadline）。`;
+
+export async function updateMemoryFromConversation(
+  supabase: SupabaseClient,
+  userId: string,
+  userMessage: string,
+  olaResponse: string,
+): Promise<void> {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+  const result = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 400,
+    system: EXTRACTION_PROMPT,
+    messages: [{
+      role: 'user',
+      content: `用户说："${userMessage}"\n\nOla回复："${olaResponse}"`,
+    }],
+  });
+
+  const text = (result.content[0] as { type: 'text'; text: string }).text.trim();
+  let extracted: Record<string, unknown>;
+  try {
+    extracted = JSON.parse(text.replace(/```json|```/g, ''));
+  } catch {
+    return;
+  }
+
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const fields = ['nickname', 'gender', 'city', 'pets', 'relationship_status', 'emotional_state', 'life_details'] as const;
+  for (const f of fields) {
+    if (extracted[f] !== null && extracted[f] !== undefined) {
+      updates[f] = extracted[f];
+    }
+  }
+  if (typeof extracted.age === 'number') updates.age = extracted.age;
+  if (Array.isArray(extracted.hobbies) && extracted.hobbies.length > 0) {
+    const memory = await getOrCreateMemory(supabase, userId);
+    const existing = memory.hobbies ?? [];
+    const merged = [...new Set([...existing, ...extracted.hobbies as string[]])];
+    updates.hobbies = merged;
+  }
+
+  const newEvents = extracted.new_events as MemorableEvent[] | undefined;
+  if (Array.isArray(newEvents) && newEvents.length > 0) {
+    const memory = await getOrCreateMemory(supabase, userId);
+    const events = [
+      ...(memory.memorable_events || []),
+      ...newEvents.map(e => ({ ...e, date: new Date().toISOString().split('T')[0] })),
+    ];
+    updates.memorable_events = events;
+  }
+
+  if (Object.keys(updates).length > 1) {
+    await supabase
+      .from('ola_user_memory' as 'user_profiles')
+      .update(updates as never)
+      .eq('user_id', userId);
+  }
+}
+
+// ─── Prompt Builder ─────────────────────────────────────────────────────────
+
+export function buildOlaMemoryPrompt(memory: OlaUserMemory): string {
+  const parts: string[] = ['## 🧠 学姐的记忆（关于这位用户）\n'];
+
+  // Basic info
+  const basics: string[] = [];
+  if (memory.nickname) basics.push(`称呼：${memory.nickname}`);
+  if (memory.gender) basics.push(`性别：${memory.gender === 'male' ? '男' : memory.gender === 'female' ? '女' : memory.gender}`);
+  if (memory.age) basics.push(`年龄：${memory.age}岁`);
+  if (memory.city) basics.push(`所在城市：${memory.city}`);
+  if (memory.hobbies?.length) basics.push(`爱好：${memory.hobbies.join('、')}`);
+  if (memory.pets) basics.push(`宠物：${memory.pets}`);
+  if (memory.relationship_status) basics.push(`感情状态：${memory.relationship_status}`);
+  if (memory.life_details) basics.push(`生活细节：${memory.life_details}`);
+  if (basics.length > 0) {
+    parts.push(`你记得这个用户的信息：\n${basics.join('\n')}`);
+  }
+
+  // MBTI
+  if (memory.mbti_type && memory.language_style) {
+    const style = memory.language_style;
+    const styleDesc: string[] = [];
+    if (style.empathy >= 0.7) styleDesc.push('注重共情和感受');
+    else if (style.empathy <= 0.3) styleDesc.push('偏好理性分析');
+    if (style.directness >= 0.7) styleDesc.push('喜欢直接了当');
+    else if (style.directness <= 0.3) styleDesc.push('喜欢委婉表达');
+    if (style.humor >= 0.7) styleDesc.push('爱开玩笑');
+    if (style.formality >= 0.7) styleDesc.push('偏正式');
+    else if (style.formality <= 0.3) styleDesc.push('偏随意口语化');
+    if (style.detail >= 0.7) styleDesc.push('喜欢详细信息');
+    else if (style.detail <= 0.3) styleDesc.push('喜欢简洁概括');
+
+    parts.push(`用户的 MBTI 是 ${memory.mbti_type}，语言风格偏好：${styleDesc.join('，')}`);
+    parts.push(`语言风格参数：empathy=${style.empathy} directness=${style.directness} humor=${style.humor} formality=${style.formality} detail=${style.detail}`);
+    parts.push('请根据以上参数微调你的回复风格——共情高就多共情，直接度高就少绕弯。');
+  }
+
+  // Intimacy
+  parts.push(`\n亲密度：${memory.intimacy_score}（总对话次数：${memory.total_conversations}）`);
+  if (memory.consecutive_days >= 7) {
+    parts.push(`连续对话天数：${memory.consecutive_days}天 🔥`);
+  }
+  if (memory.last_chat_at) {
+    parts.push(`上次聊天：${memory.last_chat_at}`);
+  }
+
+  // Intimacy-based behavior
+  if (memory.intimacy_score > 50) {
+    parts.push('\n【亲密度>50 解锁】可以使用更亲密的称呼（宝、亲爱的、小笨蛋），分享更多私人生活，偶尔撒娇。');
+  } else if (memory.intimacy_score > 20) {
+    parts.push('\n【亲密度>20】可以称呼"宝子""姐妹"，适度分享生活，语气更随意。');
+  }
+
+  // Proactive care triggers
+  const proactiveParts: string[] = [];
+
+  if (memory.last_chat_at) {
+    const lastChat = new Date(memory.last_chat_at);
+    const now = new Date();
+    const daysDiff = (now.getTime() - lastChat.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysDiff > 2) {
+      proactiveParts.push(`用户已经 ${Math.floor(daysDiff)} 天没来了——第一句主动关心："你去哪了！学姐等你好久了～最近忙什么呢？"`);
+    }
+  }
+
+  const followUpEvents = (memory.memorable_events || []).filter(e => e.follow_up);
+  if (followUpEvents.length > 0) {
+    const eventList = followUpEvents.map(e => `「${e.event}」(${e.date})`).join('、');
+    proactiveParts.push(`需要跟进的事件：${eventList}——第一句就主动问这些事的进展！`);
+  }
+
+  if (memory.consecutive_days >= 7) {
+    proactiveParts.push(`用户已经连续来了 ${memory.consecutive_days} 天——适时夸奖："你已经连续来了${memory.consecutive_days}天！学姐好感动～"`);
+  }
+
+  if (memory.emotional_state) {
+    proactiveParts.push(`上次检测到用户情绪：${memory.emotional_state}——注意关心情绪变化`);
+  }
+
+  if (proactiveParts.length > 0) {
+    parts.push(`\n## 🫶 主动关心指令\n${proactiveParts.join('\n')}`);
+  }
+
+  // MBTI collection hint
+  if (!memory.mbti_type) {
+    const answeredCount = memory.mbti_answers ? Object.keys(memory.mbti_answers).length : 0;
+    if (answeredCount < 4) {
+      const nextQ = MBTI_QUESTIONS[answeredCount];
+      parts.push(`\n## MBTI 问卷进度\n还没完成性格测试（已答 ${answeredCount}/4）。如果对话自然合适（闲聊中），可以随口问一句：\n"对了，${nextQ.question}"\n不要强行问，不要一次问多个。如果用户在讨论学术问题就不要岔开话题。`);
+    }
+  }
+
+  return parts.join('\n');
+}
+
+// ─── MBTI Answer Processing ─────────────────────────────────────────────────
+
+export async function processMbtiAnswer(
+  supabase: SupabaseClient,
+  userId: string,
+  questionId: string,
+  answer: string,
+): Promise<{ mbtiType: string | null; allAnswered: boolean }> {
+  const memory = await getOrCreateMemory(supabase, userId);
+  const answers = { ...(memory.mbti_answers || {}), [questionId]: answer };
+
+  const updates: Record<string, unknown> = {
+    mbti_answers: answers,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (Object.keys(answers).length >= 4) {
+    const mbtiType = deriveMbtiType(answers);
+    const style = getMbtiLanguageStyle(mbtiType);
+    updates.mbti_type = mbtiType;
+    updates.language_style = style;
+
+    await supabase
+      .from('ola_user_memory' as 'user_profiles')
+      .update(updates as never)
+      .eq('user_id', userId);
+
+    return { mbtiType, allAnswered: true };
+  }
+
+  await supabase
+    .from('ola_user_memory' as 'user_profiles')
+    .update(updates as never)
+    .eq('user_id', userId);
+
+  return { mbtiType: null, allAnswered: false };
+}
+
+function deriveMbtiType(answers: Record<string, string>): string {
+  const ei = /出去|外面|社交|浪|party|朋友/i.test(answers.EI || '') ? 'E' : 'I';
+  const tf = /感觉|直觉|心|feel/i.test(answers.TF || '') ? 'F' : 'T';
+  const jp = /规划|计划|提前|plan/i.test(answers.JP || '') ? 'J' : 'P';
+  const sn = /想法|可能性|未来|idea|abstract/i.test(answers.SN || '') ? 'N' : 'S';
+  return `${ei}${sn}${tf}${jp}`;
+}
