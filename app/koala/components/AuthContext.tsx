@@ -407,11 +407,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    async function init() {
+      // Safety net: if Supabase redirected here with ?code= (redirect URL whitelist
+      // didn't match our callback page), exchange the code for a session right here.
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+      if (code && !url.pathname.includes('/auth/callback')) {
+        try {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (!error) {
+            // Clean the code from URL without reload
+            url.searchParams.delete('code');
+            window.history.replaceState({}, '', url.pathname + url.search);
+            // Fire-and-forget profile init
+            const ref = url.searchParams.get('ref') || '';
+            fetch('/api/auth/oauth-complete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ref }),
+            }).catch(() => {});
+          }
+        } catch {
+          // code was invalid or already used — ignore
+        }
+      }
+
+      const { data } = await supabase.auth.getUser();
       setUser(data.user ?? null);
       if (data.user) loadProfile();
       setAuthLoading(false);
-    });
+    }
+    init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
