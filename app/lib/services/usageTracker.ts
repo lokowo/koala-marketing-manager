@@ -76,7 +76,11 @@ async function getPrivilegedRole(
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (error || !roleRow) return null;
+  if (error) {
+    console.error('[getPrivilegedRole] query failed for', userId, error.message);
+    return null;
+  }
+  if (!roleRow) return null;
 
   const role = roleRow.role as string;
   if (!['sales', 'admin', 'super_admin'].includes(role)) return null;
