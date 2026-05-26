@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
-import { requireAdmin } from '../../../../lib/auth';
+import { requireAdmin, getServerUser } from '../../../../lib/auth';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
@@ -65,26 +65,37 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   return Response.json({ savedCount, outreachCount, students, outreachList });
 }
 
+const ALLOWED_TYPES = [
+  'viewed', 'saved', 'searched', 'matched',
+  'email_generated', 'email_sent', 'replied',
+  'rejected', 'followup', 'interview_prep', 'contacted',
+] as const;
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: professorId } = await params;
 
+  const user = await getServerUser();
+  if (!user) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
-    const { type, userId, notes } = body as {
-      type: 'viewed' | 'saved' | 'searched' | 'matched' | 'email_generated' | 'email_sent' | 'rejected' | 'contacted' | 'interview_prep';
-      userId?: string;
-      notes?: string;
-    };
+    const { type, notes } = body as { type: string; notes?: string };
 
     if (!type) {
       return Response.json({ error: 'Missing interaction type' }, { status: 400 });
+    }
+
+    if (!ALLOWED_TYPES.includes(type as typeof ALLOWED_TYPES[number])) {
+      return Response.json({ error: `Invalid interaction type: ${type}` }, { status: 400 });
     }
 
     const { error } = await db
       .from('professor_interactions')
       .insert({
         professor_id: professorId,
-        user_id: userId || null,
+        user_id: user.id,
         interaction_type: type,
         notes: notes || null,
       });

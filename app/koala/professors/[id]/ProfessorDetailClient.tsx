@@ -71,12 +71,13 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs:
   const [creditShortfall, setCreditShortfall] = useState<{ needed: number; balance: number } | null>(null);
 
   useEffect(() => {
+    if (!user) return;
     fetch(`/api/professors/${professor.id}/interactions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'viewed', userId: user?.id }),
+      body: JSON.stringify({ type: 'viewed' }),
     }).catch(() => {});
-  }, [professor.id, user?.id]);
+  }, [professor.id, user]);
 
   useEffect(() => {
     if (!user) return;
