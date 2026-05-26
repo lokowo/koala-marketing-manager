@@ -1,5 +1,5 @@
 # Koala PhD 项目状态文档
-> 最后更新: 2026-05-26 | 版本: V4.8
+> 最后更新: 2026-05-26 | 版本: V4.9
 
 ## 项目概览
 **Koala PhD（考拉博士）** — 澳洲 PhD 留学 AI 智能顾问平台
@@ -354,6 +354,15 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] coldEmailService 移除"有积分就顺手扣"逻辑, 改为仅在月额度用完时扣积分
 - [x] 批量路由 generate-cold-emails-batch 逐封计费, 额度/积分耗尽时已生成的正常返回 + 剩余明确标记 skipped + 中断循环
 - [x] 单封路由 generate-cold-email 移除冗余 checkUsage 预检, 计费由 service 层统一处理, billingExhausted 映射为 402
+
+### 免费用户权限漏洞修复 ✅ 完成 (2026-05-26)
+- [x] 教授邮箱保护: GET /api/professors/[id] 检查 tier, free 用户 email 返回 "升级查看邮箱"; 前端显示 "🔒 升级查看联系方式"
+- [x] Match 用量执行: /api/ai/chat searchProfessors tool_use 前 checkUsage('match'), 成功后 incrementUsage; free=3次/天
+- [x] 简历解析限制: /api/user/profile/parse 增加 tier 检查, free=2次/天, 新增 parse_used 列
+- [x] 匿名 AI 后端限流: 新增 anonDailyLimiter (Upstash Redis, 10次/天/IP), 防止绕过客户端 localStorage 限制
+- [x] FREE_LIMITS 标志执行: canUploadFiles 阻止 free 用户上传文件; canDownloadPdf 阻止 free 用户下载 CV PDF 和导出对话 PDF
+- [x] Ola 导出 PDF 增加 auth 检查 (之前完全无 auth)
+- [x] 推荐上限: awardReferralVerificationCredits 总推荐人数 >=3 后不再发放积分
 
 ### Phase 2 转化引导 UI ✅ 完成 (2026-05-26)
 - [x] UpgradePrompt 组件升级: 支持自定义 message + 多 CTA 按钮配置, 深色模式金色主题
