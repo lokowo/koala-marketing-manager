@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     console.log(`[auto-illustrate] Starting for post ${postId}, ${imageCount} images`);
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY!, timeout: 150000 });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY!, timeout: 240000 });
 
     // Step 1: Get image placement suggestions from Haiku
     console.log('[auto-illustrate] Step 1: Getting placement suggestions...');
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
           prompt: imgPrompt,
           n: 1,
           size: '1024x1024',
-          quality: 'high',
+          quality: 'low',
         }));
 
         const item = response.data?.[0];

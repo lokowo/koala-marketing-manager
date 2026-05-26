@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'postId and promptEn required' }, { status: 400 });
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY!, timeout: 150000 });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY!, timeout: 240000 });
     const imgPrompt = `Editorial photograph captured on Kodak Portra 400 film with a Hasselblad 500C medium format camera. Natural ambient lighting, subtle film grain, organic color rendering with warm undertones. Shallow depth of field, f/2.8. No AI artifacts, no synthetic textures, no CGI elements. Subject: ${promptEn}. Style: photojournalistic documentary aesthetic, as published in National Geographic or The New York Times Magazine. Absolutely NO text, NO words, NO letters, NO watermarks anywhere in the image.`;
 
     let imageB64: string | undefined;
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
         prompt: imgPrompt,
         n: 1,
         size: '1024x1024',
-        quality: 'high',
+        quality: 'low',
       }));
       const item = response.data?.[0];
       if (item?.b64_json) {
