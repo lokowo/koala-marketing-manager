@@ -43,6 +43,7 @@
     "framer-motion": "^12.38.0",
     "html2canvas": "^1.4.1",
     "inngest": "^4.4.0",
+    "liblibai": "^0.0.11",
     "lucide-react": "^1.12.0",
     "marked": "^18.0.3",
     "next": "16.2.4",
