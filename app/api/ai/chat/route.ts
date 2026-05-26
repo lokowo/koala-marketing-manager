@@ -20,6 +20,7 @@ import { getDeadlineContext } from '../../../lib/ola/ola-deadlines';
 import { loadMemories, formatMemoriesForPrompt, extractMemories, saveMemories, syncToProfile } from '../../../lib/services/memoryService';
 import { logConversation, parseOlaStateTag, detectUserReaction } from '../../../lib/services/olaConversationLogger';
 import { getOrCreateMemory, updateIntimacy, updateMemoryFromConversation, buildOlaMemoryPrompt, type OlaUserMemory } from '../../../lib/services/olaMemoryService';
+import { buildLocalKnowledgePrompt } from '../../../lib/services/olaLocalKnowledgeService';
 
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error('[AI Chat] ANTHROPIC_API_KEY is not configured');
@@ -416,6 +417,21 @@ export async function POST(request: NextRequest) {
       } catch (err) {
         console.error('[olaMemory] Failed to load, continuing without:', err);
       }
+    }
+
+    // Load local knowledge (calendar, events, venues, time-based greeting)
+    try {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (url && key) {
+        const { createClient } = await import('@supabase/supabase-js');
+        const localDb = createClient(url, key);
+        const userCity = olaMemory?.city ?? 'sydney';
+        const localPrompt = await buildLocalKnowledgePrompt(localDb, userCity);
+        if (localPrompt) extraContext += '\n\n' + localPrompt;
+      }
+    } catch (err) {
+      console.error('[olaLocalKnowledge] Failed to load, continuing without:', err);
     }
 
     // Profile completeness check for intent-triggered collection
