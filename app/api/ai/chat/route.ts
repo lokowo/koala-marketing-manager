@@ -288,7 +288,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Daily usage check — free users limited to FREE_LIMITS.dailyAiTurns (10/day)
-    console.log('[AI Chat] trackingUserId resolved:', trackingUserId, '| from body.userId:', body.userId ?? 'none', '| from auth:', trackingUserId && !body.userId ? 'yes' : 'no');
     if (trackingUserId) {
       try {
         const { createClient } = await import('@supabase/supabase-js');
@@ -298,7 +297,6 @@ export async function POST(request: NextRequest) {
         );
         const { checkUsage } = await import('../../../lib/services/usageTracker');
         const usage = await checkUsage(usageDb, trackingUserId, 'chat');
-        console.log('[AI Chat] usage result for', trackingUserId, ':', JSON.stringify(usage));
         if (!usage.allowed) {
           return Response.json(
             {

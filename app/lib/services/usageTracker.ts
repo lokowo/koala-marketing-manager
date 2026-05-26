@@ -76,15 +76,10 @@ async function getPrivilegedRole(
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (error) {
-    console.error('[getPrivilegedRole] query error for userId:', userId, error);
-    return null;
-  }
+  if (error || !roleRow) return null;
 
-  const role = roleRow?.role as string | null;
-  console.log('[getPrivilegedRole] userId:', userId, '| roleRow:', JSON.stringify(roleRow), '| role:', role);
-
-  if (!role || !['sales', 'admin', 'super_admin'].includes(role)) return null;
+  const role = roleRow.role as string;
+  if (!['sales', 'admin', 'super_admin'].includes(role)) return null;
 
   if (role === 'sales') {
     const { data: agent } = await db(supabase)
@@ -163,10 +158,6 @@ export async function checkUsage(
   actionType: string,
 ): Promise<{ allowed: boolean; used: number; limit: number }> {
   try {
-    const privileged = await getPrivilegedRole(supabase, userId);
-    console.log('[checkUsage] userId:', userId, '| action:', actionType, '| privilegedRole:', privileged);
-    if (privileged) return { allowed: true, used: 0, limit: -1 };
-
     const tier = await getUserTier(supabase, userId);
     const action = actionType as ActionType;
     const config = TIER_LIMITS[tier]?.[action];
