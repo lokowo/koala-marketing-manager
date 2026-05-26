@@ -22,19 +22,31 @@ function CallbackHandler() {
 
     async function handleCallback() {
       if (code) {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          console.error('[auth-callback] exchange failed:', error.message);
-          router.replace('/koala/auth?error=oauth_failed');
-          return;
+        let exchangeOk = false;
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            console.warn('[auth-callback] exchange failed:', error.message);
+          } else {
+            exchangeOk = true;
+            if (data?.session?.user) {
+              fetch('/api/auth/oauth-complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ref }),
+              }).catch(() => {});
+            }
+          }
+        } catch (e) {
+          console.warn('[auth-callback] exchange exception:', e);
         }
 
-        if (data?.session?.user) {
-          fetch('/api/auth/oauth-complete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ref }),
-          }).catch(() => {});
+        if (!exchangeOk) {
+          const { data: fallback } = await supabase.auth.getSession();
+          if (!fallback?.session) {
+            router.replace('/koala/auth?error=oauth_failed');
+            return;
+          }
         }
       } else if (tokenHash && type) {
         const { error } = await supabase.auth.verifyOtp({

@@ -38,11 +38,37 @@ function CallbackHandler() {
       log(`cookie domain 检查: ${document.cookie.split(';').filter(c => c.trim().startsWith('sb-')).length} 个 sb-* cookie`);
 
       // Exchange code for session
+      let exchangeOk = false;
       try {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error) {
-          log(`❌ exchange 失败: ${error.message}`);
+          log(`⚠️ exchange 失败: ${error.message}`);
+        } else {
+          exchangeOk = true;
+          log(`✅ exchange 成功: ${data.session?.user?.email || 'no email'}`);
+
+          if (data?.session?.user) {
+            fetch('/api/auth/oauth-complete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ref }),
+            }).catch(() => {});
+          }
+        }
+      } catch (e) {
+        log(`⚠️ exchange 异常: ${e instanceof Error ? e.message : String(e)}`);
+      }
+
+      // If exchange failed, check if session exists anyway (safety net in AuthContext may have handled it)
+      if (!exchangeOk) {
+        log('🔍 exchange 失败，检查 getSession 是否已有 session...');
+        const { data: fallback } = await supabase.auth.getSession();
+        if (fallback?.session) {
+          log(`✅ getSession 已有 session: ${fallback.session.user.email}`);
+          exchangeOk = true;
+        } else {
+          log('❌ getSession 也无 session，登录失败');
           if (isDev) {
             setFailed(true);
             return;
@@ -50,29 +76,7 @@ function CallbackHandler() {
           router.replace('/koala/auth?error=oauth_failed');
           return;
         }
-
-        log(`✅ exchange 成功: ${data.session?.user?.email || 'no email'}`);
-
-        if (data?.session?.user) {
-          fetch('/api/auth/oauth-complete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ref }),
-          }).catch(() => {});
-        }
-      } catch (e) {
-        log(`❌ exchange 异常: ${e instanceof Error ? e.message : String(e)}`);
-        if (isDev) {
-          setFailed(true);
-          return;
-        }
-        router.replace('/koala/auth?error=oauth_failed');
-        return;
       }
-
-      // Verify session is readable
-      const { data: sessionData } = await supabase.auth.getSession();
-      log(sessionData?.session ? `✅ getSession 有效` : `⚠️ getSession 为空`);
 
       // Production: auto-redirect
       if (!isDev) {
