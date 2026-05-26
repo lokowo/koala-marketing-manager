@@ -100,6 +100,10 @@ function isMobile() {
   return window.innerWidth < 1024;
 }
 
+function vibrate(pattern: number | number[]) {
+  try { navigator?.vibrate?.(pattern); } catch {}
+}
+
 function isInCooldown(): boolean {
   if (typeof window === 'undefined') return false;
   const lastDismiss = localStorage.getItem(COOLDOWN_KEY);
@@ -314,7 +318,7 @@ export default function OlaFloatingMascot() {
           x: startX - currentPos.x,
           y: startY - currentPos.y,
         };
-        try { navigator.vibrate?.(50); } catch {}
+        vibrate(30);
         showDragBubble();
         (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
       }, LONG_PRESS_MS);
@@ -343,9 +347,8 @@ export default function OlaFloatingMascot() {
     const ny = Math.max(0, Math.min(window.innerHeight - mascotSize, e.clientY - dragOffset.current.y));
     setPos({ x: nx, y: ny });
 
-    // Vibrate periodically during mobile drag
     if (isMobile()) {
-      try { navigator.vibrate?.(50); } catch {}
+      vibrate(30);
     }
 
     // Show random drag bubble occasionally
@@ -409,6 +412,7 @@ export default function OlaFloatingMascot() {
 
   const handleClose = useCallback(() => {
     if (farewellVisible) return;
+    vibrate([50, 50, 50]);
     setFarewellVisible(true);
     setShowBubble(false);
     setInteractBubbleText(null);
@@ -453,6 +457,7 @@ export default function OlaFloatingMascot() {
 
   const handleMascotClick = useCallback(() => {
     if (hasDragged.current) return;
+    vibrate(50);
     triggerBounce();
     showTapChatBubble();
   }, [triggerBounce, showTapChatBubble]);
