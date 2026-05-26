@@ -1,18 +1,17 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { ThemeProvider } from '../../lib/theme';
 import { AuthProvider } from './AuthContext';
 import { GmailProvider } from './GmailContext';
 import TopNavBar from './TopNavBar';
 import BottomTabBar from './BottomTabBar';
-import { OlaWidget } from './ola/OlaWidget';
+import OlaFloatingMascot from '../../components/OlaFloatingMascot';
 import { OlaTriggerEngine } from './ola/OlaTriggerEngine';
 
 function ShellInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const onChatPage = pathname.startsWith('/koala/chat');
   const onAuthPage = pathname.startsWith('/koala/auth');
 
@@ -29,11 +28,15 @@ function ShellInner({ children }: { children: ReactNode }) {
           <BottomTabBar />
         </div>
       )}
-      {!onChatPage && !onAuthPage && (
-        <div className="fixed bottom-[104px] right-4 lg:bottom-6 lg:right-6 z-[9999]">
-          <OlaTriggerEngine />
-          <OlaWidget onClick={() => router.push('/koala/chat')} />
-        </div>
+      {!onAuthPage && (
+        <>
+          {!onChatPage && (
+            <div className="fixed bottom-[104px] right-4 lg:bottom-6 lg:right-6 z-[9999]">
+              <OlaTriggerEngine />
+            </div>
+          )}
+          <OlaFloatingMascot />
+        </>
       )}
     </div>
   );
