@@ -899,8 +899,22 @@ H指数：${prof.hIndex ?? '未知'}`;
       cleanedReply = cleanedReply.replace(/<suggestions>.*?<\/suggestions>/g, '').trim();
     }
 
+    // Extract and strip ola_action tag (matchmaker card triggers)
+    let olaAction: { type: string; userId?: string } | undefined;
+    const olaActionMatch = cleanedReply.match(/<!--\s*ola_action\s*:\s*(\{[^}]*\})\s*-->/);
+    if (olaActionMatch) {
+      try {
+        olaAction = JSON.parse(olaActionMatch[1]) as { type: string; userId?: string };
+      } catch { /* ignore parse errors */ }
+      cleanedReply = cleanedReply.replace(/<!--\s*ola_action\s*:\s*\{[^}]*\}\s*-->/g, '').trim();
+    }
+
     // 5. Build response
     const result: Record<string, unknown> = { reply: cleanedReply };
+
+    if (olaAction) {
+      result.olaAction = olaAction;
+    }
 
     if (suggestions && suggestions.length > 0) {
       result.suggestions = suggestions;
