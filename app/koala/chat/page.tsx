@@ -683,6 +683,7 @@ function ChatPageInner() {
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDismissed, setFeedbackDismissed] = useState(false);
+  const [freeUsageHint, setFreeUsageHint] = useState<{ chat: { used: number; limit: number }; email: { used: number; limit: number } } | null>(null);
   const [profileCaptureStep, setProfileCaptureStep] = useState<number>(0);
   const [profileCaptureDone, setProfileCaptureDone] = useState(false);
   const sessionIdRef = useRef<string>(generateSessionId());
@@ -703,6 +704,18 @@ function ChatPageInner() {
       if (d?.balance != null) setCredits(d.balance);
     }).catch(() => {});
   }, [user]);
+
+  useEffect(() => {
+    if (!user || !profile) return;
+    const tier = profile.plan_type || 'free';
+    if (tier !== 'free') { setFreeUsageHint(null); return; }
+    Promise.all([
+      checkUsage(supabase, user.id, 'chat'),
+      checkUsage(supabase, user.id, 'email'),
+    ]).then(([chat, email]) => {
+      setFreeUsageHint({ chat: { used: chat.used, limit: chat.limit }, email: { used: email.used, limit: email.limit } });
+    }).catch(() => {});
+  }, [user, profile, messages.length]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1028,6 +1041,25 @@ function ChatPageInner() {
       if (data.achievement) setToastAchievement(data.achievement);
       // Increment chat usage
       if (user?.id) incrementUsage(supabase, user.id, 'chat').catch(() => {});
+
+      // Positive-moment match hint for free users
+      if (data.matchedProfessors?.length && user?.id && profile && (!profile.plan_type || profile.plan_type === 'free')) {
+        checkUsage(supabase, user.id, 'match').then(matchUsage => {
+          const remaining = matchUsage.limit - matchUsage.used;
+          if (remaining <= 1 && remaining >= 0 && matchUsage.limit > 0) {
+            setTimeout(() => {
+              setMessages(prev => [...prev, {
+                id: msgId(), role: 'assistant',
+                content: remaining === 0
+                  ? '今天的匹配次数用完啦，明天会刷新。急着找更多导师的话，升级后每天可以匹配 10 次～'
+                  : `今天还剩 ${remaining} 次匹配机会，明天刷新。`,
+                timestamp: new Date(),
+              }]);
+            }, 2000);
+          }
+        }).catch(() => {});
+      }
+
       lastMessageTimeRef.current = Date.now();
     } catch {
       const errMsg: Message = {
@@ -1375,6 +1407,24 @@ function ChatPageInner() {
         return updated;
       });
       setCredits(data.creditsRemaining ?? 0);
+
+      // Positive-moment upgrade hint for free users
+      if (profile && (!profile.plan_type || profile.plan_type === 'free')) {
+        const emailUsage = await checkUsage(supabase, user.id, 'email');
+        const remaining = emailUsage.limit - emailUsage.used;
+        if (remaining <= 2 && remaining >= 0 && emailUsage.limit > 0) {
+          const hint = remaining === 0
+            ? '🎉 本月免费额度已用完。邀请朋友注册可获得额外额度，或看看升级方案～'
+            : `🎉 写得不错！本月还剩 ${remaining} 次免费套磁信额度。`;
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              id: msgId(), role: 'assistant',
+              content: hint,
+              timestamp: new Date(),
+            }]);
+          }, 1500);
+        }
+      }
     } catch (err) {
       setMessages(prev => prev.map(m => m.id === loadingMsg.id ? {
         ...m,
@@ -1383,7 +1433,7 @@ function ChatPageInner() {
     } finally {
       setColdEmailLoading(false);
     }
-  }, [user, showLogin, coldEmailLoading, mode]);
+  }, [user, showLogin, coldEmailLoading, mode, profile]);
 
   const toggleProfessorSelect = useCallback((professorId: string) => {
     setSelectedProfessorIds(prev => {
@@ -1919,6 +1969,19 @@ function ChatPageInner() {
               💡 多跟我聊聊你的背景和想法，你说得越多，我帮你匹配的导师就越精准哦～
             </p>
           )}
+        </div>
+      )}
+
+      {/* Free-tier usage indicator */}
+      {freeUsageHint && (
+        <div className="flex-shrink-0 flex items-center justify-center gap-3 px-4 py-1.5 bg-gray-50/80 dark:bg-white/[0.02] border-t border-gray-100 dark:border-white/[0.04]">
+          <span className={`text-[10px] ${freeUsageHint.chat.limit - freeUsageHint.chat.used <= 2 ? 'text-amber-500' : 'text-gray-400 dark:text-[#6a6058]'}`}>
+            💬 对话 {freeUsageHint.chat.used}/{freeUsageHint.chat.limit}
+          </span>
+          <span className="text-[10px] text-gray-300 dark:text-[#3a3530]">|</span>
+          <span className={`text-[10px] ${freeUsageHint.email.limit - freeUsageHint.email.used <= 0 ? 'text-amber-500' : 'text-gray-400 dark:text-[#6a6058]'}`}>
+            ✉️ 套磁信 {freeUsageHint.email.used}/{freeUsageHint.email.limit}
+          </span>
         </div>
       )}
 

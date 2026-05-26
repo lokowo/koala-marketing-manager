@@ -1,5 +1,5 @@
 # Koala PhD 项目状态文档
-> 最后更新: 2026-05-26 | 版本: V4.9
+> 最后更新: 2026-05-26 | 版本: V5.0
 
 ## 项目概览
 **Koala PhD（考拉博士）** — 澳洲 PhD 留学 AI 智能顾问平台
@@ -125,6 +125,7 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [x] ProfileCard → 匹配系统对接 (自动触发 searchProfessors)
 - [x] Tool schema 补参数 (universityGroup + scholarshipRequired)
 - [x] Ola prompt 优化: 知识库优先规则、学术引用格式、自然推荐、变现引导
+- [x] Ola 专家模式升级引导: 分层引导策略(未登录/免费/付费) + 正面时刻触发策略 + 聊天界面用量指示器(free用户) + 成功操作后inline提示
 - [x] 语音输入 30秒上限 + 计时器 + interimResults暂存 + Whisper fallback
 - [x] searchProfessors tool 返回 latest_papers + ProfessorMatchCard 展示DOI
 - [x] 对话反馈收集 (FeedbackCard + 6题随机 + API)
