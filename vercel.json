@@ -46,6 +46,10 @@
     {
       "path": "/api/cron/refresh-professors",
       "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/cron/fetch-sydney-events",
+      "schedule": "0 18 * * 0"
     }
   ]
 }
