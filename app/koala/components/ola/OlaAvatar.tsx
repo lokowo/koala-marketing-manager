@@ -16,24 +16,27 @@ const assetCache = new Map<string, string>();
 let allAssetsFetched = false;
 let fetchPromise: Promise<void> | null = null;
 
-function fetchAllAssets(): Promise<void> {
+interface OlaAssetRow { asset_id: string; emotion_tag: string | null; image_url: string }
+
+async function fetchAllAssets(): Promise<void> {
   if (fetchPromise) return fetchPromise;
-  fetchPromise = supabase
-    .from('ola_assets')
-    .select('asset_id, emotion_tag, image_url')
-    .eq('is_active', true)
-    .then(({ data }) => {
+  fetchPromise = (async () => {
+    try {
+      const { data } = await (supabase
+        .from('ola_assets' as 'professors')
+        .select('asset_id, emotion_tag, image_url')
+        .eq('is_active', true as never));
       if (data) {
-        for (const row of data) {
+        for (const row of data as unknown as OlaAssetRow[]) {
           assetCache.set(`id:${row.asset_id}`, row.image_url);
           if (row.emotion_tag) {
             assetCache.set(`emotion:${row.emotion_tag}`, row.image_url);
           }
         }
       }
-      allAssetsFetched = true;
-    })
-    .catch(() => { allAssetsFetched = true; });
+    } catch { /* ignore */ }
+    allAssetsFetched = true;
+  })();
   return fetchPromise;
 }
 
