@@ -63,6 +63,18 @@ const IDLE_INTERACT_BUBBLES = [
   '你好呀～今天申请顺利吗？',
 ];
 
+// Tap-to-chat interaction bubbles (click avatar → link to chat)
+const TAP_CHAT_BUBBLES: SalesBubble[] = [
+  { text: '有什么我能帮你的吗？', action: '/koala/chat' },
+  { text: '想找导师吗？点我聊聊~', action: '/koala/chat?mode=path' },
+  { text: '学姐在这里哦~', action: '/koala/chat' },
+  { text: '需要帮你写套磁信吗？✉️', action: '/koala/chat?mode=write' },
+  { text: '有问题随时问学姐~', action: '/koala/chat' },
+];
+
+const FAREWELL_TEXT = '学姐先走啦~ 点右下角随时叫我回来哦！';
+const RECALL_TEXT = '学姐又回来啦~';
+
 // ─── Constants ───────────────────────────────────────
 
 const STORAGE_KEY_POS = 'ola-mascot-pos';
@@ -125,6 +137,14 @@ export default function OlaFloatingMascot() {
   const [dragBubbleText, setDragBubbleText] = useState<string | null>(null);
   // Hover/tap interaction state
   const [interactBubbleText, setInteractBubbleText] = useState<string | null>(null);
+  // Tap-to-chat bubble (clickable, links to chat)
+  const [tapBubble, setTapBubble] = useState<SalesBubble | null>(null);
+  // Bounce animation on tap
+  const [bouncing, setBouncing] = useState(false);
+  // Farewell bubble before close
+  const [farewellVisible, setFarewellVisible] = useState(false);
+  // Recall welcome bubble
+  const [recallBubble, setRecallBubble] = useState(false);
 
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -134,6 +154,9 @@ export default function OlaFloatingMascot() {
   const longPressReady = useRef(false);
   const dragBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const interactBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tapBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const farewellTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recallBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── Mode detection ──────────────────────────────
 
@@ -362,25 +385,49 @@ export default function OlaFloatingMascot() {
     showInteractBubble();
   }, [showInteractBubble]);
 
-  const handleTap = useCallback(() => {
-    if (hasDragged.current) return;
-    if (isMobile()) {
-      showInteractBubble();
-    }
-  }, [showInteractBubble]);
+  // ─── Avatar tap/click → bounce + chat bubble ────
+
+  const triggerBounce = useCallback(() => {
+    setBouncing(true);
+    setTimeout(() => setBouncing(false), 300);
+  }, []);
+
+  const showTapChatBubble = useCallback(() => {
+    const bubble = TAP_CHAT_BUBBLES[Math.floor(Math.random() * TAP_CHAT_BUBBLES.length)];
+    setTapBubble(bubble);
+    setInteractBubbleText(null);
+    setShowBubble(false);
+    if (tapBubbleTimer.current) clearTimeout(tapBubbleTimer.current);
+    tapBubbleTimer.current = setTimeout(() => setTapBubble(null), 3500);
+  }, []);
+
+  const handleTapBubbleClick = useCallback(() => {
+    if (tapBubble?.action) router.push(tapBubble.action);
+  }, [tapBubble, router]);
 
   // ─── Close / Recall ──────────────────────────────
 
   const handleClose = useCallback(() => {
-    setHidden(true);
-    setVisible(false);
-    setEntered(false);
-    localStorage.setItem(STORAGE_KEY_HIDDEN, 'true');
-    localStorage.setItem(COOLDOWN_KEY, String(Date.now()));
-  }, []);
+    if (farewellVisible) return;
+    setFarewellVisible(true);
+    setShowBubble(false);
+    setInteractBubbleText(null);
+    setTapBubble(null);
+    setDragBubbleText(null);
+
+    farewellTimer.current = setTimeout(() => {
+      setFarewellVisible(false);
+      setHidden(true);
+      setVisible(false);
+      setEntered(false);
+      localStorage.setItem(STORAGE_KEY_HIDDEN, 'true');
+      localStorage.setItem(COOLDOWN_KEY, String(Date.now()));
+    }, 1500);
+  }, [farewellVisible]);
 
   const handleRecall = useCallback(() => {
     setHidden(false);
+    setRecallBubble(true);
     localStorage.removeItem(STORAGE_KEY_HIDDEN);
     const size = getMascotSize();
     setPos({
@@ -392,6 +439,8 @@ export default function OlaFloatingMascot() {
       setVisible(true);
       setTimeout(() => setEntered(true), 50);
     }, 100);
+    if (recallBubbleTimer.current) clearTimeout(recallBubbleTimer.current);
+    recallBubbleTimer.current = setTimeout(() => setRecallBubble(false), 3000);
   }, []);
 
   // ─── Click handlers ──────────────────────────────
@@ -404,8 +453,9 @@ export default function OlaFloatingMascot() {
 
   const handleMascotClick = useCallback(() => {
     if (hasDragged.current) return;
-    router.push('/koala/chat');
-  }, [router]);
+    triggerBounce();
+    showTapChatBubble();
+  }, [triggerBounce, showTapChatBubble]);
 
   // ─── Cleanup timers ──────────────────────────────
 
@@ -414,6 +464,9 @@ export default function OlaFloatingMascot() {
       if (dragBubbleTimer.current) clearTimeout(dragBubbleTimer.current);
       if (interactBubbleTimer.current) clearTimeout(interactBubbleTimer.current);
       if (longPressTimer.current) clearTimeout(longPressTimer.current);
+      if (tapBubbleTimer.current) clearTimeout(tapBubbleTimer.current);
+      if (farewellTimer.current) clearTimeout(farewellTimer.current);
+      if (recallBubbleTimer.current) clearTimeout(recallBubbleTimer.current);
     };
   }, []);
 
@@ -426,14 +479,19 @@ export default function OlaFloatingMascot() {
 
   if (hidden) {
     return (
-      <button
-        onClick={handleRecall}
-        className="fixed z-50 flex items-center justify-center size-10 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md hover:shadow-lg transition-all hover:scale-110"
-        style={{ bottom: DEFAULT_BOTTOM, right: DEFAULT_RIGHT }}
-        aria-label="召唤 Ola"
-      >
-        <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" className="size-6" />
-      </button>
+      <div className="fixed z-50 group" style={{ bottom: DEFAULT_BOTTOM, right: DEFAULT_RIGHT }}>
+        <button
+          onClick={handleRecall}
+          className="relative flex items-center justify-center size-11 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md hover:shadow-lg transition-all hover:scale-110 animate-[breathe_2.5s_ease-in-out_infinite]"
+          aria-label="叫学姐回来"
+        >
+          <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" className="size-7" />
+        </button>
+        <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1 rounded-lg bg-gray-800 dark:bg-[#1a2332] text-white text-[11px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg border border-gray-700 dark:border-white/10">
+          叫学姐回来
+          <span className="absolute -bottom-1 right-4 size-2 rotate-45 bg-gray-800 dark:bg-[#1a2332] border-b border-r border-gray-700 dark:border-white/10" />
+        </div>
+      </div>
     );
   }
 
@@ -442,83 +500,114 @@ export default function OlaFloatingMascot() {
   const isOnLeft = pos.x < window.innerWidth / 2;
   const currentBubble = activeBubbles[bubbleIndex];
 
-  // Determine which bubble to show: drag > interact > sales
+  // Priority: farewell > recall > tap-chat > drag > interact > sales
   const activeBubbleText = dragBubbleText ?? interactBubbleText;
-  const showSalesBubble = !activeBubbleText && showBubble && hasBubbles && currentBubble;
-  const showAnyBubble = !!activeBubbleText || showSalesBubble;
+  const showSalesBubble = !activeBubbleText && !tapBubble && !farewellVisible && !recallBubble && showBubble && hasBubbles && currentBubble;
+  const showAnyBubble = farewellVisible || recallBubble || !!tapBubble || !!activeBubbleText || showSalesBubble;
+
+  const bubbleArrow = (
+    <span
+      className={`absolute -bottom-[6px] size-3 rotate-45 bg-white dark:bg-[#1a2332] border-b border-r border-gray-200 dark:border-white/10 ${
+        isOnLeft ? 'left-5' : 'right-5'
+      }`}
+    />
+  );
 
   return (
-    <div
-      ref={mascotRef}
-      className={`fixed z-50 select-none touch-none transition-all duration-400 ease-out ${
-        entered ? 'translate-x-0 opacity-100' : 'translate-x-[120px] opacity-0'
-      }`}
-      style={{ left: pos.x, top: pos.y }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-    >
-      {/* Speech bubble — drag / interact / sales */}
-      {showAnyBubble && (
-        <div
-          className={`absolute bottom-[calc(100%+8px)] whitespace-nowrap transition-all duration-300 ${
-            isOnLeft ? 'left-0' : 'right-0'
-          } opacity-100 translate-y-0`}
-        >
-          {activeBubbleText ? (
-            <div
-              className="relative px-3 py-2 rounded-xl bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md text-xs text-gray-700 dark:text-[#e8e4dc]"
-            >
-              {activeBubbleText}
-              <span
-                className={`absolute -bottom-[6px] size-3 rotate-45 bg-white dark:bg-[#1a2332] border-b border-r border-gray-200 dark:border-white/10 ${
-                  isOnLeft ? 'left-5' : 'right-5'
-                }`}
-              />
-            </div>
-          ) : showSalesBubble && currentBubble ? (
-            <button
-              onClick={handleBubbleClick}
-              className="relative px-3 py-2 rounded-xl bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md text-xs text-gray-700 dark:text-[#e8e4dc] hover:border-blue-300 dark:hover:border-blue-500/30 transition-colors cursor-pointer"
-            >
-              {currentBubble.text}
-              <span
-                className={`absolute -bottom-[6px] size-3 rotate-45 bg-white dark:bg-[#1a2332] border-b border-r border-gray-200 dark:border-white/10 ${
-                  isOnLeft ? 'left-5' : 'right-5'
-                }`}
-              />
-            </button>
-          ) : null}
-        </div>
-      )}
+    <>
+      {/* Keyframe styles for bounce + breathe */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes olaBounce {
+          0% { transform: scale(1); }
+          40% { transform: scale(1.15); }
+          100% { transform: scale(1); }
+        }
+        @keyframes breathe {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.08); }
+        }
+      ` }} />
 
-      {/* Mascot */}
       <div
-        className="relative cursor-grab active:cursor-grabbing group"
-        style={{ width: mascotSize, height: mascotSize }}
-        onMouseEnter={handleMouseEnter}
-        onTouchStart={handleTap}
+        ref={mascotRef}
+        className={`fixed z-50 select-none touch-none transition-all duration-400 ease-out ${
+          entered ? 'translate-x-0 opacity-100' : 'translate-x-[120px] opacity-0'
+        }`}
+        style={{ left: pos.x, top: pos.y }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
       >
-        {/* Close button */}
-        <button
-          data-close-btn
-          onClick={handleClose}
-          className="absolute -top-1.5 -right-1.5 z-10 flex items-center justify-center size-5 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-          aria-label="关闭 Ola"
-        >
-          <X className="size-3 text-gray-400" />
-        </button>
+        {/* Speech bubble layer */}
+        {showAnyBubble && (
+          <div
+            className={`absolute bottom-[calc(100%+8px)] whitespace-nowrap transition-all duration-300 ${
+              isOnLeft ? 'left-0' : 'right-0'
+            } opacity-100 translate-y-0`}
+          >
+            {farewellVisible ? (
+              <div className="relative px-3 py-2 rounded-xl bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md text-xs text-gray-700 dark:text-[#e8e4dc]">
+                {FAREWELL_TEXT}
+                {bubbleArrow}
+              </div>
+            ) : recallBubble ? (
+              <div className="relative px-3 py-2 rounded-xl bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md text-xs text-gray-700 dark:text-[#e8e4dc]">
+                {RECALL_TEXT}
+                {bubbleArrow}
+              </div>
+            ) : tapBubble ? (
+              <button
+                onClick={handleTapBubbleClick}
+                className="relative px-3 py-2 rounded-xl bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md text-xs text-gray-700 dark:text-[#e8e4dc] hover:border-blue-300 dark:hover:border-blue-500/30 transition-colors cursor-pointer"
+              >
+                {tapBubble.text}
+                {bubbleArrow}
+              </button>
+            ) : activeBubbleText ? (
+              <div className="relative px-3 py-2 rounded-xl bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md text-xs text-gray-700 dark:text-[#e8e4dc]">
+                {activeBubbleText}
+                {bubbleArrow}
+              </div>
+            ) : showSalesBubble && currentBubble ? (
+              <button
+                onClick={handleBubbleClick}
+                className="relative px-3 py-2 rounded-xl bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md text-xs text-gray-700 dark:text-[#e8e4dc] hover:border-blue-300 dark:hover:border-blue-500/30 transition-colors cursor-pointer"
+              >
+                {currentBubble.text}
+                {bubbleArrow}
+              </button>
+            ) : null}
+          </div>
+        )}
 
-        {/* Ola image with breathing animation */}
+        {/* Mascot */}
         <div
-          onClick={handleMascotClick}
-          className={`size-full rounded-full overflow-hidden bg-white dark:bg-[#1a2332] border-2 border-white dark:border-white/10 shadow-lg ${
-            dragging.current ? '' : 'animate-[float_3s_ease-in-out_infinite]'
-          }`}
+          className="relative cursor-grab active:cursor-grabbing group"
+          style={{ width: mascotSize, height: mascotSize }}
+          onMouseEnter={handleMouseEnter}
         >
-          <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="md" className="size-full pointer-events-none" />
+          {/* Close button */}
+          <button
+            data-close-btn
+            onClick={handleClose}
+            className="absolute -top-1.5 -right-1.5 z-10 flex items-center justify-center size-5 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label="关闭 Ola"
+          >
+            <X className="size-3 text-gray-400" />
+          </button>
+
+          {/* Ola image with float/bounce animation */}
+          <div
+            onClick={handleMascotClick}
+            className={`size-full rounded-full overflow-hidden bg-white dark:bg-[#1a2332] border-2 border-white dark:border-white/10 shadow-lg ${
+              dragging.current ? '' : 'animate-[float_3s_ease-in-out_infinite]'
+            }`}
+            style={bouncing ? { animation: 'olaBounce 300ms ease-out' } : undefined}
+          >
+            <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="md" className="size-full pointer-events-none" />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
