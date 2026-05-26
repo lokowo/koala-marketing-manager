@@ -81,7 +81,25 @@ interface Message {
   profileData?: ExtractedProfile;
   handoffCard?: boolean;
   noResults?: boolean;
+  olaAssetId?: string;
+  olaEmotionTag?: string;
   timestamp: Date;
+}
+
+// ─── Ola state tag parser ─────────────────────────────────────────────────────
+
+const OLA_STATE_RE = /<!--\s*ola_state\s*:\s*(\{[^}]*\})\s*-->/;
+
+function parseOlaState(text: string): { clean: string; assetId?: string; emotionTag?: string } {
+  const match = text.match(OLA_STATE_RE);
+  if (!match) return { clean: text };
+  const clean = text.replace(OLA_STATE_RE, '').trim();
+  try {
+    const parsed = JSON.parse(match[1]) as { emotion?: string; image?: string };
+    return { clean, assetId: parsed.image, emotionTag: parsed.emotion };
+  } catch {
+    return { clean };
+  }
 }
 
 // ─── Mode config ──────────────────────────────────────────────────────────────
@@ -1015,10 +1033,13 @@ function ChatPageInner() {
         confidence = count >= 3 ? 'high' : count >= 1 ? 'medium' : 'low';
       }
 
+      const rawReply = data.reply ?? '抱歉，我没能生成回复，请再试一次。';
+      const olaState = parseOlaState(rawReply);
+
       const assistantMsg: Message = {
         id: msgId(),
         role: 'assistant',
-        content: data.reply ?? '抱歉，我没能生成回复，请再试一次。',
+        content: olaState.clean,
         citations: data.citations,
         academicSearch: data.academicSearch,
         matchedProfessors: data.matchedProfessors,
@@ -1030,6 +1051,8 @@ function ChatPageInner() {
         suggestConsultation: data.suggestConsultation,
         profileData: extractedProfile,
         noResults: mode === 'research' && (!data.citations || data.citations.length === 0),
+        olaAssetId: olaState.assetId,
+        olaEmotionTag: olaState.emotionTag,
         timestamp: new Date(),
       };
       setTypewriterMsgId(assistantMsg.id);
@@ -1710,7 +1733,7 @@ function ChatPageInner() {
             <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-0.5`}>
               {msg.role === 'assistant' && (
                 <div className="mt-1 mr-2 flex-shrink-0">
-                  <OlaAvatar state="welcome" size="sm" />
+                  <OlaAvatar assetId={msg.olaAssetId} emotionTag={msg.olaEmotionTag} state="welcome" size="sm" />
                 </div>
               )}
               <div className="flex flex-col max-w-[80%]">
