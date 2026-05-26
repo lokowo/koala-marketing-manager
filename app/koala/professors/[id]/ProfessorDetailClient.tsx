@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Professor } from '../../../lib/types';
 import { OPPORTUNITY_LABELS, parseUniversity } from '../../../lib/constants';
 import { useAuth } from '../../components/AuthContext';
+import { OlaContextPrompt } from '../../components/ola/OlaContextPrompt';
 
 interface Paper {
   id: string;
@@ -521,6 +522,20 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs:
 
       </div>{/* end right col */}
       </div>{/* end two-col grid */}
+
+      {/* Ola profile collection prompt */}
+      <OlaContextPrompt
+        cooldownKey={`prof_profile_${professor.id}`}
+        delayRange={[20, 35]}
+        phases={[
+          {
+            message: `在你了解 ${professor.name} 教授的同时，不如告诉 Ola 更多关于你的信息～我会帮你制作 CV，并且更有针对性地把适合你的教授推荐给你！`,
+            olaState: 'suggest',
+            actionLabel: '告诉 Ola',
+            onAction: () => router.push(`/koala/chat?action=research&prof=${professor.id}&name=${encodeURIComponent(professor.name)}`),
+          },
+        ]}
+      />
     </div>
   );
 }

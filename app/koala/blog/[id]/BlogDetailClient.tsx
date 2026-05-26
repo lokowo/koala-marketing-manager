@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { marked } from 'marked';
 import { Clock, Eye, Mail, Copy, Share2 } from 'lucide-react';
 import { shareToWechat, shareToMoments } from '../../../lib/share';
 import { STATS } from '../../../lib/constants';
+import { OlaContextPrompt } from '../../components/ola/OlaContextPrompt';
 
 interface BlogPost {
   id: string;
@@ -115,6 +116,12 @@ export default function BlogDetailClient({ post, relatedPosts }: { post: BlogPos
     } catch { /* user cancelled */ }
   }
 
+  const shareRef = useRef<HTMLDivElement>(null);
+
+  const scrollToShare = useCallback(() => {
+    shareRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
+
   const hasBilingual = !!(post.content_zh && post.content_en);
 
   return (
@@ -201,7 +208,7 @@ export default function BlogDetailClient({ post, relatedPosts }: { post: BlogPos
         )}
 
         {/* 8. Share bar */}
-        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-[#D4A843]/10">
+        <div ref={shareRef} className="mt-8 pt-6 border-t border-gray-200 dark:border-[#D4A843]/10">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-sm text-gray-500 dark:text-[#6a7a7e]">分享:</span>
             <ShareBtn onClick={shareFacebook} title="Facebook">
@@ -286,6 +293,25 @@ export default function BlogDetailClient({ post, relatedPosts }: { post: BlogPos
 
         <div className="mb-[120px]" />
       </div>
+
+      {/* Ola share prompt */}
+      <OlaContextPrompt
+        cooldownKey={`blog_share_${post.id}`}
+        delayRange={[30, 50]}
+        phases={[
+          {
+            message: '这篇文章信息不错吧？分享给你身边的同学或朋友吧～ 🐨',
+            olaState: 'suggest',
+            actionLabel: '去分享',
+            onAction: scrollToShare,
+          },
+          {
+            message: '好伤心～不过没关系啦，如果有什么建议可以告诉我，我会改进的！',
+            olaState: 'sleepy',
+            autoHideMs: 8000,
+          },
+        ]}
+      />
 
       <style dangerouslySetInnerHTML={{ __html: `
         .blog-detail-title { font-size: 20px; }
