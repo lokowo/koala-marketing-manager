@@ -23,6 +23,8 @@ export interface OlaUserMemory {
   relationship_status: string | null;
   emotional_state: string | null;
   life_details: string | null;
+  user_preferred_name: string | null;
+  ola_nickname: string | null;
   memorable_events: MemorableEvent[];
   subscription_prompts_shown: number;
   subscription_prompts_ignored: number;
@@ -164,7 +166,9 @@ const EXTRACTION_PROMPT = `你是 Ola 学姐的记忆模块。从对话中提取
 
 返回纯 JSON（不要 markdown），格式：
 {
-  "nickname": "用户提到的昵称或希望被叫的名字，如没有则null",
+  "nickname": "用户提到的昵称或希望被叫的名字（通用昵称），如没有则null",
+  "user_preferred_name": "用户明确说希望你/学姐怎么称呼他的名字，如'叫我小明''你可以叫我Amy'，如没有则null",
+  "ola_nickname": "用户给Ola/学姐起的名字，如'我叫你小欧吧''以后叫你姐''叫你Ola好了'，如没有则null",
   "gender": "male/female/other，如没有则null",
   "age": 数字或null,
   "city": "用户所在城市，如没有则null",
@@ -206,7 +210,7 @@ export async function updateMemoryFromConversation(
   }
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  const fields = ['nickname', 'gender', 'city', 'pets', 'relationship_status', 'emotional_state', 'life_details'] as const;
+  const fields = ['nickname', 'gender', 'city', 'pets', 'relationship_status', 'emotional_state', 'life_details', 'user_preferred_name', 'ola_nickname'] as const;
   for (const f of fields) {
     if (extracted[f] !== null && extracted[f] !== undefined) {
       updates[f] = extracted[f];
@@ -242,6 +246,22 @@ export async function updateMemoryFromConversation(
 
 export function buildOlaMemoryPrompt(memory: OlaUserMemory): string {
   const parts: string[] = ['## 🧠 学姐的记忆（关于这位用户）\n'];
+
+  // Naming system
+  if (memory.user_preferred_name || memory.ola_nickname) {
+    const namingParts: string[] = [];
+    if (memory.ola_nickname) {
+      namingParts.push(`用户叫你「${memory.ola_nickname}」，你自称「${memory.ola_nickname}」（例如"${memory.ola_nickname}觉得…"而不是"学姐觉得…"）。`);
+    }
+    if (memory.user_preferred_name) {
+      namingParts.push(`用户的名字是「${memory.user_preferred_name}」，对话中用这个名字称呼他。`);
+    }
+    parts.push(`## 💬 称呼系统\n${namingParts.join('\n')}`);
+  }
+
+  if (!memory.user_preferred_name && memory.total_conversations <= 1) {
+    parts.push(`## 💬 称呼引导\n这是新用户，在合适的时机自然地问一句："对了，你希望学姐怎么称呼你呀？"——不要生硬，找个聊天间隙问。`);
+  }
 
   // Basic info
   const basics: string[] = [];
@@ -288,6 +308,9 @@ export function buildOlaMemoryPrompt(memory: OlaUserMemory): string {
   // Intimacy-based behavior
   if (memory.intimacy_score > 50) {
     parts.push('\n【亲密度>50 解锁】可以使用更亲密的称呼（宝、亲爱的、小笨蛋），分享更多私人生活，偶尔撒娇。');
+    if (!memory.ola_nickname) {
+      parts.push('【昵称解锁提示】亲密度已足够，可以在合适时机主动提议："对了，你一直叫我学姐，其实你可以给我起个名字哦～叫我小欧、Ola、姐、或者你想叫什么都行 😊"——只提一次，用户拒绝就不再提。');
+    }
   } else if (memory.intimacy_score > 20) {
     parts.push('\n【亲密度>20】可以称呼"宝子""姐妹"，适度分享生活，语气更随意。');
   }
