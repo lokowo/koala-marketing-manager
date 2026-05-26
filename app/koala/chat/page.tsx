@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ChevronLeft, Settings, Plus, Send, Sparkles, Mic, MicOff } from 'lucide-react';
 import VoiceInputButton from '../../components/VoiceInputButton';
@@ -19,6 +19,7 @@ import { DontKnowResponse } from '../components/ai/DontKnowResponse';
 import { UserAvatar } from '../components/KoalaAvatar';
 import { OlaAvatar } from '../components/ola/OlaAvatar';
 import { OlaWelcome } from '../components/ola/OlaWelcome';
+import { OlaChatMascot } from '../components/ola/OlaChatMascot';
 import { OlaRatingPrompt } from '../components/ola/OlaRatingPrompt';
 import { ChatHistorySidebar } from '../components/ola/ChatHistorySidebar';
 import { OlaHandoffCard } from '../components/ola/OlaHandoffCard';
@@ -709,6 +710,7 @@ function ChatPageInner() {
   const [freeUsageHint, setFreeUsageHint] = useState<{ chat: { used: number; limit: number }; email: { used: number; limit: number } } | null>(null);
   const [profileCaptureStep, setProfileCaptureStep] = useState<number>(0);
   const [profileCaptureDone, setProfileCaptureDone] = useState(false);
+  const [listenPulse, setListenPulse] = useState(0);
   const sessionIdRef = useRef<string>(generateSessionId());
   const consecutiveUnhelpfulRef = useRef<number>(0);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -999,6 +1001,7 @@ function ChatPageInner() {
   ) => {
     const userMsg: Message = { id: msgId(), role: 'user', content: txt, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
+    setListenPulse(p => p + 1);
     setLoading(true);
 
     try {
@@ -1670,6 +1673,15 @@ function ChatPageInner() {
 
   const formatTime = (d: Date) => d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
+  const latestEmotion = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'assistant' && messages[i].olaEmotionTag) return messages[i].olaEmotionTag;
+    }
+    return undefined;
+  }, [messages]);
+
+  const showChatMascot = !(messages.length === 1 && messages[0].role === 'assistant' && !loading);
+
   return (
     <div className="flex flex-col bg-white dark:bg-[#080c10]" style={{ height: '100dvh' }}>
 
@@ -2190,6 +2202,14 @@ function ChatPageInner() {
           onTone={setTonePref} onLang={setLangPref}
           onClear={clearConversation}
           onClose={() => setShowSettings(false)}
+        />
+      )}
+
+      {showChatMascot && (
+        <OlaChatMascot
+          emotionTag={latestEmotion}
+          loading={loading}
+          listenPulse={listenPulse}
         />
       )}
     </div>
