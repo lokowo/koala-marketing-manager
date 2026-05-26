@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Heart, Send, Inbox, Sparkles, Trash2, ExternalLink, Pen } from 'lucide-react';
+import { MobilePageHeader } from '../components/MobilePageHeader';
 import Link from 'next/link';
 import { useAuth } from '../components/AuthContext';
 import { OlaEmpty } from '../components/ola/OlaEmpty';
@@ -299,9 +300,10 @@ export default function MatchesPage() {
 
   return (
     <div className="min-h-screen pb-24 bg-gray-50 dark:bg-[#080c10]">
+      <MobilePageHeader title="我的匹配" />
       {/* Header */}
       <div className="px-4 pt-5 pb-3">
-        <h1 className="text-lg font-bold text-gray-900 dark:text-[#e8e4dc]">我的匹配</h1>
+        <h1 className="text-lg font-bold text-gray-900 dark:text-[#e8e4dc] hidden lg:block">我的匹配</h1>
         <p className="text-[11px] mt-0.5 text-gray-500 dark:text-[#6a7a7e]">收藏和申请记录</p>
       </div>
 

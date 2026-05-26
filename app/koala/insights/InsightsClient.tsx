@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { InsightsData } from './page';
+import { MobilePageHeader } from '../components/MobilePageHeader';
 
 export default function InsightsClient({ data }: { data: InsightsData }) {
   const [expandedGroup, setExpandedGroup] = useState<string | null>('Go8');
@@ -10,7 +11,9 @@ export default function InsightsClient({ data }: { data: InsightsData }) {
   const maxAreaCount = data.topResearchAreas[0]?.count ?? 1;
 
   return (
-    <div className="px-4 max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto">
+      <MobilePageHeader title="研究洞察" />
+      <div className="px-4 space-y-6">
       {/* Research area distribution */}
       <section className="rounded-xl bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 dark:border-white/5">
@@ -109,6 +112,7 @@ export default function InsightsClient({ data }: { data: InsightsData }) {
           })}
         </div>
       </section>
+      </div>
     </div>
   );
 }

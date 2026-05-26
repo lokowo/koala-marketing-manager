@@ -7,6 +7,7 @@ import {
   LayoutGrid, List, ExternalLink, Mail, Bell,
   FileText, ChevronDown, X, Check, Clock, Loader2, Sparkles,
 } from 'lucide-react';
+import { MobilePageHeader } from '../components/MobilePageHeader';
 
 // ─── Types ──────────────────────────────────────────
 interface Professor {
@@ -651,10 +652,11 @@ export default function MyApplicationsPage() {
 
   return (
     <div className="min-h-[80vh] pb-24">
+      <MobilePageHeader title="我的申请" />
       {/* Header */}
       <div className="px-4 pt-6 pb-4 flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-light text-gray-900 dark:text-gray-100 tracking-tight">我的申请</h1>
+          <h1 className="text-2xl font-light text-gray-900 dark:text-gray-100 tracking-tight hidden lg:block">我的申请</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">追踪从收藏到结果的完整流程</p>
         </div>
         {/* View toggle */}

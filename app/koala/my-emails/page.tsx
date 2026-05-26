@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../components/AuthContext';
 import { Copy, Mail, ChevronDown, ChevronUp, Check, MessageSquare } from 'lucide-react';
+import { MobilePageHeader } from '../components/MobilePageHeader';
 
 interface MatchScore {
   dimension: string;
@@ -275,9 +276,10 @@ export default function MyEmailsPage() {
 
   return (
     <div className="min-h-[80vh] pb-24">
+      <MobilePageHeader title="我的套磁信" />
       {/* Header */}
       <div className="px-4 pt-6 pb-4">
-        <h1 className="text-2xl font-light text-gray-900 dark:text-gray-100 tracking-tight">我的套磁信</h1>
+        <h1 className="text-2xl font-light text-gray-900 dark:text-gray-100 tracking-tight hidden lg:block">我的套磁信</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">管理你生成的所有申请信</p>
       </div>
 

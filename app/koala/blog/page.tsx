@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Search } from 'lucide-react';
 import { OlaEmpty } from '../components/ola/OlaEmpty';
+import { MobilePageHeader } from '../components/MobilePageHeader';
 
 interface BlogPost {
   id: string;
@@ -87,10 +88,11 @@ export default function BlogPage() {
 
   return (
     <div className="bg-gray-50 dark:bg-[#080c10] min-h-screen pb-[100px]">
+      <MobilePageHeader title="博客" backHref="/koala/home" />
       <div className="max-w-[1080px] mx-auto">
         {/* Header */}
         <div className="px-5 pt-5 pb-1">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-[#e8e4dc]">博客</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-[#e8e4dc] hidden lg:block">博客</h1>
           <p className="text-sm mt-1 mb-4 text-gray-500 dark:text-[#6a7a7e]">
             从申请攻略到导师推荐——一站式了解澳洲 PhD 申请的方方面面
           </p>

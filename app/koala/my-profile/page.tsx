@@ -10,6 +10,7 @@ import { useTheme } from '../../lib/theme';
 import VoiceInputButton from '../../components/VoiceInputButton';
 import { SharePosterTrigger } from '../components/SharePoster';
 import { OlaAchievements } from '../components/ola/OlaAchievements';
+import { MobilePageHeader } from '../components/MobilePageHeader';
 
 // ─── timeAgo helper ────────────────────────
 function timeAgo(dateStr: string): string {
@@ -926,6 +927,7 @@ export default function MyProfilePage() {
 
   return (
     <div className="pb-6 lg:pb-12 bg-gray-50 dark:bg-[#080c10]">
+      <MobilePageHeader title="个人设置" backHref="/koala/home" />
       <div className="max-w-5xl mx-auto">
 
       {/* ── Profile Header ──────────────────── */}

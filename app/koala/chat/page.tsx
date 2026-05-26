@@ -2063,6 +2063,9 @@ function ChatPageInner() {
                 e.target.style.height = 'auto';
                 e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
               }}
+              onFocus={() => {
+                setTimeout(() => textareaRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 300);
+              }}
               onKeyDown={handleKeyDown}
               placeholder={isVoiceListening ? '正在录音...' : isVoiceTranscribing ? '识别中...' : currentMode.placeholder}
               className="w-full resize-none text-sm outline-none bg-transparent leading-relaxed placeholder:text-gray-400 dark:placeholder:text-[#5a5550] text-gray-900 dark:text-[#e8e4dc]"

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Check, X, Loader2, Crown, Zap, Star } from 'lucide-react';
 import { CREDIT_PACKAGES, SUBSCRIPTION_TIERS } from '../../lib/constants';
 import { useSearchParams } from 'next/navigation';
+import { MobilePageHeader } from '../components/MobilePageHeader';
 
 const FREE_FEATURES = [
   { text: '每天 10 轮 AI 对话', ok: true },
@@ -204,6 +205,7 @@ function PricingContent() {
 
   return (
     <div className="min-h-screen pb-24 bg-gray-50 dark:bg-[#080c10]">
+      <MobilePageHeader title="定价与积分" />
       {/* Toast */}
       {toast && (
         <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg ${

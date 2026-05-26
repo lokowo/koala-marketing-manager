@@ -7,6 +7,7 @@ import ResearchProposalCard from '../components/ResearchProposalCard';
 import RecommendationLetterCard from '../components/RecommendationLetterCard';
 import AcademicCVCard from '../components/AcademicCVCard';
 import { Plus, Loader2, FileText, MessageSquare, ChevronDown, X, Mail, GraduationCap, AlertCircle } from 'lucide-react';
+import { MobilePageHeader } from '../components/MobilePageHeader';
 
 interface SavedProfessor {
   professor_id: string;
@@ -300,10 +301,11 @@ export default function MyDocumentsPage() {
 
   return (
     <div className="min-h-[80vh] pb-24">
+      <MobilePageHeader title="我的文档" />
       {/* Header */}
       <div className="px-4 pt-6 pb-4 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-light text-gray-900 dark:text-gray-100 tracking-tight">我的文档</h1>
+          <h1 className="text-2xl font-light text-gray-900 dark:text-gray-100 tracking-tight hidden lg:block">我的文档</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">管理你的研究计划、申请文书和学术 CV</p>
         </div>
         <button

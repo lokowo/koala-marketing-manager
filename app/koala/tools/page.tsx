@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { BRAND } from '../../lib/constants';
+import { MobilePageHeader } from '../components/MobilePageHeader';
 
 const FREE_TOOLS_GRID = [
   { icon: '📊', title: 'GPA 换算器',     desc: '中国GPA → 澳洲标准一键转换', href: '/koala/tools/niv' },
@@ -16,9 +17,10 @@ const FREE_TOOLS_GRID = [
 export default function ToolsPage() {
   return (
     <div className="pb-8 bg-gray-50 dark:bg-[#080c10]">
+      <MobilePageHeader title="免费工具箱" />
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-200 dark:border-[#D4A843]/10">
-        <h1 className="text-base font-bold text-gray-900 dark:text-[#e8e4dc]">免费工具箱</h1>
+        <h1 className="text-base font-bold text-gray-900 dark:text-[#e8e4dc] hidden lg:block">免费工具箱</h1>
         <p className="text-xs mt-0.5 text-gray-500 dark:text-[#6a7a7e]">
           无需注册，直接使用
         </p>
