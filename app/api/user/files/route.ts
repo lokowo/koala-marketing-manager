@@ -88,7 +88,7 @@ export async function POST(req: Request) {
     // Upload to Supabase Storage
     const filePath = `${user.id}/${Date.now()}_${file.name}`;
     const { error: uploadError } = await supabaseAdmin.storage
-      .from('user-files')
+      .from('user-documents')
       .upload(filePath, Buffer.from(buffer), {
         contentType: file.type,
         upsert: false,
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
 
     // Get public URL
     const { data: urlData } = supabaseAdmin.storage
-      .from('user-files')
+      .from('user-documents')
       .getPublicUrl(filePath);
 
     const fileRecord = {
@@ -172,7 +172,7 @@ export async function DELETE(req: Request) {
     }
 
     // Delete from storage
-    await supabaseAdmin.storage.from('user-files').remove([filePath]);
+    await supabaseAdmin.storage.from('user-documents').remove([filePath]);
 
     // Remove from profile
     const { data } = await db

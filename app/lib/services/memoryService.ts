@@ -120,8 +120,8 @@ export async function extractMemories(
         category: m.category as MemoryCategory,
         confidence: Math.min(1, Math.max(0, m.confidence)),
       }));
-  } catch {
-    console.error('[memoryService] Failed to parse extracted memories');
+  } catch (parseErr) {
+    console.error('[memoryService] Failed to parse extracted memories. Raw:', cleaned.slice(0, 200), 'Error:', parseErr);
     return [];
   }
 }

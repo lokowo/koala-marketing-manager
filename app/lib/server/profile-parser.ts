@@ -7,17 +7,13 @@ const SYSTEM_PROMPT = `你是一个简历解析专家。从简历文本中提取
 
 /**
  * Parse a CV PDF buffer into a structured StudentProfile.
- * Uses pdf-parse for text extraction + Claude for structuring.
+ * Sends the PDF directly to Claude as a base64 document (no native deps needed).
  * This is a server-only function — never import in frontend code.
  */
 export async function parseStudentCV(fileBuffer: Buffer): Promise<StudentProfile> {
-  // Dynamic import — pdf-parse is a CommonJS module
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>;
-  const pdfData = await pdfParse(fileBuffer);
-  const text = pdfData.text.slice(0, 5000); // Claude context limit safety
+  const base64 = fileBuffer.toString('base64');
 
-  const prompt = `请从以下简历文本中提取结构化信息。返回 JSON：
+  const prompt = `请从这份简历中提取结构化信息。返回 JSON：
 {
   "major": "专业名称",
   "degreeLevel": "Bachelor|Master|PhD|Other",
@@ -35,16 +31,22 @@ export async function parseStudentCV(fileBuffer: Buffer): Promise<StudentProfile
   "targetField": "目标领域或null"
 }
 
-只返回 JSON，不要其他文字。
-
-简历文本：
-${text}`;
+只返回 JSON，不要其他文字。`;
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 1500,
     system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-    messages: [{ role: 'user', content: prompt }],
+    messages: [{
+      role: 'user',
+      content: [
+        {
+          type: 'document',
+          source: { type: 'base64', media_type: 'application/pdf', data: base64 },
+        },
+        { type: 'text', text: prompt },
+      ],
+    }],
   });
 
   const textBlock = response.content.find(b => b.type === 'text');
