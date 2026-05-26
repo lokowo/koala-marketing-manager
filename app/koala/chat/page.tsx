@@ -600,9 +600,25 @@ interface ConversationData {
 
 async function loadRemoteConversation(mode: string): Promise<ConversationData | null> {
   try {
-    const res = await fetch(`/api/ola/conversations?mode=${encodeURIComponent(mode)}`);
-    if (!res.ok) return null;
-    const { conversation } = await res.json();
+    // Try chat_messages table first (new normalized storage)
+    const res = await fetch(`/api/chat-history?mode=${encodeURIComponent(mode)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.conversation && data.messages?.length > 0) {
+        return {
+          sessionId: data.conversation.sessionId,
+          mode: data.conversation.mode ?? mode,
+          messages: data.messages.map((m: { role: 'user' | 'assistant'; content: string }) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        };
+      }
+    }
+    // Fallback to ai_conversations JSONB (for older sessions not yet in chat_messages)
+    const fallbackRes = await fetch(`/api/ola/conversations?mode=${encodeURIComponent(mode)}`);
+    if (!fallbackRes.ok) return null;
+    const { conversation } = await fallbackRes.json();
     if (!conversation?.messages?.length) return null;
     return conversation as ConversationData;
   } catch { return null; }
@@ -904,6 +920,7 @@ function ChatPageInner() {
 
   // Load history from remote DB on mount (logged-in) and when user logs in mid-session
   const dbLoadUserIdRef = useRef<string | null>(null);
+  const migrationDoneRef = useRef(false);
   useEffect(() => {
     if (!user?.id) {
       dbLoadUserIdRef.current = null;
@@ -913,14 +930,46 @@ function ChatPageInner() {
     if (dbLoadUserIdRef.current === user.id) return;
     dbLoadUserIdRef.current = user.id;
     setHistoryLoaded(false);
-    loadRemoteConversation(mode).then(conv => {
+
+    loadRemoteConversation(mode).then(async (conv) => {
       if (conv && conv.messages.length > 0) {
         const restored = remoteToMessages(conv.messages);
         setMessages(restored);
         setLocalHistory(mode, restored);
         sessionIdRef.current = conv.sessionId;
       } else {
-        sessionIdRef.current = generateSessionId();
+        // No remote history — migrate localStorage if available
+        if (!migrationDoneRef.current) {
+          migrationDoneRef.current = true;
+          const allModes = ['path', 'research', 'chat', 'write', 'rp', 'interview'];
+          for (const m of allModes) {
+            const local = getLocalHistory(m);
+            if (local.length > 1) {
+              try {
+                await fetch('/api/chat-history', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    mode: m,
+                    messages: local.map(msg => ({ role: msg.role, content: msg.content })),
+                  }),
+                });
+                clearLocalHistory(m);
+              } catch {}
+            }
+          }
+          // After migration, try loading current mode again
+          const migrated = await loadRemoteConversation(mode);
+          if (migrated && migrated.messages.length > 0) {
+            const restored = remoteToMessages(migrated.messages);
+            setMessages(restored);
+            sessionIdRef.current = migrated.sessionId;
+          } else {
+            sessionIdRef.current = generateSessionId();
+          }
+        } else {
+          sessionIdRef.current = generateSessionId();
+        }
       }
       setHistoryLoaded(true);
     });
@@ -1359,7 +1408,14 @@ function ChatPageInner() {
     setMessages(fresh);
     clearLocalHistory(mode);
     sessionIdRef.current = generateSessionId();
-    if (user) clearRemoteConversation(mode);
+    if (user) {
+      clearRemoteConversation(mode);
+      fetch('/api/chat-history', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      }).catch(() => {});
+    }
   }
 
   function confirmEmailGeneration() {

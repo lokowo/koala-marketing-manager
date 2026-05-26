@@ -1134,6 +1134,8 @@ async function saveConversationAsync(sessionId: string, mode: AIMode, messages: 
     const supabase = createClient(url, key);
     const allMessages = [...messages, { role: 'assistant', content: reply }];
 
+    let conversationId: string | null = null;
+
     const { data: existing } = await supabase
       .from('ai_conversations')
       .select('id')
@@ -1142,17 +1144,29 @@ async function saveConversationAsync(sessionId: string, mode: AIMode, messages: 
       .maybeSingle();
 
     if (existing) {
+      conversationId = existing.id;
       await supabase
         .from('ai_conversations')
         .update({ messages: allMessages, updated_at: new Date().toISOString() })
         .eq('id', existing.id);
     } else {
-      await supabase.from('ai_conversations').insert({
+      const { data: inserted } = await supabase.from('ai_conversations').insert({
         session_id: sessionId,
         mode,
         user_id: userId ?? null,
         messages: allMessages,
-      });
+      }).select('id').single();
+      conversationId = inserted?.id ?? null;
+    }
+
+    if (conversationId && userId) {
+      const lastUserMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+      const rows: { conversation_id: string; user_id: string; role: string; content: string; mode: string }[] = [];
+      if (lastUserMsg?.role === 'user') {
+        rows.push({ conversation_id: conversationId, user_id: userId, role: 'user', content: lastUserMsg.content, mode });
+      }
+      rows.push({ conversation_id: conversationId, user_id: userId, role: 'assistant', content: reply, mode });
+      await supabase.from('chat_messages').insert(rows);
     }
   } catch {}
 }
@@ -1166,6 +1180,8 @@ async function saveFAQConversationAsync(sessionId: string, mode: AIMode, message
     const supabase = createClient(url, key);
     const allMessages = [...messages, { role: 'assistant', content: faqReply }];
 
+    let conversationId: string | null = null;
+
     const { data: existing } = await supabase
       .from('ai_conversations')
       .select('id')
@@ -1174,17 +1190,29 @@ async function saveFAQConversationAsync(sessionId: string, mode: AIMode, message
       .maybeSingle();
 
     if (existing) {
+      conversationId = existing.id;
       await supabase
         .from('ai_conversations')
         .update({ messages: allMessages, updated_at: new Date().toISOString() })
         .eq('id', existing.id);
     } else {
-      await supabase.from('ai_conversations').insert({
+      const { data: inserted } = await supabase.from('ai_conversations').insert({
         session_id: sessionId,
         mode,
         user_id: userId ?? null,
         messages: allMessages,
-      });
+      }).select('id').single();
+      conversationId = inserted?.id ?? null;
+    }
+
+    if (conversationId && userId) {
+      const lastUserMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+      const rows: { conversation_id: string; user_id: string; role: string; content: string; mode: string }[] = [];
+      if (lastUserMsg?.role === 'user') {
+        rows.push({ conversation_id: conversationId, user_id: userId, role: 'user', content: lastUserMsg.content, mode });
+      }
+      rows.push({ conversation_id: conversationId, user_id: userId, role: 'assistant', content: faqReply, mode });
+      await supabase.from('chat_messages').insert(rows);
     }
   } catch {}
 }
