@@ -64,7 +64,7 @@ export function OlaChatMascot({ emotionTag, assetId, loading, listenPulse }: Pro
   const [ready, setReady] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [mascotSize, setMascotSize] = useState(180);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [pos, _setPos] = useState({ x: 0, y: 0 });
   const [initialized, setInitialized] = useState(false);
   const [animState, setAnimState] = useState<'idle' | 'listen' | 'speak'>('idle');
   const [dragBubble, setDragBubble] = useState<string | null>(null);
@@ -72,6 +72,15 @@ export function OlaChatMascot({ emotionTag, assetId, loading, listenPulse }: Pro
   const dragging = useRef(false);
   const hasDragged = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
+  const posRef = useRef({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const setPos = useCallback((v: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => {
+    _setPos(prev => {
+      const next = typeof v === 'function' ? v(prev) : v;
+      posRef.current = next;
+      return next;
+    });
+  }, []);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressReady = useRef(false);
   const dragBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -134,7 +143,7 @@ export function OlaChatMascot({ emotionTag, assetId, loading, listenPulse }: Pro
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('[data-close-btn]')) return;
-    const currentPos = pos;
+    const currentPos = posRef.current;
 
     if (isMobile()) {
       longPressReady.current = false;
@@ -145,15 +154,17 @@ export function OlaChatMascot({ emotionTag, assetId, loading, listenPulse }: Pro
         dragOffset.current = { x: e.clientX - currentPos.x, y: e.clientY - currentPos.y };
         try { navigator.vibrate?.(50); } catch { /* noop */ }
         showDragBubble();
+        if (containerRef.current) containerRef.current.style.transition = 'none';
         (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
       }, LONG_PRESS_MS);
     } else {
       dragging.current = true;
       hasDragged.current = false;
       dragOffset.current = { x: e.clientX - currentPos.x, y: e.clientY - currentPos.y };
+      if (containerRef.current) containerRef.current.style.transition = 'none';
       (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     }
-  }, [pos, showDragBubble]);
+  }, [showDragBubble]);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (longPressTimer.current && !longPressReady.current) {
@@ -164,7 +175,11 @@ export function OlaChatMascot({ emotionTag, assetId, loading, listenPulse }: Pro
     hasDragged.current = true;
     const nx = Math.max(0, Math.min(window.innerWidth - mascotSize, e.clientX - dragOffset.current.x));
     const ny = Math.max(0, Math.min(window.innerHeight - mascotSize, e.clientY - dragOffset.current.y));
-    setPos({ x: nx, y: ny });
+    posRef.current = { x: nx, y: ny };
+    if (containerRef.current) {
+      containerRef.current.style.left = `${nx}px`;
+      containerRef.current.style.top = `${ny}px`;
+    }
     if (!dragBubble && Math.random() < 0.02) showDragBubble();
   }, [mascotSize, dragBubble, showDragBubble]);
 
@@ -176,13 +191,15 @@ export function OlaChatMascot({ emotionTag, assetId, loading, listenPulse }: Pro
     longPressReady.current = false;
     if (!dragging.current) return;
     dragging.current = false;
-    if (hasDragged.current) {
-      setPos(p => {
-        localStorage.setItem(POS_KEY, JSON.stringify(p));
-        return p;
-      });
+    if (containerRef.current) {
+      containerRef.current.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
     }
-  }, []);
+    if (hasDragged.current) {
+      const finalPos = posRef.current;
+      localStorage.setItem(POS_KEY, JSON.stringify(finalPos));
+      setPos(finalPos);
+    }
+  }, [setPos]);
 
   const handleClose = useCallback(() => {
     setHidden(true);
@@ -213,8 +230,9 @@ export function OlaChatMascot({ emotionTag, assetId, loading, listenPulse }: Pro
         @keyframes ola-speak{0%,100%{transform:translateY(0)}25%{transform:translateY(-3px)}75%{transform:translateY(1px)}}
       `}} />
       <div
-        className="fixed z-30 select-none touch-none group"
-        style={{ left: pos.x, top: pos.y, width: mascotSize }}
+        ref={containerRef}
+        className="fixed z-30 select-none group"
+        style={{ left: pos.x, top: pos.y, width: mascotSize, willChange: 'left, top', touchAction: 'none' }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

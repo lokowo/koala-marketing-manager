@@ -133,7 +133,7 @@ export default function OlaFloatingMascot() {
   const [hidden, setHidden] = useState(false);
   const [bubbleIndex, setBubbleIndex] = useState(0);
   const [showBubble, setShowBubble] = useState(false);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [pos, _setPos] = useState({ x: 0, y: 0 });
   const [initialized, setInitialized] = useState(false);
   const [mascotSize, setMascotSize] = useState(MASCOT_SIZE_DESKTOP);
 
@@ -153,6 +153,14 @@ export default function OlaFloatingMascot() {
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const mascotRef = useRef<HTMLDivElement>(null);
+  const posRef = useRef({ x: 0, y: 0 });
+  const setPos = useCallback((v: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => {
+    _setPos(prev => {
+      const next = typeof v === 'function' ? v(prev) : v;
+      posRef.current = next;
+      return next;
+    });
+  }, []);
   const hasDragged = useRef(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressReady = useRef(false);
@@ -305,10 +313,9 @@ export default function OlaFloatingMascot() {
 
     const startX = e.clientX;
     const startY = e.clientY;
-    const currentPos = { ...pos };
+    const currentPos = posRef.current;
 
     if (isMobile()) {
-      // Mobile: require long press before drag starts
       longPressReady.current = false;
       hasDragged.current = false;
       longPressTimer.current = setTimeout(() => {
@@ -320,22 +327,22 @@ export default function OlaFloatingMascot() {
         };
         vibrate(30);
         showDragBubble();
+        if (mascotRef.current) mascotRef.current.style.transition = 'none';
         (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
       }, LONG_PRESS_MS);
     } else {
-      // Desktop: immediate drag
       dragging.current = true;
       hasDragged.current = false;
       dragOffset.current = {
         x: e.clientX - currentPos.x,
         y: e.clientY - currentPos.y,
       };
+      if (mascotRef.current) mascotRef.current.style.transition = 'none';
       (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     }
-  }, [pos, showDragBubble]);
+  }, [showDragBubble]);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
-    // Cancel long press if finger moves before timer fires
     if (longPressTimer.current && !longPressReady.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
@@ -345,13 +352,16 @@ export default function OlaFloatingMascot() {
     hasDragged.current = true;
     const nx = Math.max(0, Math.min(window.innerWidth - mascotSize, e.clientX - dragOffset.current.x));
     const ny = Math.max(0, Math.min(window.innerHeight - mascotSize, e.clientY - dragOffset.current.y));
-    setPos({ x: nx, y: ny });
+    posRef.current = { x: nx, y: ny };
+    if (mascotRef.current) {
+      mascotRef.current.style.left = `${nx}px`;
+      mascotRef.current.style.top = `${ny}px`;
+    }
 
     if (isMobile()) {
       vibrate(30);
     }
 
-    // Show random drag bubble occasionally
     if (!dragBubbleText && Math.random() < 0.02) {
       showDragBubble();
     }
@@ -366,13 +376,15 @@ export default function OlaFloatingMascot() {
 
     if (!dragging.current) return;
     dragging.current = false;
-    if (hasDragged.current) {
-      setPos(p => {
-        localStorage.setItem(STORAGE_KEY_POS, JSON.stringify(p));
-        return p;
-      });
+    if (mascotRef.current) {
+      mascotRef.current.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
     }
-  }, []);
+    if (hasDragged.current) {
+      const finalPos = posRef.current;
+      localStorage.setItem(STORAGE_KEY_POS, JSON.stringify(finalPos));
+      setPos(finalPos);
+    }
+  }, [setPos]);
 
   // ─── Hover / tap interaction ─────────────────────
 
@@ -535,10 +547,10 @@ export default function OlaFloatingMascot() {
 
       <div
         ref={mascotRef}
-        className={`fixed z-50 select-none touch-none transition-all duration-400 ease-out ${
+        className={`fixed z-50 select-none transition-all duration-400 ease-out ${
           entered ? 'translate-x-0 opacity-100' : 'translate-x-[120px] opacity-0'
         }`}
-        style={{ left: pos.x, top: pos.y }}
+        style={{ left: pos.x, top: pos.y, willChange: 'left, top', touchAction: 'none' }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -604,7 +616,7 @@ export default function OlaFloatingMascot() {
           {/* Ola image with float/bounce animation */}
           <div
             onClick={handleMascotClick}
-            className={`size-full rounded-full overflow-hidden bg-white dark:bg-[#1a2332] border-2 border-white dark:border-white/10 shadow-lg ${
+            className={`size-full shadow-lg ${
               dragging.current ? '' : 'animate-[float_3s_ease-in-out_infinite]'
             }`}
             style={bouncing ? { animation: 'olaBounce 300ms ease-out' } : undefined}

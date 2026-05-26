@@ -10,7 +10,7 @@ export const BRAND = {
   domain: 'koalaphd.com',
   email: 'info@koalaphd.com',
   address: 'Suite 22/26A Lime St, Sydney NSW 2000',
-  wechat: 'KoalaStudyAdvisor',
+  wechat: 'MissKoalaAu',
   xiaohongshu: 'DrKoalaAU',
   instagram: 'DrKoalaAU',
   tagline: 'Koala — 陪你从申请到毕业，每一步都在。',
