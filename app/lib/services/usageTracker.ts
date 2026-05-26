@@ -70,13 +70,20 @@ async function getPrivilegedRole(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<PrivilegedRole | null> {
-  const { data: roleRow } = await db(supabase)
+  const { data: roleRow, error } = await db(supabase)
     .from('user_roles')
     .select('role')
     .eq('user_id', userId)
     .maybeSingle();
 
+  if (error) {
+    console.error('[getPrivilegedRole] query error for userId:', userId, error);
+    return null;
+  }
+
   const role = roleRow?.role as string | null;
+  console.log('[getPrivilegedRole] userId:', userId, '| roleRow:', JSON.stringify(roleRow), '| role:', role);
+
   if (!role || !['sales', 'admin', 'super_admin'].includes(role)) return null;
 
   if (role === 'sales') {
@@ -157,6 +164,7 @@ export async function checkUsage(
 ): Promise<{ allowed: boolean; used: number; limit: number }> {
   try {
     const privileged = await getPrivilegedRole(supabase, userId);
+    console.log('[checkUsage] userId:', userId, '| action:', actionType, '| privilegedRole:', privileged);
     if (privileged) return { allowed: true, used: 0, limit: -1 };
 
     const tier = await getUserTier(supabase, userId);

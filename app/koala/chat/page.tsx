@@ -1010,6 +1010,7 @@ function ChatPageInner() {
         mode,
         sessionId: sessionIdRef.current,
         messages: allMsgs.map(m => ({ role: m.role, content: m.content })),
+        userId: user?.id,
         userStyleProfile: {
           formality: tonePref === 'professional' ? 'formal' : tonePref === 'direct' ? 'mixed' : 'casual',
           expertise: 'intermediate',

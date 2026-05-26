@@ -260,13 +260,18 @@ export async function POST(request: NextRequest) {
     if (!allowed) return Response.json({ error: '请求过于频繁，请稍后再试' }, { status: 429 });
 
     // Resolve user ID early for session/event tracking
-    let trackingUserId: string | null = (body.userId as string) || null;
-    if (!trackingUserId) {
-      try {
-        const { getServerUser: getUser } = await import('../../../lib/auth');
-        const u = await getUser();
-        if (u) trackingUserId = u.id;
-      } catch { /* anonymous */ }
+    // Priority: server-side auth (trusted) > body.userId (frontend fallback)
+    let trackingUserId: string | null = null;
+    try {
+      const { getServerUser: getUser } = await import('../../../lib/auth');
+      const u = await getUser();
+      if (u) trackingUserId = u.id;
+    } catch (authErr) {
+      console.warn('[AI Chat] getServerUser failed:', authErr);
+    }
+    if (!trackingUserId && body.userId) {
+      trackingUserId = body.userId as string;
+      console.log('[AI Chat] using body.userId fallback:', trackingUserId);
     }
 
     const sessionId = (body.sessionId as string) || `session_${Date.now()}`;
@@ -283,6 +288,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Daily usage check — free users limited to FREE_LIMITS.dailyAiTurns (10/day)
+    console.log('[AI Chat] trackingUserId resolved:', trackingUserId, '| from body.userId:', body.userId ?? 'none', '| from auth:', trackingUserId && !body.userId ? 'yes' : 'no');
     if (trackingUserId) {
       try {
         const { createClient } = await import('@supabase/supabase-js');
@@ -292,6 +298,7 @@ export async function POST(request: NextRequest) {
         );
         const { checkUsage } = await import('../../../lib/services/usageTracker');
         const usage = await checkUsage(usageDb, trackingUserId, 'chat');
+        console.log('[AI Chat] usage result for', trackingUserId, ':', JSON.stringify(usage));
         if (!usage.allowed) {
           return Response.json(
             {
