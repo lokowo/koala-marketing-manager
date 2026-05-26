@@ -26,6 +26,7 @@ import { ProfileCard } from '../components/chat/ProfileCard';
 import { ColdEmailCard } from '../components/chat/ColdEmailCard';
 import { UpgradePrompt } from '../components/chat/UpgradePrompt';
 import { FeedbackCard } from '../components/chat/FeedbackCard';
+import { MatchProfileCard } from '../components/chat/MatchProfileCard';
 import { checkUsage, incrementUsage } from '../../lib/services/usageTracker';
 import { supabase } from '../../lib/supabase/client';
 import type { ExtractedProfile } from '../../lib/chat/extract-profile';
@@ -83,6 +84,7 @@ interface Message {
   noResults?: boolean;
   olaAssetId?: string;
   olaEmotionTag?: string;
+  olaAction?: { type: string; userId?: string };
   timestamp: Date;
 }
 
@@ -666,12 +668,14 @@ function ChatPageInner() {
     let modeKey: string = action === 'outreach' ? 'write' : action === 'interview' ? 'interview' : action === 'research' ? 'research' : 'path';
     if (modeParam && ['path', 'research', 'chat', 'write', 'rp', 'interview'].includes(modeParam)) modeKey = modeParam;
     const cfg = MODES.find(m => m.key === modeKey)!;
-    // Try loading from localStorage immediately (server-rendered safe)
-    const cached = getLocalHistory(modeKey);
-    if (cached.length > 0) return cached;
+    // Anonymous users: load from localStorage; logged-in users: wait for DB
+    if (!user) {
+      const cached = getLocalHistory(modeKey);
+      if (cached.length > 0) return cached;
+    }
     return [{ id: msgId(), role: 'assistant', content: cfg.welcome, timestamp: new Date() }];
   });
-  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(!user);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
@@ -894,21 +898,30 @@ function ChatPageInner() {
     }
   }
 
-  // Load history from remote DB when user is logged in
+  // Load history from remote DB on mount (logged-in) and when user logs in mid-session
+  const dbLoadUserIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (historyLoaded) return;
-    if (!user?.id) { setHistoryLoaded(true); return; }
+    if (!user?.id) {
+      dbLoadUserIdRef.current = null;
+      setHistoryLoaded(true);
+      return;
+    }
+    if (dbLoadUserIdRef.current === user.id) return;
+    dbLoadUserIdRef.current = user.id;
+    setHistoryLoaded(false);
     loadRemoteConversation(mode).then(conv => {
       if (conv && conv.messages.length > 0) {
         const restored = remoteToMessages(conv.messages);
         setMessages(restored);
         setLocalHistory(mode, restored);
         sessionIdRef.current = conv.sessionId;
+      } else {
+        sessionIdRef.current = generateSessionId();
       }
       setHistoryLoaded(true);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, mode]);
+  }, [user?.id]);
 
   // Auto-send outreach message from professor card/detail URL params
   const [pendingAutoSend, setPendingAutoSend] = useState<{ msg: string; profId?: string } | null>(() => {
@@ -951,15 +964,10 @@ function ChatPageInner() {
       setPendingProfessorId(null);
       setPendingProfessorName(null);
     }
-    // Load cached history for this mode
-    const cached = getLocalHistory(newMode);
-    if (cached.length > 0) {
-      setMessages(cached);
-    } else {
-      setMessages([{ id: msgId(), role: 'assistant', content: cfg.welcome, timestamp: new Date() }]);
-    }
-    // Load from remote DB — restore existing sessionId if found, else generate new
     if (user?.id) {
+      // Logged-in: DB is authoritative — show welcome while loading, gate send
+      setMessages([{ id: msgId(), role: 'assistant' as const, content: cfg.welcome, timestamp: new Date() }]);
+      setHistoryLoaded(false);
       loadRemoteConversation(newMode).then(conv => {
         if (conv && conv.messages.length > 0) {
           const restored = remoteToMessages(conv.messages);
@@ -969,8 +977,16 @@ function ChatPageInner() {
         } else {
           sessionIdRef.current = generateSessionId();
         }
+        setHistoryLoaded(true);
       });
     } else {
+      // Anonymous: localStorage only
+      const cached = getLocalHistory(newMode);
+      if (cached.length > 0) {
+        setMessages(cached);
+      } else {
+        setMessages([{ id: msgId(), role: 'assistant' as const, content: cfg.welcome, timestamp: new Date() }]);
+      }
       sessionIdRef.current = generateSessionId();
     }
   }
@@ -1074,6 +1090,7 @@ function ChatPageInner() {
         noResults: mode === 'research' && (!data.citations || data.citations.length === 0),
         olaAssetId: olaState.assetId,
         olaEmotionTag: olaState.emotionTag,
+        olaAction: data.olaAction as { type: string; userId?: string } | undefined,
         timestamp: new Date(),
       };
       setTypewriterMsgId(assistantMsg.id);
@@ -1130,7 +1147,7 @@ function ChatPageInner() {
 
   const sendMessage = useCallback(async (text?: string) => {
     const txt = (text ?? input).trim();
-    if (!txt || loading) return;
+    if (!txt || loading || !historyLoaded) return;
 
     // Free trial: anonymous users get 3 messages before login required
     if (!user) {
@@ -1251,7 +1268,7 @@ function ChatPageInner() {
     }
 
     await callApi(txt, messages, pendingProfessorId ?? undefined);
-  }, [input, loading, messages, mode, callApi, pendingProfessorId, attachedFile]);
+  }, [input, loading, historyLoaded, messages, mode, callApi, pendingProfessorId, attachedFile]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -1937,6 +1954,51 @@ function ChatPageInner() {
                     messages={messages.map(m => ({ role: m.role, content: m.content }))}
                   />
                 )}
+                {msg.role === 'assistant' && msg.olaAction?.type === 'show_match' && msg.olaAction.userId && (
+                  <MatchProfileCard
+                    targetUserId={msg.olaAction.userId}
+                    onAction={async (action, targetUserId) => {
+                      if (action === 'decline') {
+                        sendMessage('不太感兴趣，帮我看看别的同学吧');
+                        return;
+                      }
+                      try {
+                        const res = await fetch('/api/ola/matchmaking', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ action, targetUserId }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) {
+                          if (data.error === 'insufficient_credits') {
+                            setMessages(prev => [...prev, {
+                              id: msgId(), role: 'assistant',
+                              content: data.message || '积分不足',
+                              upgradePrompt: { feature: '社交牵线', remaining: 0 },
+                              timestamp: new Date(),
+                            }]);
+                          }
+                          return;
+                        }
+                        if (action === 'unlock_profile' && data.profile) {
+                          sendMessage(`我解锁了这位同学的资料，学姐帮我看看跟TA聊什么好？`);
+                        } else if (action === 'generate_letter' && data.letter) {
+                          setMessages(prev => [...prev, {
+                            id: msgId(), role: 'assistant',
+                            content: `学姐帮你写好啦～\n\n${data.letter}\n\n要发送给TA吗？`,
+                            timestamp: new Date(),
+                          }]);
+                        }
+                      } catch {
+                        setMessages(prev => [...prev, {
+                          id: msgId(), role: 'assistant',
+                          content: '哎呀，网络出了点问题，稍后再试试～',
+                          timestamp: new Date(),
+                        }]);
+                      }
+                    }}
+                  />
+                )}
                 {msg.role === 'assistant' && msg.quickReplies && msg.quickReplies.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {msg.quickReplies.map(qr => (
@@ -2081,8 +2143,8 @@ function ChatPageInner() {
           />
           <button
             onClick={() => sendMessage()}
-            disabled={!input.trim() || loading}
-            className={`size-11 shrink-0 rounded-full flex justify-center items-center ${input.trim() && !loading ? 'bg-[#1A1A2E] dark:bg-[#D4A843]' : 'bg-gray-200 dark:bg-white/[0.08]'}`}
+            disabled={!input.trim() || loading || !historyLoaded}
+            className={`size-11 shrink-0 rounded-full flex justify-center items-center ${input.trim() && !loading && historyLoaded ? 'bg-[#1A1A2E] dark:bg-[#D4A843]' : 'bg-gray-200 dark:bg-white/[0.08]'}`}
           >
             <Send className="size-4 fill-white text-white" />
           </button>
