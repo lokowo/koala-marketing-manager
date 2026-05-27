@@ -50,3 +50,6 @@ supabase/.temp/
 
 # Claude Code worktrees
 .claude/worktrees/
+
+# Ola mascot source assets (uploaded to Supabase Storage)
+ola_assets/
