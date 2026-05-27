@@ -1714,7 +1714,7 @@ function ChatPageInner() {
               我是学姐小欧，你的 PhD 申请 AI 顾问 ✨
             </p>
             <div className="flex flex-col gap-3 mt-6 w-full max-w-[280px]">
-              {historyLoaded && messages.length > 1 && (
+              {historyLoaded && messages.some(m => m.role === 'user') && (
                 <button
                   onClick={handleContinueChat}
                   className="w-full py-3 rounded-xl text-sm font-medium transition-all active:scale-[0.97] bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
@@ -1725,7 +1725,7 @@ function ChatPageInner() {
               <button
                 onClick={handleNewChat}
                 className={`w-full py-3 rounded-xl text-sm font-medium transition-all active:scale-[0.97] ${
-                  historyLoaded && messages.length > 1
+                  historyLoaded && messages.some(m => m.role === 'user')
                     ? 'bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-white/10'
                     : 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'
                 }`}
