@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { OlaAvatar } from '../koala/components/ola/OlaAvatar';
-import { X } from 'lucide-react';
+import { OlaAvatar, getAssetMeta, ensureAssetsLoaded } from '../koala/components/ola/OlaAvatar';
+import type { OlaAssetMeta } from '../koala/components/ola/OlaAvatar';
+import { X, Volume2, VolumeOff } from 'lucide-react';
 import { useAuth } from '../koala/components/AuthContext';
 
 // ─── Bubble definitions ─────────────────────────────
@@ -185,6 +186,12 @@ export default function OlaFloatingMascot() {
   const [assetOpacity, setAssetOpacity] = useState(1);
   const idleRotateTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastEmotionRef = useRef<string | null>(null);
+  // Video playback state
+  const [currentMeta, setCurrentMeta] = useState<OlaAssetMeta | null>(null);
+  const [muted, setMuted] = useState(true);
+  const [assetsReady, setAssetsReady] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -336,15 +343,71 @@ export default function OlaFloatingMascot() {
     setShowBubble(false);
   }, [pathname]);
 
+  // ─── Load asset metadata cache ───────────────────
+  useEffect(() => {
+    ensureAssetsLoaded().then(() => setAssetsReady(true));
+  }, []);
+
   // ─── Emotion-based asset switching ───────────────
   const switchAsset = useCallback((assetId: string, caption: string) => {
     setAssetOpacity(0);
     setTimeout(() => {
       setCurrentAssetId(assetId);
       setCurrentCaption(caption);
+      setCurrentMeta(assetsReady ? getAssetMeta(assetId) ?? null : null);
       setAssetOpacity(1);
     }, 300);
+  }, [assetsReady]);
+
+  // Resolve meta whenever assetId or assetsReady changes
+  useEffect(() => {
+    if (assetsReady) {
+      setCurrentMeta(getAssetMeta(currentAssetId) ?? null);
+    }
+  }, [assetsReady, currentAssetId]);
+
+  const handleVideoEnded = useCallback(() => {
+    const mode = currentMeta?.play_mode;
+    if (mode === 'emotion') {
+      setAssetOpacity(0);
+      setTimeout(() => {
+        switchAsset('h-09-bubbly-boba-nobg', pickRandom(IDLE_CAPTIONS));
+      }, 300);
+    }
+    // action: do nothing — video pauses on last frame by default
+  }, [currentMeta, switchAsset]);
+
+  const toggleMuted = useCallback(() => {
+    setMuted(prev => {
+      const next = !prev;
+      if (videoRef.current) videoRef.current.muted = next;
+      if (audioRef.current) {
+        audioRef.current.muted = next;
+        if (!next && audioRef.current.paused) {
+          audioRef.current.play().catch(() => {});
+        }
+      }
+      return next;
+    });
   }, []);
+
+  // Sync audio element with video playback
+  useEffect(() => {
+    const audio = audioRef.current;
+    const video = videoRef.current;
+    if (!audio || !video) return;
+    audio.muted = muted;
+    const syncPlay = () => { audio.currentTime = video.currentTime; audio.play().catch(() => {}); };
+    const syncPause = () => { audio.pause(); };
+    video.addEventListener('play', syncPlay);
+    video.addEventListener('pause', syncPause);
+    video.addEventListener('ended', syncPause);
+    return () => {
+      video.removeEventListener('play', syncPlay);
+      video.removeEventListener('pause', syncPause);
+      video.removeEventListener('ended', syncPause);
+    };
+  }, [currentMeta?.video_url, muted]);
 
   // Poll localStorage for emotion changes from chat page
   useEffect(() => {
@@ -699,7 +762,7 @@ export default function OlaFloatingMascot() {
             <X className="size-3 text-gray-400" />
           </button>
 
-          {/* Ola image with float/bounce animation + fade transition */}
+          {/* Ola image/video with float/bounce animation + fade transition */}
           <div
             onClick={handleMascotClick}
             className={`size-full shadow-lg ${
@@ -708,10 +771,44 @@ export default function OlaFloatingMascot() {
             style={bouncing ? { animation: 'olaBounce 300ms ease-out' } : undefined}
           >
             <div style={{ opacity: assetOpacity, transition: 'opacity 0.3s ease-in-out' }} className="size-full">
-              <OlaAvatar assetId={currentAssetId} size="md" className="size-full pointer-events-none" />
+              {currentMeta?.video_url ? (
+                <video
+                  ref={videoRef}
+                  key={currentMeta.video_url}
+                  src={currentMeta.video_url}
+                  autoPlay
+                  playsInline
+                  muted={muted}
+                  loop={currentMeta.play_mode === 'idle' || currentMeta.play_mode === 'loop'}
+                  onEnded={handleVideoEnded}
+                  className="size-full rounded-full object-cover pointer-events-none"
+                  style={{ background: 'transparent' }}
+                />
+              ) : (
+                <OlaAvatar assetId={currentAssetId} size="md" className="size-full pointer-events-none" />
+              )}
             </div>
           </div>
+
+          {/* Sound toggle button */}
+          {currentMeta?.video_url && (
+            <button
+              data-close-btn
+              onClick={(e) => { e.stopPropagation(); toggleMuted(); }}
+              className="absolute -bottom-1.5 -right-1.5 z-10 flex items-center justify-center size-5 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label={muted ? '开启声音' : '关闭声音'}
+            >
+              {muted
+                ? <VolumeOff className="size-3 text-gray-400" />
+                : <Volume2 className="size-3 text-blue-500" />}
+            </button>
+          )}
         </div>
+
+        {/* Separate audio element for MP3 track */}
+        {currentMeta?.audio_url && (
+          <audio ref={audioRef} src={currentMeta.audio_url} loop={currentMeta.play_mode === 'idle' || currentMeta.play_mode === 'loop'} muted={muted} />
+        )}
 
         {/* Caption below mascot */}
         {currentCaption && !dragging.current && (

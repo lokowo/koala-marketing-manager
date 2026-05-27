@@ -16,7 +16,26 @@ const assetCache = new Map<string, string>();
 let allAssetsFetched = false;
 let fetchPromise: Promise<void> | null = null;
 
-interface OlaAssetRow { asset_id: string; emotion_tag: string | null; image_url: string }
+export interface OlaAssetMeta {
+  asset_id: string;
+  image_url: string;
+  video_url: string | null;
+  audio_url: string | null;
+  media_type: string;
+  play_mode: string;
+}
+
+const assetMetaCache = new Map<string, OlaAssetMeta>();
+
+interface OlaAssetRow {
+  asset_id: string;
+  emotion_tag: string | null;
+  image_url: string;
+  video_url: string | null;
+  audio_url: string | null;
+  media_type: string | null;
+  play_mode: string | null;
+}
 
 async function fetchAllAssets(): Promise<void> {
   if (fetchPromise) return fetchPromise;
@@ -24,7 +43,7 @@ async function fetchAllAssets(): Promise<void> {
     try {
       const { data } = await (supabase
         .from('ola_assets' as 'professors')
-        .select('asset_id, emotion_tag, image_url')
+        .select('asset_id, emotion_tag, image_url, video_url, audio_url, media_type, play_mode')
         .eq('is_active', true as never));
       if (data) {
         for (const row of data as unknown as OlaAssetRow[]) {
@@ -32,12 +51,30 @@ async function fetchAllAssets(): Promise<void> {
           if (row.emotion_tag) {
             assetCache.set(`emotion:${row.emotion_tag}`, row.image_url);
           }
+          const meta: OlaAssetMeta = {
+            asset_id: row.asset_id,
+            image_url: row.image_url,
+            video_url: row.video_url,
+            audio_url: row.audio_url,
+            media_type: row.media_type ?? 'static',
+            play_mode: row.play_mode ?? 'static',
+          };
+          assetMetaCache.set(row.asset_id, meta);
         }
       }
     } catch { /* ignore */ }
     allAssetsFetched = true;
   })();
   return fetchPromise;
+}
+
+export function getAssetMeta(assetId: string): OlaAssetMeta | undefined {
+  return assetMetaCache.get(assetId);
+}
+
+export function ensureAssetsLoaded(): Promise<void> {
+  if (allAssetsFetched) return Promise.resolve();
+  return fetchAllAssets();
 }
 
 interface OlaAvatarProps {
@@ -128,7 +165,7 @@ export function OlaAvatar({ assetId, emotionTag, state, size = 'md', className, 
       alt="Ola"
       width={px}
       height={px}
-      className={`${shouldRound ? 'rounded-full object-cover' : 'object-contain'} ${className ?? ''}`}
+      className={`${shouldRound ? 'rounded-full object-cover' : 'rounded-lg object-contain'} ${className ?? ''}`}
       unoptimized
     />
   );
