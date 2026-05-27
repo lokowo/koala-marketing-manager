@@ -91,12 +91,17 @@ interface Message {
 
 // ─── Ola state tag parser ─────────────────────────────────────────────────────
 
-const OLA_STATE_RE = /<!--\s*ola_state\s*:\s*(\{[^}]*\})\s*-->/;
+const OLA_STATE_RE = /<!--\s*ola_state\s*:\s*(\{[\s\S]*?\})\s*-->/;
+const HTML_COMMENT_RE = /<!--[\s\S]*?-->/g;
+
+function stripHtmlComments(text: string): string {
+  return text.replace(HTML_COMMENT_RE, '').trim();
+}
 
 function parseOlaState(text: string): { clean: string; assetId?: string; emotionTag?: string } {
   const match = text.match(OLA_STATE_RE);
-  if (!match) return { clean: text };
-  const clean = text.replace(OLA_STATE_RE, '').trim();
+  const clean = stripHtmlComments(text);
+  if (!match) return { clean };
   try {
     const parsed = JSON.parse(match[1]) as { emotion?: string; image?: string };
     return { clean, assetId: parsed.image, emotionTag: parsed.emotion };
@@ -147,7 +152,7 @@ const MODES: {
     key: 'write',
     label: '✉️ 写申请信',
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 20h9" strokeLinecap="round"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-    desc: '定制申请信 · SOP · 研究计划',
+    desc: '定制申请信 · RP · 研究计划',
     placeholder: '给我一位教授的名字，我帮你写申请信……',
     welcome: '给我一位教授的名字或链接，我帮你写一封专业的申请信 ✉️',
     initialReplies: ['我有目标教授', '帮我先找教授再写信', '修改我的草稿'],
@@ -649,7 +654,17 @@ function generateSessionId() {
 }
 
 function remoteToMessages(msgs: { role: 'user' | 'assistant'; content: string }[]): Message[] {
-  return msgs.map(m => ({ id: msgId(), role: m.role, content: m.content, timestamp: new Date() }));
+  return msgs.map(m => {
+    const parsed = m.role === 'assistant' ? parseOlaState(m.content) : null;
+    return {
+      id: msgId(),
+      role: m.role,
+      content: parsed ? parsed.clean : m.content,
+      olaAssetId: parsed?.assetId,
+      olaEmotionTag: parsed?.emotionTag,
+      timestamp: new Date(),
+    };
+  });
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -695,8 +710,6 @@ function ChatPageInner() {
   const [historyLoaded, setHistoryLoaded] = useState(!user);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [bgAnim, setBgAnim] = useState<'idle' | 'send' | 'reply'>('idle');
-  const bgIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [credits, setCredits] = useState<number>(10);
   const [showCreditConfirm, setShowCreditConfirm] = useState(false);
@@ -1054,8 +1067,6 @@ function ChatPageInner() {
     setMessages(prev => [...prev, userMsg]);
     setListenPulse(p => p + 1);
     setLoading(true);
-    setBgAnim('send');
-    if (bgIdleTimer.current) clearTimeout(bgIdleTimer.current);
 
     try {
       const allMsgs = [...currentMessages, userMsg];
@@ -1192,8 +1203,6 @@ function ChatPageInner() {
       });
     } finally {
       setLoading(false);
-      setBgAnim('reply');
-      bgIdleTimer.current = setTimeout(() => setBgAnim('idle'), 5000);
     }
   }, [mode, tonePref, user, profileCollectionPending, refreshProfile]);
 
@@ -1219,8 +1228,8 @@ function ChatPageInner() {
       localStorage.setItem('ola_free_msgs', String(count + 1));
     }
 
-    // Check chat_turn usage (logged-in users only)
-    if (user) {
+    // Check chat_turn usage (logged-in users only, skip for paid plans)
+    if (user && (!profile || profile.plan_type === 'free')) {
       const chatUsage = await checkUsage(supabase, user.id, 'chat');
       if (!chatUsage.allowed) {
         const upgradeMsg: Message = {
@@ -1836,13 +1845,6 @@ function ChatPageInner() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-0.5 relative">
-        {/* Background mascot layer */}
-        <div
-          className={`ola-bg-mascot ${(messages.length === 1 && messages[0].role === 'assistant' && !loading) ? 'empty-state' : ''} ${bgAnim === 'send' ? 'ola-bg-send' : bgAnim === 'reply' ? 'ola-bg-reply' : ''}`}
-        >
-          <OlaAvatar assetId="b-02-confident-pose" size="xl" className="h-full w-auto" />
-        </div>
-
         {/* Welcome screen when no conversation yet */}
         {messages.length === 1 && messages[0].role === 'assistant' && !loading ? (
           <div className="relative z-[1]"><OlaWelcome onSend={(msg) => sendMessage(msg)} /></div>
@@ -1871,9 +1873,9 @@ function ChatPageInner() {
                   }
                 >
                   {msg.role === 'assistant' && typewriterMsgId === msg.id ? (
-                    <>{typewriterText}<span className="animate-pulse">|</span></>
+                    <>{stripHtmlComments(typewriterText)}<span className="animate-pulse">|</span></>
                   ) : (
-                    msg.content
+                    stripHtmlComments(msg.content)
                   )}
                   {msg.role === 'assistant' && msg.confidence && typewriterMsgId !== msg.id && (
                     <ConfidenceBadgeInline level={msg.confidence} count={msg.citations?.length} />
