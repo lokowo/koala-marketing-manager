@@ -40,46 +40,6 @@ body {
   50% { transform: translateY(-4px); }
 }
 
-/* ── Ola Chat Background Mascot ── */
-.ola-bg-mascot {
-  position: absolute;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  height: 65%;
-  opacity: 0.06;
-  pointer-events: none;
-  z-index: 0;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  animation: ola-bg-breathe 4s ease-in-out infinite;
-}
-.ola-bg-mascot.empty-state {
-  opacity: 0;
-  animation: none;
-}
-.ola-bg-mascot.ola-bg-send {
-  animation: ola-bg-send-pulse 0.3s ease-out;
-}
-.ola-bg-mascot.ola-bg-reply {
-  animation: ola-bg-reply-wiggle 0.5s ease-in-out;
-}
-@keyframes ola-bg-breathe {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(-8px); }
-}
-@keyframes ola-bg-send-pulse {
-  0% { transform: translateX(-50%) scale(1); }
-  50% { transform: translateX(-50%) scale(1.02); }
-  100% { transform: translateX(-50%) scale(1); }
-}
-@keyframes ola-bg-reply-wiggle {
-  0% { transform: translateX(-50%) rotate(0); }
-  25% { transform: translateX(-50%) rotate(1deg); }
-  50% { transform: translateX(-50%) rotate(0); }
-  75% { transform: translateX(-50%) rotate(-1deg); }
-  100% { transform: translateX(-50%) rotate(0); }
-}
-
 /* ── Admin Dashboard Dark Mode Overrides ── */
 /* Scoped to admin dashboard only — not applied to frontend /koala/ pages */
 /* The admin dashboard removes .dark from html, so these only apply when
