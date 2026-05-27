@@ -77,12 +77,12 @@ export function OlaHandoffCard({ userId, userEmail, messages, onClose }: OlaHand
               <div className="flex items-center gap-2 text-sm">
                 <Mail className="size-3.5 text-[#0D7C5F]" />
                 <span className="text-gray-600 dark:text-gray-400">回复邮箱：</span>
-                <span className="font-medium text-gray-800 dark:text-gray-200">{email}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">info@koalastudy.net</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-base">💬</span>
                 <span className="text-gray-600 dark:text-gray-400">或微信加：</span>
-                <span className="font-medium text-[#0D7C5F]">KoalaStudyAdvisor</span>
+                <span className="font-medium text-[#0D7C5F]">MissKoalaAu</span>
               </div>
             </div>
             {onClose && (

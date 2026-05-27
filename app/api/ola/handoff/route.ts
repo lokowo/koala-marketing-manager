@@ -52,8 +52,8 @@ export async function POST(req: Request) {
     return Response.json({
       success: true,
       handoff_id: data.id,
-      wechat_id: 'KoalaStudyAdvisor',
-      contact_email: 'info@koalaphd.com',
+      wechat_id: 'MissKoalaAu',
+      contact_email: 'info@koalastudy.net',
     });
   } catch (error) {
     console.error('[handoff POST]', error);
