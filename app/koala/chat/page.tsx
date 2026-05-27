@@ -201,88 +201,26 @@ function AcceptingBadge({ status }: { status?: string }) {
   return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400">🔴 暂不招生</span>;
 }
 
-function ProfessorMatchCard({ match, onGenerateEmail, selectable, selected, onToggleSelect }: { match: ProfessorMatch; onGenerateEmail?: (professorId: string, professorName: string) => void; selectable?: boolean; selected?: boolean; onToggleSelect?: (professorId: string) => void }) {
+function ProfessorMatchCard({ match, onGenerateEmail }: { match: ProfessorMatch; onGenerateEmail?: (professorId: string, professorName: string) => void }) {
   const score = match.matchScore;
   const color = score >= 75 ? '#5a8060' : score >= 50 ? '#D4A843' : '#b06040';
-  const hasStats = match.hIndex != null || match.paperCount != null || match.citationCount != null;
   return (
     <div className="rounded-xl p-3 mt-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
-      {selectable && (
-        <label className="flex items-center gap-2 mb-2 cursor-pointer" onClick={e => e.stopPropagation()}>
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={() => onToggleSelect?.(match.professorId)}
-            className="size-4 rounded border-gray-300 dark:border-white/20 text-[#D4A843] accent-[#D4A843]"
-          />
-          <span className="text-[11px] text-gray-500 dark:text-[#a09888]">选中批量生成</span>
-        </label>
-      )}
-      <Link href={`/koala/professors/${match.professorId}`} style={{ textDecoration: 'none' }}>
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <Link href={`/koala/professors/${match.professorId}`} className="no-underline">
             <div className="text-xs font-semibold text-gray-900 dark:text-[#e8e4dc]">🎓 {match.name}</div>
             <div className="text-[11px] mt-0.5 text-gray-500 dark:text-[#8a8078]">{match.institution}</div>
-            {match.positionTitle && <div className="text-[10px] text-gray-400 dark:text-[#6a6058]">{match.positionTitle}</div>}
-          </div>
-          <div className="flex-shrink-0 text-center">
-            <div className="text-lg font-bold" style={{ color }}>{score}</div>
-            <div className="text-[10px] text-gray-400 dark:text-[#6a6058]">匹配度</div>
-          </div>
-        </div>
-        {/* Stats row + accepting badge */}
-        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-          <AcceptingBadge status={match.acceptingStudents} />
-          {match.opportunityScore != null && match.opportunityScore > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              机会分 {match.opportunityScore}
-            </span>
-          )}
-          {match.opportunityLabel && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(90,128,96,0.15)', color: '#5a8060' }}>{match.opportunityLabel}</span>
+          </Link>
+          {match.reason && (
+            <div className="text-[11px] mt-1 leading-snug text-gray-500 dark:text-[#a09888] line-clamp-2">{match.reason}</div>
           )}
         </div>
-        {hasStats && (
-          <div className="flex gap-3 mt-1.5 text-[10px] text-gray-500 dark:text-[#8a8078]">
-            {match.hIndex != null && <span>H:{match.hIndex}</span>}
-            {match.paperCount != null && <span>{match.paperCount}篇论文</span>}
-            {match.citationCount != null && <span>{match.citationCount >= 1000 ? `${(match.citationCount / 1000).toFixed(1)}k` : match.citationCount}引用</span>}
-          </div>
-        )}
-        {match.researchTags && match.researchTags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1.5">
-            {match.researchTags.slice(0, 3).map(tag => (
-              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-white/[0.08] text-amber-700 dark:text-[#D4A843]">{tag}</span>
-            ))}
-          </div>
-        )}
-        {match.latestPapers && match.latestPapers.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-white/[0.08]">
-            <div className="text-[10px] font-medium text-gray-400 dark:text-[#6a6058] mb-1">最新论文</div>
-            {match.latestPapers.slice(0, 2).map((paper, i) => (
-              <div key={i} className="mb-1 last:mb-0">
-                {paper.doi_url ? (
-                  <a href={paper.doi_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[11px] leading-snug text-blue-600 dark:text-blue-400 hover:underline no-underline">
-                    {paper.title}
-                    {paper.journal && <span className="text-gray-400 dark:text-[#6a6058]">, {paper.journal}</span>}
-                    {paper.year && <span className="text-gray-400 dark:text-[#6a6058]">, {paper.year}</span>}
-                    <span className="ml-0.5">↗</span>
-                  </a>
-                ) : (
-                  <span className="text-[11px] leading-snug text-gray-500 dark:text-[#8a8078]">
-                    {paper.title}
-                    {paper.journal && <span className="text-gray-400 dark:text-[#6a6058]">, {paper.journal}</span>}
-                    {paper.year && <span className="text-gray-400 dark:text-[#6a6058]">, {paper.year}</span>}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-        {match.reason && (
-          <div className="text-[11px] mt-2 pt-2 leading-relaxed text-gray-500 dark:text-[#a09888] border-t border-gray-200 dark:border-white/[0.08]">{match.reason}</div>
-        )}
-      </Link>
+        <div className="flex-shrink-0 text-center">
+          <div className="text-lg font-bold" style={{ color }}>{score}</div>
+          <div className="text-[10px] text-gray-400 dark:text-[#6a6058]">匹配度</div>
+        </div>
+      </div>
       <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-white/[0.08]">
         <Link
           href={`/koala/professors/${match.professorId}`}
@@ -734,8 +672,7 @@ function ChatPageInner() {
   const [profileCollectionPending, setProfileCollectionPending] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{ file: File; type: string } | null>(null);
   const [coldEmailLoading, setColdEmailLoading] = useState(false);
-  const [selectedProfessorIds, setSelectedProfessorIds] = useState<Set<string>>(new Set());
-  const [batchGenerating, setBatchGenerating] = useState(false);
+  const [expandedMatchMsgIds, setExpandedMatchMsgIds] = useState<Set<string>>(new Set());
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDismissed, setFeedbackDismissed] = useState(false);
   const [freeUsageHint, setFreeUsageHint] = useState<{ chat: { used: number; limit: number }; email: { used: number; limit: number } } | null>(null);
@@ -951,7 +888,13 @@ function ChatPageInner() {
         setLocalHistory(mode, restored);
         sessionIdRef.current = conv.sessionId;
       } else {
-        // No remote history — migrate localStorage if available
+        // No remote history — show local messages immediately, then migrate
+        const localMsgs = getLocalHistory(mode);
+        if (localMsgs.length > 1) {
+          setMessages(localMsgs);
+          sessionIdRef.current = generateSessionId();
+        }
+
         if (!migrationDoneRef.current) {
           migrationDoneRef.current = true;
           const allModes = ['path', 'research', 'chat', 'write', 'rp', 'interview'];
@@ -959,7 +902,7 @@ function ChatPageInner() {
             const local = getLocalHistory(m);
             if (local.length > 1) {
               try {
-                await fetch('/api/chat-history', {
+                const res = await fetch('/api/chat-history', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
@@ -967,20 +910,22 @@ function ChatPageInner() {
                     messages: local.map(msg => ({ role: msg.role, content: msg.content })),
                   }),
                 });
-                clearLocalHistory(m);
+                if (res.ok) {
+                  clearLocalHistory(m);
+                }
               } catch {}
             }
           }
-          // After migration, try loading current mode again
+          // After migration, try loading current mode from DB
           const migrated = await loadRemoteConversation(mode);
           if (migrated && migrated.messages.length > 0) {
             const restored = remoteToMessages(migrated.messages);
             setMessages(restored);
             sessionIdRef.current = migrated.sessionId;
-          } else {
+          } else if (localMsgs.length <= 1) {
             sessionIdRef.current = generateSessionId();
           }
-        } else {
+        } else if (localMsgs.length <= 1) {
           sessionIdRef.current = generateSessionId();
         }
       }
@@ -1270,27 +1215,6 @@ function ChatPageInner() {
       return;
     }
 
-    // Detect batch intent: "批量" or "多位" or "所有教授" + email keywords
-    const isBatchRequest = mode === 'write' && /批量|多位|所有教授|多封|多个教授/i.test(txt);
-    if (isBatchRequest) {
-      // Extract matched professors from latest AI message if available
-      const lastAiMsg = [...messages].reverse().find(m => m.role === 'assistant' && m.matchedProfessors?.length);
-      const profs = lastAiMsg?.matchedProfessors?.map(p => ({
-        id: p.professorId,
-        name: p.name,
-        institution: p.institution,
-        matchScore: p.matchScore,
-      }));
-      if (profs?.length) {
-        handleBatchColdEmails(profs.map(p => p.id));
-        return;
-      }
-      // No prior professors in conversation — ask AI to search first (no credit consumed for search)
-      setInput('');
-      callApi(txt, messages);
-      return;
-    }
-
     const isEmailRequest = mode === 'write' && /申请信|email|生成|帮我写/i.test(txt) && messages.length > 1;
     if (isEmailRequest) {
       if (!user) { showLogin(); return; }
@@ -1571,178 +1495,6 @@ function ChatPageInner() {
     }
   }, [user, showLogin, coldEmailLoading, mode, profile]);
 
-  const toggleProfessorSelect = useCallback((professorId: string) => {
-    setSelectedProfessorIds(prev => {
-      const next = new Set(prev);
-      if (next.has(professorId)) next.delete(professorId);
-      else next.add(professorId);
-      return next;
-    });
-  }, []);
-
-  const handleBatchColdEmails = useCallback(async (professorIds: string[]) => {
-    if (!user) { showLogin(); return; }
-    if (batchGenerating || professorIds.length === 0) return;
-
-    setBatchGenerating(true);
-    const progressMsgId = msgId();
-    setMessages(prev => [...prev, {
-      id: progressMsgId, role: 'assistant',
-      content: `正在批量生成 ${professorIds.length} 封套磁信，请稍候...`,
-      timestamp: new Date(),
-    }]);
-
-    try {
-      const res = await fetch('/api/chat/generate-cold-emails-batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ professorIds }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({ error: '批量生成失败' }));
-        const isQuotaError = res.status === 402 || res.status === 403;
-        setMessages(prev => prev.map(m => m.id === progressMsgId ? {
-          ...m, content: errData.error || '批量生成失败',
-          upgradePrompt: isQuotaError ? {
-            feature: '套磁信', remaining: 0,
-            message: errData.error,
-            actions: [
-              { label: '升级订阅', href: '/koala/pricing' },
-              { label: '购买积分包', href: '/koala/pricing#credits' },
-            ],
-          } : undefined,
-        } : m));
-        return;
-      }
-
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error('No stream');
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let currentEventType = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            currentEventType = line.slice(7).trim();
-            continue;
-          }
-          if (line.startsWith('data: ')) {
-            const eventType = currentEventType;
-            currentEventType = '';
-            try {
-              const data = JSON.parse(line.slice(6));
-
-              if (eventType === 'progress') {
-                setMessages(prev => prev.map(m => m.id === progressMsgId ? {
-                  ...m, content: `正在生成 ${data.current}/${data.total}...`,
-                } : m));
-              } else if (eventType === 'email_done') {
-                const r = data.result;
-                const scoreArray: { dimension: string; score: number }[] = r.matchScores ?? [];
-                const getScore = (dim: string) => scoreArray.find((s: { dimension: string; score: number }) => s.dimension === dim)?.score ?? 50;
-                const scores = {
-                  researchAlignment: getScore('research_alignment'),
-                  backgroundFit: getScore('background_fit'),
-                  researchReadiness: getScore('research_readiness'),
-                  opportunity: getScore('opportunity'),
-                  overall: 0,
-                };
-                scores.overall = Math.round(
-                  (scores.researchAlignment + scores.backgroundFit + scores.researchReadiness + scores.opportunity) / 4,
-                );
-
-                const emailMsg: Message = {
-                  id: msgId(), role: 'assistant',
-                  content: `✅ ${r.professorName}（${r.professorUniversity}）`,
-                  coldEmailData: {
-                    id: r.id,
-                    subject: r.subject,
-                    body: r.body,
-                    highlights: r.highlights ?? [],
-                    matchScores: scores,
-                    creditsUsed: r.creditsUsed ?? 1,
-                    creditsRemaining: r.creditsRemaining ?? 0,
-                    professorId: r.professorId,
-                    professorName: r.professorName,
-                    professorEmail: r.professorEmail ?? undefined,
-                  },
-                  timestamp: new Date(),
-                };
-                setMessages(prev => [...prev, emailMsg]);
-                setCredits(r.creditsRemaining ?? 0);
-              } else if (eventType === 'email_error') {
-                if (data.billingExhausted) {
-                  const errMsg: Message = {
-                    id: msgId(), role: 'assistant',
-                    content: `❌ ${data.professorName}: ${data.error}`,
-                    timestamp: new Date(),
-                  };
-                  setMessages(prev => [...prev, errMsg]);
-                } else {
-                  const errMsg: Message = {
-                    id: msgId(), role: 'assistant',
-                    content: `❌ ${data.professorName}: ${data.error}`,
-                    timestamp: new Date(),
-                  };
-                  setMessages(prev => [...prev, errMsg]);
-                }
-              } else if (eventType === 'skipped') {
-                const skippedMsg: Message = {
-                  id: msgId(), role: 'assistant',
-                  content: `剩余 ${data.count} 位教授因本月额度用尽未生成`,
-                  upgradePrompt: {
-                    feature: '套磁信',
-                    remaining: 0,
-                    message: `已生成部分套磁信，剩余 ${data.count} 位教授因额度用尽未生成`,
-                    actions: [
-                      { label: '升级订阅', href: '/koala/pricing' },
-                      { label: '购买积分包', href: '/koala/pricing#credits' },
-                    ],
-                  },
-                  timestamp: new Date(),
-                };
-                setMessages(prev => [...prev, skippedMsg]);
-              } else if (eventType === 'done') {
-                setMessages(prev => prev.map(m => m.id === progressMsgId ? {
-                  ...m, content: `批量生成完成！成功 ${data.totalGenerated} 封${data.totalFailed > 0 ? `，失败 ${data.totalFailed} 封` : ''}。`,
-                } : m));
-
-                if (data.totalGenerated > 0) {
-                  const summaryMsg: Message = {
-                    id: msgId(), role: 'assistant',
-                    content: `已为你生成 ${data.totalGenerated} 封定制套磁信。每封都根据教授的最新论文和你的背景量身定制。你可以逐封检查和编辑，满意后复制发送。\n\n📬 所有套磁信都已保存到「我的套磁信」页面。`,
-                    suggestions: ['查看我的套磁信', '帮我匹配更多教授'],
-                    timestamp: new Date(),
-                  };
-                  setMessages(prev => [...prev, summaryMsg]);
-                }
-              }
-            } catch {
-              // skip malformed SSE
-            }
-          }
-        }
-      }
-    } catch (err) {
-      setMessages(prev => prev.map(m => m.id === progressMsgId ? {
-        ...m, content: `批量生成失败：${err instanceof Error ? err.message : '请稍后再试'}`,
-      } : m));
-    } finally {
-      setBatchGenerating(false);
-      setSelectedProfessorIds(new Set());
-    }
-  }, [user, showLogin, batchGenerating]);
-
   const formatTime = (d: Date) => d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
   const latestEmotion = useMemo(() => {
@@ -1884,44 +1636,41 @@ function ChatPageInner() {
 
                 {msg.role === 'assistant' && msg.scoreCard && <ScoreCardBlock card={msg.scoreCard} />}
                 {msg.role === 'assistant' && msg.matchedProfessors && msg.matchedProfessors.length > 0 && (
-                  user ? (
-                    <>
-                      {msg.matchedProfessors.map((p, i) => (
-                        <ProfessorMatchCard
-                          key={i}
-                          match={p}
-                          onGenerateEmail={handleGenerateColdEmail}
-                          selectable={msg.matchedProfessors!.length > 1}
-                          selected={selectedProfessorIds.has(p.professorId)}
-                          onToggleSelect={toggleProfessorSelect}
-                        />
-                      ))}
-                      <div className="flex items-center justify-between mt-1.5 ml-1">
-                        <p className="text-[11px] text-gray-400 dark:text-[#8a8078]">
-                          不是你要找的教授？告诉我正确的教授名字和大学
-                        </p>
-                        <SharePosterTrigger
-                          label="分享"
-                          matchCount={msg.matchedProfessors.length}
-                          className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md text-gray-400 dark:text-[#8a8078] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-                        />
-                      </div>
-                      {msg.matchedProfessors.length > 1 && (
-                        <button
-                          onClick={() => {
-                            const ids = selectedProfessorIds.size > 0
-                              ? Array.from(selectedProfessorIds)
-                              : msg.matchedProfessors!.map(p => p.professorId);
-                            handleBatchColdEmails(ids);
-                          }}
-                          disabled={batchGenerating}
-                          className="mt-2 w-full py-2 rounded-xl text-xs font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] disabled:opacity-50"
-                        >
-                          {batchGenerating ? '⏳ 生成中...' : `📨 批量生成套磁信（${selectedProfessorIds.size > 0 ? selectedProfessorIds.size : msg.matchedProfessors!.length} 封）`}
-                        </button>
-                      )}
-                    </>
-                  ) : (
+                  user ? (() => {
+                    const isExpanded = expandedMatchMsgIds.has(msg.id);
+                    const top3 = msg.matchedProfessors!.slice(0, 3);
+                    const rest = msg.matchedProfessors!.slice(3);
+                    const visibleProfs = isExpanded ? msg.matchedProfessors! : top3;
+                    return (
+                      <>
+                        {visibleProfs.map((p, i) => (
+                          <ProfessorMatchCard
+                            key={i}
+                            match={p}
+                            onGenerateEmail={handleGenerateColdEmail}
+                          />
+                        ))}
+                        {rest.length > 0 && !isExpanded && (
+                          <button
+                            onClick={() => setExpandedMatchMsgIds(prev => new Set(prev).add(msg.id))}
+                            className="mt-2 w-full py-2 rounded-xl text-xs font-medium bg-gray-100 dark:bg-white/[0.06] text-gray-600 dark:text-[#a09888] border border-gray-200 dark:border-white/10 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                          >
+                            查看更多推荐（还有 {rest.length} 位）
+                          </button>
+                        )}
+                        <div className="flex items-center justify-between mt-1.5 ml-1">
+                          <p className="text-[11px] text-gray-400 dark:text-[#8a8078]">
+                            不是你要找的教授？告诉我正确的教授名字和大学
+                          </p>
+                          <SharePosterTrigger
+                            label="分享"
+                            matchCount={msg.matchedProfessors!.length}
+                            className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md text-gray-400 dark:text-[#8a8078] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                          />
+                        </div>
+                      </>
+                    );
+                  })() : (
                     <>
                       <ProfessorMatchCard
                         match={msg.matchedProfessors[0]}
