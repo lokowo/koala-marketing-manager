@@ -412,9 +412,19 @@ function ProfessorSpotlightModal({ onClose, onGenerated }: { onClose: () => void
     setLoadingRandom(true);
     try {
       if (poolRef.current.length === 0) {
-        const res = await fetch('/api/professors?limit=20&sortBy=opportunity_score');
-        const data = await res.json();
-        poolRef.current = data.data || data.professors || [];
+        const [profRes, blogRes] = await Promise.all([
+          fetch('/api/professors?limit=50&sortBy=opportunity_score'),
+          fetch('/api/blog?limit=50&category=professor_spotlight'),
+        ]);
+        const profData = await profRes.json();
+        const blogData = await blogRes.json();
+        const allProfs = profData.data || profData.professors || [];
+        const existingProfIds = new Set(
+          (blogData.posts || blogData.data || [])
+            .map((p: { professor_id?: string }) => p.professor_id)
+            .filter(Boolean)
+        );
+        poolRef.current = allProfs.filter((p: Professor) => !existingProfIds.has(p.id));
       }
       if (poolRef.current.length > 0) {
         const idx = Math.floor(Math.random() * poolRef.current.length);

@@ -1,9 +1,17 @@
-import ReactPDF from '@react-pdf/renderer';
+import ReactPDF, { Font } from '@react-pdf/renderer';
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 
+Font.register({
+  family: 'NotoSansSC',
+  fonts: [
+    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-sans-sc@latest/chinese-simplified-400-normal.ttf', fontWeight: 400 },
+    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-sans-sc@latest/chinese-simplified-700-normal.ttf', fontWeight: 700 },
+  ],
+});
+
 const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: 'Helvetica', fontSize: 11 },
+  page: { padding: 40, fontFamily: 'NotoSansSC', fontSize: 11 },
   title: { fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
   subtitle: { fontSize: 10, color: '#888', marginBottom: 20 },
   msgRow: { marginBottom: 10 },
