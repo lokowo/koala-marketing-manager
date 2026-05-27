@@ -204,6 +204,23 @@ const EXTRACTION_PROMPT = `你是 Ola 学姐的记忆模块。从对话中提取
 new_events 中 follow_up=true 表示学姐下次应该主动关心的事（如考试、面试、提交deadline）。
 pain_points 只提取用户明确表达的焦虑和困惑，不推测。`;
 
+const ACADEMIC_EXTRACTION_PROMPT = `从以下对话中提取用户的学术信息（只提取明确提到的，不要猜测）。
+
+返回纯 JSON（不要 markdown），格式：
+{"name":null,"university":null,"major":null,"degree_level":null,"gpa":null,"education":null}
+
+字段说明：
+- name: 用户真名（不是昵称）
+- university: 当前或目标大学名
+- major: 专业
+- degree_level: "本科"/"硕士"/"博士" 之一
+- gpa: GPA 数值字符串如 "3.5"
+- education: 如果同时提到学校+学位，填写 {"institution":"学校全名","degree":"Bachelor/Master/PhD/Other","field":"专业","start_year":2020,"end_year":2024}，年份没提到用 null
+
+没提到的字段保持 null，不要猜测。只提取本轮新信息。`;
+
+const ACADEMIC_CONTENT_RE = /PhD|phd|读博|博士|本科|硕士|学校|大学|专业|GPA|成绩|毕业|学位|university|bachelor|master|graduate|major|degree|我叫|名字是|my name/i;
+
 export async function updateMemoryFromConversation(
   supabase: SupabaseClient,
   userId: string,
@@ -294,6 +311,69 @@ export async function updateMemoryFromConversation(
     .from('ola_user_memory' as 'user_profiles')
     .update(updates as never)
     .eq('user_id', userId);
+
+  // Academic info extraction — sync to user_profiles + education_history
+  if (ACADEMIC_CONTENT_RE.test(userMessage)) {
+    try {
+      const academicResult = await client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        system: ACADEMIC_EXTRACTION_PROMPT,
+        messages: [{
+          role: 'user',
+          content: `用户说："${userMessage}"\n\nOla回复："${olaResponse}"`,
+        }],
+      });
+
+      const academicText = (academicResult.content[0] as { type: 'text'; text: string }).text.trim();
+      let academicInfo: Record<string, unknown>;
+      try {
+        academicInfo = JSON.parse(academicText.replace(/```json|```/g, ''));
+      } catch {
+        academicInfo = {};
+      }
+
+      const profileUpdates: Record<string, unknown> = {};
+      if (academicInfo.name) profileUpdates.display_name = academicInfo.name;
+      if (academicInfo.university) profileUpdates.university = academicInfo.university;
+      if (academicInfo.major) profileUpdates.major = academicInfo.major;
+      if (academicInfo.degree_level) profileUpdates.degree_level = academicInfo.degree_level;
+      if (academicInfo.gpa != null) profileUpdates.gpa = String(academicInfo.gpa);
+
+      if (Object.keys(profileUpdates).length > 0) {
+        await supabase
+          .from('user_profiles' as 'user_profiles')
+          .update(profileUpdates as never)
+          .eq('id', userId);
+      }
+
+      const edu = academicInfo.education as { institution?: string; degree?: string; field?: string; start_year?: number; end_year?: number } | null;
+      if (edu?.institution) {
+        const { data: existing } = await supabase
+          .from('education_history' as 'user_profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .ilike('institution', `%${edu.institution}%`)
+          .limit(1);
+
+        if (!existing || existing.length === 0) {
+          await supabase
+            .from('education_history' as 'user_profiles')
+            .insert({
+              user_id: userId,
+              institution: edu.institution,
+              degree_type: edu.degree || 'Other',
+              major: edu.field || null,
+              start_year: edu.start_year || null,
+              end_year: edu.end_year || null,
+              status: edu.end_year ? 'completed' : 'current',
+            } as never);
+        }
+      }
+    } catch (err) {
+      console.error('[olaMemory] academic info sync failed:', err);
+    }
+  }
 }
 
 // ─── Prompt Builder ─────────────────────────────────────────────────────────

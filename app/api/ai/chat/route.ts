@@ -62,6 +62,16 @@ const PROFESSOR_SEARCH_TOOL: Anthropic.Tool = {
   },
 };
 
+const GENERATE_CV_TOOL: Anthropic.Tool = {
+  name: 'generate_cv',
+  description: '为用户生成学术 CV 并保存到"我的文档"。当用户说"帮我生成CV""写简历""做一份CV"时调用。前提：已知用户的姓名和教育背景（至少学校和专业）。如果信息不够，先向用户询问，不要调用此工具。',
+  input_schema: {
+    type: 'object' as const,
+    properties: {},
+    required: [],
+  },
+};
+
 interface ToolPaper {
   title: string;
   journal: string | null;
@@ -668,9 +678,12 @@ H指数：${prof.hIndex ?? '未知'}`;
         if (cvSections.length > 0) {
           extraContext += `\n\n## CV 补全引导
 用户提到了 CV/简历。检测到以下板块数据为空：${cvSections.join('、')}。
-请主动引导用户补全这些信息。逐个板块引导，不要一次问太多。示例：
-"我看到你的教育背景已经有了，但研究经历还没有。你有参与过什么研究项目吗？比如本科毕设、实验室实习、或者跟教授合作的课题？跟我说说，我帮你整理成CV格式。"
-收集到信息后，用自然语言确认并告诉用户可以去"我的文档"页面生成完整 CV。`;
+如果只缺少非关键信息（研究经历、工作经历等），可以直接调用 generate_cv 工具生成CV，缺失部分会标注"[To be added]"。
+如果缺少姓名或教育背景，先询问用户，收集到后立即调用 generate_cv 工具在对话中直接生成。`;
+        } else {
+          extraContext += `\n\n## CV 生成就绪
+用户提到了 CV/简历，基本信息已足够。直接调用 generate_cv 工具为用户生成学术CV，不要让用户去其他页面。
+生成后告知用户："CV 已保存到 [我的文档](/koala/my-documents) 里了，随时可以查看和下载PDF～"`;
         }
       }
     }
@@ -747,7 +760,7 @@ H指数：${prof.hIndex ?? '未知'}`;
           model: 'claude-sonnet-4-6',
           max_tokens: maxTokens,
           system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
-          tools: [PROFESSOR_SEARCH_TOOL],
+          tools: [PROFESSOR_SEARCH_TOOL, GENERATE_CV_TOOL],
           messages: currentMessages,
         });
 
@@ -871,6 +884,102 @@ H指数：${prof.hIndex ?? '未知'}`;
           }
 
           // Continue loop — Claude will process tool results
+          if (response.stop_reason === 'end_turn') break;
+          continue;
+        } else if (toolUseBlock && toolUseBlock.type === 'tool_use' && toolUseBlock.name === 'generate_cv') {
+          let cvToolResult: string;
+          try {
+            if (!trackingUserId) {
+              cvToolResult = JSON.stringify({ error: '用户未登录，无法生成CV。请引导用户先登录。' });
+            } else if (!studentCtx?.displayName) {
+              cvToolResult = JSON.stringify({ error: '缺少用户姓名，请先询问。', missing: ['name'] });
+            } else if (!studentCtx.education?.length && !studentCtx.university) {
+              cvToolResult = JSON.stringify({ error: '缺少教育背景，请先询问学校和专业。', missing: ['education'] });
+            } else {
+              const cvProfileData = JSON.stringify({
+                name: studentCtx.displayName,
+                email: studentCtx.email,
+                university: studentCtx.university,
+                major: studentCtx.major,
+                degree_level: studentCtx.degreeLevel,
+                gpa: studentCtx.gpa,
+                gpa_scale: studentCtx.gpaScale,
+                target_field: studentCtx.targetField,
+                english_level: studentCtx.englishLevel,
+                research_interests: studentCtx.researchInterests,
+                research_description: studentCtx.researchDescription,
+                has_research_experience: studentCtx.hasResearchExperience,
+                has_publications: studentCtx.hasPublications,
+                publication_details: studentCtx.publicationDetails,
+                career_goal: studentCtx.careerGoal,
+                existing_education: studentCtx.education,
+                existing_work: studentCtx.work,
+              }, null, 2);
+
+              const cvSystemPrompt = `You are a professional academic CV consultant. Generate a polished academic CV in structured JSON format.
+Rules:
+1. All text in English. Use strong action verbs. Quantify outcomes when possible.
+2. Do NOT fabricate data — only polish what the user provides. Missing info → "[To be added]".
+3. If no publications, do NOT generate a publications section. Never invent papers.
+4. Dates: "YYYY" or "YYYY - YYYY" or "YYYY - Present". GPA: "X.XX/Y.YY".
+5. Sections order: Education → Research → Publications (if any) → Skills → Awards → References.
+Output strictly JSON (no markdown): {"personal":{"name":"","email":null},"education":[{"degree":"","university":"","gpa":null,"dates":"","thesis":null}],"research":[{"title":"","lab":null,"supervisor":null,"period":"","description":""}],"publications":[],"skills":{"technical":[],"languages":[],"tools":[]},"awards":[],"references":[]}`;
+
+              const cvResponse = await client.messages.create({
+                model: 'claude-sonnet-4-6',
+                max_tokens: 3000,
+                system: cvSystemPrompt,
+                messages: [{ role: 'user', content: `User profile:\n${cvProfileData}\n\nGenerate the academic CV JSON.` }],
+              });
+
+              const cvText = cvResponse.content[0].type === 'text' ? cvResponse.content[0].text : '';
+              const cvJsonMatch = cvText.match(/\{[\s\S]*\}/);
+              if (!cvJsonMatch) throw new Error('CV format error');
+
+              const cvContent = JSON.parse(cvJsonMatch[0]) as Record<string, unknown>;
+              const cvPersonal = cvContent.personal as { name?: string } | undefined;
+              const cvTitle = `Academic CV — ${cvPersonal?.name || studentCtx.displayName || 'Untitled'}`;
+
+              const { createClient: createCvClient } = await import('@supabase/supabase-js');
+              const cvDb = createCvClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+
+              const { data: cvDoc } = await cvDb
+                .from('generated_documents')
+                .insert({ user_id: trackingUserId, type: 'cv', title: cvTitle, content: cvContent, status: 'draft', credits_used: 1 })
+                .select('id')
+                .single();
+
+              const { incrementUsage: incCvUsage } = await import('../../../lib/services/usageTracker');
+              await incCvUsage(cvDb, trackingUserId, 'cv');
+
+              const sections = Object.keys(cvContent)
+                .filter(k => k !== 'personal' && cvContent[k] && (Array.isArray(cvContent[k]) ? (cvContent[k] as unknown[]).length > 0 : typeof cvContent[k] === 'object'))
+                .join(', ');
+
+              cvToolResult = JSON.stringify({
+                success: true,
+                documentId: cvDoc?.id ?? null,
+                title: cvTitle,
+                documentUrl: '/koala/my-documents',
+                sections,
+                message: `CV已生成并保存，包含：${sections}。用户可在"我的文档"查看和下载PDF。`,
+              });
+            }
+          } catch (err) {
+            console.error('[generate_cv tool]', err);
+            cvToolResult = JSON.stringify({ error: 'CV生成失败，请稍后再试' });
+          }
+
+          currentMessages = [
+            ...currentMessages,
+            { role: 'assistant' as const, content: response.content },
+            { role: 'user' as const, content: [{ type: 'tool_result' as const, tool_use_id: toolUseBlock.id, content: cvToolResult }] },
+          ];
+
+          if (textBlock && textBlock.type === 'text') {
+            rawReply = textBlock.text;
+          }
+
           if (response.stop_reason === 'end_turn') break;
           continue;
         }
