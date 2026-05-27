@@ -287,40 +287,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Daily usage check — hardcoded bypass for paid/privileged users
+    // Daily usage check — 用数据库函数判断用户级别，绕过 RLS
     if (trackingUserId) {
       try {
         const { createClient } = await import('@supabase/supabase-js');
-        const adminDb = createClient(
+        const usageDb = createClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.SUPABASE_SERVICE_ROLE_KEY!,
         );
 
-        const { data: profileData } = await adminDb
-          .from('user_profiles')
-          .select('plan_type')
-          .eq('id', trackingUserId)
-          .maybeSingle();
+        // 直接调用数据库函数获取有效级别（SECURITY DEFINER，不受 RLS 影响）
+        const { data: tierResult } = await usageDb.rpc('get_user_effective_tier', {
+          p_user_id: trackingUserId,
+        });
+        const effectiveTier = tierResult || 'free';
 
-        const { data: roleData } = await adminDb
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', trackingUserId)
-          .maybeSingle();
+        console.log('[RATE_LIMIT]', trackingUserId, 'tier:', effectiveTier);
 
-        const userPlanType = profileData?.plan_type || 'free';
-        const userRole = roleData?.role || null;
-        const isPaidOrPrivileged =
-          userPlanType !== 'free' ||
-          ['admin', 'super_admin', 'sales'].includes(userRole as string);
-
-        console.log('[RATE_LIMIT] userId:', trackingUserId,
-          'plan:', userPlanType, 'role:', userRole,
-          'bypassed:', isPaidOrPrivileged);
-
-        if (!isPaidOrPrivileged) {
+        // 只有 free 用户才检查限流
+        if (effectiveTier === 'free') {
           const { checkUsage } = await import('../../../lib/services/usageTracker');
-          const usage = await checkUsage(adminDb, trackingUserId, 'chat');
+          const usage = await checkUsage(usageDb, trackingUserId, 'chat');
           if (!usage.allowed) {
             return Response.json({
               error: 'daily_limit_reached',

@@ -98,19 +98,23 @@ async function getPrivilegedRole(
 }
 
 async function getUserTier(supabase: SupabaseClient, userId: string): Promise<Tier> {
-  const privileged = await getPrivilegedRole(supabase, userId);
-  if (privileged === 'admin' || privileged === 'super_admin') return 'elite';
-  if (privileged === 'sales') return 'pro';
-
-  const { data, error } = await db(supabase)
+  try {
+    const { data } = await db(supabase).rpc('get_user_effective_tier', {
+      p_user_id: userId,
+    });
+    const tier = data as string;
+    if (tier && ['starter', 'pro', 'elite'].includes(tier)) return tier as Tier;
+    if (tier === 'free') return 'free';
+  } catch (err) {
+    console.error('[getUserTier] rpc failed, falling back:', err);
+  }
+  // 降级方案：直接查 user_profiles
+  const { data: profileData } = await db(supabase)
     .from('user_profiles')
     .select('plan_type')
     .eq('id', userId)
     .maybeSingle();
-  if (error) {
-    console.error('[getUserTier] user_profiles query failed for', userId, error.message);
-  }
-  const plan = data?.plan_type as string | null;
+  const plan = profileData?.plan_type as string | null;
   if (plan && ['starter', 'pro', 'elite'].includes(plan)) return plan as Tier;
   return 'free';
 }
