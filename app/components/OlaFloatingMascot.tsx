@@ -655,6 +655,31 @@ export default function OlaFloatingMascot() {
     showTapChatBubble();
   }, [triggerBounce, showTapChatBubble]);
 
+  // ─── Listen for avatar tap from chat page ─────────
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const emotion = (e as CustomEvent).detail?.emotion as string | undefined;
+      if (hidden) {
+        handleRecall();
+      }
+      if (emotion) {
+        const mapped = EMOTION_ASSET_MAP[emotion];
+        if (mapped) {
+          const caption = mapped.caption || pickRandom(IDLE_CAPTIONS);
+          switchAsset(mapped.assetId, caption);
+          const meta = getAssetMeta(mapped.assetId);
+          if (meta?.video_url && zoomPhaseRef.current === 'idle') {
+            zoomPhaseRef.current = 'in';
+            setZoomPhase('in');
+          }
+        }
+      }
+    };
+    window.addEventListener('ola-avatar-tap', handler);
+    return () => window.removeEventListener('ola-avatar-tap', handler);
+  }, [hidden, handleRecall, switchAsset]);
+
   // ─── Cleanup timers ──────────────────────────────
 
   useEffect(() => {

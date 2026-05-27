@@ -1521,8 +1521,27 @@ function ChatPageInner() {
 
   const showChatMascot = !(messages.length === 1 && messages[0].role === 'assistant' && !loading);
 
+  const handleAvatarTap = useCallback((e: React.MouseEvent) => {
+    const el = e.currentTarget as HTMLElement;
+    el.style.animation = 'none';
+    void el.offsetHeight;
+    el.style.animation = 'olaAvatarBounce 0.5s ease-out';
+    window.dispatchEvent(new CustomEvent('ola-avatar-tap', {
+      detail: { emotion: latestEmotion || 'neutral' },
+    }));
+  }, [latestEmotion]);
+
   return (
     <div className="flex flex-col bg-white dark:bg-[#080c10]" style={{ height: '100dvh' }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes olaAvatarBounce {
+          0% { transform: scale(1); }
+          20% { transform: scale(1.3); }
+          45% { transform: scale(0.9); }
+          70% { transform: scale(1.1); }
+          100% { transform: scale(1); }
+        }
+      ` }} />
 
       {/* Achievement toast */}
       {toastAchievement && (
@@ -1627,7 +1646,7 @@ function ChatPageInner() {
           <div key={msg.id}>
             <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-0.5`}>
               {msg.role === 'assistant' && (
-                <div className="mt-1 mr-2 flex-shrink-0">
+                <div className="mt-1 mr-2 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={handleAvatarTap}>
                   <OlaAvatar assetId="h-09-bubbly-boba-nobg" round={false} size="md" className="w-11 md:w-12 h-auto" />
                 </div>
               )}
@@ -1898,7 +1917,7 @@ function ChatPageInner() {
         {/* Feedback card — shown after 5 min idle */}
         {showFeedback && !feedbackDismissed && (
           <div className="flex justify-start mb-0.5">
-            <div className="mt-1 mr-2 flex-shrink-0">
+            <div className="mt-1 mr-2 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={handleAvatarTap}>
               <OlaAvatar assetId="h-09-bubbly-boba-nobg" round={false} size="md" className="w-11 md:w-12 h-auto" />
             </div>
             <div className="max-w-[80%]">
