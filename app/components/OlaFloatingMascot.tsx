@@ -213,6 +213,12 @@ export default function OlaFloatingMascot() {
   const farewellTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recallBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ─── Zoom playback state ──────────────────────────
+  const [zoomPhase, setZoomPhase] = useState<'idle' | 'in' | 'out'>('idle');
+  const zoomPhaseRef = useRef<'idle' | 'in' | 'out'>('idle');
+  const lastZoomTsRef = useRef<Record<string, number>>({});
+  const zoomOutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ─── Mode detection ──────────────────────────────
 
   const isOnChatPage = pathname?.startsWith('/koala/chat');
@@ -368,13 +374,29 @@ export default function OlaFloatingMascot() {
 
   const handleVideoEnded = useCallback(() => {
     const mode = currentMeta?.play_mode;
+
+    if (zoomPhaseRef.current === 'in') {
+      zoomPhaseRef.current = 'out';
+      setZoomPhase('out');
+      zoomOutTimerRef.current = setTimeout(() => {
+        zoomPhaseRef.current = 'idle';
+        setZoomPhase('idle');
+        if (mode === 'emotion') {
+          setAssetOpacity(0);
+          setTimeout(() => {
+            switchAsset('h-09-bubbly-boba-nobg', pickRandom(IDLE_CAPTIONS));
+          }, 300);
+        }
+      }, 600);
+      return;
+    }
+
     if (mode === 'emotion') {
       setAssetOpacity(0);
       setTimeout(() => {
         switchAsset('h-09-bubbly-boba-nobg', pickRandom(IDLE_CAPTIONS));
       }, 300);
     }
-    // action: do nothing — video pauses on last frame by default
   }, [currentMeta, switchAsset]);
 
   const toggleMuted = useCallback(() => {
@@ -421,6 +443,17 @@ export default function OlaFloatingMascot() {
         if (mapped) {
           const caption = mapped.caption || IDLE_CAPTIONS[Math.floor(Math.random() * IDLE_CAPTIONS.length)];
           switchAsset(mapped.assetId, caption);
+          if (zoomPhaseRef.current === 'idle') {
+            const meta = getAssetMeta(mapped.assetId);
+            if (meta?.video_url && (meta.play_mode === 'action' || meta.play_mode === 'emotion')) {
+              const now = Date.now();
+              if (now - (lastZoomTsRef.current[emotion] || 0) > 60000) {
+                lastZoomTsRef.current[emotion] = now;
+                zoomPhaseRef.current = 'in';
+                setZoomPhase('in');
+              }
+            }
+          }
         }
       }
     };
@@ -458,6 +491,7 @@ export default function OlaFloatingMascot() {
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('[data-close-btn]')) return;
+    if (zoomPhaseRef.current !== 'idle') return;
 
     const startX = e.clientX;
     const startY = e.clientY;
@@ -585,14 +619,13 @@ export default function OlaFloatingMascot() {
       setVisible(false);
       setEntered(false);
       localStorage.setItem(STORAGE_KEY_HIDDEN, 'true');
-      localStorage.setItem(COOLDOWN_KEY, String(Date.now()));
     }, 1500);
   }, [farewellVisible]);
 
   const handleRecall = useCallback(() => {
     setHidden(false);
     setRecallBubble(true);
-    localStorage.removeItem(STORAGE_KEY_HIDDEN);
+    localStorage.setItem(STORAGE_KEY_HIDDEN, 'false');
     const size = getMascotSize();
     setPos({
       x: window.innerWidth - size - DEFAULT_RIGHT,
@@ -633,6 +666,7 @@ export default function OlaFloatingMascot() {
       if (farewellTimer.current) clearTimeout(farewellTimer.current);
       if (recallBubbleTimer.current) clearTimeout(recallBubbleTimer.current);
       if (idleRotateTimer.current) clearInterval(idleRotateTimer.current);
+      if (zoomOutTimerRef.current) clearTimeout(zoomOutTimerRef.current);
     };
   }, []);
 
@@ -640,18 +674,16 @@ export default function OlaFloatingMascot() {
 
   if (!initialized) return null;
 
-  // Hide on chat page
-  if (isOnChatPage) return null;
-
+  // Recall button — shows when hidden (including on chat page)
   if (hidden) {
     return (
       <div className="fixed z-50 group" style={{ bottom: DEFAULT_BOTTOM, right: DEFAULT_RIGHT }}>
         <button
           onClick={handleRecall}
-          className="relative flex items-center justify-center size-11 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md hover:shadow-lg transition-all hover:scale-110 animate-[breathe_2.5s_ease-in-out_infinite]"
+          className="relative flex items-center justify-center size-8 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md hover:shadow-lg transition-all hover:scale-110 animate-[breathe_2.5s_ease-in-out_infinite]"
           aria-label="叫学姐回来"
         >
-          <OlaAvatar assetId={currentAssetId} size="sm" className="size-7" />
+          <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" className="size-6" />
         </button>
         <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1 rounded-lg bg-gray-800 dark:bg-[#1a2332] text-white text-[11px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg border border-gray-700 dark:border-white/10">
           叫学姐回来
@@ -660,6 +692,9 @@ export default function OlaFloatingMascot() {
       </div>
     );
   }
+
+  // Full mascot hidden on chat page (but recall button above still shows)
+  if (isOnChatPage) return null;
 
   if (!visible) return null;
 
@@ -679,6 +714,20 @@ export default function OlaFloatingMascot() {
     />
   );
 
+  // Compute zoom transform for the mascot inner div
+  const zoomInner: React.CSSProperties = { transformOrigin: 'center center' };
+  if (zoomPhase === 'in') {
+    const target = isMobile() ? window.innerWidth * 0.85 : window.innerHeight * 0.7;
+    const s = target / mascotSize;
+    const dx = window.innerWidth / 2 - pos.x - mascotSize / 2;
+    const dy = window.innerHeight / 2 - pos.y - mascotSize / 2;
+    zoomInner.transform = `translate(${dx}px, ${dy}px) scale(${s})`;
+    zoomInner.transition = 'transform 0.4s ease-out';
+  } else if (zoomPhase === 'out') {
+    zoomInner.transform = 'translate(0px, 0px) scale(1)';
+    zoomInner.transition = 'transform 0.6s ease-in';
+  }
+
   return (
     <>
       {/* Keyframe styles for bounce + breathe */}
@@ -694,18 +743,28 @@ export default function OlaFloatingMascot() {
         }
       ` }} />
 
+      {/* Zoom overlay */}
+      {zoomPhase !== 'idle' && (
+        <div
+          className={`fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity pointer-events-none ${
+            zoomPhase === 'in' ? 'opacity-100 duration-[400ms]' : 'opacity-0 duration-[600ms]'
+          }`}
+          style={{ zIndex: 9998 }}
+        />
+      )}
+
       <div
         ref={mascotRef}
-        className={`fixed z-50 select-none transition-all duration-400 ease-out ${
+        className={`fixed select-none transition-all duration-400 ease-out ${
           entered ? 'translate-x-0 opacity-100' : 'translate-x-[120px] opacity-0'
         }`}
-        style={{ left: pos.x, top: pos.y, willChange: 'left, top', touchAction: 'none' }}
+        style={{ left: pos.x, top: pos.y, willChange: 'left, top', touchAction: 'none', zIndex: zoomPhase !== 'idle' ? 9999 : 50 }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
       >
         {/* Speech bubble layer */}
-        {showAnyBubble && (
+        {showAnyBubble && zoomPhase === 'idle' && (
           <div
             className={`absolute bottom-[calc(100%+8px)] whitespace-nowrap transition-all duration-300 ${
               isOnLeft ? 'left-0' : 'right-0'
@@ -749,14 +808,16 @@ export default function OlaFloatingMascot() {
         {/* Mascot */}
         <div
           className="relative cursor-grab active:cursor-grabbing group"
-          style={{ width: mascotSize, height: mascotSize }}
+          style={{ width: mascotSize, height: mascotSize, ...zoomInner }}
           onMouseEnter={handleMouseEnter}
         >
           {/* Close button */}
           <button
             data-close-btn
             onClick={handleClose}
-            className="absolute -top-1.5 -right-1.5 z-10 flex items-center justify-center size-5 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+            className={`absolute -top-1.5 -right-1.5 z-10 flex items-center justify-center size-5 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-sm transition-opacity ${
+              zoomPhase !== 'idle' ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'
+            }`}
             aria-label="关闭 Ola"
           >
             <X className="size-3 text-gray-400" />
@@ -765,8 +826,8 @@ export default function OlaFloatingMascot() {
           {/* Ola image/video with float/bounce animation + fade transition */}
           <div
             onClick={handleMascotClick}
-            className={`size-full shadow-lg ${
-              dragging.current ? '' : 'animate-[float_3s_ease-in-out_infinite]'
+            className={`size-full ${zoomPhase === 'idle' ? 'shadow-lg' : ''} ${
+              dragging.current || zoomPhase !== 'idle' ? '' : 'animate-[float_3s_ease-in-out_infinite]'
             }`}
             style={bouncing ? { animation: 'olaBounce 300ms ease-out' } : undefined}
           >
@@ -795,7 +856,9 @@ export default function OlaFloatingMascot() {
             <button
               data-close-btn
               onClick={(e) => { e.stopPropagation(); toggleMuted(); }}
-              className="absolute -bottom-1.5 -right-1.5 z-10 flex items-center justify-center size-5 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+              className={`absolute -bottom-1.5 -right-1.5 z-10 flex items-center justify-center size-5 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-sm transition-opacity ${
+                zoomPhase !== 'idle' ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'
+              }`}
               aria-label={muted ? '开启声音' : '关闭声音'}
             >
               {muted
@@ -811,7 +874,7 @@ export default function OlaFloatingMascot() {
         )}
 
         {/* Caption below mascot */}
-        {currentCaption && !dragging.current && (
+        {currentCaption && !dragging.current && zoomPhase === 'idle' && (
           <div
             className="text-center mt-1 pointer-events-none"
             style={{ opacity: assetOpacity, transition: 'opacity 0.3s ease-in-out' }}

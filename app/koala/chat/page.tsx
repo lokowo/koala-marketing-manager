@@ -486,7 +486,7 @@ function ThinkingBubble({ mode }: { mode: string }) {
   return (
     <div className="flex justify-start mb-1">
       <div className="mt-1 mr-2 flex-shrink-0">
-        <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="md" className="size-11 md:size-12" />
+        <OlaAvatar assetId="h-09-bubbly-boba-nobg" round={false} size="md" className="w-11 md:w-12 h-auto" />
       </div>
       <div className="px-3.5 py-2.5 text-sm bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-[#8a8078]" style={{ borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <span className="animate-pulse">
@@ -1628,7 +1628,7 @@ function ChatPageInner() {
             <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-0.5`}>
               {msg.role === 'assistant' && (
                 <div className="mt-1 mr-2 flex-shrink-0">
-                  <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="md" className="size-11 md:size-12" />
+                  <OlaAvatar assetId="h-09-bubbly-boba-nobg" round={false} size="md" className="w-11 md:w-12 h-auto" />
                 </div>
               )}
               <div className="flex flex-col max-w-[80%]">
@@ -1899,7 +1899,7 @@ function ChatPageInner() {
         {showFeedback && !feedbackDismissed && (
           <div className="flex justify-start mb-0.5">
             <div className="mt-1 mr-2 flex-shrink-0">
-              <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="md" className="size-11 md:size-12" />
+              <OlaAvatar assetId="h-09-bubbly-boba-nobg" round={false} size="md" className="w-11 md:w-12 h-auto" />
             </div>
             <div className="max-w-[80%]">
               <FeedbackCard

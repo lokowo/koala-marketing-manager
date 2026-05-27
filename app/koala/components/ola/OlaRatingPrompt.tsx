@@ -34,7 +34,7 @@ export function OlaRatingPrompt({ sessionId, onClose }: OlaRatingPromptProps) {
   if (submitted) {
     return (
       <div className="mx-4 mb-3 rounded-2xl p-4 text-center animate-[slideUp_0.3s_ease-out] bg-white dark:bg-[#111c28] border border-gray-200 dark:border-gray-700/50 shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
-        <OlaAvatar state="celebrate" size="sm" />
+        <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" />
         <p className="mt-2 text-sm font-medium text-gray-900 dark:text-[#e8e4dc]">谢谢反馈！🐨</p>
       </div>
     );
@@ -49,8 +49,8 @@ export function OlaRatingPrompt({ sessionId, onClose }: OlaRatingPromptProps) {
         }
       `}</style>
       <div className="flex items-center gap-2 mb-3">
-        <OlaAvatar state="suggest" size="sm" />
-        <span className="text-sm font-medium text-gray-900 dark:text-[#e8e4dc]">跟小欧聊得怎么样？</span>
+        <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" />
+        <span className="text-sm font-medium text-gray-900 dark:text-[#e8e4dc]">喜欢小欧吗？</span>
       </div>
 
       <div className="flex justify-center gap-1 mb-3">
