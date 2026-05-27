@@ -509,7 +509,16 @@ function getLocalHistory(mode: string): Message[] {
     const raw = localStorage.getItem(`${LOCAL_STORAGE_KEY}_${mode}`);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as Array<{ id: string; role: 'user' | 'assistant'; content: string; metadata?: Record<string, unknown>; timestamp: string }>;
-    return parsed.map(m => ({ ...m, timestamp: new Date(m.timestamp) })) as Message[];
+    return parsed.map(m => {
+      const olaResult = m.role === 'assistant' ? parseOlaState(m.content) : null;
+      return {
+        ...m,
+        content: olaResult ? olaResult.clean : m.content,
+        olaAssetId: olaResult?.assetId,
+        olaEmotionTag: olaResult?.emotionTag,
+        timestamp: new Date(m.timestamp),
+      };
+    }) as Message[];
   } catch { return []; }
 }
 
@@ -517,7 +526,7 @@ function setLocalHistory(mode: string, messages: Message[]) {
   if (typeof window === 'undefined') return;
   try {
     const slim = messages.map(m => ({
-      id: m.id, role: m.role, content: m.content,
+      id: m.id, role: m.role, content: stripHtmlComments(m.content),
       metadata: m.matchedProfessors || m.scoreCard || m.emailPackage ? {
         matchedProfessors: m.matchedProfessors,
         scoreCard: m.scoreCard,
@@ -825,7 +834,7 @@ function ChatPageInner() {
     const msg = messages.find(m => m.id === typewriterMsgId);
     if (!msg) { setTypewriterMsgId(null); return; }
 
-    const fullText = msg.content;
+    const fullText = stripHtmlComments(msg.content);
     let charIndex = 0;
     setTypewriterText('');
 
