@@ -192,6 +192,8 @@ export default function OlaFloatingMascot() {
   const [assetsReady, setAssetsReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  // Tracks temporary show while user preference is hidden
+  const tempShownRef = useRef(false);
 
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -349,6 +351,30 @@ export default function OlaFloatingMascot() {
     setShowBubble(false);
   }, [pathname]);
 
+  // ─── Temporary show (no localStorage change) ─────
+  const tempShow = useCallback(() => {
+    if (!hidden) return;
+    tempShownRef.current = true;
+    setHidden(false);
+    const size = getMascotSize();
+    setPos({
+      x: window.innerWidth - size - DEFAULT_RIGHT,
+      y: window.innerHeight - size - DEFAULT_BOTTOM,
+    });
+    setVisible(true);
+    setTimeout(() => setEntered(true), 50);
+  }, [hidden, setPos]);
+
+  const tempHide = useCallback(() => {
+    if (!tempShownRef.current) return;
+    tempShownRef.current = false;
+    setEntered(false);
+    setTimeout(() => {
+      setVisible(false);
+      setHidden(true);
+    }, 400);
+  }, []);
+
   // ─── Load asset metadata cache ───────────────────
   useEffect(() => {
     ensureAssetsLoaded().then(() => setAssetsReady(true));
@@ -385,7 +411,10 @@ export default function OlaFloatingMascot() {
           setAssetOpacity(0);
           setTimeout(() => {
             switchAsset('h-09-bubbly-boba-nobg', pickRandom(IDLE_CAPTIONS));
+            tempHide();
           }, 300);
+        } else {
+          tempHide();
         }
       }, 600);
       return;
@@ -395,9 +424,12 @@ export default function OlaFloatingMascot() {
       setAssetOpacity(0);
       setTimeout(() => {
         switchAsset('h-09-bubbly-boba-nobg', pickRandom(IDLE_CAPTIONS));
+        tempHide();
       }, 300);
+    } else if (mode === 'action') {
+      setTimeout(() => tempHide(), 1500);
     }
-  }, [currentMeta, switchAsset]);
+  }, [currentMeta, switchAsset, tempHide]);
 
   const toggleMuted = useCallback(() => {
     setMuted(prev => {
@@ -433,26 +465,35 @@ export default function OlaFloatingMascot() {
 
   // Poll localStorage for emotion changes from chat page
   useEffect(() => {
-    if (!entered || hidden) return;
+    if (!initialized) return;
 
     const checkEmotion = () => {
       const emotion = localStorage.getItem(EMOTION_STORAGE_KEY);
       if (emotion && emotion !== lastEmotionRef.current) {
         lastEmotionRef.current = emotion;
         const mapped = EMOTION_ASSET_MAP[emotion];
-        if (mapped) {
-          const caption = mapped.caption || IDLE_CAPTIONS[Math.floor(Math.random() * IDLE_CAPTIONS.length)];
-          switchAsset(mapped.assetId, caption);
-          if (zoomPhaseRef.current === 'idle') {
-            const meta = getAssetMeta(mapped.assetId);
-            if (meta?.video_url && (meta.play_mode === 'action' || meta.play_mode === 'emotion')) {
-              const now = Date.now();
-              if (now - (lastZoomTsRef.current[emotion] || 0) > 60000) {
-                lastZoomTsRef.current[emotion] = now;
-                zoomPhaseRef.current = 'in';
-                setZoomPhase('in');
-              }
-            }
+        if (!mapped) return;
+
+        const meta = assetsReady ? getAssetMeta(mapped.assetId) : null;
+        const isActionOrEmotion = meta?.video_url && (meta.play_mode === 'action' || meta.play_mode === 'emotion');
+
+        // If hidden and not action/emotion, skip
+        if (hidden && !isActionOrEmotion) return;
+
+        // Temporarily show mascot for action/emotion even when hidden
+        if (hidden && isActionOrEmotion) {
+          tempShow();
+        }
+
+        const caption = mapped.caption || IDLE_CAPTIONS[Math.floor(Math.random() * IDLE_CAPTIONS.length)];
+        switchAsset(mapped.assetId, caption);
+
+        if (isActionOrEmotion && zoomPhaseRef.current === 'idle') {
+          const now = Date.now();
+          if (now - (lastZoomTsRef.current[emotion] || 0) > 60000) {
+            lastZoomTsRef.current[emotion] = now;
+            zoomPhaseRef.current = 'in';
+            setZoomPhase('in');
           }
         }
       }
@@ -461,7 +502,7 @@ export default function OlaFloatingMascot() {
     checkEmotion();
     const interval = setInterval(checkEmotion, 2000);
     return () => clearInterval(interval);
-  }, [entered, hidden, switchAsset]);
+  }, [initialized, hidden, assetsReady, switchAsset, tempShow]);
 
   // Idle rotation every 15 seconds when no recent emotion
   useEffect(() => {
@@ -660,20 +701,21 @@ export default function OlaFloatingMascot() {
   useEffect(() => {
     const handler = (e: Event) => {
       const emotion = (e as CustomEvent).detail?.emotion as string | undefined;
+      if (!emotion) return;
+      const mapped = EMOTION_ASSET_MAP[emotion];
+      if (!mapped) return;
+
+      // Avatar tap always clears hidden permanently
       if (hidden) {
         handleRecall();
       }
-      if (emotion) {
-        const mapped = EMOTION_ASSET_MAP[emotion];
-        if (mapped) {
-          const caption = mapped.caption || pickRandom(IDLE_CAPTIONS);
-          switchAsset(mapped.assetId, caption);
-          const meta = getAssetMeta(mapped.assetId);
-          if (meta?.video_url && zoomPhaseRef.current === 'idle') {
-            zoomPhaseRef.current = 'in';
-            setZoomPhase('in');
-          }
-        }
+
+      const caption = mapped.caption || pickRandom(IDLE_CAPTIONS);
+      switchAsset(mapped.assetId, caption);
+      const meta = getAssetMeta(mapped.assetId);
+      if (meta?.video_url && zoomPhaseRef.current === 'idle') {
+        zoomPhaseRef.current = 'in';
+        setZoomPhase('in');
       }
     };
     window.addEventListener('ola-avatar-tap', handler);

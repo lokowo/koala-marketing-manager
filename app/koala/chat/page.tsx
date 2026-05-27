@@ -31,7 +31,7 @@ import { MatchProfileCard } from '../components/chat/MatchProfileCard';
 import { checkUsage, incrementUsage } from '../../lib/services/usageTracker';
 import { supabase } from '../../lib/supabase/client';
 import type { ExtractedProfile } from '../../lib/chat/extract-profile';
-import { Download, History } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { SharePosterTrigger } from '../components/SharePoster';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -96,6 +96,14 @@ const HTML_COMMENT_RE = /<!--[\s\S]*?-->/g;
 
 function stripHtmlComments(text: string): string {
   return text.replace(HTML_COMMENT_RE, '').trim();
+}
+
+function getTimeGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 6) return '夜深了，还在忙呀～';
+  if (h < 12) return '早上好！';
+  if (h < 18) return '下午好！';
+  return '晚上好！';
 }
 
 function parseOlaState(text: string): { clean: string; assetId?: string; emotionTag?: string } {
@@ -675,7 +683,8 @@ function ChatPageInner() {
   const [typewriterMsgId, setTypewriterMsgId] = useState<string | null>(null);
   const [typewriterText, setTypewriterText] = useState('');
   const [exportingPdf, setExportingPdf] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarAutoCollapsed, setSidebarAutoCollapsed] = useState(false);
   const [isVoiceListening, setIsVoiceListening] = useState(false);
   const [isVoiceTranscribing, setIsVoiceTranscribing] = useState(false);
   const [profileCollectionPending, setProfileCollectionPending] = useState(false);
@@ -688,6 +697,11 @@ function ChatPageInner() {
   const [profileCaptureStep, setProfileCaptureStep] = useState<number>(0);
   const [profileCaptureDone, setProfileCaptureDone] = useState(false);
   const [listenPulse, setListenPulse] = useState(0);
+  const [showLanding, setShowLanding] = useState<boolean>(() => {
+    const action = searchParams.get('action');
+    const msgParam = searchParams.get('msg');
+    return !action && !msgParam;
+  });
   const sessionIdRef = useRef<string>(generateSessionId());
   const consecutiveUnhelpfulRef = useRef<number>(0);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -966,6 +980,7 @@ function ChatPageInner() {
   useEffect(() => {
     if (!pendingAutoSend || autoSentRef.current) return;
     autoSentRef.current = true;
+    setShowLanding(false);
     const profId = searchParams.get('prof');
     if (profId) setPendingProfessorId(profId);
     const timer = setTimeout(() => {
@@ -1234,6 +1249,12 @@ function ChatPageInner() {
 
     setInput('');
 
+    // Auto-collapse sidebar on first user message
+    if (sidebarOpen && !sidebarAutoCollapsed) {
+      setSidebarOpen(false);
+      setSidebarAutoCollapsed(true);
+    }
+
     // Handle file attachment — upload + extract text + prepend to message
     if (attachedFile) {
       const file = attachedFile.file;
@@ -1269,7 +1290,7 @@ function ChatPageInner() {
     }
 
     await callApi(txt, messages, pendingProfessorId ?? undefined);
-  }, [input, loading, historyLoaded, messages, mode, callApi, pendingProfessorId, attachedFile]);
+  }, [input, loading, historyLoaded, messages, mode, callApi, pendingProfessorId, attachedFile, sidebarOpen, sidebarAutoCollapsed]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -1358,6 +1379,15 @@ function ChatPageInner() {
         body: JSON.stringify({ mode }),
       }).catch(() => {});
     }
+  }
+
+  function handleContinueChat() {
+    setShowLanding(false);
+  }
+
+  function handleNewChat() {
+    clearConversation();
+    setShowLanding(false);
   }
 
   function confirmEmailGeneration() {
@@ -1594,9 +1624,6 @@ function ChatPageInner() {
             className="text-[10px] px-2 py-1 rounded-full border border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#8a8078] hover:bg-gray-100 dark:hover:bg-white/5"
           >
             转人工
-          </button>
-          <button onClick={() => setSidebarOpen(true)} title="对话历史">
-            <History className="size-5 text-gray-500 dark:text-[#D4A843]" />
           </button>
           <button onClick={handleExportPdf} disabled={exportingPdf || messages.length <= 1} title="导出对话 PDF">
             <Download className={`size-5 ${exportingPdf ? 'animate-pulse' : ''} ${messages.length <= 1 ? 'text-gray-300 dark:text-gray-600' : 'text-gray-500 dark:text-[#D4A843]'}`} />

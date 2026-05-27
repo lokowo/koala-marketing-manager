@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { X, Plus, Search, MessageSquare } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { IconLayoutSidebar, IconPlus, IconSearch, IconTrash } from '@tabler/icons-react';
 
 interface SessionInfo {
   sessionId: string;
@@ -24,29 +24,67 @@ interface ChatHistorySidebarProps {
   currentMode: string;
   currentSessionId?: string;
   isOpen: boolean;
-  onClose: () => void;
+  onToggle: () => void;
   onSwitchMode: (mode: string) => void;
   onNewConversation: () => void;
   onLoadSession?: (sessionId: string, mode: string) => void;
+  onDeleteSession?: (sessionId: string) => void;
+}
+
+type DateGroup = 'today' | 'yesterday' | 'thisWeek' | 'earlier';
+
+const GROUP_LABELS: Record<DateGroup, string> = {
+  today: 'Today',
+  yesterday: 'Yesterday',
+  thisWeek: 'This Week',
+  earlier: 'Earlier',
+};
+
+function classifyDate(dateStr: string): DateGroup {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday.getTime() - 86400000);
+  const startOfWeek = new Date(startOfToday.getTime() - startOfToday.getDay() * 86400000);
+
+  if (d >= startOfToday) return 'today';
+  if (d >= startOfYesterday) return 'yesterday';
+  if (d >= startOfWeek) return 'thisWeek';
+  return 'earlier';
+}
+
+function getTitle(session: SessionInfo) {
+  if (session.firstUserMessage) {
+    const text = session.firstUserMessage.slice(0, 20);
+    return text + (session.firstUserMessage.length > 20 ? '…' : '');
+  }
+  return MODE_LABELS[session.mode]?.label ?? session.mode;
+}
+
+function formatSessionTime(dateStr: string) {
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 }
 
 export function ChatHistorySidebar({
-  currentMode,
   currentSessionId,
   isOpen,
-  onClose,
+  onToggle,
   onSwitchMode,
   onNewConversation,
   onLoadSession,
+  onDeleteSession,
 }: ChatHistorySidebarProps) {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const fetchSessions = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/ola/conversations?list=true&limit=30');
+      const res = await fetch('/api/ola/conversations?list=true&limit=50');
       if (res.ok) {
         const data = await res.json();
         setSessions(data.sessions ?? []);
@@ -56,72 +94,75 @@ export function ChatHistorySidebar({
   }, []);
 
   useEffect(() => {
-    if (isOpen) fetchSessions();
-  }, [isOpen, fetchSessions]);
-
-  function formatTime(dateStr: string) {
-    const d = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - d.getTime();
-    const days = Math.floor(diff / 86400000);
-
-    if (days === 0) return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-    if (days === 1) return '昨天';
-    if (days < 7) return `${days}天前`;
-    return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
-  }
-
-  function getTitle(session: SessionInfo) {
-    if (session.firstUserMessage) {
-      return session.firstUserMessage.slice(0, 30) + (session.firstUserMessage.length > 30 ? '…' : '');
+    if (isOpen) {
+      fetchSessions();
+      setTimeout(() => searchRef.current?.focus(), 350);
     }
-    return MODE_LABELS[session.mode]?.label ?? session.mode;
-  }
+  }, [isOpen, fetchSessions]);
 
   const filteredSessions = search.trim()
     ? sessions.filter(s => {
         const q = search.toLowerCase();
         const label = MODE_LABELS[s.mode]?.label ?? s.mode;
-        return label.toLowerCase().includes(q) || (s.firstUserMessage?.toLowerCase().includes(q));
+        return label.toLowerCase().includes(q) || s.firstUserMessage?.toLowerCase().includes(q);
       })
     : sessions;
 
-  if (!isOpen) return null;
+  const grouped = filteredSessions.reduce<Record<DateGroup, SessionInfo[]>>((acc, s) => {
+    const group = classifyDate(s.lastMessageAt);
+    (acc[group] ??= []).push(s);
+    return acc;
+  }, { today: [], yesterday: [], thisWeek: [], earlier: [] });
+
+  const groupOrder: DateGroup[] = ['today', 'yesterday', 'thisWeek', 'earlier'];
 
   return (
     <>
+      {/* Toggle button — always visible, fixed in top-left */}
+      <button
+        onClick={onToggle}
+        className="fixed left-3 top-3 z-[52] flex items-center justify-center size-9 rounded-lg bg-white dark:bg-[#0d1520] border border-gray-200 dark:border-white/10 shadow-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+        title={isOpen ? '收起侧边栏' : '展开侧边栏'}
+      >
+        <IconLayoutSidebar className="size-[18px] text-gray-600 dark:text-[#D4A843]" />
+      </button>
+
       {/* Mobile backdrop */}
-      <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose} />
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-[50] md:hidden transition-opacity"
+          onClick={onToggle}
+        />
+      )}
 
-      {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 w-[280px] flex flex-col bg-white dark:bg-[#0d1520] border-r border-gray-200 dark:border-white/10 shadow-xl lg:relative lg:shadow-none">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/10">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="size-4 text-gray-500 dark:text-[#D4A843]" />
-            <span className="text-sm font-semibold text-gray-900 dark:text-[#e8e4dc]">对话历史</span>
-          </div>
-          <button onClick={onClose} className="lg:hidden">
-            <X className="size-5 text-gray-400" />
-          </button>
-        </div>
-
-        {/* New conversation */}
-        <div className="px-3 py-2">
+      {/* Sidebar panel */}
+      <div
+        className={`
+          fixed md:relative inset-y-0 left-0 z-[51]
+          w-[260px] flex-shrink-0 flex flex-col
+          bg-white dark:bg-[#0d1520]
+          border-r border-gray-200 dark:border-white/10
+          transition-all duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full md:-ml-[260px]'}
+        `}
+      >
+        {/* Header with new conversation button */}
+        <div className="flex items-center gap-2 px-3 pt-14 pb-2">
           <button
-            onClick={() => { onNewConversation(); onClose(); }}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-[#e8e4dc] hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10"
+            onClick={() => { onNewConversation(); if (window.innerWidth < 768) onToggle(); }}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10] hover:opacity-90"
           >
-            <Plus className="size-3.5" />
+            <IconPlus className="size-4" />
             新对话
           </button>
         </div>
 
         {/* Search */}
         <div className="px-3 pb-2">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-            <Search className="size-3.5 text-gray-400 dark:text-[#5a5550]" />
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+            <IconSearch className="size-3.5 text-gray-400 dark:text-[#5a5550]" />
             <input
+              ref={searchRef}
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="搜索对话..."
@@ -130,50 +171,72 @@ export function ChatHistorySidebar({
           </div>
         </div>
 
-        {/* Session list */}
-        <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
+        {/* Session list grouped by date */}
+        <div className="flex-1 overflow-y-auto px-2 pb-3">
           {loading ? (
-            <p className="text-xs text-gray-400 dark:text-[#5a5550] text-center py-4">加载中…</p>
+            <p className="text-xs text-gray-400 dark:text-[#5a5550] text-center py-8">加载中…</p>
           ) : filteredSessions.length === 0 ? (
-            <p className="text-xs text-gray-400 dark:text-[#5a5550] text-center py-4">
+            <p className="text-xs text-gray-400 dark:text-[#5a5550] text-center py-8">
               {search.trim() ? '未找到匹配的对话' : '暂无对话记录'}
             </p>
           ) : (
-            filteredSessions.map(session => {
-              const active = session.sessionId === currentSessionId;
-              const meta = MODE_LABELS[session.mode];
+            groupOrder.map(groupKey => {
+              const items = grouped[groupKey];
+              if (!items || items.length === 0) return null;
               return (
-                <button
-                  key={session.sessionId}
-                  onClick={() => {
-                    if (onLoadSession) {
-                      onLoadSession(session.sessionId, session.mode);
-                    } else {
-                      onSwitchMode(session.mode);
-                    }
-                    onClose();
-                  }}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors ${
-                    active
-                      ? 'bg-[#D4A843]/10 border border-[#D4A843]/20'
-                      : 'hover:bg-gray-50 dark:hover:bg-white/5 border border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-gray-900 dark:text-[#e8e4dc]">
-                      {meta?.icon} {meta?.label ?? session.mode}
-                    </span>
-                    <span className="text-[10px] text-gray-400 dark:text-[#5a5550]">
-                      {formatTime(session.lastMessageAt)}
-                    </span>
-                  </div>
-                  <p className="text-[11px] mt-0.5 truncate text-gray-500 dark:text-[#8a8078]">
-                    {getTitle(session)}
+                <div key={groupKey} className="mb-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-[#5a5550] px-2 pt-3 pb-1">
+                    {GROUP_LABELS[groupKey]}
                   </p>
-                  <span className="text-[10px] text-gray-400 dark:text-[#5a5550]">
-                    {session.messageCount} 条消息
-                  </span>
-                </button>
+                  {items.map(session => {
+                    const active = session.sessionId === currentSessionId;
+                    const meta = MODE_LABELS[session.mode];
+                    const hovered = hoveredId === session.sessionId;
+                    return (
+                      <div
+                        key={session.sessionId}
+                        className="relative group"
+                        onMouseEnter={() => setHoveredId(session.sessionId)}
+                        onMouseLeave={() => setHoveredId(null)}
+                      >
+                        <button
+                          onClick={() => {
+                            if (onLoadSession) {
+                              onLoadSession(session.sessionId, session.mode);
+                            } else {
+                              onSwitchMode(session.mode);
+                            }
+                            if (window.innerWidth < 768) onToggle();
+                          }}
+                          className={`w-full text-left px-2.5 py-2 rounded-lg transition-colors ${
+                            active
+                              ? 'bg-gray-100 dark:bg-white/[0.08]'
+                              : 'hover:bg-gray-50 dark:hover:bg-white/[0.04]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs">{meta?.icon ?? '💬'}</span>
+                            <span className="text-[13px] font-medium text-gray-800 dark:text-[#e8e4dc] truncate flex-1">
+                              {getTitle(session)}
+                            </span>
+                          </div>
+                          <p className="text-[11px] mt-0.5 text-gray-400 dark:text-[#5a5550] pl-5">
+                            {formatSessionTime(session.lastMessageAt)}
+                          </p>
+                        </button>
+                        {hovered && onDeleteSession && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onDeleteSession(session.sessionId); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 transition-colors"
+                            title="删除对话"
+                          >
+                            <IconTrash className="size-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               );
             })
           )}
