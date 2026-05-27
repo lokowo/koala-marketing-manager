@@ -286,13 +286,13 @@ export async function POST(request: NextRequest) {
 
     const sessionId = (body.sessionId as string) || `session_${Date.now()}`;
 
-    // Anonymous daily limit: 10 requests/day per IP (backend enforcement)
+    // Anonymous daily limit: 5 requests/day per IP (backend enforcement)
     if (!trackingUserId) {
       const anonAllowed = await safeLimit(anonDailyLimiter, `anon:${ip}`);
       if (!anonAllowed) {
         return Response.json({
           error: 'daily_limit_reached',
-          reply: '今日免费体验次数已用完，登录后可继续使用',
+          reply: '注册免费账号可以继续跟小欧聊天哦～',
         }, { status: 403 });
       }
     }

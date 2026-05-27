@@ -1194,15 +1194,27 @@ function ChatPageInner() {
     const txt = (text ?? input).trim();
     if (!txt || loading || !historyLoaded) return;
 
-    // Free trial: anonymous users get 3 messages before login required
+    // Free trial: anonymous users get 5 messages before registration prompt
     if (!user) {
-      const FREE_MSG_LIMIT = 3;
-      const count = parseInt(localStorage.getItem('ola_free_msgs') || '0', 10);
-      if (count >= FREE_MSG_LIMIT) {
-        showLogin();
+      const ANON_MSG_LIMIT = 5;
+      const count = parseInt(localStorage.getItem('ola-anon-chat-count') || '0', 10);
+      if (count >= ANON_MSG_LIMIT) {
+        const limitMsg: Message = {
+          id: msgId(), role: 'assistant',
+          content: '注册免费账号可以继续跟小欧聊天哦～',
+          upgradePrompt: {
+            feature: '对话',
+            remaining: 0,
+            message: '注册免费账号可以继续跟小欧聊天哦～',
+            actions: [{ label: '免费注册', href: '/koala/register' }],
+          },
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, limitMsg]);
+        setAnonLimitReached(true);
         return;
       }
-      localStorage.setItem('ola_free_msgs', String(count + 1));
+      localStorage.setItem('ola-anon-chat-count', String(count + 1));
     }
 
     // Check chat_turn usage (logged-in users only, skip for paid plans)
@@ -1211,8 +1223,8 @@ function ChatPageInner() {
       if (!chatUsage.allowed) {
         const upgradeMsg: Message = {
           id: msgId(), role: 'assistant',
-          content: `你今天的对话次数已用完（${chatUsage.used}/${chatUsage.limit}）`,
-          upgradePrompt: { feature: '对话', remaining: 0 },
+          content: '今天的免费对话用完啦～明天再来找我吧！',
+          upgradePrompt: { feature: '对话', remaining: 0, message: '今天的免费对话用完啦～明天再来找我吧！' },
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, upgradeMsg]);
@@ -2074,6 +2086,7 @@ function ChatPageInner() {
               ref={textareaRef}
               rows={1}
               value={input}
+              disabled={anonLimitReached}
               onChange={e => {
                 setInput(e.target.value);
                 e.target.style.height = 'auto';
@@ -2083,8 +2096,8 @@ function ChatPageInner() {
                 setTimeout(() => textareaRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 300);
               }}
               onKeyDown={handleKeyDown}
-              placeholder={isVoiceListening ? '正在录音...' : isVoiceTranscribing ? '识别中...' : currentMode.placeholder}
-              className="w-full resize-none text-sm outline-none bg-transparent leading-relaxed placeholder:text-gray-400 dark:placeholder:text-[#5a5550] text-gray-900 dark:text-[#e8e4dc]"
+              placeholder={anonLimitReached ? '注册后继续聊天' : isVoiceListening ? '正在录音...' : isVoiceTranscribing ? '识别中...' : currentMode.placeholder}
+              className="w-full resize-none text-sm outline-none bg-transparent leading-relaxed placeholder:text-gray-400 dark:placeholder:text-[#5a5550] text-gray-900 dark:text-[#e8e4dc] disabled:opacity-50"
               style={{ maxHeight: 120 }}
             />
           </div>
@@ -2097,8 +2110,8 @@ function ChatPageInner() {
           />
           <button
             onClick={() => sendMessage()}
-            disabled={!input.trim() || loading || !historyLoaded}
-            className={`size-11 shrink-0 rounded-full flex justify-center items-center ${input.trim() && !loading && historyLoaded ? 'bg-[#1A1A2E] dark:bg-[#D4A843]' : 'bg-gray-200 dark:bg-white/[0.08]'}`}
+            disabled={!input.trim() || loading || !historyLoaded || anonLimitReached}
+            className={`size-11 shrink-0 rounded-full flex justify-center items-center ${input.trim() && !loading && historyLoaded && !anonLimitReached ? 'bg-[#1A1A2E] dark:bg-[#D4A843]' : 'bg-gray-200 dark:bg-white/[0.08]'}`}
           >
             <Send className="size-4 fill-white text-white" />
           </button>

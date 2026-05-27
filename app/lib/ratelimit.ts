@@ -59,11 +59,11 @@ export const authLimiter = redis
     })
   : null
 
-// 匿名 AI 对话限流：每个 IP 每天最多 10 次（未登录用户后端限制）
+// 匿名 AI 对话限流：每个 IP 每天最多 5 次（未登录用户后端限制）
 export const anonDailyLimiter = redis
   ? new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(10, '1 d'),
+      limiter: Ratelimit.slidingWindow(5, '1 d'),
       prefix: 'anon_daily',
     })
   : null

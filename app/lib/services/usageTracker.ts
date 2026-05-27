@@ -15,7 +15,7 @@ interface LimitConfig {
 
 const TIER_LIMITS: Record<Tier, Record<ActionType, LimitConfig>> = {
   free: {
-    chat:  { limit: 10, period: 'daily',  column: 'chat_turns_used' },
+    chat:  { limit: 15, period: 'daily',  column: 'chat_turns_used' },
     voice: { limit: 5,  period: 'daily',  column: 'voice_inputs_used' },
     match: { limit: 3,  period: 'daily',  column: 'matches_used' },
     email: { limit: 1,  period: 'monthly', column: 'emails_generated' },
