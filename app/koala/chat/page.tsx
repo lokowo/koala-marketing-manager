@@ -128,6 +128,7 @@ const MODES: {
   placeholder: string;
   welcome: string;
   initialReplies?: string[];
+  olaAssetId: string;
 }[] = [
   {
     key: 'path',
@@ -137,6 +138,7 @@ const MODES: {
     placeholder: '告诉我你的专业背景和目标……',
     welcome: '我来帮你评估澳洲 PhD 申请的可行性。\n\n告诉我你的专业背景和目标，我帮你：\n• 评估申请竞争力\n• 规划申请时间线\n• 推荐最适合的学校和导师',
     initialReplies: ['本科985/211', '双非背景', '已有硕士', '转专业'],
+    olaAssetId: 'h-07-queen-mode-nobg',
   },
   {
     key: 'research',
@@ -146,6 +148,7 @@ const MODES: {
     placeholder: '把你的问题或论文链接发给我……',
     welcome: '我可以帮你搜索文献、解读论文、梳理研究方向 🔬\n\n把你的问题或论文链接发给我，我来帮你分析。',
     initialReplies: ['帮我搜文献', '解读一篇论文', '梳理研究方向', '写文献综述'],
+    olaAssetId: 'h-08-nerd-excited-nobg',
   },
   {
     key: 'chat',
@@ -155,6 +158,7 @@ const MODES: {
     placeholder: '有任何关于澳洲读博的问题都可以问……',
     welcome: '有任何关于澳洲读博的问题都可以问我！💬',
     initialReplies: ['奖学金问题', '签证问题', '生活费预算', '读博时间线'],
+    olaAssetId: 'h-09-bubbly-boba-nobg',
   },
   {
     key: 'write',
@@ -164,6 +168,7 @@ const MODES: {
     placeholder: '给我一位教授的名字，我帮你写申请信……',
     welcome: '给我一位教授的名字或链接，我帮你写一封专业的申请信 ✉️',
     initialReplies: ['我有目标教授', '帮我先找教授再写信', '修改我的草稿'],
+    olaAssetId: 'h-04-late-study-nobg',
   },
   {
     key: 'rp',
@@ -173,6 +178,7 @@ const MODES: {
     placeholder: '描述你的研究兴趣，或粘贴你的 RP 草稿……',
     welcome: '我是你的 Research Proposal 写作顾问 📝\n\n我可以帮你：\n• 确定研究选题和研究问题\n• 指导 RP 结构和写作\n• 审阅和修改你的 RP 草稿\n\n先告诉我你的研究兴趣和目标教授吧！',
     initialReplies: ['帮我确定研究选题', '审阅我的 RP 草稿', '怎么写文献综述', '方法论怎么选'],
+    olaAssetId: 'h-01-night-listen-nobg',
   },
   {
     key: 'interview',
@@ -182,6 +188,7 @@ const MODES: {
     placeholder: '告诉我你要面试哪位教授……',
     welcome: '欢迎来到模拟面试练习！🎤\n\n我会扮演澳洲大学的 PhD 导师，模拟真实面试场景。\n\n告诉我你要面试哪位教授，我会根据他/她的研究方向设计面试问题。每个问题回答后我都会给出反馈和改进建议。',
     initialReplies: ['我有目标教授', '通用面试练习', '面试常见问题有哪些'],
+    olaAssetId: 'c-04-boss-trenchcoat',
   },
 ];
 
@@ -694,6 +701,7 @@ function ChatPageInner() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDismissed, setFeedbackDismissed] = useState(false);
   const [freeUsageHint, setFreeUsageHint] = useState<{ chat: { used: number; limit: number }; email: { used: number; limit: number } } | null>(null);
+  const [anonLimitReached, setAnonLimitReached] = useState(false);
   const [profileCaptureStep, setProfileCaptureStep] = useState<number>(0);
   const [profileCaptureDone, setProfileCaptureDone] = useState(false);
   const [listenPulse, setListenPulse] = useState(0);
@@ -1562,17 +1570,30 @@ function ChatPageInner() {
   }, [latestEmotion]);
 
   return (
-    <div className="flex flex-col bg-white dark:bg-[#080c10]" style={{ height: '100dvh' }}>
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes olaAvatarBounce {
-          0% { transform: scale(1); }
-          20% { transform: scale(1.3); }
-          45% { transform: scale(0.9); }
-          70% { transform: scale(1.1); }
-          100% { transform: scale(1); }
-        }
-      ` }} />
+    <div className="flex bg-white dark:bg-[#080c10] overflow-hidden" style={{ height: '100dvh' }}>
 
+      {/* Left sidebar */}
+      <ChatHistorySidebar
+        currentMode={mode}
+        currentSessionId={sessionIdRef.current}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(prev => !prev)}
+        onSwitchMode={(m) => switchMode(m as typeof mode)}
+        onNewConversation={clearConversation}
+        onLoadSession={async (sid, m) => {
+          const conv = await loadRemoteSession(sid);
+          if (conv && conv.messages.length > 0) {
+            const restored = remoteToMessages(conv.messages);
+            setMessages(restored);
+            setLocalHistory(m, restored);
+            sessionIdRef.current = conv.sessionId;
+            if (m !== mode) setMode(m as AIMode);
+          }
+        }}
+      />
+
+      {/* Main chat area */}
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
       {/* Achievement toast */}
       {toastAchievement && (
         <AchievementBadge
@@ -1584,7 +1605,7 @@ function ChatPageInner() {
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 bg-gray-50 dark:bg-[#0d1520] border-b border-gray-200 dark:border-white/10">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pl-10">
           <button
             onClick={() => router.push('/koala/home')}
             className="lg:hidden p-1 -ml-1 text-gray-500 dark:text-[#a8b8ac]"
@@ -1658,9 +1679,45 @@ function ChatPageInner() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-0.5 relative">
-        {/* Welcome screen when no conversation yet */}
-        {messages.length === 1 && messages[0].role === 'assistant' && !loading ? (
-          <div className="relative z-[1]"><OlaWelcome onSend={(msg) => sendMessage(msg)} /></div>
+        {/* Landing screen — shown on first load before user chooses continue/new */}
+        {showLanding ? (
+          <div className="flex flex-col items-center justify-center h-full px-6 animate-[fadeIn_0.4s_ease-out]">
+            <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+            <div key={currentMode.olaAssetId} className="animate-[fadeIn_0.3s_ease-out]">
+              <OlaAvatar assetId={currentMode.olaAssetId} size="xl" round={false} className="w-[220px] h-auto" />
+            </div>
+            <h2 className="mt-5 text-xl font-bold text-gray-900 dark:text-[#e8e4dc]">
+              {getTimeGreeting()}
+            </h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-[#8a8078]">
+              我是学姐小欧，你的 PhD 申请 AI 顾问 ✨
+            </p>
+            <div className="flex flex-col gap-3 mt-6 w-full max-w-[280px]">
+              {historyLoaded && messages.length > 1 && (
+                <button
+                  onClick={handleContinueChat}
+                  className="w-full py-3 rounded-xl text-sm font-medium transition-all active:scale-[0.97] bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
+                >
+                  继续上次对话
+                </button>
+              )}
+              <button
+                onClick={handleNewChat}
+                className={`w-full py-3 rounded-xl text-sm font-medium transition-all active:scale-[0.97] ${
+                  historyLoaded && messages.length > 1
+                    ? 'bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-white/10'
+                    : 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'
+                }`}
+              >
+                开始新聊天
+              </button>
+            </div>
+            <p className="mt-4 text-[11px] text-gray-400 dark:text-[#5a5550]">
+              历史对话都在左上角「最近」里哦～
+            </p>
+          </div>
+        ) : messages.length === 1 && messages[0].role === 'assistant' && !loading ? (
+          <div className="relative z-[1]"><OlaWelcome onSend={(msg) => sendMessage(msg)} olaAssetId={currentMode.olaAssetId} /></div>
         ) : (
         <div className="relative z-[1]">
         <div className="flex items-center gap-2 py-2 mb-1">
@@ -1962,7 +2019,7 @@ function ChatPageInner() {
       </div>
 
       {/* Profile guidance hint */}
-      {profile && (profile.profile_completeness ?? 0) < 60 && (
+      {!showLanding && profile && (profile.profile_completeness ?? 0) < 60 && (
         <div className="flex-shrink-0 px-4 py-2 bg-black/[0.03] dark:bg-white/[0.03]">
           {(profile.profile_completeness ?? 0) < 30 ? (
             <Link href="/koala/my-profile" className="flex items-center justify-center gap-2 no-underline">
@@ -1979,7 +2036,7 @@ function ChatPageInner() {
       )}
 
       {/* Free-tier usage indicator */}
-      {freeUsageHint && (
+      {!showLanding && freeUsageHint && (
         <div className="flex-shrink-0 flex items-center justify-center gap-3 px-4 py-1.5 bg-gray-50/80 dark:bg-white/[0.02] border-t border-gray-100 dark:border-white/[0.04]">
           <span className={`text-[10px] ${freeUsageHint.chat.limit - freeUsageHint.chat.used <= 2 ? 'text-amber-500' : 'text-gray-400 dark:text-[#6a6058]'}`}>
             💬 对话 {freeUsageHint.chat.used}/{freeUsageHint.chat.limit}
@@ -1991,7 +2048,10 @@ function ChatPageInner() {
         </div>
       )}
 
-      {/* Input bar */}
+      {/* Input bar — hidden during landing */}
+      {showLanding ? (
+        <div className="flex-shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} />
+      ) : (
       <div className="flex-shrink-0 border-t border-gray-200 dark:border-white/[0.08] bg-gray-50 dark:bg-[#0d1520]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {/* Attached file preview */}
         {attachedFile && (
@@ -2047,26 +2107,7 @@ function ChatPageInner() {
           Koala 可能出错，重要决策请咨询人工顾问
         </p>
       </div>
-
-      {/* History sidebar */}
-      <ChatHistorySidebar
-        currentMode={mode}
-        currentSessionId={sessionIdRef.current}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        onSwitchMode={(m) => switchMode(m as typeof mode)}
-        onNewConversation={clearConversation}
-        onLoadSession={async (sid, m) => {
-          const conv = await loadRemoteSession(sid);
-          if (conv && conv.messages.length > 0) {
-            const restored = remoteToMessages(conv.messages);
-            setMessages(restored);
-            setLocalHistory(m, restored);
-            sessionIdRef.current = conv.sessionId;
-            if (m !== mode) setMode(m as AIMode);
-          }
-        }}
-      />
+      )}
 
       {showUpload && <FileUploadSheet onClose={() => setShowUpload(false)} onFile={(f, t) => {
         setAttachedFile({ file: f, type: t });
@@ -2094,6 +2135,7 @@ function ChatPageInner() {
           listenPulse={listenPulse}
         />
       )}
+      </div>
     </div>
   );
 }
