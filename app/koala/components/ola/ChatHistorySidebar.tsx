@@ -79,6 +79,8 @@ export function ChatHistorySidebar({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const fetchSessions = useCallback(async () => {
@@ -192,46 +194,86 @@ export function ChatHistorySidebar({
                     const active = session.sessionId === currentSessionId;
                     const meta = MODE_LABELS[session.mode];
                     const hovered = hoveredId === session.sessionId;
+                    const confirming = confirmDeleteId === session.sessionId;
                     return (
                       <div
                         key={session.sessionId}
                         className="relative group"
                         onMouseEnter={() => setHoveredId(session.sessionId)}
-                        onMouseLeave={() => setHoveredId(null)}
+                        onMouseLeave={() => { setHoveredId(null); if (!deleting) setConfirmDeleteId(null); }}
                       >
-                        <button
-                          onClick={() => {
-                            if (onLoadSession) {
-                              onLoadSession(session.sessionId, session.mode);
-                            } else {
-                              onSwitchMode(session.mode);
-                            }
-                            if (window.innerWidth < 768) onToggle();
-                          }}
-                          className={`w-full text-left px-2.5 py-2 rounded-lg transition-colors ${
-                            active
-                              ? 'bg-gray-100 dark:bg-white/[0.08]'
-                              : 'hover:bg-gray-50 dark:hover:bg-white/[0.04]'
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs">{meta?.icon ?? '💬'}</span>
-                            <span className="text-[13px] font-medium text-gray-800 dark:text-[#e8e4dc] truncate flex-1">
-                              {getTitle(session)}
-                            </span>
+                        {confirming ? (
+                          <div className="px-2.5 py-2 rounded-lg bg-red-50 dark:bg-red-900/15 border border-red-200 dark:border-red-800/30">
+                            <p className="text-[12px] text-red-700 dark:text-red-300 mb-1.5">确定删除这条对话吗？</p>
+                            <div className="flex gap-2">
+                              <button
+                                disabled={deleting}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  setDeleting(true);
+                                  try {
+                                    const res = await fetch('/api/ola/conversations', {
+                                      method: 'DELETE',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ sessionId: session.sessionId }),
+                                    });
+                                    if (res.ok) {
+                                      setSessions(prev => prev.filter(s => s.sessionId !== session.sessionId));
+                                      onDeleteSession?.(session.sessionId);
+                                    }
+                                  } catch { /* ignore */ }
+                                  setDeleting(false);
+                                  setConfirmDeleteId(null);
+                                }}
+                                className="px-2.5 py-1 text-[11px] font-medium rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+                              >
+                                {deleting ? '删除中…' : '确认'}
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }}
+                                className="px-2.5 py-1 text-[11px] font-medium rounded-md bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-[#e8e4dc] hover:bg-gray-300 dark:hover:bg-white/15 transition-colors"
+                              >
+                                取消
+                              </button>
+                            </div>
                           </div>
-                          <p className="text-[11px] mt-0.5 text-gray-400 dark:text-[#5a5550] pl-5">
-                            {formatSessionTime(session.lastMessageAt)}
-                          </p>
-                        </button>
-                        {hovered && onDeleteSession && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onDeleteSession(session.sessionId); }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 transition-colors"
-                            title="删除对话"
-                          >
-                            <IconTrash className="size-3.5" />
-                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                if (onLoadSession) {
+                                  onLoadSession(session.sessionId, session.mode);
+                                } else {
+                                  onSwitchMode(session.mode);
+                                }
+                                if (window.innerWidth < 768) onToggle();
+                              }}
+                              className={`w-full text-left px-2.5 py-2 rounded-lg transition-colors ${
+                                active
+                                  ? 'bg-gray-100 dark:bg-white/[0.08]'
+                                  : 'hover:bg-gray-50 dark:hover:bg-white/[0.04]'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs">{meta?.icon ?? '💬'}</span>
+                                <span className="text-[13px] font-medium text-gray-800 dark:text-[#e8e4dc] truncate flex-1">
+                                  {getTitle(session)}
+                                </span>
+                              </div>
+                              <p className="text-[11px] mt-0.5 text-gray-400 dark:text-[#5a5550] pl-5">
+                                {formatSessionTime(session.lastMessageAt)}
+                              </p>
+                            </button>
+                            {hovered && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(session.sessionId); }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 transition-colors"
+                                title="删除对话"
+                              >
+                                <IconTrash className="size-4" />
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     );

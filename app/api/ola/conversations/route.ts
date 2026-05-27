@@ -135,6 +135,27 @@ export async function DELETE(req: NextRequest) {
     const { mode, sessionId } = await req.json();
     const supabase = getSupabaseAdmin();
 
+    if (!sessionId && !mode) {
+      return Response.json({ error: 'Provide mode or sessionId' }, { status: 400 });
+    }
+
+    if (sessionId) {
+      const { data: conv } = await supabase
+        .from('ai_conversations')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('session_id', sessionId)
+        .maybeSingle();
+
+      if (conv) {
+        await supabase
+          .from('chat_messages')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('conversation_id', conv.id);
+      }
+    }
+
     let query = supabase
       .from('ai_conversations')
       .delete()
@@ -142,10 +163,8 @@ export async function DELETE(req: NextRequest) {
 
     if (sessionId) {
       query = query.eq('session_id', sessionId);
-    } else if (mode) {
-      query = query.eq('mode', mode);
     } else {
-      return Response.json({ error: 'Provide mode or sessionId' }, { status: 400 });
+      query = query.eq('mode', mode);
     }
 
     const { error } = await query;

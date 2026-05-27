@@ -1602,6 +1602,15 @@ function ChatPageInner() {
             if (m !== mode) setMode(m as AIMode);
           }
         }}
+        onDeleteSession={(sid) => {
+          if (sid === sessionIdRef.current) {
+            const cfg = MODES.find(m => m.key === mode) ?? MODES[0];
+            setMessages([{ id: msgId(), role: 'assistant' as const, content: cfg.welcome, timestamp: new Date() }]);
+            clearLocalHistory(mode);
+            sessionIdRef.current = generateSessionId();
+            setShowLanding(true);
+          }
+        }}
       />
 
       {/* Main chat area */}
