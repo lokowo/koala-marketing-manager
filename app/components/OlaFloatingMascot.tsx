@@ -89,6 +89,36 @@ const MASCOT_SIZE_DESKTOP = 80;
 const DEFAULT_BOTTOM = 80;
 const DEFAULT_RIGHT = 24;
 const LONG_PRESS_MS = 300;
+const EMOTION_STORAGE_KEY = 'ola-latest-emotion';
+const IDLE_ROTATE_INTERVAL = 15000;
+
+interface EmotionAsset {
+  assetId: string;
+  caption: string;
+}
+
+const EMOTION_ASSET_MAP: Record<string, EmotionAsset> = {
+  academic: { assetId: 'h-04-late-study-nobg', caption: '让我想想...' },
+  happy: { assetId: 'h-09-bubbly-boba-nobg', caption: '今天心情不错嘛～' },
+  caring: { assetId: 'h-03-encouragement-nobg', caption: '学姐在呢，别担心' },
+  sassy: { assetId: 'h-07-streetwear-cool-nobg', caption: '哼，这还用说？' },
+  neutral: { assetId: 'h-09-bubbly-boba-nobg', caption: '' },
+};
+
+const IDLE_CAPTIONS = [
+  '今天也要加油鸭～',
+  '学姐在这守着你呢',
+  '有问题随时问我哦',
+  '休息一下也很重要！',
+  '你已经很棒啦～',
+];
+
+const IDLE_ASSETS = [
+  'h-09-bubbly-boba-nobg',
+  'h-03-encouragement-nobg',
+  'h-04-late-study-nobg',
+  'h-07-streetwear-cool-nobg',
+];
 
 function getMascotSize() {
   if (typeof window === 'undefined') return MASCOT_SIZE_DESKTOP;
@@ -149,6 +179,12 @@ export default function OlaFloatingMascot() {
   const [farewellVisible, setFarewellVisible] = useState(false);
   // Recall welcome bubble
   const [recallBubble, setRecallBubble] = useState(false);
+  // Dynamic emotion-based mascot
+  const [currentAssetId, setCurrentAssetId] = useState('h-09-bubbly-boba-nobg');
+  const [currentCaption, setCurrentCaption] = useState('');
+  const [assetOpacity, setAssetOpacity] = useState(1);
+  const idleRotateTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastEmotionRef = useRef<string | null>(null);
 
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -299,6 +335,55 @@ export default function OlaFloatingMascot() {
     setBubbleIndex(0);
     setShowBubble(false);
   }, [pathname]);
+
+  // ─── Emotion-based asset switching ───────────────
+  const switchAsset = useCallback((assetId: string, caption: string) => {
+    setAssetOpacity(0);
+    setTimeout(() => {
+      setCurrentAssetId(assetId);
+      setCurrentCaption(caption);
+      setAssetOpacity(1);
+    }, 300);
+  }, []);
+
+  // Poll localStorage for emotion changes from chat page
+  useEffect(() => {
+    if (!entered || hidden) return;
+
+    const checkEmotion = () => {
+      const emotion = localStorage.getItem(EMOTION_STORAGE_KEY);
+      if (emotion && emotion !== lastEmotionRef.current) {
+        lastEmotionRef.current = emotion;
+        const mapped = EMOTION_ASSET_MAP[emotion];
+        if (mapped) {
+          const caption = mapped.caption || IDLE_CAPTIONS[Math.floor(Math.random() * IDLE_CAPTIONS.length)];
+          switchAsset(mapped.assetId, caption);
+        }
+      }
+    };
+
+    checkEmotion();
+    const interval = setInterval(checkEmotion, 2000);
+    return () => clearInterval(interval);
+  }, [entered, hidden, switchAsset]);
+
+  // Idle rotation every 15 seconds when no recent emotion
+  useEffect(() => {
+    if (!entered || hidden || isOnChatPage) return;
+
+    idleRotateTimer.current = setInterval(() => {
+      const emotion = localStorage.getItem(EMOTION_STORAGE_KEY);
+      if (emotion && emotion !== 'neutral') return;
+
+      const randomAsset = IDLE_ASSETS[Math.floor(Math.random() * IDLE_ASSETS.length)];
+      const randomCaption = IDLE_CAPTIONS[Math.floor(Math.random() * IDLE_CAPTIONS.length)];
+      switchAsset(randomAsset, randomCaption);
+    }, IDLE_ROTATE_INTERVAL);
+
+    return () => {
+      if (idleRotateTimer.current) clearInterval(idleRotateTimer.current);
+    };
+  }, [entered, hidden, isOnChatPage, switchAsset]);
 
   // ─── Drag handlers ──────────────────────────────
 
@@ -484,6 +569,7 @@ export default function OlaFloatingMascot() {
       if (tapBubbleTimer.current) clearTimeout(tapBubbleTimer.current);
       if (farewellTimer.current) clearTimeout(farewellTimer.current);
       if (recallBubbleTimer.current) clearTimeout(recallBubbleTimer.current);
+      if (idleRotateTimer.current) clearInterval(idleRotateTimer.current);
     };
   }, []);
 
@@ -502,7 +588,7 @@ export default function OlaFloatingMascot() {
           className="relative flex items-center justify-center size-11 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md hover:shadow-lg transition-all hover:scale-110 animate-[breathe_2.5s_ease-in-out_infinite]"
           aria-label="叫学姐回来"
         >
-          <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" className="size-7" />
+          <OlaAvatar assetId={currentAssetId} size="sm" className="size-7" />
         </button>
         <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1 rounded-lg bg-gray-800 dark:bg-[#1a2332] text-white text-[11px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg border border-gray-700 dark:border-white/10">
           叫学姐回来
@@ -613,7 +699,7 @@ export default function OlaFloatingMascot() {
             <X className="size-3 text-gray-400" />
           </button>
 
-          {/* Ola image with float/bounce animation */}
+          {/* Ola image with float/bounce animation + fade transition */}
           <div
             onClick={handleMascotClick}
             className={`size-full shadow-lg ${
@@ -621,9 +707,23 @@ export default function OlaFloatingMascot() {
             }`}
             style={bouncing ? { animation: 'olaBounce 300ms ease-out' } : undefined}
           >
-            <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="md" className="size-full pointer-events-none" />
+            <div style={{ opacity: assetOpacity, transition: 'opacity 0.3s ease-in-out' }} className="size-full">
+              <OlaAvatar assetId={currentAssetId} size="md" className="size-full pointer-events-none" />
+            </div>
           </div>
         </div>
+
+        {/* Caption below mascot */}
+        {currentCaption && !dragging.current && (
+          <div
+            className="text-center mt-1 pointer-events-none"
+            style={{ opacity: assetOpacity, transition: 'opacity 0.3s ease-in-out' }}
+          >
+            <span className="inline-block px-2 py-0.5 rounded-full bg-black/50 text-white text-[10px] leading-tight max-w-[120px] truncate backdrop-blur-sm">
+              {currentCaption}
+            </span>
+          </div>
+        )}
       </div>
     </>
   );
