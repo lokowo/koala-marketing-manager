@@ -188,7 +188,7 @@ const MODES: {
     placeholder: '告诉我你要面试哪位教授……',
     welcome: '欢迎来到模拟面试练习！🎤\n\n我会扮演澳洲大学的 PhD 导师，模拟真实面试场景。\n\n告诉我你要面试哪位教授，我会根据他/她的研究方向设计面试问题。每个问题回答后我都会给出反馈和改进建议。',
     initialReplies: ['我有目标教授', '通用面试练习', '面试常见问题有哪些'],
-    olaAssetId: 'c-04-boss-trenchcoat',
+    olaAssetId: 'c-04-boss-trenchcoat-half',
   },
 ];
 
