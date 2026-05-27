@@ -186,6 +186,7 @@ export default function OlaFloatingMascot() {
   const [currentMeta, setCurrentMeta] = useState<OlaAssetMeta | null>(null);
   const [muted, setMuted] = useState(true);
   const [assetsReady, setAssetsReady] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -283,6 +284,14 @@ export default function OlaFloatingMascot() {
     setInitialized(true);
   }, []);
 
+  // ─── Chat page forces mascot visible ─────────────
+
+  useEffect(() => {
+    if (isOnChatPage && hidden) {
+      setHidden(false);
+    }
+  }, [isOnChatPage, hidden]);
+
   // ─── Appearance with mode-aware delay ────────────
 
   useEffect(() => {
@@ -363,6 +372,7 @@ export default function OlaFloatingMascot() {
       setCurrentAssetId(assetId);
       setCurrentCaption(caption);
       setCurrentMeta(assetsReady ? getAssetMeta(assetId) ?? null : null);
+      setVideoError(false);
       setAssetOpacity(1);
     }, 300);
   }, [assetsReady]);
@@ -370,7 +380,9 @@ export default function OlaFloatingMascot() {
   // Resolve meta whenever assetId or assetsReady changes
   useEffect(() => {
     if (assetsReady) {
-      setCurrentMeta(getAssetMeta(currentAssetId) ?? null);
+      const meta = getAssetMeta(currentAssetId) ?? null;
+      setCurrentMeta(meta);
+      console.log('[OlaMascot] asset:', currentAssetId, '| image:', meta?.image_url ?? 'none', '| video:', meta?.video_url ?? 'none');
     }
   }, [assetsReady, currentAssetId]);
 
@@ -855,7 +867,7 @@ export default function OlaFloatingMascot() {
             style={bouncing ? { animation: 'olaBounce 300ms ease-out' } : undefined}
           >
             <div style={{ opacity: assetOpacity, transition: 'opacity 0.3s ease-in-out' }} className="size-full">
-              {currentMeta?.video_url ? (
+              {currentMeta?.video_url && !videoError ? (
                 <video
                   ref={videoRef}
                   key={currentMeta.video_url}
@@ -865,6 +877,10 @@ export default function OlaFloatingMascot() {
                   muted={muted}
                   loop={currentMeta.play_mode === 'idle' || currentMeta.play_mode === 'loop'}
                   onEnded={handleVideoEnded}
+                  onError={() => {
+                    console.warn('[OlaMascot] video load failed, falling back to image:', currentMeta.video_url);
+                    setVideoError(true);
+                  }}
                   className="size-full rounded-full object-cover pointer-events-none"
                   style={{ background: 'transparent' }}
                 />
