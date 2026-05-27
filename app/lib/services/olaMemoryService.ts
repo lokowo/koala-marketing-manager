@@ -3,6 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
+export type SalesStage = 'warmup' | 'discovery' | 'value_demo' | 'guided' | 'converting';
+
 export interface OlaUserMemory {
   id: string;
   user_id: string;
@@ -28,6 +30,11 @@ export interface OlaUserMemory {
   memorable_events: MemorableEvent[];
   subscription_prompts_shown: number;
   subscription_prompts_ignored: number;
+  sales_stage: SalesStage;
+  total_turns: number;
+  visit_count: number;
+  last_visit_at: string | null;
+  pain_points: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -158,6 +165,18 @@ export async function addMemorableEvent(
     .eq('user_id', userId);
 }
 
+// ─── Sales Stage Logic ────────────────────────────────────────────────────
+
+const ACADEMIC_KEYWORDS_RE = /PhD|phd|读博|博士|导师|申请|研究|论文|教授|大学|选校|奖学金|套磁|research|professor|supervisor|scholarship|university/i;
+
+function advanceSalesStage(current: SalesStage, totalTurns: number): SalesStage {
+  if (current === 'converting') return 'converting';
+  if (current === 'guided') return totalTurns >= 20 ? 'converting' : 'guided';
+  if (current === 'value_demo') return totalTurns >= 15 ? 'guided' : 'value_demo';
+  if (current === 'discovery') return totalTurns >= 8 ? 'value_demo' : 'discovery';
+  return totalTurns >= 3 ? 'discovery' : 'warmup';
+}
+
 // ─── AI-Powered Memory Extraction ──────────────────────────────────────────
 
 const EXTRACTION_PROMPT = `你是 Ola 学姐的记忆模块。从对话中提取用户的个人信息，用于让学姐"记住"这个朋友。
@@ -177,11 +196,13 @@ const EXTRACTION_PROMPT = `你是 Ola 学姐的记忆模块。从对话中提取
   "relationship_status": "感情状态，如没有则null",
   "emotional_state": "当前情绪状态描述，如没有则null",
   "life_details": "其他生活细节摘要，如没有则null",
-  "new_events": [{"event":"事件描述","follow_up":true/false}] 或 []
+  "new_events": [{"event":"事件描述","follow_up":true/false}] 或 [],
+  "pain_points": ["用户焦虑/痛点关键词，如：迷茫、焦虑、不知道选谁、怕被拒、费用担心、时间紧迫"] 或 null
 }
 
 只包含本轮对话中新出现的信息，已知信息不要重复。null表示没检测到。
-new_events 中 follow_up=true 表示学姐下次应该主动关心的事（如考试、面试、提交deadline）。`;
+new_events 中 follow_up=true 表示学姐下次应该主动关心的事（如考试、面试、提交deadline）。
+pain_points 只提取用户明确表达的焦虑和困惑，不推测。`;
 
 export async function updateMemoryFromConversation(
   supabase: SupabaseClient,
@@ -189,6 +210,8 @@ export async function updateMemoryFromConversation(
   userMessage: string,
   olaResponse: string,
 ): Promise<void> {
+  const memory = await getOrCreateMemory(supabase, userId);
+
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const result = await client.messages.create({
@@ -209,7 +232,33 @@ export async function updateMemoryFromConversation(
     return;
   }
 
-  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const now = new Date();
+  const updates: Record<string, unknown> = { updated_at: now.toISOString() };
+
+  // ─── Sales funnel tracking ───────────────────────
+  const newTotalTurns = (memory.total_turns ?? 0) + 1;
+  updates.total_turns = newTotalTurns;
+  updates.last_visit_at = now.toISOString();
+
+  const lastVisit = memory.last_visit_at ? new Date(memory.last_visit_at) : null;
+  const isNewDay = !lastVisit || now.toDateString() !== lastVisit.toDateString();
+  if (isNewDay) {
+    updates.visit_count = (memory.visit_count ?? 0) + 1;
+  }
+
+  let stage = memory.sales_stage ?? 'warmup';
+  stage = advanceSalesStage(stage, newTotalTurns);
+
+  if (stage === 'warmup' && ACADEMIC_KEYWORDS_RE.test(userMessage)) {
+    stage = 'discovery';
+  }
+  if (stage === 'discovery' && /professorMatches|matchedProfessors/.test(olaResponse)) {
+    stage = 'value_demo';
+  }
+
+  updates.sales_stage = stage;
+
+  // ─── Personal info extraction ────────────────────
   const fields = ['nickname', 'gender', 'city', 'pets', 'relationship_status', 'emotional_state', 'life_details', 'user_preferred_name', 'ola_nickname'] as const;
   for (const f of fields) {
     if (extracted[f] !== null && extracted[f] !== undefined) {
@@ -218,34 +267,52 @@ export async function updateMemoryFromConversation(
   }
   if (typeof extracted.age === 'number') updates.age = extracted.age;
   if (Array.isArray(extracted.hobbies) && extracted.hobbies.length > 0) {
-    const memory = await getOrCreateMemory(supabase, userId);
     const existing = memory.hobbies ?? [];
     const merged = [...new Set([...existing, ...extracted.hobbies as string[]])];
     updates.hobbies = merged;
   }
 
+  // ─── Pain points ─────────────────────────────────
+  const newPainPoints = extracted.pain_points as string[] | null;
+  if (Array.isArray(newPainPoints) && newPainPoints.length > 0) {
+    const existing = memory.pain_points ?? [];
+    const merged = [...new Set([...existing, ...newPainPoints])];
+    updates.pain_points = merged;
+  }
+
+  // ─── Memorable events ────────────────────────────
   const newEvents = extracted.new_events as MemorableEvent[] | undefined;
   if (Array.isArray(newEvents) && newEvents.length > 0) {
-    const memory = await getOrCreateMemory(supabase, userId);
     const events = [
       ...(memory.memorable_events || []),
-      ...newEvents.map(e => ({ ...e, date: new Date().toISOString().split('T')[0] })),
+      ...newEvents.map(e => ({ ...e, date: now.toISOString().split('T')[0] })),
     ];
     updates.memorable_events = events;
   }
 
-  if (Object.keys(updates).length > 1) {
-    await supabase
-      .from('ola_user_memory' as 'user_profiles')
-      .update(updates as never)
-      .eq('user_id', userId);
-  }
+  await supabase
+    .from('ola_user_memory' as 'user_profiles')
+    .update(updates as never)
+    .eq('user_id', userId);
 }
 
 // ─── Prompt Builder ─────────────────────────────────────────────────────────
 
+const STAGE_LABELS: Record<SalesStage, string> = {
+  warmup: '暖场 warmup — 只聊天交朋友，不提任何功能',
+  discovery: '需求挖掘 discovery — 自然好奇用户情况，不推销',
+  value_demo: '价值展示 value_demo — 不经意展示能力，吊胃口',
+  guided: '自然引导 guided — 展示匹配结果，一次一个功能',
+  converting: '水到渠成 converting — 免费额度用完时温和引导付费',
+};
+
 export function buildOlaMemoryPrompt(memory: OlaUserMemory): string {
   const parts: string[] = ['## 🧠 学姐的记忆（关于这位用户）\n'];
+
+  // Sales funnel context
+  const stage = memory.sales_stage ?? 'warmup';
+  const stageLabel = STAGE_LABELS[stage];
+  parts.push(`## 🎯 当前销售阶段\n当前销售阶段：${stageLabel}。请严格按照第二章对应阶段的规则对话。\n用户已访问 ${memory.visit_count ?? 1} 次，累计 ${memory.total_turns ?? 0} 轮对话。${memory.pain_points?.length ? `\n已知痛点：${memory.pain_points.join('、')}。` : ''}`);
 
   // Naming system
   if (memory.user_preferred_name || memory.ola_nickname) {
