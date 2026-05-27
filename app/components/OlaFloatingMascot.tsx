@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { OlaAvatar, getAssetMeta, ensureAssetsLoaded } from '../koala/components/ola/OlaAvatar';
 import type { OlaAssetMeta } from '../koala/components/ola/OlaAvatar';
-import { X, Volume2, VolumeOff } from 'lucide-react';
+import { Volume2, VolumeOff } from 'lucide-react';
 import { useAuth } from '../koala/components/AuthContext';
 
 // ─── Bubble definitions ─────────────────────────────
@@ -83,10 +83,10 @@ const SESSION_COUNT_KEY = 'ola-sales-session-count';
 const MAX_SALES_PER_SESSION = 2;
 const COOLDOWN_AFTER_DISMISS = 24 * 60 * 60 * 1000;
 
-const MASCOT_SIZE_MOBILE = 60;
-const MASCOT_SIZE_DESKTOP = 80;
-const DEFAULT_BOTTOM = 80;
-const DEFAULT_RIGHT = 24;
+const MASCOT_SIZE_MOBILE = 150;
+const MASCOT_SIZE_DESKTOP = 200;
+const DEFAULT_BOTTOM = 100;
+const DEFAULT_RIGHT = 12;
 const LONG_PRESS_MS = 300;
 const EMOTION_STORAGE_KEY = 'ola-latest-emotion';
 const IDLE_ROTATE_INTERVAL = 15000;
@@ -259,12 +259,13 @@ export default function OlaFloatingMascot() {
     // Clean up legacy localStorage hidden key
     localStorage.removeItem('ola-mascot-hidden');
 
+    const estHeight = size * 1.5;
     const saved = localStorage.getItem(STORAGE_KEY_POS);
     if (saved) {
       try {
         const p = JSON.parse(saved);
         const maxX = window.innerWidth - size;
-        const maxY = window.innerHeight - size;
+        const maxY = window.innerHeight - estHeight;
         setPos({
           x: Math.max(0, Math.min(maxX, p.x)),
           y: Math.max(0, Math.min(maxY, p.y)),
@@ -272,25 +273,17 @@ export default function OlaFloatingMascot() {
       } catch {
         setPos({
           x: window.innerWidth - size - DEFAULT_RIGHT,
-          y: window.innerHeight - size - DEFAULT_BOTTOM,
+          y: window.innerHeight - estHeight - DEFAULT_BOTTOM,
         });
       }
     } else {
       setPos({
         x: window.innerWidth - size - DEFAULT_RIGHT,
-        y: window.innerHeight - size - DEFAULT_BOTTOM,
+        y: window.innerHeight - estHeight - DEFAULT_BOTTOM,
       });
     }
     setInitialized(true);
   }, []);
-
-  // ─── Chat page forces mascot visible ─────────────
-
-  useEffect(() => {
-    if (isOnChatPage && hidden) {
-      setHidden(false);
-    }
-  }, [isOnChatPage, hidden]);
 
   // ─── Appearance with mode-aware delay ────────────
 
@@ -354,7 +347,7 @@ export default function OlaFloatingMascot() {
     const size = getMascotSize();
     setPos({
       x: window.innerWidth - size - DEFAULT_RIGHT,
-      y: window.innerHeight - size - DEFAULT_BOTTOM,
+      y: window.innerHeight - size * 1.5 - DEFAULT_BOTTOM,
     });
     setVisible(true);
     setTimeout(() => setEntered(true), 50);
@@ -555,8 +548,9 @@ export default function OlaFloatingMascot() {
 
     if (!dragging.current) return;
     hasDragged.current = true;
+    const estimatedHeight = mascotSize * 1.5;
     const nx = Math.max(0, Math.min(window.innerWidth - mascotSize, e.clientX - dragOffset.current.x));
-    const ny = Math.max(0, Math.min(window.innerHeight - mascotSize, e.clientY - dragOffset.current.y));
+    const ny = Math.max(0, Math.min(window.innerHeight - estimatedHeight, e.clientY - dragOffset.current.y));
     posRef.current = { x: nx, y: ny };
     if (mascotRef.current) {
       mascotRef.current.style.left = `${nx}px`;
@@ -628,7 +622,6 @@ export default function OlaFloatingMascot() {
   // ─── Close / Recall (session-only, no localStorage) ──
 
   const handleClose = useCallback(() => {
-    if (isOnChatPage) return; // chat page: cannot close
     vibrate([50, 50, 50]);
     setShowBubble(false);
     setInteractBubbleText(null);
@@ -637,7 +630,7 @@ export default function OlaFloatingMascot() {
     setHidden(true);
     setVisible(false);
     setEntered(false);
-  }, [isOnChatPage]);
+  }, []);
 
   const handleRecall = useCallback(() => {
     setHidden(false);
@@ -645,7 +638,7 @@ export default function OlaFloatingMascot() {
     const size = getMascotSize();
     setPos({
       x: window.innerWidth - size - DEFAULT_RIGHT,
-      y: window.innerHeight - size - DEFAULT_BOTTOM,
+      y: window.innerHeight - size * 1.5 - DEFAULT_BOTTOM,
     });
     localStorage.removeItem(STORAGE_KEY_POS);
     setTimeout(() => {
@@ -667,9 +660,8 @@ export default function OlaFloatingMascot() {
   const handleMascotClick = useCallback(() => {
     if (hasDragged.current) return;
     vibrate(50);
-    triggerBounce();
-    showTapChatBubble();
-  }, [triggerBounce, showTapChatBubble]);
+    handleClose();
+  }, [handleClose]);
 
   // ─── Listen for avatar tap from chat page ─────────
 
@@ -753,12 +745,12 @@ export default function OlaFloatingMascot() {
   );
 
   // Compute zoom transform for the mascot inner div
-  const zoomInner: React.CSSProperties = { transformOrigin: 'center center' };
+  const zoomInner: React.CSSProperties = { transformOrigin: 'top center' };
   if (zoomPhase === 'in') {
-    const target = isMobile() ? window.innerWidth * 0.85 : window.innerHeight * 0.7;
+    const target = isMobile() ? window.innerWidth * 0.85 : window.innerHeight * 0.6;
     const s = target / mascotSize;
     const dx = window.innerWidth / 2 - pos.x - mascotSize / 2;
-    const dy = window.innerHeight / 2 - pos.y - mascotSize / 2;
+    const dy = window.innerHeight * 0.15 - pos.y;
     zoomInner.transform = `translate(${dx}px, ${dy}px) scale(${s})`;
     zoomInner.transition = 'transform 0.4s ease-out';
   } else if (zoomPhase === 'out') {
@@ -841,32 +833,18 @@ export default function OlaFloatingMascot() {
         {/* Mascot */}
         <div
           className="relative cursor-grab active:cursor-grabbing group"
-          style={{ width: mascotSize, height: mascotSize, ...zoomInner }}
+          style={{ width: mascotSize, ...zoomInner }}
           onMouseEnter={handleMouseEnter}
         >
-          {/* Close button — hidden on chat page */}
-          {!isOnChatPage && (
-            <button
-              data-close-btn
-              onClick={handleClose}
-              className={`absolute -top-1.5 -right-1.5 z-10 flex items-center justify-center size-5 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-sm transition-opacity ${
-                zoomPhase !== 'idle' ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'
-              }`}
-              aria-label="关闭 Ola"
-            >
-              <X className="size-3 text-gray-400" />
-            </button>
-          )}
-
-          {/* Ola image/video with float/bounce animation + fade transition */}
+          {/* Ola image/video with float animation + fade transition */}
           <div
             onClick={handleMascotClick}
-            className={`size-full ${zoomPhase === 'idle' ? 'shadow-lg' : ''} ${
+            className={`w-full ${
               dragging.current || zoomPhase !== 'idle' ? '' : 'animate-[float_3s_ease-in-out_infinite]'
             }`}
             style={bouncing ? { animation: 'olaBounce 300ms ease-out' } : undefined}
           >
-            <div style={{ opacity: assetOpacity, transition: 'opacity 0.3s ease-in-out' }} className="size-full">
+            <div style={{ opacity: assetOpacity, transition: 'opacity 0.3s ease-in-out' }} className="w-full">
               {currentMeta?.video_url && !videoError ? (
                 <video
                   ref={videoRef}
@@ -881,11 +859,11 @@ export default function OlaFloatingMascot() {
                     console.warn('[OlaMascot] video load failed, falling back to image:', currentMeta.video_url);
                     setVideoError(true);
                   }}
-                  className="size-full rounded-full object-cover pointer-events-none"
+                  className="w-full h-auto object-contain pointer-events-none"
                   style={{ background: 'transparent' }}
                 />
               ) : (
-                <OlaAvatar assetId={currentAssetId} size="md" className="size-full pointer-events-none" />
+                <OlaAvatar assetId={currentAssetId} size="md" className="w-full h-auto object-contain pointer-events-none" />
               )}
             </div>
           </div>
