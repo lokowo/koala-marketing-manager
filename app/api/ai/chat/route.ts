@@ -287,25 +287,47 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Daily usage check — free users limited to FREE_LIMITS.dailyAiTurns (10/day)
+    // Daily usage check — hardcoded bypass for paid/privileged users
     if (trackingUserId) {
       try {
         const { createClient } = await import('@supabase/supabase-js');
-        const usageDb = createClient(
+        const adminDb = createClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.SUPABASE_SERVICE_ROLE_KEY!,
         );
-        const { checkUsage } = await import('../../../lib/services/usageTracker');
-        const usage = await checkUsage(usageDb, trackingUserId, 'chat');
-        if (!usage.allowed) {
-          return Response.json(
-            {
+
+        const { data: profileData } = await adminDb
+          .from('user_profiles')
+          .select('plan_type')
+          .eq('id', trackingUserId)
+          .maybeSingle();
+
+        const { data: roleData } = await adminDb
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', trackingUserId)
+          .maybeSingle();
+
+        const userPlanType = profileData?.plan_type || 'free';
+        const userRole = roleData?.role || null;
+        const isPaidOrPrivileged =
+          userPlanType !== 'free' ||
+          ['admin', 'super_admin', 'sales'].includes(userRole as string);
+
+        console.log('[RATE_LIMIT] userId:', trackingUserId,
+          'plan:', userPlanType, 'role:', userRole,
+          'bypassed:', isPaidOrPrivileged);
+
+        if (!isPaidOrPrivileged) {
+          const { checkUsage } = await import('../../../lib/services/usageTracker');
+          const usage = await checkUsage(adminDb, trackingUserId, 'chat');
+          if (!usage.allowed) {
+            return Response.json({
               error: 'daily_limit_reached',
               reply: `今日免费对话次数已用完（${usage.used}/${usage.limit}），升级订阅可不限次对话`,
               usageInfo: { used: usage.used, limit: usage.limit },
-            },
-            { status: 403 },
-          );
+            }, { status: 403 });
+          }
         }
       } catch (err) {
         console.error('[AI Chat] usage check failed, allowing request:', err);

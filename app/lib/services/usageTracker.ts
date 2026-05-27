@@ -102,11 +102,14 @@ async function getUserTier(supabase: SupabaseClient, userId: string): Promise<Ti
   if (privileged === 'admin' || privileged === 'super_admin') return 'elite';
   if (privileged === 'sales') return 'pro';
 
-  const { data } = await db(supabase)
+  const { data, error } = await db(supabase)
     .from('user_profiles')
     .select('plan_type')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
+  if (error) {
+    console.error('[getUserTier] user_profiles query failed for', userId, error.message);
+  }
   const plan = data?.plan_type as string | null;
   if (plan && ['starter', 'pro', 'elite'].includes(plan)) return plan as Tier;
   return 'free';
