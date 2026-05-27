@@ -73,13 +73,11 @@ const TAP_CHAT_BUBBLES: SalesBubble[] = [
   { text: '有问题随时问学姐~', action: '/koala/chat' },
 ];
 
-const FAREWELL_TEXT = '学姐先走啦~ 点右下角随时叫我回来哦！';
 const RECALL_TEXT = '学姐又回来啦~';
 
 // ─── Constants ───────────────────────────────────────
 
 const STORAGE_KEY_POS = 'ola-mascot-pos';
-const STORAGE_KEY_HIDDEN = 'ola-mascot-hidden';
 const COOLDOWN_KEY = 'ola-sales-cooldown';
 const SESSION_COUNT_KEY = 'ola-sales-session-count';
 const MAX_SALES_PER_SESSION = 2;
@@ -176,8 +174,6 @@ export default function OlaFloatingMascot() {
   const [tapBubble, setTapBubble] = useState<SalesBubble | null>(null);
   // Bounce animation on tap
   const [bouncing, setBouncing] = useState(false);
-  // Farewell bubble before close
-  const [farewellVisible, setFarewellVisible] = useState(false);
   // Recall welcome bubble
   const [recallBubble, setRecallBubble] = useState(false);
   // Dynamic emotion-based mascot
@@ -192,8 +188,6 @@ export default function OlaFloatingMascot() {
   const [assetsReady, setAssetsReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  // Tracks temporary show while user preference is hidden
-  const tempShownRef = useRef(false);
 
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -212,7 +206,6 @@ export default function OlaFloatingMascot() {
   const dragBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const interactBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tapBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const farewellTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recallBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── Zoom playback state ──────────────────────────
@@ -262,8 +255,8 @@ export default function OlaFloatingMascot() {
     const size = getMascotSize();
     setMascotSize(size);
 
-    const wasHidden = localStorage.getItem(STORAGE_KEY_HIDDEN) === 'true';
-    setHidden(wasHidden);
+    // Clean up legacy localStorage hidden key
+    localStorage.removeItem('ola-mascot-hidden');
 
     const saved = localStorage.getItem(STORAGE_KEY_POS);
     if (saved) {
@@ -293,23 +286,17 @@ export default function OlaFloatingMascot() {
   // ─── Appearance with mode-aware delay ────────────
 
   useEffect(() => {
-    if (!initialized || hidden || isOnChatPage) return;
+    if (!initialized || hidden) return;
     setVisible(false);
     setEntered(false);
+    // Chat page: show immediately; other pages: use delay
+    const delay = isOnChatPage ? 100 : initialDelay;
     const t = setTimeout(() => {
       setVisible(true);
       setTimeout(() => setEntered(true), 50);
-    }, initialDelay);
+    }, delay);
     return () => clearTimeout(t);
   }, [initialized, hidden, initialDelay, isOnChatPage]);
-
-  // Hide when entering chat page
-  useEffect(() => {
-    if (isOnChatPage) {
-      setVisible(false);
-      setEntered(false);
-    }
-  }, [isOnChatPage]);
 
   // ─── Bubble cycling ──────────────────────────────
 
@@ -351,10 +338,9 @@ export default function OlaFloatingMascot() {
     setShowBubble(false);
   }, [pathname]);
 
-  // ─── Temporary show (no localStorage change) ─────
+  // ─── Temporary show for animation playback ──────
   const tempShow = useCallback(() => {
     if (!hidden) return;
-    tempShownRef.current = true;
     setHidden(false);
     const size = getMascotSize();
     setPos({
@@ -364,16 +350,6 @@ export default function OlaFloatingMascot() {
     setVisible(true);
     setTimeout(() => setEntered(true), 50);
   }, [hidden, setPos]);
-
-  const tempHide = useCallback(() => {
-    if (!tempShownRef.current) return;
-    tempShownRef.current = false;
-    setEntered(false);
-    setTimeout(() => {
-      setVisible(false);
-      setHidden(true);
-    }, 400);
-  }, []);
 
   // ─── Load asset metadata cache ───────────────────
   useEffect(() => {
@@ -407,29 +383,23 @@ export default function OlaFloatingMascot() {
       zoomOutTimerRef.current = setTimeout(() => {
         zoomPhaseRef.current = 'idle';
         setZoomPhase('idle');
-        if (mode === 'emotion') {
+        if (mode === 'emotion' || mode === 'action') {
           setAssetOpacity(0);
           setTimeout(() => {
             switchAsset('h-09-bubbly-boba-nobg', pickRandom(IDLE_CAPTIONS));
-            tempHide();
           }, 300);
-        } else {
-          tempHide();
         }
       }, 600);
       return;
     }
 
-    if (mode === 'emotion') {
+    if (mode === 'emotion' || mode === 'action') {
       setAssetOpacity(0);
       setTimeout(() => {
         switchAsset('h-09-bubbly-boba-nobg', pickRandom(IDLE_CAPTIONS));
-        tempHide();
       }, 300);
-    } else if (mode === 'action') {
-      setTimeout(() => tempHide(), 1500);
     }
-  }, [currentMeta, switchAsset, tempHide]);
+  }, [currentMeta, switchAsset]);
 
   const toggleMuted = useCallback(() => {
     setMuted(prev => {
@@ -643,30 +613,23 @@ export default function OlaFloatingMascot() {
     if (tapBubble?.action) router.push(tapBubble.action);
   }, [tapBubble, router]);
 
-  // ─── Close / Recall ──────────────────────────────
+  // ─── Close / Recall (session-only, no localStorage) ──
 
   const handleClose = useCallback(() => {
-    if (farewellVisible) return;
+    if (isOnChatPage) return; // chat page: cannot close
     vibrate([50, 50, 50]);
-    setFarewellVisible(true);
     setShowBubble(false);
     setInteractBubbleText(null);
     setTapBubble(null);
     setDragBubbleText(null);
-
-    farewellTimer.current = setTimeout(() => {
-      setFarewellVisible(false);
-      setHidden(true);
-      setVisible(false);
-      setEntered(false);
-      localStorage.setItem(STORAGE_KEY_HIDDEN, 'true');
-    }, 1500);
-  }, [farewellVisible]);
+    setHidden(true);
+    setVisible(false);
+    setEntered(false);
+  }, [isOnChatPage]);
 
   const handleRecall = useCallback(() => {
     setHidden(false);
     setRecallBubble(true);
-    localStorage.setItem(STORAGE_KEY_HIDDEN, 'false');
     const size = getMascotSize();
     setPos({
       x: window.innerWidth - size - DEFAULT_RIGHT,
@@ -679,7 +642,7 @@ export default function OlaFloatingMascot() {
     }, 100);
     if (recallBubbleTimer.current) clearTimeout(recallBubbleTimer.current);
     recallBubbleTimer.current = setTimeout(() => setRecallBubble(false), 3000);
-  }, []);
+  }, [setPos]);
 
   // ─── Click handlers ──────────────────────────────
 
@@ -730,7 +693,6 @@ export default function OlaFloatingMascot() {
       if (interactBubbleTimer.current) clearTimeout(interactBubbleTimer.current);
       if (longPressTimer.current) clearTimeout(longPressTimer.current);
       if (tapBubbleTimer.current) clearTimeout(tapBubbleTimer.current);
-      if (farewellTimer.current) clearTimeout(farewellTimer.current);
       if (recallBubbleTimer.current) clearTimeout(recallBubbleTimer.current);
       if (idleRotateTimer.current) clearInterval(idleRotateTimer.current);
       if (zoomOutTimerRef.current) clearTimeout(zoomOutTimerRef.current);
@@ -760,18 +722,15 @@ export default function OlaFloatingMascot() {
     );
   }
 
-  // Full mascot hidden on chat page (but recall button above still shows)
-  if (isOnChatPage) return null;
-
   if (!visible) return null;
 
   const isOnLeft = pos.x < window.innerWidth / 2;
   const currentBubble = activeBubbles[bubbleIndex];
 
-  // Priority: farewell > recall > tap-chat > drag > interact > sales
+  // Priority: recall > tap-chat > drag > interact > sales
   const activeBubbleText = dragBubbleText ?? interactBubbleText;
-  const showSalesBubble = !activeBubbleText && !tapBubble && !farewellVisible && !recallBubble && showBubble && hasBubbles && currentBubble;
-  const showAnyBubble = farewellVisible || recallBubble || !!tapBubble || !!activeBubbleText || showSalesBubble;
+  const showSalesBubble = !activeBubbleText && !tapBubble && !recallBubble && showBubble && hasBubbles && currentBubble;
+  const showAnyBubble = recallBubble || !!tapBubble || !!activeBubbleText || showSalesBubble;
 
   const bubbleArrow = (
     <span
@@ -837,12 +796,7 @@ export default function OlaFloatingMascot() {
               isOnLeft ? 'left-0' : 'right-0'
             } opacity-100 translate-y-0`}
           >
-            {farewellVisible ? (
-              <div className="relative px-3 py-2 rounded-xl bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md text-xs text-gray-700 dark:text-[#e8e4dc]">
-                {FAREWELL_TEXT}
-                {bubbleArrow}
-              </div>
-            ) : recallBubble ? (
+            {recallBubble ? (
               <div className="relative px-3 py-2 rounded-xl bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-md text-xs text-gray-700 dark:text-[#e8e4dc]">
                 {RECALL_TEXT}
                 {bubbleArrow}
@@ -878,17 +832,19 @@ export default function OlaFloatingMascot() {
           style={{ width: mascotSize, height: mascotSize, ...zoomInner }}
           onMouseEnter={handleMouseEnter}
         >
-          {/* Close button */}
-          <button
-            data-close-btn
-            onClick={handleClose}
-            className={`absolute -top-1.5 -right-1.5 z-10 flex items-center justify-center size-5 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-sm transition-opacity ${
-              zoomPhase !== 'idle' ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'
-            }`}
-            aria-label="关闭 Ola"
-          >
-            <X className="size-3 text-gray-400" />
-          </button>
+          {/* Close button — hidden on chat page */}
+          {!isOnChatPage && (
+            <button
+              data-close-btn
+              onClick={handleClose}
+              className={`absolute -top-1.5 -right-1.5 z-10 flex items-center justify-center size-5 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-sm transition-opacity ${
+                zoomPhase !== 'idle' ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'
+              }`}
+              aria-label="关闭 Ola"
+            >
+              <X className="size-3 text-gray-400" />
+            </button>
+          )}
 
           {/* Ola image/video with float/bounce animation + fade transition */}
           <div
