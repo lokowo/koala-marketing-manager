@@ -486,7 +486,7 @@ function ThinkingBubble({ mode }: { mode: string }) {
   return (
     <div className="flex justify-start mb-1">
       <div className="mt-1 mr-2 flex-shrink-0">
-        <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" />
+        <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="md" className="size-11 md:size-12" />
       </div>
       <div className="px-3.5 py-2.5 text-sm bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-[#8a8078]" style={{ borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <span className="animate-pulse">
@@ -1513,6 +1513,12 @@ function ChatPageInner() {
     return undefined;
   }, [messages]);
 
+  useEffect(() => {
+    if (latestEmotion) {
+      try { localStorage.setItem('ola-latest-emotion', latestEmotion); } catch {}
+    }
+  }, [latestEmotion]);
+
   const showChatMascot = !(messages.length === 1 && messages[0].role === 'assistant' && !loading);
 
   return (
@@ -1536,7 +1542,7 @@ function ChatPageInner() {
           >
             <ChevronLeft className="size-5" />
           </button>
-          <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" className="flex-shrink-0" />
+          <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="md" className="size-11 md:size-12 flex-shrink-0" />
           <div className="flex flex-col">
             <span className="font-bold text-base leading-6 tracking-wide text-[#1A1A2E] dark:text-[#D4A843]">
               Ola AI
@@ -1622,7 +1628,7 @@ function ChatPageInner() {
             <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-0.5`}>
               {msg.role === 'assistant' && (
                 <div className="mt-1 mr-2 flex-shrink-0">
-                  <OlaAvatar assetId={msg.olaAssetId || 'h-09-bubbly-boba-nobg'} emotionTag={msg.olaEmotionTag} size="sm" />
+                  <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="md" className="size-11 md:size-12" />
                 </div>
               )}
               <div className="flex flex-col max-w-[80%]">
@@ -1866,7 +1872,7 @@ function ChatPageInner() {
               </div>
               {msg.role === 'user' && (
                 <div className="mt-1 ml-2 flex-shrink-0">
-                  <UserAvatar size={28} name={profile?.display_name} avatarUrl={profile?.avatar_url} />
+                  <UserAvatar size={44} name={profile?.display_name} avatarUrl={profile?.avatar_url} />
                 </div>
               )}
             </div>
@@ -1893,7 +1899,7 @@ function ChatPageInner() {
         {showFeedback && !feedbackDismissed && (
           <div className="flex justify-start mb-0.5">
             <div className="mt-1 mr-2 flex-shrink-0">
-              <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="sm" />
+              <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="md" className="size-11 md:size-12" />
             </div>
             <div className="max-w-[80%]">
               <FeedbackCard
