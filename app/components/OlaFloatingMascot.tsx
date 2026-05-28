@@ -97,11 +97,19 @@ interface EmotionAsset {
 }
 
 const EMOTION_ASSET_MAP: Record<string, EmotionAsset> = {
+  neutral:  { assetId: 'h-02-morning-coffee-nobg', caption: '' },
+  happy:    { assetId: 'h-03-encouragement-nobg', caption: '今天心情不错嘛～' },
+  excited:  { assetId: 'h-08-nerd-excited-nobg', caption: '太棒了吧！！' },
   academic: { assetId: 'h-04-late-study-nobg', caption: '让我想想...' },
-  happy: { assetId: 'h-09-bubbly-boba-nobg', caption: '今天心情不错嘛～' },
-  caring: { assetId: 'h-03-encouragement-nobg', caption: '学姐在呢，别担心' },
-  sassy: { assetId: 'h-07-streetwear-cool-nobg', caption: '哼，这还用说？' },
-  neutral: { assetId: 'h-09-bubbly-boba-nobg', caption: '' },
+  strict:   { assetId: 'h-07-queen-mode-nobg', caption: '学姐要认真了' },
+  sleepy:   { assetId: 'h-06-goodnight-nobg', caption: '困了...早点休息' },
+  drunk:    { assetId: 'b-07-nightclub', caption: '嗨起来！' },
+  sad:      { assetId: 'h-01-night-listen-nobg', caption: '学姐在呢，别难过' },
+  angry:    { assetId: 'b-06-punching', caption: '谁欺负你了？！' },
+  charming: { assetId: 'c-03-ol-looking-back', caption: '嘻嘻～' },
+  powerful: { assetId: 'c-04-boss-trenchcoat', caption: '学姐帮你撑腰' },
+  cute:     { assetId: 'c-07-koala-hoodie-cute', caption: '别走嘛～' },
+  festive:  { assetId: 'c-10-cny-qipao', caption: '节日快乐！' },
 };
 
 const IDLE_CAPTIONS = [
