@@ -238,36 +238,39 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
         } catch (e) { console.error('QR failed', e); }
       }
 
-      // Step 9: Scan label + invite code
+      // Step 9: Scan label + invite code — uniform 14px, 18px line gap
       const qrBottomY = qrCenterY + qrSz / 2 + qrPad;
+      const textShadow = () => { ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; };
+      let nextY = qrBottomY + 16;
       if (vis.qr) {
-        ctx.save();
-        ctx.font = `14px "${font}", sans-serif`;
-        ctx.fillStyle = fgSub;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
-        ctx.fillText('扫码注册', w / 2, qrBottomY + 20);
-        ctx.restore();
-        ctx.save();
-        ctx.font = `11px "${font}", sans-serif`;
-        ctx.fillStyle = '#FFFFFF';
-        ctx.globalAlpha = 0.5;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
-        ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', w / 2, qrBottomY + 46);
-        ctx.globalAlpha = 1;
-        ctx.restore();
-      }
-      if (vis.inviteCode) {
         ctx.save();
         ctx.font = `bold 14px "${font}", sans-serif`;
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
-        ctx.fillText(`邀请码: ${referralCode}`, w / 2, qrBottomY + 76);
+        textShadow();
+        ctx.fillText('扫码注册', w / 2, nextY);
+        ctx.restore();
+        nextY += 32;
+
+        ctx.save();
+        ctx.font = `14px "${font}", sans-serif`;
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        textShadow();
+        ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', w / 2, nextY);
+        ctx.restore();
+        nextY += 32;
+      }
+      if (vis.inviteCode) {
+        ctx.save();
+        ctx.font = `bold 14px "${font}", sans-serif`;
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        textShadow();
+        ctx.fillText(`邀请码: ${referralCode}`, w / 2, nextY);
         ctx.restore();
       }
 
