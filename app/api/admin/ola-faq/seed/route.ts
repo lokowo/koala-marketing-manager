@@ -22,8 +22,8 @@ const SEED_FAQS = [
   {
     category: 'usage',
     keywords: ['怎么用', '怎么写套磁信', '怎么搜教授', '使用方法', 'how to use', 'tutorial'],
-    answer_zh: '📖 **平台使用指南**\n\n1. **搜索教授** — 在学者库中按研究方向、大学搜索\n2. **AI 智能匹配** — 让 AI 根据你的背景推荐导师（3 积分）\n3. **生成套磁信** — 选择教授后一键生成个性化套磁信（3 积分）\n4. **文书审阅** — AI 审阅你的 CV/SOP/RP（5 积分）\n5. **模拟面试** — AI 模拟 PhD 面试场景（5 积分）\n\n随时问我任何 PhD 申请问题，免费回答！',
-    answer_en: '📖 **How to Use Koala PhD**\n\n1. **Search Professors** — Browse by research area or university\n2. **AI Matching** — Get matched with supervisors (3 credits)\n3. **Generate Cold Email** — One-click personalized emails (3 credits)\n4. **Document Review** — AI reviews your CV/SOP/RP (5 credits)\n5. **Mock Interview** — Practice PhD interviews (5 credits)\n\nAsk me any PhD application question for free!',
+    answer_zh: '📖 **平台使用指南**\n\n1. **搜索教授** — 在学者库中按研究方向、大学搜索\n2. **AI 智能匹配** — 让 AI 根据你的背景推荐导师（3 积分）\n3. **生成套磁信** — 选择教授后一键生成个性化套磁信（3 积分）\n4. **文书审阅** — AI 审阅你的 CV/RP（5 积分）\n5. **模拟面试** — AI 模拟 PhD 面试场景（5 积分）\n\n随时问我任何 PhD 申请问题，免费回答！',
+    answer_en: '📖 **How to Use Koala PhD**\n\n1. **Search Professors** — Browse by research area or university\n2. **AI Matching** — Get matched with supervisors (3 credits)\n3. **Generate Cold Email** — One-click personalized emails (3 credits)\n4. **Document Review** — AI reviews your CV/RP (5 credits)\n5. **Mock Interview** — Practice PhD interviews (5 credits)\n\nAsk me any PhD application question for free!',
     priority: 5,
   },
   {

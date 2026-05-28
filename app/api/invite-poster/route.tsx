@@ -125,7 +125,7 @@ export async function GET(req: Request) {
     const features = [
       { icon: '🎯', text: '覆盖全澳 38 所大学导师与学者' },
       { icon: '✉️', text: '一键生成个性化套磁信 30秒搞定' },
-      { icon: '📝', text: 'CV SOP 文书审阅 模拟面试' },
+      { icon: '📝', text: 'CV RP 文书审阅 模拟面试' },
       { icon: '📚', text: '学术知识库 快速查找技术资料与索引' },
     ];
 

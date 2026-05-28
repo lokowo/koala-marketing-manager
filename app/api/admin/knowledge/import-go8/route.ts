@@ -298,7 +298,7 @@ const GO8_ENTRIES = [
 - 群发模板（教授一看就知道）
 - 不提教授的具体研究（最大禁忌）
 - 邮件超过 300 字（教授没时间看长文）
-- 附件超过 1 个（只附 CV，不要附 SOP/论文）
+- 附件超过 1 个（只附 CV，不要附论文）
 - 用 Dear Sir/Madam（必须用教授的名字）
 
 【发送时机】
@@ -432,7 +432,7 @@ const GO8_ENTRIES = [
 - 消耗 3 积分
 
 【文书审阅】
-- AI 审阅 CV / SOP / Research Proposal
+- AI 审阅 CV / Research Proposal
 - 给出评分 + 逐段修改建议
 - 消耗 5 积分
 

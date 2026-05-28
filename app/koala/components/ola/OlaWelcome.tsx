@@ -5,7 +5,7 @@ import { OlaAvatar } from './OlaAvatar';
 const QUICK_ACTIONS = [
   { icon: '🔍', label: '找导师', message: '帮我匹配适合的澳洲PhD导师' },
   { icon: '✉️', label: '写套磁信', message: '帮我给教授写一封套磁信' },
-  { icon: '📄', label: '审文书', message: '帮我审阅CV/SOP' },
+  { icon: '📄', label: '审文书', message: '帮我审阅CV/RP' },
   { icon: '🎤', label: '模拟面试', message: '帮我做一次PhD面试模拟' },
 ];
 
