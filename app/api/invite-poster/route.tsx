@@ -1,26 +1,35 @@
-import { ImageResponse } from 'next/og';
+import satori from 'satori';
+import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import QRCode from 'qrcode';
 import { supabaseAdmin } from '../../lib/supabase/server';
 
+export const runtime = 'nodejs';
+export const maxDuration = 15;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
+/* ── Wasm init (once) ─────────────────────────────────── */
+
+let wasmReady = false;
+async function ensureWasm() {
+  if (wasmReady) return;
+  const wasmPath = join(process.cwd(), 'node_modules/@resvg/resvg-wasm/index_bg.wasm');
+  const wasmBuf = await readFile(wasmPath);
+  await initWasm(wasmBuf);
+  wasmReady = true;
+}
+
 /* ── Theme definitions ────────────────────────────────── */
 
-interface GradientTheme {
-  bg: string;
-  overlay?: undefined;
-}
-interface ImageTheme {
-  bg: string;
-  overlay: true;
-}
+interface GradientTheme { bg: string; overlay?: undefined }
+interface ImageTheme  { bg: string; overlay: true }
 type ThemeDef = GradientTheme | ImageTheme;
 
 const THEMES: Record<string, ThemeDef> = {
-  dark:    { bg: 'linear-gradient(135deg, #0F1419 0%, #1A1A2E 50%, #0d2818 100%)' },
+  dark:    { bg: 'linear-gradient(135deg, #0D7C5F 0%, #063D32 100%)' },
   navy:    { bg: 'linear-gradient(135deg, #0a1628 0%, #162040 50%, #0a2030 100%)' },
   warm:    { bg: 'linear-gradient(135deg, #1a1408 0%, #2a1e10 50%, #1a1408 100%)' },
   'bg-11': { bg: '/images/posters/11.png', overlay: true },
@@ -71,7 +80,7 @@ async function getUserInfo(code: string) {
   }
 }
 
-/* ── Load image as base64 data URL for next/og ────────── */
+/* ── Load image as base64 data URL ────────────────────── */
 
 async function loadImageAsDataUrl(relativePath: string): Promise<string> {
   const abs = join(process.cwd(), 'public', relativePath);
@@ -104,15 +113,15 @@ export async function GET(req: Request) {
       }),
     ]);
 
+    await ensureWasm();
+
     const { displayName, initial, days } = userInfo;
 
-    // For image themes, load the background as a data URL
     let bgDataUrl: string | null = null;
     if (theme.overlay) {
       bgDataUrl = await loadImageAsDataUrl(theme.bg);
     }
 
-    // Feature items
     const features = [
       { icon: '🎯', text: '覆盖全澳 38 所大学导师与学者' },
       { icon: '✉️', text: '一键生成个性化套磁信 30秒搞定' },
@@ -120,24 +129,26 @@ export async function GET(req: Request) {
       { icon: '📚', text: '学术知识库 快速查找技术资料与索引' },
     ];
 
-    return new ImageResponse(
+    const WIDTH = 750;
+    const HEIGHT = 1334;
+
+    const svg = await satori(
       (
-        <div style={{ width: 750, height: 1334, display: 'flex', flexDirection: 'column', position: 'relative', fontFamily: 'NotoSansSC' }}>
+        <div style={{ width: WIDTH, height: HEIGHT, display: 'flex', flexDirection: 'column', position: 'relative', fontFamily: 'NotoSansSC' }}>
 
           {/* Background layer */}
           {theme.overlay && bgDataUrl ? (
             <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={bgDataUrl} width={750} height={1334} style={{ position: 'absolute', top: 0, left: 0, width: 750, height: 1334, objectFit: 'cover' }} />
-              <div style={{ position: 'absolute', top: 0, left: 0, width: 750, height: 1334, background: 'rgba(15,20,25,0.50)' }} />
-              <div style={{ position: 'absolute', top: 0, left: 0, width: 750, height: 1334, background: 'linear-gradient(to bottom, rgba(15,20,25,0.55) 0%, rgba(15,20,25,0.10) 40%, rgba(15,20,25,0.10) 60%, rgba(15,20,25,0.55) 100%)' }} />
+              <img src={bgDataUrl} width={WIDTH} height={HEIGHT} style={{ position: 'absolute', top: 0, left: 0, width: WIDTH, height: HEIGHT, objectFit: 'cover' }} />
+              <div style={{ position: 'absolute', top: 0, left: 0, width: WIDTH, height: HEIGHT, background: 'rgba(15,20,25,0.50)' }} />
+              <div style={{ position: 'absolute', top: 0, left: 0, width: WIDTH, height: HEIGHT, background: 'linear-gradient(to bottom, rgba(15,20,25,0.55) 0%, rgba(15,20,25,0.10) 40%, rgba(15,20,25,0.10) 60%, rgba(15,20,25,0.55) 100%)' }} />
             </>
           ) : (
-            <div style={{ position: 'absolute', top: 0, left: 0, width: 750, height: 1334, background: theme.bg }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, width: WIDTH, height: HEIGHT, background: theme.bg }} />
           )}
 
           {/* Content */}
-          <div style={{ position: 'relative', width: 750, height: 1334, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ position: 'relative', width: WIDTH, height: HEIGHT, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
             {/* Top Branding */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 55 }}>
@@ -180,7 +191,6 @@ export async function GET(req: Request) {
             {/* QR Code */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 24 }}>
               <div style={{ background: 'white', borderRadius: 16, padding: 12, display: 'flex' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={qrDataUrl} width={170} height={170} />
               </div>
               <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginTop: 24 }}>扫码注册</div>
@@ -193,14 +203,27 @@ export async function GET(req: Request) {
         </div>
       ),
       {
-        width: 750,
-        height: 1334,
-        fonts: [{ name: 'NotoSansSC', data: fontData, weight: 700, style: 'normal' as const }],
-        headers: {
-          'Cache-Control': 'public, max-age=3600, s-maxage=86400',
-        },
+        width: WIDTH,
+        height: HEIGHT,
+        fonts: [
+          { name: 'NotoSansSC', data: fontData, weight: 700, style: 'normal' as const },
+        ],
       },
     );
+
+    // SVG → PNG via resvg-wasm
+    const resvg = new Resvg(svg, {
+      fitTo: { mode: 'width' as const, value: WIDTH },
+    });
+    const pngData = resvg.render();
+    const pngBuffer = Buffer.from(pngData.asPng());
+
+    return new Response(pngBuffer, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+      },
+    });
   } catch (err) {
     console.error('[invite-poster]', err);
     return Response.json({ error: 'Failed to generate poster' }, { status: 500 });
