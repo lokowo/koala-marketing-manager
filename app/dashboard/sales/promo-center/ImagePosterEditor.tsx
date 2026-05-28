@@ -255,7 +255,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
 
         ctx.save();
         ctx.font = `14px "${font}", sans-serif`;
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         textShadow();
@@ -266,7 +266,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
       if (vis.inviteCode) {
         ctx.save();
         ctx.font = `bold 14px "${font}", sans-serif`;
-        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         textShadow();

@@ -183,14 +183,14 @@ export async function GET(req: Request) {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={qrDataUrl} width={170} height={170} />
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'white', marginTop: 16 }}>扫码注册</div>
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', marginTop: 16 }}>📷 请使用手机相机扫码（微信扫码可能无法登录）</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.8)', marginTop: 16, background: 'rgba(255,255,255,0.1)', padding: '4px 14px', borderRadius: 8, letterSpacing: 2 }}>{code}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginTop: 20 }}>扫码注册</div>
+              <div style={{ fontSize: 14, color: '#FFFFFF', marginTop: 20 }}>📷 请使用手机相机扫码（微信扫码可能无法登录）</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginTop: 20, background: 'rgba(255,255,255,0.1)', padding: '4px 14px', borderRadius: 8, letterSpacing: 2 }}>{code}</div>
             </div>
 
             {/* Footer */}
-            <div style={{ display: 'flex', width: 750, justifyContent: 'center', marginTop: 20 }}>
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', letterSpacing: 1 }}>www.koalaphd.com</div>
+            <div style={{ display: 'flex', width: 750, justifyContent: 'center', marginTop: 24 }}>
+              <div style={{ fontSize: 14, color: '#FFFFFF', letterSpacing: 1 }}>www.koalaphd.com</div>
             </div>
           </div>
         </div>
