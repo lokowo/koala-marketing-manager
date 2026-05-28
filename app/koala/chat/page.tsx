@@ -28,6 +28,7 @@ import { ColdEmailCard } from '../components/chat/ColdEmailCard';
 import { UpgradePrompt } from '../components/chat/UpgradePrompt';
 import { FeedbackCard } from '../components/chat/FeedbackCard';
 import { MatchProfileCard } from '../components/chat/MatchProfileCard';
+import { ApplicationPackageCard, type ApplicationPackageData } from '../components/chat/ApplicationPackageCard';
 import { checkUsage, incrementUsage } from '../../lib/services/usageTracker';
 import { supabase } from '../../lib/supabase/client';
 import type { ExtractedProfile } from '../../lib/chat/extract-profile';
@@ -87,6 +88,7 @@ interface Message {
   olaEmotionTag?: string;
   olaAction?: { type: string; userId?: string };
   suggestedMode?: string;
+  applicationPackage?: ApplicationPackageData;
   timestamp: Date;
 }
 
@@ -312,7 +314,7 @@ function AcceptingBadge({ status }: { status?: string }) {
   return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400">🔴 暂不招生</span>;
 }
 
-function ProfessorMatchCard({ match, onGenerateEmail }: { match: ProfessorMatch; onGenerateEmail?: (professorId: string, professorName: string) => void }) {
+function ProfessorMatchCard({ match, onGenerateEmail, onGeneratePackage }: { match: ProfessorMatch; onGenerateEmail?: (professorId: string, professorName: string) => void; onGeneratePackage?: (professorId: string, professorName: string) => void }) {
   const score = match.matchScore;
   const color = score >= 75 ? '#5a8060' : score >= 50 ? '#D4A843' : '#b06040';
   return (
@@ -343,7 +345,13 @@ function ProfessorMatchCard({ match, onGenerateEmail }: { match: ProfessorMatch;
           onClick={() => onGenerateEmail?.(match.professorId, match.name)}
           className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
         >
-          ✉️ 生成套磁信
+          ✉️ 套磁信
+        </button>
+        <button
+          onClick={() => onGeneratePackage?.(match.professorId, match.name)}
+          className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg bg-[#5a8060] dark:bg-[#5a8060] text-white"
+        >
+          📦 申请包
         </button>
       </div>
     </div>
@@ -805,6 +813,7 @@ function ChatPageInner() {
   const [profileCollectionPending, setProfileCollectionPending] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{ file: File; type: string } | null>(null);
   const [coldEmailLoading, setColdEmailLoading] = useState(false);
+  const [packageLoading, setPackageLoading] = useState(false);
   const [expandedMatchMsgIds, setExpandedMatchMsgIds] = useState<Set<string>>(new Set());
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDismissed, setFeedbackDismissed] = useState(false);
@@ -1686,6 +1695,53 @@ function ChatPageInner() {
     }
   }, [user, showLogin, coldEmailLoading, mode, profile]);
 
+  const handleGeneratePackage = useCallback(async (professorId: string, professorName: string) => {
+    if (!user) { showLogin(); return; }
+    if (packageLoading) return;
+
+    const loadingMsg: Message = {
+      id: msgId(),
+      role: 'assistant',
+      content: `📦 正在为 ${professorName} 生成申请包（CV建议 + 套磁信 + 教授概要 + 面试准备）…`,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, loadingMsg]);
+    setPackageLoading(true);
+
+    try {
+      const res = await fetch('/api/user/application-package', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ professorId }),
+      });
+
+      if (res.status === 401) { showLogin(); return; }
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '生成失败');
+
+      const resultMsg: Message = {
+        id: loadingMsg.id,
+        role: 'assistant',
+        content: `📦 ${professorName} 的申请包已生成！包含 CV 定制建议、套磁信、教授研究概要和面试话题。`,
+        applicationPackage: data as ApplicationPackageData,
+        timestamp: new Date(),
+      };
+      setMessages(prev => {
+        const updated = prev.map(m => m.id === loadingMsg.id ? resultMsg : m);
+        setLocalHistory(mode, updated);
+        return updated;
+      });
+    } catch (err) {
+      setMessages(prev => prev.map(m => m.id === loadingMsg.id ? {
+        ...m,
+        content: `申请包生成失败：${err instanceof Error ? err.message : '请稍后再试'}`,
+      } : m));
+    } finally {
+      setPackageLoading(false);
+    }
+  }, [user, showLogin, packageLoading, mode]);
+
   const formatTime = (d: Date) => d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
   const latestEmotion = useMemo(() => {
@@ -1929,6 +1985,7 @@ function ChatPageInner() {
                             key={i}
                             match={p}
                             onGenerateEmail={handleGenerateColdEmail}
+                            onGeneratePackage={handleGeneratePackage}
                           />
                         ))}
                         {rest.length > 0 && !isExpanded && (
@@ -1956,6 +2013,7 @@ function ChatPageInner() {
                       <ProfessorMatchCard
                         match={msg.matchedProfessors[0]}
                         onGenerateEmail={handleGenerateColdEmail}
+                        onGeneratePackage={handleGeneratePackage}
                       />
                       {msg.matchedProfessors.length > 1 && (
                         <div className="relative mt-2">
@@ -2023,6 +2081,9 @@ function ChatPageInner() {
                       userPlan={profile?.plan_type}
                     />
                   </div>
+                )}
+                {msg.role === 'assistant' && msg.applicationPackage && (
+                  <ApplicationPackageCard data={msg.applicationPackage} />
                 )}
                 {msg.role === 'assistant' && msg.upgradePrompt && (
                   <div className="mt-2">
