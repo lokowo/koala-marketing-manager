@@ -6,7 +6,7 @@ interface Agent {
   id: string;
   user_id: string;
   referral_code: string;
-  status: 'active' | 'suspended' | 'terminated';
+  status: 'active' | 'suspended' | 'inactive';
   tier: string;
   is_active: boolean;
   created_at: string;
@@ -16,7 +16,7 @@ interface Agent {
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
   active:     { label: '活跃', color: '#166534', bg: '#DCFCE7' },
   suspended:  { label: '暂停', color: '#92400E', bg: '#FEF3C7' },
-  terminated: { label: '终止', color: '#991B1B', bg: '#FEE2E2' },
+  inactive:   { label: '终止', color: '#991B1B', bg: '#FEE2E2' },
 };
 
 const TIER_CFG: Record<string, { label: string; color: string; bg: string }> = {
@@ -202,7 +202,7 @@ export default function SalesAgentsPage() {
                         >
                           <option value="active">活跃</option>
                           <option value="suspended">暂停</option>
-                          <option value="terminated">终止</option>
+                          <option value="inactive">终止</option>
                         </select>
                       </td>
                       <td className="px-4 py-3 text-center">
