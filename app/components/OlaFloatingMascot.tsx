@@ -200,7 +200,7 @@ export default function OlaFloatingMascot() {
   const [currentCaption, setCurrentCaption] = useState('');
   const [assetOpacity, setAssetOpacity] = useState(1);
   // Animation unlock toast
-  const [unlockToast, setUnlockToast] = useState<{ credits: number; unlocked: number; total: number } | null>(null);
+  const [unlockToast, setUnlockToast] = useState<{ credits: number; unlocked: number; total: number; message?: string } | null>(null);
   const seenAssetsRef = useRef<Set<string>>(new Set(['h-09-bubbly-boba-nobg']));
   const idleRotateTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastEmotionRef = useRef<string | null>(null);
@@ -446,6 +446,9 @@ export default function OlaFloatingMascot() {
           if (data.newUnlock) {
             setUnlockToast({ credits: data.creditsAwarded, unlocked: data.unlocked, total: data.total });
             setTimeout(() => setUnlockToast(null), 4000);
+          } else if (data.reason === 'daily_limit') {
+            setUnlockToast({ credits: 0, unlocked: 0, total: 0, message: '今日解锁已达上限，明天再来~' });
+            setTimeout(() => setUnlockToast(null), 3000);
           }
         })
         .catch(() => {});
@@ -975,10 +978,19 @@ export default function OlaFloatingMascot() {
           style={{ pointerEvents: 'auto' }}
         >
           <style>{`@keyframes slideDown { from { opacity: 0; transform: translate(-50%, -20px); } to { opacity: 1; transform: translate(-50%, 0); } }`}</style>
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 text-white shadow-lg shadow-amber-500/30">
-            <span className="text-lg">🎉</span>
-            <span className="text-sm font-semibold">新形象解锁！+{unlockToast.credits}积分</span>
-            <span className="text-xs opacity-80">| 进度 {unlockToast.unlocked}/{unlockToast.total}</span>
+          <div className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-white shadow-lg ${unlockToast.message ? 'bg-gradient-to-r from-gray-500 to-gray-400 shadow-gray-500/30' : 'bg-gradient-to-r from-amber-500 to-yellow-400 shadow-amber-500/30'}`}>
+            {unlockToast.message ? (
+              <>
+                <span className="text-lg">😴</span>
+                <span className="text-sm font-semibold">{unlockToast.message}</span>
+              </>
+            ) : (
+              <>
+                <span className="text-lg">🎉</span>
+                <span className="text-sm font-semibold">新形象解锁！+{unlockToast.credits}积分</span>
+                <span className="text-xs opacity-80">| 进度 {unlockToast.unlocked}/{unlockToast.total}</span>
+              </>
+            )}
           </div>
         </div>
       )}

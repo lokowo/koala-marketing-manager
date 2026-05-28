@@ -50,6 +50,37 @@ export async function POST(req: Request) {
     const { data: asset } = await db.from('ola_assets').select('video_url').eq('asset_id', assetId).maybeSingle();
     if (!asset?.video_url) return Response.json({ newUnlock: false, reason: 'static_image' });
 
+    // ── Anti-abuse: daily limit (3 unlocks/day = 6 credits/day) ──
+    const today = new Date().toISOString().slice(0, 10);
+    const { count: dailyCount } = await db
+      .from('ola_animation_unlocks')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('unlocked_at', today + 'T00:00:00Z');
+    if ((dailyCount ?? 0) >= 3) return Response.json({ newUnlock: false, reason: 'daily_limit' });
+
+    // ── Anti-abuse: 60s cooldown between unlocks ──
+    const { data: lastUnlock } = await db
+      .from('ola_animation_unlocks')
+      .select('unlocked_at')
+      .eq('user_id', user.id)
+      .order('unlocked_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (lastUnlock) {
+      const elapsed = Date.now() - new Date(lastUnlock.unlocked_at).getTime();
+      if (elapsed < 60_000) return Response.json({ newUnlock: false, reason: 'cooldown' });
+    }
+
+    // ── Anti-abuse: min 3 user messages in last 30 min ──
+    const { count: msgCount } = await db
+      .from('chat_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('role', 'user')
+      .gte('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString());
+    if ((msgCount ?? 0) < 3) return Response.json({ newUnlock: false, reason: 'min_messages' });
+
     const CREDITS_PER_UNLOCK = 2;
 
     const { error: insertErr } = await db
