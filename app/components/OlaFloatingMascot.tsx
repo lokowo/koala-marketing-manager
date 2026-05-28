@@ -415,13 +415,7 @@ export default function OlaFloatingMascot() {
     }
 
     const meta = assetsReady ? getAssetMeta(assetId) ?? null : null;
-    console.log('[SWITCH]', assetId, JSON.stringify({
-      metaExists: !!meta,
-      videoUrl: meta?.video_url?.slice(-50) || 'NONE',
-      playMode: meta?.play_mode,
-      mediaType: meta?.media_type,
-      assetsReady
-    }));
+    console.log('[SWITCH]', assetId, { hasVideo: !!meta?.video_url, playMode: meta?.play_mode });
     const isAction = meta?.video_url && (meta.play_mode === 'action' || meta.play_mode === 'emotion');
     playingAction.current = !!isAction;
     lastSwitchTime.current = Date.now();
@@ -440,7 +434,7 @@ export default function OlaFloatingMascot() {
       }
     }, 300);
 
-    if (user && !seenAssetsRef.current.has(assetId)) {
+    if (user && !seenAssetsRef.current.has(assetId) && meta?.video_url) {
       seenAssetsRef.current.add(assetId);
       fetch('/api/user/animation-unlocks', {
         method: 'POST',
@@ -929,7 +923,7 @@ export default function OlaFloatingMascot() {
                     const code = el.error?.code;
                     const msg = el.error?.message;
                     console.error('[VIDEO_FAIL]', currentMeta?.asset_id, 'code:', code, 'msg:', msg, 'url:', currentMeta?.video_url);
-                    setCurrentCaption('VIDEO ERR: ' + (msg || 'code=' + code));
+                    setCurrentCaption('⚠️ 视频加载失败: ' + (msg || 'code=' + code));
                     setTimeout(() => { setVideoError(true); }, 3000);
                   }}
                   className="w-full h-auto pointer-events-none"

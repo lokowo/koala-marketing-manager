@@ -11,7 +11,7 @@ export async function GET() {
 
     const [{ data: unlocks }, { data: allAssets }] = await Promise.all([
       db.from('ola_animation_unlocks').select('asset_id, unlocked_at, credits_awarded').eq('user_id', user.id).order('unlocked_at', { ascending: true }),
-      db.from('ola_assets').select('asset_id, image_url, emotion_tag').eq('is_active', true).order('asset_id'),
+      db.from('ola_assets').select('asset_id, image_url, emotion_tag').eq('is_active', true).not('video_url', 'is', null).order('asset_id'),
     ]);
 
     return Response.json({
@@ -47,6 +47,9 @@ export async function POST(req: Request) {
       return Response.json({ newUnlock: false });
     }
 
+    const { data: asset } = await db.from('ola_assets').select('video_url').eq('asset_id', assetId).maybeSingle();
+    if (!asset?.video_url) return Response.json({ newUnlock: false, reason: 'static_image' });
+
     const CREDITS_PER_UNLOCK = 2;
 
     const { error: insertErr } = await db
@@ -75,7 +78,8 @@ export async function POST(req: Request) {
     const { count: totalAssets } = await db
       .from('ola_assets')
       .select('*', { count: 'exact', head: true })
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .not('video_url', 'is', null);
 
     return Response.json({
       newUnlock: true,
