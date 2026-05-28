@@ -1,128 +1,115 @@
-import ReactPDF, { Font } from '@react-pdf/renderer';
+import ReactPDF from '@react-pdf/renderer';
 import React from 'react';
 import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 import { getServerUser } from '../../../lib/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { getUserTier } from '../../../lib/services/usageTracker';
+import { registerPdfFonts, CJK_FONT } from '../../../lib/server/pdf-fonts';
 
-Font.register({
-  family: 'NotoSerifSC',
-  fonts: [
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-serif-sc@latest/chinese-simplified-400-normal.woff2', fontWeight: 400 },
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-serif-sc@latest/chinese-simplified-700-normal.woff2', fontWeight: 700 },
-  ],
-});
-
-Font.register({
-  family: 'NotoSansSC',
-  fonts: [
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-sans-sc@latest/chinese-simplified-400-normal.woff2', fontWeight: 400 },
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-sans-sc@latest/chinese-simplified-700-normal.woff2', fontWeight: 700 },
-  ],
-});
-
-const styles = StyleSheet.create({
-  page: {
-    padding: 48,
-    paddingTop: 40,
-    paddingBottom: 40,
-    fontFamily: 'NotoSerifSC',
-    fontSize: 10.5,
-    lineHeight: 1.4,
-    color: '#1a1a1a',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    alignItems: 'flex-start',
-  },
-  headerText: {
-    flex: 1,
-  },
-  name: {
-    fontSize: 20,
-    fontFamily: 'NotoSerifSC',
-    fontWeight: 700,
-    marginBottom: 4,
-  },
-  contactLine: {
-    fontSize: 9,
-    color: '#555',
-    marginBottom: 1.5,
-  },
-  photo: {
-    width: 72,
-    height: 90,
-    objectFit: 'cover',
-    borderRadius: 2,
-    marginLeft: 16,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontFamily: 'NotoSerifSC',
-    fontWeight: 700,
-    borderBottomWidth: 0.8,
-    borderBottomColor: '#333',
-    paddingBottom: 2,
-    marginTop: 14,
-    marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 1,
-  },
-  itemTitle: {
-    fontSize: 10.5,
-    fontFamily: 'NotoSerifSC',
-    fontWeight: 700,
-  },
-  itemSubtitle: {
-    fontSize: 10,
-    fontFamily: 'NotoSerifSC',
-    color: '#444',
-    marginBottom: 2,
-  },
-  itemDate: {
-    fontSize: 9.5,
-    color: '#555',
-    textAlign: 'right',
-    minWidth: 80,
-  },
-  bullet: {
-    fontSize: 10,
-    marginLeft: 12,
-    marginBottom: 1.5,
-  },
-  itemBlock: {
-    marginBottom: 6,
-  },
-  skillsRow: {
-    flexDirection: 'row',
-    marginBottom: 2,
-  },
-  skillLabel: {
-    fontSize: 10,
-    fontFamily: 'NotoSerifSC',
-    fontWeight: 700,
-    width: 80,
-  },
-  skillValue: {
-    fontSize: 10,
-    flex: 1,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 24,
-    left: 48,
-    right: 48,
-    textAlign: 'center',
-    fontSize: 7.5,
-    color: '#bbb',
-  },
-});
+function createStyles(fontFamily: string) {
+  return StyleSheet.create({
+    page: {
+      padding: 48,
+      paddingTop: 40,
+      paddingBottom: 40,
+      fontFamily,
+      fontSize: 10.5,
+      lineHeight: 1.4,
+      color: '#1a1a1a',
+    },
+    headerRow: {
+      flexDirection: 'row',
+      marginBottom: 16,
+      alignItems: 'flex-start',
+    },
+    headerText: {
+      flex: 1,
+    },
+    name: {
+      fontSize: 20,
+      fontFamily,
+      fontWeight: 700,
+      marginBottom: 4,
+    },
+    contactLine: {
+      fontSize: 9,
+      color: '#555',
+      marginBottom: 1.5,
+    },
+    photo: {
+      width: 72,
+      height: 90,
+      objectFit: 'cover',
+      borderRadius: 2,
+      marginLeft: 16,
+    },
+    sectionTitle: {
+      fontSize: 12,
+      fontFamily,
+      fontWeight: 700,
+      borderBottomWidth: 0.8,
+      borderBottomColor: '#333',
+      paddingBottom: 2,
+      marginTop: 14,
+      marginBottom: 6,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+    },
+    itemRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 1,
+    },
+    itemTitle: {
+      fontSize: 10.5,
+      fontFamily,
+      fontWeight: 700,
+    },
+    itemSubtitle: {
+      fontSize: 10,
+      fontFamily,
+      color: '#444',
+      marginBottom: 2,
+    },
+    itemDate: {
+      fontSize: 9.5,
+      color: '#555',
+      textAlign: 'right',
+      minWidth: 80,
+    },
+    bullet: {
+      fontSize: 10,
+      marginLeft: 12,
+      marginBottom: 1.5,
+    },
+    itemBlock: {
+      marginBottom: 6,
+    },
+    skillsRow: {
+      flexDirection: 'row',
+      marginBottom: 2,
+    },
+    skillLabel: {
+      fontSize: 10,
+      fontFamily,
+      fontWeight: 700,
+      width: 80,
+    },
+    skillValue: {
+      fontSize: 10,
+      flex: 1,
+    },
+    footer: {
+      position: 'absolute',
+      bottom: 24,
+      left: 48,
+      right: 48,
+      textAlign: 'center',
+      fontSize: 7.5,
+      color: '#bbb',
+    },
+  });
+}
 
 interface CVItem {
   title: string;
@@ -154,7 +141,8 @@ interface CVData {
   };
 }
 
-function AcademicCV({ cv, photoUrl }: { cv: CVData; photoUrl?: string }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function AcademicCV({ cv, photoUrl, styles }: { cv: CVData; photoUrl?: string; styles: any }) {
   const h = cv.header;
   const contactParts: string[] = [];
   if (h.email) contactParts.push(h.email);
@@ -249,7 +237,11 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Invalid CV data' }, { status: 400 });
     }
 
-    const element = React.createElement(AcademicCV, { cv, photoUrl });
+    const allText = JSON.stringify(cv);
+    const fontFamily = await registerPdfFonts(allText);
+    const styles = createStyles(fontFamily);
+
+    const element = React.createElement(AcademicCV, { cv, photoUrl, styles });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pdfStream = await ReactPDF.renderToStream(element as any);
 

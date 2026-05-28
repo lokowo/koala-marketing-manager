@@ -926,8 +926,7 @@ export default function OlaFloatingMascot() {
                     const code = el.error?.code;
                     const msg = el.error?.message;
                     console.error('[VIDEO_FAIL]', currentMeta?.asset_id, 'code:', code, 'msg:', msg, 'url:', currentMeta?.video_url);
-                    setCurrentCaption('⚠️ 视频加载失败: ' + (msg || 'code=' + code));
-                    setTimeout(() => { setVideoError(true); }, 3000);
+                    setVideoError(true);
                   }}
                   className="w-full h-auto pointer-events-none"
                   style={{ objectFit: 'contain', background: 'transparent' }}
