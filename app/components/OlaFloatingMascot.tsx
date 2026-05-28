@@ -210,11 +210,14 @@ export default function OlaFloatingMascot() {
   const MIN_DISPLAY_MS = 5000;
   // Video playback state
   const [currentMeta, setCurrentMeta] = useState<OlaAssetMeta | null>(null);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(true);
   const [assetsReady, setAssetsReady] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const loopCount = useRef(0);
+  const MAX_LOOPS = 10;
+  const hasInteracted = useRef(false);
 
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -387,6 +390,23 @@ export default function OlaFloatingMascot() {
     ensureAssetsLoaded().then(() => setAssetsReady(true));
   }, []);
 
+  // ─── Track user interaction for auto-unmute ──────
+  useEffect(() => {
+    const markInteracted = () => {
+      hasInteracted.current = true;
+      if (videoRef.current && videoRef.current.muted) {
+        videoRef.current.muted = false;
+        setMuted(false);
+      }
+    };
+    document.addEventListener('click', markInteracted);
+    document.addEventListener('touchstart', markInteracted);
+    return () => {
+      document.removeEventListener('click', markInteracted);
+      document.removeEventListener('touchstart', markInteracted);
+    };
+  }, []);
+
   // ─── Emotion-based asset switching ───────────────
   const switchAsset = useCallback((assetId: string, caption: string, force = false) => {
     if (!force) {
@@ -405,6 +425,7 @@ export default function OlaFloatingMascot() {
     const isAction = meta?.video_url && (meta.play_mode === 'action' || meta.play_mode === 'emotion');
     playingAction.current = !!isAction;
     lastSwitchTime.current = Date.now();
+    loopCount.current = 0;
 
     setAssetOpacity(0);
     setTimeout(() => {
@@ -451,12 +472,26 @@ export default function OlaFloatingMascot() {
     playingAction.current = false;
 
     if (mode === 'emotion' || mode === 'action') {
-      setAssetOpacity(0);
-      setTimeout(() => {
-        switchAsset('h-09-bubbly-boba-nobg', pickRandom(IDLE_CAPTIONS), true);
-      }, 300);
+      // Play once, then show static image of same asset
+      setVideoError(true);
+      return;
     }
-  }, [currentMeta, switchAsset]);
+
+    if (mode === 'idle' || mode === 'loop') {
+      loopCount.current += 1;
+      if (loopCount.current >= MAX_LOOPS) {
+        // Stop after MAX_LOOPS, show static image of same asset
+        setVideoError(true);
+        return;
+      }
+      // Replay manually
+      const v = videoRef.current;
+      if (v) {
+        v.currentTime = 0;
+        v.play().catch(() => {});
+      }
+    }
+  }, [currentMeta]);
 
   const toggleMuted = useCallback(() => {
     setMuted(prev => {
@@ -878,12 +913,14 @@ export default function OlaFloatingMascot() {
                   playsInline
                   muted
                   preload="auto"
-                  loop={currentMeta.play_mode === 'idle' || currentMeta.play_mode === 'loop'}
                   onCanPlay={(e) => {
                     const v = e.currentTarget;
                     console.log('[OlaVideo] canPlay', { asset_id: currentMeta.asset_id, readyState: v.readyState, paused: v.paused });
                     if (v.paused) v.play().catch(() => {});
-                    v.muted = false;
+                    if (hasInteracted.current) {
+                      v.muted = false;
+                      setMuted(false);
+                    }
                     setAssetOpacity(1);
                   }}
                   onEnded={handleVideoEnded}
@@ -921,7 +958,7 @@ export default function OlaFloatingMascot() {
 
         {/* Separate audio element for MP3 track */}
         {currentMeta?.audio_url && (
-          <audio ref={audioRef} src={currentMeta.audio_url} loop={currentMeta.play_mode === 'idle' || currentMeta.play_mode === 'loop'} muted={muted} />
+          <audio ref={audioRef} src={currentMeta.audio_url} muted={muted} />
         )}
 
         {/* Caption below mascot */}
