@@ -642,7 +642,7 @@ H指数：${prof.hIndex ?? '未知'}`;
               openAccessUrl: null,
               arxivUrl: null,
               citations: ip.citation_count,
-              abstract: ip.abstract ?? null,
+              abstract: ip.abstract ?? '',
             });
             existingTitles.add(ip.title.toLowerCase());
           }
