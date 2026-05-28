@@ -853,6 +853,11 @@ export default function OlaFloatingMascot() {
                   muted
                   preload="auto"
                   loop={currentMeta.play_mode === 'idle' || currentMeta.play_mode === 'loop'}
+                  onCanPlay={(e) => {
+                    const v = e.currentTarget;
+                    console.log('[OlaVideo] canPlay', { asset_id: currentMeta.asset_id, readyState: v.readyState, paused: v.paused });
+                    if (v.paused) v.play().catch(() => {});
+                  }}
                   onEnded={handleVideoEnded}
                   onError={(e) => {
                     const el = e.currentTarget;
@@ -861,8 +866,8 @@ export default function OlaFloatingMascot() {
                     console.error('[OlaVideo] error', { asset_id: currentMeta.asset_id, video_url: currentMeta.video_url, status: 'error', code, msg });
                     setVideoError(true);
                   }}
-                  className="pointer-events-none"
-                  style={{ width: '100%', height: '100%', objectFit: 'contain', background: 'transparent' }}
+                  className="w-full h-auto pointer-events-none"
+                  style={{ objectFit: 'contain', background: 'transparent' }}
                 />
               ) : (
                 <OlaAvatar assetId={currentAssetId} size="md" className="w-full h-auto object-contain pointer-events-none" />
