@@ -210,7 +210,7 @@ export default function OlaFloatingMascot() {
   const MIN_DISPLAY_MS = 5000;
   // Video playback state
   const [currentMeta, setCurrentMeta] = useState<OlaAssetMeta | null>(null);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const [assetsReady, setAssetsReady] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -395,6 +395,13 @@ export default function OlaFloatingMascot() {
     }
 
     const meta = assetsReady ? getAssetMeta(assetId) ?? null : null;
+    console.log('[SWITCH]', assetId, JSON.stringify({
+      metaExists: !!meta,
+      videoUrl: meta?.video_url?.slice(-50) || 'NONE',
+      playMode: meta?.play_mode,
+      mediaType: meta?.media_type,
+      assetsReady
+    }));
     const isAction = meta?.video_url && (meta.play_mode === 'action' || meta.play_mode === 'emotion');
     playingAction.current = !!isAction;
     lastSwitchTime.current = Date.now();
@@ -876,6 +883,7 @@ export default function OlaFloatingMascot() {
                     const v = e.currentTarget;
                     console.log('[OlaVideo] canPlay', { asset_id: currentMeta.asset_id, readyState: v.readyState, paused: v.paused });
                     if (v.paused) v.play().catch(() => {});
+                    v.muted = false;
                     setAssetOpacity(1);
                   }}
                   onEnded={handleVideoEnded}
@@ -883,8 +891,9 @@ export default function OlaFloatingMascot() {
                     const el = e.currentTarget;
                     const code = el.error?.code;
                     const msg = el.error?.message;
-                    console.error('[OlaVideo] error', { asset_id: currentMeta.asset_id, video_url: currentMeta.video_url, status: 'error', code, msg });
-                    setVideoError(true);
+                    console.error('[VIDEO_FAIL]', currentMeta?.asset_id, 'code:', code, 'msg:', msg, 'url:', currentMeta?.video_url);
+                    setCurrentCaption('VIDEO ERR: ' + (msg || 'code=' + code));
+                    setTimeout(() => { setVideoError(true); }, 3000);
                   }}
                   className="w-full h-auto pointer-events-none"
                   style={{ objectFit: 'contain', background: 'transparent' }}
