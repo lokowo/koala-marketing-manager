@@ -129,6 +129,8 @@ function parseOlaState(text: string): { clean: string; assetId?: string; emotion
 
 // ─── Mode config ──────────────────────────────────────────────────────────────
 
+interface QuickAction { icon: string; label: string; message: string }
+
 const MODES: {
   key: AIMode;
   label: string;
@@ -138,6 +140,7 @@ const MODES: {
   welcome: string;
   initialReplies?: string[];
   olaAssetId: string;
+  quickActions: QuickAction[];
 }[] = [
   {
     key: 'path',
@@ -148,6 +151,12 @@ const MODES: {
     welcome: '我来帮你评估澳洲 PhD 申请的可行性。\n\n告诉我你的专业背景和目标，我帮你：\n• 评估申请竞争力\n• 规划申请时间线\n• 推荐最适合的学校和导师',
     initialReplies: ['本科985/211', '双非背景', '已有硕士', '转专业'],
     olaAssetId: 'h-07-queen-mode-nobg',
+    quickActions: [
+      { icon: '🔍', label: '匹配导师', message: '帮我匹配适合的澳洲PhD导师' },
+      { icon: '📊', label: '分析背景', message: '帮我分析一下我的申请背景' },
+      { icon: '🎯', label: '选校建议', message: '根据我的背景推荐适合的学校' },
+      { icon: '💰', label: '奖学金', message: '有哪些PhD奖学金机会？' },
+    ],
   },
   {
     key: 'research',
@@ -158,6 +167,12 @@ const MODES: {
     welcome: '我可以帮你搜索文献、解读论文、梳理研究方向 🔬\n\n把你的问题或论文链接发给我，我来帮你分析。',
     initialReplies: ['帮我搜文献', '解读一篇论文', '梳理研究方向', '写文献综述'],
     olaAssetId: 'h-08-nerd-excited-nobg',
+    quickActions: [
+      { icon: '📚', label: '搜文献', message: '帮我搜索相关领域的最新文献' },
+      { icon: '🔬', label: '解读论文', message: '帮我解读一篇论文' },
+      { icon: '🗺️', label: '梳理方向', message: '帮我梳理研究方向' },
+      { icon: '📝', label: '文献综述', message: '帮我写一段文献综述' },
+    ],
   },
   {
     key: 'chat',
@@ -168,6 +183,12 @@ const MODES: {
     welcome: '有任何关于澳洲读博的问题都可以问我！💬',
     initialReplies: ['奖学金问题', '签证问题', '生活费预算', '读博时间线'],
     olaAssetId: 'h-09-bubbly-boba-nobg',
+    quickActions: [
+      { icon: '👋', label: '打个招呼', message: '嗨学姐！最近怎么样？' },
+      { icon: '😩', label: '吐吐槽', message: '学姐我好累啊…' },
+      { icon: '🤔', label: '问问题', message: '澳洲读博一般几年？' },
+      { icon: '☕', label: '聊聊天', message: '学姐你今天喝什么咖啡？' },
+    ],
   },
   {
     key: 'write',
@@ -178,6 +199,12 @@ const MODES: {
     welcome: '给我一位教授的名字或链接，我帮你写一封专业的申请信 ✉️',
     initialReplies: ['我有目标教授', '帮我先找教授再写信', '修改我的草稿'],
     olaAssetId: 'h-04-late-study-nobg',
+    quickActions: [
+      { icon: '✉️', label: '写套磁信', message: '帮我给教授写一封套磁信' },
+      { icon: '📄', label: '润色CV', message: '帮我润色学术CV' },
+      { icon: '📋', label: '审SOP', message: '帮我审阅SOP' },
+      { icon: '✍️', label: '推荐信', message: '帮我草拟一封推荐信请求' },
+    ],
   },
   {
     key: 'rp',
@@ -188,6 +215,12 @@ const MODES: {
     welcome: '我是你的 Research Proposal 写作顾问 📝\n\n我可以帮你：\n• 确定研究选题和研究问题\n• 指导 RP 结构和写作\n• 审阅和修改你的 RP 草稿\n\n先告诉我你的研究兴趣和目标教授吧！',
     initialReplies: ['帮我确定研究选题', '审阅我的 RP 草稿', '怎么写文献综述', '方法论怎么选'],
     olaAssetId: 'h-01-night-listen-nobg',
+    quickActions: [
+      { icon: '📝', label: '写RP', message: '帮我写Research Proposal' },
+      { icon: '🔍', label: '审RP', message: '帮我审阅我的RP草稿' },
+      { icon: '🗺️', label: '研究框架', message: '帮我设计研究框架' },
+      { icon: '📊', label: '方法论', message: '帮我选择研究方法' },
+    ],
   },
   {
     key: 'interview',
@@ -198,6 +231,12 @@ const MODES: {
     welcome: '欢迎来到模拟面试练习！🎤\n\n我会扮演澳洲大学的 PhD 导师，模拟真实面试场景。\n\n告诉我你要面试哪位教授，我会根据他/她的研究方向设计面试问题。每个问题回答后我都会给出反馈和改进建议。',
     initialReplies: ['我有目标教授', '通用面试练习', '面试常见问题有哪些'],
     olaAssetId: 'c-04-boss-trenchcoat-half',
+    quickActions: [
+      { icon: '🎤', label: '开始面试', message: '开始一次PhD面试模拟' },
+      { icon: '💬', label: '自我介绍', message: '帮我练习英文自我介绍' },
+      { icon: '🧠', label: '常见问题', message: 'PhD面试常见问题有哪些？' },
+      { icon: '📋', label: '研究陈述', message: '帮我准备研究陈述' },
+    ],
   },
 ];
 
@@ -1783,7 +1822,7 @@ function ChatPageInner() {
             </p>
           </div>
         ) : messages.length === 1 && messages[0].role === 'assistant' && !loading ? (
-          <div className="relative z-[1]"><OlaWelcome onSend={(msg) => sendMessage(msg)} olaAssetId={currentMode.olaAssetId} /></div>
+          <div className="relative z-[1]"><OlaWelcome onSend={(msg) => sendMessage(msg)} olaAssetId={currentMode.olaAssetId} quickActions={currentMode.quickActions} /></div>
         ) : (
         <div className="relative z-[1]">
         <div className="flex items-center gap-2 py-2 mb-1">

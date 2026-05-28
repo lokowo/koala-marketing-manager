@@ -2,7 +2,7 @@
 
 import { OlaAvatar } from './OlaAvatar';
 
-const QUICK_ACTIONS = [
+const DEFAULT_QUICK_ACTIONS = [
   { icon: '🔍', label: '找导师', message: '帮我匹配适合的澳洲PhD导师' },
   { icon: '✉️', label: '写套磁信', message: '帮我给教授写一封套磁信' },
   { icon: '📄', label: '审文书', message: '帮我审阅CV/RP' },
@@ -12,9 +12,10 @@ const QUICK_ACTIONS = [
 interface OlaWelcomeProps {
   onSend: (message: string) => void;
   olaAssetId?: string;
+  quickActions?: Array<{ icon: string; label: string; message: string }>;
 }
 
-export function OlaWelcome({ onSend, olaAssetId }: OlaWelcomeProps) {
+export function OlaWelcome({ onSend, olaAssetId, quickActions }: OlaWelcomeProps) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-10">
       <div key={olaAssetId} style={{ animation: 'fadeIn 0.3s ease-out' }}>
@@ -27,7 +28,7 @@ export function OlaWelcome({ onSend, olaAssetId }: OlaWelcomeProps) {
         你的 PhD 申请 AI 顾问，我能帮你：
       </p>
       <div className="grid grid-cols-2 gap-2.5 mt-5 w-full max-w-[320px]">
-        {QUICK_ACTIONS.map(action => (
+        {(quickActions ?? DEFAULT_QUICK_ACTIONS).map(action => (
           <button
             key={action.label}
             onClick={() => onSend(action.message)}
