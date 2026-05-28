@@ -238,41 +238,61 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
         } catch (e) { console.error('QR failed', e); }
       }
 
-      // Step 9: Scan label + invite code — uniform 14px, 18px line gap
+      // Step 9: Scan label + invite code + divider + url
       const qrBottomY = qrCenterY + qrSz / 2 + qrPad;
       const textShadow = () => { ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; };
-      let nextY = qrBottomY + 16;
+      let nextY = qrBottomY + 24;
       if (vis.qr) {
         ctx.save();
-        ctx.font = `bold 14px "${font}", sans-serif`;
+        ctx.font = `bold 16px "${font}", sans-serif`;
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         textShadow();
         ctx.fillText('扫码注册', w / 2, nextY);
         ctx.restore();
-        nextY += 32;
+        nextY += 28;
 
         ctx.save();
-        ctx.font = `14px "${font}", sans-serif`;
+        ctx.font = `13px "${font}", sans-serif`;
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         textShadow();
         ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', w / 2, nextY);
         ctx.restore();
-        nextY += 32;
+        nextY += 28;
       }
       if (vis.inviteCode) {
         ctx.save();
-        ctx.font = `bold 14px "${font}", sans-serif`;
+        ctx.font = `bold 15px "${font}", sans-serif`;
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         textShadow();
         ctx.fillText(`邀请码: ${referralCode}`, w / 2, nextY);
         ctx.restore();
+        nextY += 28;
       }
+      // Divider line
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      const lineW = w * 0.6;
+      ctx.beginPath();
+      ctx.moveTo((w - lineW) / 2, nextY);
+      ctx.lineTo((w + lineW) / 2, nextY);
+      ctx.stroke();
+      ctx.restore();
+      nextY += 16;
+      // URL
+      ctx.save();
+      ctx.font = `12px "${font}", sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('www.koalaphd.com', w / 2, nextY);
+      ctx.restore();
 
       // Step 10: Bottom bar
       const bottomY = h - 60;
