@@ -21,6 +21,7 @@ import { loadMemories, formatMemoriesForPrompt, extractMemories, saveMemories, s
 import { logConversation, parseOlaStateTag, detectUserReaction } from '../../../lib/services/olaConversationLogger';
 import { getOrCreateMemory, updateIntimacy, updateMemoryFromConversation, buildOlaMemoryPrompt, type OlaUserMemory } from '../../../lib/services/olaMemoryService';
 import { buildLocalKnowledgePrompt } from '../../../lib/services/olaLocalKnowledgeService';
+import { createEmbedding } from '../../../lib/server/embedding';
 
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error('[AI Chat] ANTHROPIC_API_KEY is not configured');
@@ -160,6 +161,8 @@ function cleanReply(text: string): string {
   return text.replace(/```json\n[\s\S]*?\n```/g, '').replace(/\n{3,}/g, '\n\n').trim();
 }
 
+const MATCHING_DEEP_RE = /导师|supervisor|研究方向|find.*professor|recommend.*professor|谁.*做|who.*research|NLP|machine learning|deep learning|computer vision|natural language|reinforcement learning|data mining|robotics|quantum|nano|biomedical|genomics|ecology|neuroscience|cancer|immunology|材料|物理|化学|生物|力学|电子|计算机|人工智能|环境|能源|光学|药学/i;
+
 function detectIntent(message: string): 'outreach' | 'matching' | 'academic' | 'general' {
   const m = message.toLowerCase();
   if (/套磁|cold email|outreach|联系导师|给.*写.*信|写邮件/.test(m)) return 'outreach';
@@ -238,6 +241,135 @@ function papersToCitations(papers: AcademicPaper[]) {
     citations: p.citations,
     abstract: p.abstract,
   }));
+}
+
+// ─── Professor match scoring (5-dimension) ──────────────────────────────────
+
+interface ProfMatchScores {
+  research_fit: number;
+  opportunity: number;
+  publication: number;
+  student_fit: number;
+  availability: number;
+  total: number;
+}
+
+function computeProfMatchScores(
+  row: { similarity?: number; opportunity_score?: number | null; h_index?: number | null; research_areas?: string[] | null; accepting_students?: string | null },
+  interest: string,
+): ProfMatchScores {
+  const similarity = row.similarity ?? 0.5;
+  const research_fit = Math.min(5, similarity * 5);
+  const opportunity = Math.min(5, (row.opportunity_score ?? 0) / 20);
+  const publication = Math.min(5, (row.h_index ?? 0) / 10);
+
+  const interestWords = new Set(interest.toLowerCase().split(/[\s,;，；]+/).filter(w => w.length >= 2));
+  const areasText = (row.research_areas ?? []).join(' ').toLowerCase();
+  let kwHits = 0;
+  for (const w of interestWords) { if (areasText.includes(w)) kwHits++; }
+  const student_fit = interestWords.size > 0 ? Math.min(5, (kwHits / interestWords.size) * 5) : 0;
+
+  const acc = row.accepting_students;
+  const availability = acc === 'yes' ? 5 : acc === 'likely' ? 4 : acc === 'maybe' ? 3 : 1;
+
+  const total = +(research_fit * 0.35 + opportunity * 0.2 + publication * 0.15 + student_fit * 0.2 + availability * 0.1).toFixed(2);
+
+  return {
+    research_fit: +research_fit.toFixed(2),
+    opportunity: +opportunity.toFixed(2),
+    publication: +publication.toFixed(2),
+    student_fit: +student_fit.toFixed(2),
+    availability,
+    total: +total.toFixed(2),
+  };
+}
+
+async function runProfessorMatchScoring(interest: string, background?: string): Promise<string> {
+  try {
+    const queryText = background ? `Research interests: ${interest}. Background: ${background}` : `Research interests: ${interest}`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let candidates: any[] = [];
+
+    try {
+      const embedding = await createEmbedding(queryText);
+      const { createClient } = await import('@supabase/supabase-js');
+      const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+      const { data, error } = await db.rpc('match_professors_semantic', {
+        query_embedding: embedding,
+        match_threshold: 0.4,
+        match_count: 20,
+      });
+      if (!error && data?.length > 0) candidates = data;
+    } catch (e) {
+      console.error('[professorMatchScoring] Semantic search failed:', e);
+    }
+
+    if (candidates.length === 0) {
+      const keywords = interest.split(/[\s,;，；]+/).map(k => k.trim()).filter(k => k.length >= 2);
+      if (keywords.length > 0) {
+        const { createClient } = await import('@supabase/supabase-js');
+        const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+        const { data } = await db.from('professors').select('*').eq('verification_status', 'Verified').order('opportunity_score', { ascending: false, nullsFirst: false }).limit(50);
+        candidates = (data ?? []).filter((row: { research_areas?: string[] }) => {
+          const areasText = (row.research_areas ?? []).join(' ').toLowerCase();
+          return keywords.some(k => areasText.includes(k.toLowerCase()));
+        }).map((row: Record<string, unknown>) => ({ ...row, similarity: 0.5 }));
+      }
+    }
+
+    if (candidates.length === 0) return '';
+
+    const scored = candidates.map((row: Record<string, unknown>) => ({
+      row,
+      scores: computeProfMatchScores(row as { similarity?: number; opportunity_score?: number | null; h_index?: number | null; research_areas?: string[] | null; accepting_students?: string | null }, interest),
+    }));
+    scored.sort((a: { scores: ProfMatchScores }, b: { scores: ProfMatchScores }) => b.scores.total - a.scores.total);
+    const top5 = scored.slice(0, 5);
+
+    // Fetch latest papers
+    const profIds = top5.map((t: { row: Record<string, unknown> }) => t.row.id as string);
+    let papersMap: Record<string, Array<{ title: string; year?: number | null }>> = {};
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+      const { data: paperData } = await db.from('papers').select('professor_id, title, year').in('professor_id', profIds).order('year', { ascending: false }).limit(profIds.length * 3);
+      for (const p of (paperData ?? []) as Array<{ professor_id: string; title: string; year: number | null }>) {
+        if (!papersMap[p.professor_id]) papersMap[p.professor_id] = [];
+        if (papersMap[p.professor_id].length < 3) papersMap[p.professor_id].push({ title: p.title, year: p.year });
+      }
+    } catch {}
+
+    let ctx = `\n\n## 导师匹配评分结果（5维度评分，每项0-5分）
+以下是根据用户研究兴趣"${interest}"通过向量相似度+多维评分系统匹配到的 Top 5 教授。
+请在回复中使用以下真实数据，严格按照评分格式展示：\n\n`;
+
+    for (let i = 0; i < top5.length; i++) {
+      const { row, scores } = top5[i] as { row: Record<string, unknown>; scores: ProfMatchScores };
+      const papers = papersMap[row.id as string] ?? [];
+      const accepting = row.accepting_students as string;
+      const availLabel = accepting === 'yes' ? '✅ 招生中' : accepting === 'likely' ? '🟡 可能招生' : accepting === 'unknown' ? '❓ 未知' : '🔴 未招生';
+
+      ctx += `${i + 1}. **${row.name}** — ${row.university}
+   职位：${row.position_title || '未知'} | H-index: ${row.h_index ?? 'N/A'} | 论文数: ${row.paper_count ?? 'N/A'}
+   综合匹配 ⭐ ${scores.total.toFixed(1)}/5
+   研究契合 ${scores.research_fit.toFixed(1)} | 机会指数 ${scores.opportunity.toFixed(1)} | 发表活跃度 ${scores.publication.toFixed(1)} | 背景匹配 ${scores.student_fit.toFixed(1)} | 招生状态 ${availLabel}
+   研究方向：${(row.research_areas as string[] ?? []).slice(0, 5).join(', ')}
+   ${papers.length > 0 ? `最新论文：${papers.map(p => `${p.title}${p.year ? ` (${p.year})` : ''}`).join('；')}` : ''}
+   ${row.profile_url ? `[查看主页](${row.profile_url})` : ''} ${row.google_scholar_url ? `[Google Scholar](${row.google_scholar_url})` : ''}
+   教授ID: ${row.id}\n\n`;
+    }
+
+    ctx += `回复格式要求：
+1. 用 🎯 开头列出匹配结果
+2. 每位教授显示：姓名、大学、综合匹配分（⭐ X.X/5）、5个维度分数、研究方向、最新论文、链接
+3. 招生状态用 emoji 标注：✅招生中、🟡可能招生、❓未知、🔴未招生
+4. 在末尾给出针对用户背景的选择建议`;
+
+    return ctx;
+  } catch (e) {
+    console.error('[runProfessorMatchScoring]', e);
+    return '';
+  }
 }
 
 // ─── Main handler ─────────────────────────────────────────────────────────────
@@ -686,14 +818,17 @@ H指数：${prof.hIndex ?? '未知'}`;
           ]);
           const ragContext = assembleRAGContext({ knowledgeChunks: [...profPapers, ...profProfiles], papers: [], professors: profTags });
           if (ragContext) extraContext += '\n\n' + ragContext;
-        } else if (intent === 'matching') {
-          const [profProfiles, papers, profTags] = await Promise.all([
+        } else if (intent === 'matching' || (MATCHING_DEEP_RE.test(lastMsg) && (mode === 'path' || mode === 'chat'))) {
+          const studentBg = studentCtx?.researchDescription || studentCtx?.targetField || undefined;
+          const [profProfiles, papers, profTags, matchScoreCtx] = await Promise.all([
             searchProfessorProfiles(lastMsg, 5).catch(() => []),
             searchPaperAbstracts(lastMsg, 4).catch(() => []),
             searchProfessorsByTags(lastMsg, 4).catch(() => []),
+            runProfessorMatchScoring(lastMsg, studentBg).catch(() => ''),
           ]);
           const ragContext = assembleRAGContext({ knowledgeChunks: [...profProfiles, ...papers], papers: [], professors: profTags });
           if (ragContext) extraContext += '\n\n' + ragContext;
+          if (matchScoreCtx) extraContext += matchScoreCtx;
         } else if (intent === 'academic') {
           // Academic intent in non-research modes: fire LIVE academic search too
           // This gives deep, paper-backed answers even in chat/companion mode
