@@ -464,7 +464,7 @@ export async function renderPoster(canvas: HTMLCanvasElement, opts: PosterOption
     ctx.fillStyle = tmpl.textColor;
     ctx.globalAlpha = 0.4;
     ctx.textAlign = 'center';
-    ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', zones.captionLine.centerX, zones.captionLine.y + 26);
+    ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', zones.captionLine.centerX, zones.captionLine.y + 34);
     ctx.globalAlpha = 1;
     ctx.restore();
   } else {

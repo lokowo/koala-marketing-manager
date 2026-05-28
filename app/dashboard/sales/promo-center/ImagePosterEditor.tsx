@@ -256,7 +256,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
-        ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', w / 2, qrBottomY + 36);
+        ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', w / 2, qrBottomY + 38);
         ctx.globalAlpha = 1;
         ctx.restore();
       }
@@ -267,7 +267,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
-        ctx.fillText(`邀请码: ${referralCode}`, w / 2, qrBottomY + 44);
+        ctx.fillText(`邀请码: ${referralCode}`, w / 2, qrBottomY + 58);
         ctx.restore();
       }
 
