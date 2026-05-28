@@ -29,6 +29,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self'",
               "img-src 'self' data: blob: https://api.qrserver.com https://geolbgirpkzxrdvozmqw.supabase.co",
+              "media-src 'self' blob: https://geolbgirpkzxrdvozmqw.supabase.co",
               "connect-src 'self' https://geolbgirpkzxrdvozmqw.supabase.co wss://geolbgirpkzxrdvozmqw.supabase.co",
               "frame-src 'none'",
               "frame-ancestors 'none'",
