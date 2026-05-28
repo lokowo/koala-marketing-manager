@@ -247,7 +247,7 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
-        ctx.fillText('扫码注册', w / 2, qrBottomY + 16);
+        ctx.fillText('扫码注册', w / 2, qrBottomY + 20);
         ctx.restore();
         ctx.save();
         ctx.font = `11px "${font}", sans-serif`;
@@ -256,18 +256,18 @@ export default function ImagePosterEditor({ referralCode, channel }: Props) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
-        ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', w / 2, qrBottomY + 38);
+        ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', w / 2, qrBottomY + 46);
         ctx.globalAlpha = 1;
         ctx.restore();
       }
       if (vis.inviteCode) {
         ctx.save();
-        ctx.font = `bold 16px "${font}", sans-serif`;
+        ctx.font = `bold 14px "${font}", sans-serif`;
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
-        ctx.fillText(`邀请码: ${referralCode}`, w / 2, qrBottomY + 58);
+        ctx.fillText(`邀请码: ${referralCode}`, w / 2, qrBottomY + 76);
         ctx.restore();
       }
 
