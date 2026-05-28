@@ -376,9 +376,9 @@ function drawRefCodeBox(ctx: CanvasRenderingContext2D, code: string, zone: Zones
 }
 
 function drawCaptionLine(ctx: CanvasRenderingContext2D, text: string, zone: Zones['captionLine'], tmpl: TemplateConfig) {
-  ctx.font = '22px system-ui, sans-serif';
+  ctx.font = '500 16px system-ui, sans-serif';
   ctx.fillStyle = tmpl.textColor;
-  ctx.globalAlpha = 0.6;
+  ctx.globalAlpha = 0.7;
   ctx.textAlign = 'center';
   ctx.fillText(text, zone.centerX, zone.y);
   ctx.globalAlpha = 1;
@@ -460,11 +460,11 @@ export async function renderPoster(canvas: HTMLCanvasElement, opts: PosterOption
     await drawQRCode(ctx, qrUrl, zones.qrArea, tmpl);
     drawCaptionLine(ctx, `扫码注册 · ${getChannelName(opts.channel)}渠道`, zones.captionLine, tmpl);
     ctx.save();
-    ctx.font = '14px system-ui, sans-serif';
+    ctx.font = '12px system-ui, sans-serif';
     ctx.fillStyle = tmpl.textColor;
-    ctx.globalAlpha = 0.6;
+    ctx.globalAlpha = 0.7;
     ctx.textAlign = 'center';
-    ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', zones.captionLine.centerX, zones.captionLine.y + 48);
+    ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', zones.captionLine.centerX, zones.captionLine.y + 28);
     ctx.globalAlpha = 1;
     ctx.restore();
   } else {
