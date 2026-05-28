@@ -85,6 +85,12 @@ const COOLDOWN_AFTER_DISMISS = 24 * 60 * 60 * 1000;
 
 const MASCOT_SIZE_MOBILE = 150;
 const MASCOT_SIZE_DESKTOP = 200;
+const MASCOT_SIZE_MOBILE_FULL = 300;
+const MASCOT_SIZE_DESKTOP_FULL = 400;
+
+function isFullBody(assetId: string): boolean {
+  return assetId.startsWith('b-') || assetId.startsWith('c-');
+}
 const DEFAULT_BOTTOM = 100;
 const DEFAULT_RIGHT = 12;
 const LONG_PRESS_MS = 300;
@@ -127,9 +133,11 @@ const IDLE_ASSETS = [
   'h-07-streetwear-cool-nobg',
 ];
 
-function getMascotSize() {
-  if (typeof window === 'undefined') return MASCOT_SIZE_DESKTOP;
-  return window.innerWidth < 1024 ? MASCOT_SIZE_MOBILE : MASCOT_SIZE_DESKTOP;
+function getMascotSize(full = false) {
+  if (typeof window === 'undefined') return full ? MASCOT_SIZE_DESKTOP_FULL : MASCOT_SIZE_DESKTOP;
+  const mobile = window.innerWidth < 1024;
+  if (full) return mobile ? MASCOT_SIZE_MOBILE_FULL : MASCOT_SIZE_DESKTOP_FULL;
+  return mobile ? MASCOT_SIZE_MOBILE : MASCOT_SIZE_DESKTOP;
 }
 
 function isMobile() {
@@ -172,7 +180,7 @@ export default function OlaFloatingMascot() {
   const [showBubble, setShowBubble] = useState(false);
   const [pos, _setPos] = useState({ x: 0, y: 0 });
   const [initialized, setInitialized] = useState(false);
-  const [mascotSize, setMascotSize] = useState(MASCOT_SIZE_DESKTOP);
+  const [baseMascotSize, setBaseMascotSize] = useState(MASCOT_SIZE_DESKTOP);
 
   // Drag interaction state
   const [dragBubbleText, setDragBubbleText] = useState<string | null>(null);
@@ -186,6 +194,9 @@ export default function OlaFloatingMascot() {
   const [recallBubble, setRecallBubble] = useState(false);
   // Dynamic emotion-based mascot
   const [currentAssetId, setCurrentAssetId] = useState('h-09-bubbly-boba-nobg');
+  const mascotSize = isFullBody(currentAssetId)
+    ? (baseMascotSize === MASCOT_SIZE_MOBILE ? MASCOT_SIZE_MOBILE_FULL : MASCOT_SIZE_DESKTOP_FULL)
+    : baseMascotSize;
   const [currentCaption, setCurrentCaption] = useState('');
   const [assetOpacity, setAssetOpacity] = useState(1);
   const idleRotateTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -256,7 +267,7 @@ export default function OlaFloatingMascot() {
 
   useEffect(() => {
     const size = getMascotSize();
-    setMascotSize(size);
+    setBaseMascotSize(size);
 
     // Clean up legacy localStorage hidden key
     localStorage.removeItem('ola-mascot-hidden');
@@ -286,6 +297,15 @@ export default function OlaFloatingMascot() {
     }
     setInitialized(true);
   }, []);
+
+  // ─── Re-clamp position when mascot size changes ──
+  useEffect(() => {
+    if (!initialized) return;
+    setPos(prev => ({
+      x: Math.max(0, Math.min(window.innerWidth - mascotSize, prev.x)),
+      y: Math.max(0, Math.min(window.innerHeight - mascotSize * 1.5, prev.y)),
+    }));
+  }, [mascotSize, initialized, setPos]);
 
   // ─── Appearance with mode-aware delay ────────────
 
@@ -611,7 +631,7 @@ export default function OlaFloatingMascot() {
   const handleRecall = useCallback(() => {
     setHidden(false);
     setRecallBubble(true);
-    const size = getMascotSize();
+    const size = getMascotSize(isFullBody(currentAssetId));
     setPos({
       x: window.innerWidth - size - DEFAULT_RIGHT,
       y: window.innerHeight - size * 1.5 - DEFAULT_BOTTOM,
@@ -623,7 +643,7 @@ export default function OlaFloatingMascot() {
     }, 100);
     if (recallBubbleTimer.current) clearTimeout(recallBubbleTimer.current);
     recallBubbleTimer.current = setTimeout(() => setRecallBubble(false), 3000);
-  }, [setPos]);
+  }, [setPos, currentAssetId]);
 
   // ─── Click handlers ──────────────────────────────
 
@@ -779,7 +799,7 @@ export default function OlaFloatingMascot() {
         {/* Mascot */}
         <div
           className="relative cursor-grab active:cursor-grabbing group"
-          style={{ width: mascotSize }}
+          style={{ width: mascotSize, transition: 'width 0.3s ease-in-out' }}
           onMouseEnter={handleMouseEnter}
         >
           {/* Ola image/video with float animation + fade transition */}
