@@ -865,6 +865,21 @@ export default function OlaFloatingMascot() {
           <audio ref={audioRef} src={currentMeta.audio_url} loop={currentMeta.play_mode === 'idle' || currentMeta.play_mode === 'loop'} muted={muted} />
         )}
 
+        {/* DEBUG — remove after fixing */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0,
+          background: 'rgba(0,0,0,0.85)', color: '#0f0', fontSize: 10,
+          fontFamily: 'monospace', padding: 4, borderRadius: 4,
+          pointerEvents: 'none', zIndex: 999, lineHeight: 1.4,
+          wordBreak: 'break-all' as const,
+        }}>
+          <div>asset: {currentAssetId}</div>
+          <div>video_url: {currentMeta?.video_url ? currentMeta.video_url.slice(-40) : 'NULL'}</div>
+          <div>error: {String(videoError)}</div>
+          <div>mode: {currentMeta?.play_mode ?? 'N/A'}</div>
+          <div>render: {currentMeta?.video_url && !videoError ? 'VIDEO' : 'IMAGE'}</div>
+        </div>
+
         {/* Caption below mascot */}
         {currentCaption && !dragging.current && (
           <div
