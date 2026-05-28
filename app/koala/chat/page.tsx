@@ -1633,7 +1633,7 @@ function ChatPageInner() {
           >
             <ChevronLeft className="size-5" />
           </button>
-          <OlaAvatar assetId="h-09-bubbly-boba-nobg" size="md" className="size-11 md:size-12 flex-shrink-0" />
+          <OlaAvatar assetId="h-09-bubbly-boba-nobg" round={false} size="md" className="w-11 md:w-12 h-auto flex-shrink-0" />
           <div className="flex flex-col">
             <span className="font-bold text-base leading-6 tracking-wide text-[#1A1A2E] dark:text-[#D4A843]">
               Ola AI
