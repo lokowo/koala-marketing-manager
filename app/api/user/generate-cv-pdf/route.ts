@@ -105,7 +105,8 @@ const styles = StyleSheet.create({
   },
   skillLabel: {
     fontSize: 10,
-    fontFamily: 'Times-Bold',
+    fontFamily: 'NotoSerifSC',
+    fontWeight: 700,
     width: 80,
   },
   skillValue: {

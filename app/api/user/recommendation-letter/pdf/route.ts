@@ -1,14 +1,22 @@
-import ReactPDF from '@react-pdf/renderer';
+import ReactPDF, { Font } from '@react-pdf/renderer';
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { getServerUser } from '../../../../lib/auth';
+
+Font.register({
+  family: 'NotoSerifSC',
+  fonts: [
+    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-serif-sc@latest/chinese-simplified-400-normal.woff2', fontWeight: 400 },
+    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-serif-sc@latest/chinese-simplified-700-normal.woff2', fontWeight: 700 },
+  ],
+});
 
 const styles = StyleSheet.create({
   page: {
     padding: 54,
     paddingTop: 50,
     paddingBottom: 50,
-    fontFamily: 'Times-Roman',
+    fontFamily: 'NotoSerifSC',
     fontSize: 11,
     lineHeight: 1.6,
     color: '#1a1a1a',
@@ -41,7 +49,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   sigName: {
-    fontFamily: 'Times-Bold',
+    fontFamily: 'NotoSerifSC', fontWeight: 700,
     fontSize: 12,
   },
   sigTitle: {

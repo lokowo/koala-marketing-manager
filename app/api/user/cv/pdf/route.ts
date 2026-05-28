@@ -1,21 +1,29 @@
-import ReactPDF from '@react-pdf/renderer';
+import ReactPDF, { Font } from '@react-pdf/renderer';
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { getServerUser } from '../../../../lib/auth';
+
+Font.register({
+  family: 'NotoSerifSC',
+  fonts: [
+    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-serif-sc@latest/chinese-simplified-400-normal.woff2', fontWeight: 400 },
+    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-serif-sc@latest/chinese-simplified-700-normal.woff2', fontWeight: 700 },
+  ],
+});
 
 const styles = StyleSheet.create({
   page: {
     padding: 48,
     paddingTop: 40,
     paddingBottom: 40,
-    fontFamily: 'Times-Roman',
+    fontFamily: 'NotoSerifSC',
     fontSize: 10.5,
     lineHeight: 1.4,
     color: '#1a1a1a',
   },
   name: {
     fontSize: 20,
-    fontFamily: 'Times-Bold',
+    fontFamily: 'NotoSerifSC', fontWeight: 700,
     textAlign: 'center',
     marginBottom: 4,
   },
@@ -27,7 +35,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 12,
-    fontFamily: 'Times-Bold',
+    fontFamily: 'NotoSerifSC', fontWeight: 700,
     borderBottomWidth: 0.8,
     borderBottomColor: '#333',
     paddingBottom: 2,
@@ -43,11 +51,11 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontSize: 10.5,
-    fontFamily: 'Times-Bold',
+    fontFamily: 'NotoSerifSC', fontWeight: 700,
   },
   itemSubtitle: {
     fontSize: 10,
-    fontFamily: 'Times-Italic',
+    fontFamily: 'NotoSerifSC',
     color: '#444',
     marginBottom: 2,
   },
@@ -71,7 +79,7 @@ const styles = StyleSheet.create({
   },
   skillLabel: {
     fontSize: 10,
-    fontFamily: 'Times-Bold',
+    fontFamily: 'NotoSerifSC', fontWeight: 700,
     width: 80,
   },
   skillValue: {
