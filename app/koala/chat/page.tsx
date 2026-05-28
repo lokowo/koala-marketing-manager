@@ -86,6 +86,7 @@ interface Message {
   olaAssetId?: string;
   olaEmotionTag?: string;
   olaAction?: { type: string; userId?: string };
+  suggestedMode?: string;
   timestamp: Date;
 }
 
@@ -93,9 +94,17 @@ interface Message {
 
 const OLA_STATE_RE = /<!--\s*ola_state\s*:\s*(\{[\s\S]*?\})\s*-->/;
 const HTML_COMMENT_RE = /<!--[\s\S]*?-->/g;
+const SUGGEST_MODE_RE = /\[SUGGEST_MODE:(\w+)\]\s*/g;
 
 function stripHtmlComments(text: string): string {
-  return text.replace(HTML_COMMENT_RE, '').trim();
+  return text.replace(HTML_COMMENT_RE, '').replace(SUGGEST_MODE_RE, '').trim();
+}
+
+function parseSuggestedMode(text: string): string | undefined {
+  const match = text.match(SUGGEST_MODE_RE);
+  if (!match) return undefined;
+  const inner = match[0].match(/\[SUGGEST_MODE:(\w+)\]/);
+  return inner?.[1];
 }
 
 function getTimeGreeting(): string {
@@ -531,6 +540,7 @@ function getLocalHistory(mode: string): Message[] {
         content: olaResult ? olaResult.clean : m.content,
         olaAssetId: olaResult?.assetId,
         olaEmotionTag: olaResult?.emotionTag,
+        suggestedMode: m.role === 'assistant' ? parseSuggestedMode(m.content) : undefined,
         timestamp: new Date(m.timestamp),
       };
     }) as Message[];
@@ -624,6 +634,7 @@ function remoteToMessages(msgs: { role: 'user' | 'assistant'; content: string }[
       content: parsed ? parsed.clean : m.content,
       olaAssetId: parsed?.assetId,
       olaEmotionTag: parsed?.emotionTag,
+      suggestedMode: m.role === 'assistant' ? parseSuggestedMode(m.content) : undefined,
       timestamp: new Date(),
     };
   });
@@ -1119,6 +1130,7 @@ function ChatPageInner() {
 
       const rawReply = data.reply ?? '抱歉，我没能生成回复，请再试一次。';
       const olaState = parseOlaState(rawReply);
+      const suggestedMode = parseSuggestedMode(rawReply);
 
       const assistantMsg: Message = {
         id: msgId(),
@@ -1138,6 +1150,7 @@ function ChatPageInner() {
         olaAssetId: olaState.assetId,
         olaEmotionTag: olaState.emotionTag,
         olaAction: data.olaAction as { type: string; userId?: string } | undefined,
+        suggestedMode,
         timestamp: new Date(),
       };
       setTypewriterMsgId(assistantMsg.id);
@@ -2015,6 +2028,18 @@ function ChatPageInner() {
                     ))}
                   </div>
                 )}
+                {msg.role === 'assistant' && msg.suggestedMode && typewriterMsgId !== msg.id && (() => {
+                  const target = MODES.find(m => m.key === msg.suggestedMode);
+                  if (!target) return null;
+                  return (
+                    <button
+                      onClick={() => switchMode(target.key)}
+                      className="mt-2 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium transition-all active:scale-[0.97] bg-gradient-to-r from-[#D4A843]/10 to-[#D4A843]/5 dark:from-[#D4A843]/15 dark:to-[#D4A843]/5 border border-[#D4A843]/25 dark:border-[#D4A843]/20 text-[#8a6c30] dark:text-[#D4A843] hover:border-[#D4A843]/40"
+                    >
+                      <span>切换到 {target.label} →</span>
+                    </button>
+                  );
+                })()}
               </div>
               {msg.role === 'user' && (
                 <div className="mt-1 ml-2 flex-shrink-0">
