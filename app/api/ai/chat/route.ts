@@ -445,6 +445,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Personality profiling instruction (only during early conversations, before profile is built)
+    if (olaMemory && (olaMemory.total_turns ?? 0) < 5 && !olaMemory.personality_profile) {
+      extraContext += `\n\n## 性格分析任务
+在对话中观察用户的措辞、提问方式、情绪表达，判断其性格特征。
+当你有足够信息判断时（通常在 3-5 轮后），在回复末尾附加标记（用户不可见）：
+[PERSONALITY_UPDATE:{"communication_style":"直接型","decision_speed":"果断","motivation":"学术热情","pressure_level":"正常","preferred_tone":"轻松幽默"}]
+
+可选值：
+- communication_style: 直接型/委婉型/逻辑型/情感型
+- decision_speed: 果断/犹豫/需要数据
+- motivation: 学术热情/职业发展/家庭期望
+- pressure_level: 高压/正常/放松
+- preferred_tone: 严肃专业/轻松幽默/温暖鼓励
+
+只填写你能确定的字段。每个用户只需要分析一次，不要重复输出此标记。`;
+    }
+
     // Load local knowledge (calendar, events, venues, time-based greeting)
     try {
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -1057,6 +1074,28 @@ Output strictly JSON (no markdown): {"personal":{"name":"","email":null},"educat
         olaAction = JSON.parse(olaActionMatch[1]) as { type: string; userId?: string };
       } catch { /* ignore parse errors */ }
       cleanedReply = cleanedReply.replace(/<!--\s*ola_action\s*:\s*\{[^}]*\}\s*-->/g, '').trim();
+    }
+
+    // Extract and strip personality update marker
+    const personalityMatch = cleanedReply.match(/\[PERSONALITY_UPDATE:(\{[^}]+\})\]/);
+    if (personalityMatch) {
+      cleanedReply = cleanedReply.replace(/\[PERSONALITY_UPDATE:\{[^}]+\}]/g, '').trim();
+
+      const ppUserId = trackingUserId || (body.userId as string | undefined);
+      if (ppUserId) {
+        try {
+          const ppData = JSON.parse(personalityMatch[1]);
+          import('@supabase/supabase-js').then(({ createClient }) => {
+            const ppDb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+            (ppDb as unknown as { from: (t: string) => { update: (d: Record<string, unknown>) => { eq: (k: string, v: string) => Promise<unknown> } } })
+              .from('ola_user_memory')
+              .update({ personality_profile: ppData, updated_at: new Date().toISOString() })
+              .eq('user_id', ppUserId)
+              .then(() => console.log(`[personality] Updated for ${ppUserId}`))
+              .catch((err: unknown) => console.error('[personality update]', err));
+          }).catch(() => {});
+        } catch { /* invalid JSON, ignore */ }
+      }
     }
 
     // 5. Build response

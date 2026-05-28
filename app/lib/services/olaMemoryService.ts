@@ -35,8 +35,17 @@ export interface OlaUserMemory {
   visit_count: number;
   last_visit_at: string | null;
   pain_points: string[] | null;
+  personality_profile: PersonalityProfile | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface PersonalityProfile {
+  communication_style?: '直接型' | '委婉型' | '逻辑型' | '情感型';
+  decision_speed?: '果断' | '犹豫' | '需要数据';
+  motivation?: '学术热情' | '职业发展' | '家庭期望';
+  pressure_level?: '高压' | '正常' | '放松';
+  preferred_tone?: '严肃专业' | '轻松幽默' | '温暖鼓励';
 }
 
 export interface MemorableEvent {
@@ -490,6 +499,20 @@ export function buildOlaMemoryPrompt(memory: OlaUserMemory): string {
 
   if (proactiveParts.length > 0) {
     parts.push(`\n## 🫶 主动关心指令\n${proactiveParts.join('\n')}`);
+  }
+
+  // Personality profile
+  if (memory.personality_profile) {
+    const pp = memory.personality_profile;
+    const traits: string[] = [];
+    if (pp.communication_style) traits.push(`沟通风格：${pp.communication_style}`);
+    if (pp.decision_speed) traits.push(`决策风格：${pp.decision_speed}`);
+    if (pp.motivation) traits.push(`主要动力：${pp.motivation}`);
+    if (pp.pressure_level) traits.push(`压力水平：${pp.pressure_level}`);
+    if (pp.preferred_tone) traits.push(`偏好语气：${pp.preferred_tone}`);
+    if (traits.length > 0) {
+      parts.push(`\n## 🧩 性格档案\n${traits.join('\n')}\n请根据以上性格特征调整回复风格。`);
+    }
   }
 
   // MBTI collection hint
