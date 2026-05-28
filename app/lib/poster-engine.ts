@@ -458,28 +458,52 @@ export async function renderPoster(canvas: HTMLCanvasElement, opts: PosterOption
   if (opts.showQR) {
     const qrUrl = `https://www.koalaphd.com/koala/auth?ref=${opts.refCode}&ch=${opts.channel}`;
     await drawQRCode(ctx, qrUrl, zones.qrArea, tmpl);
-    drawCaptionLine(ctx, `扫码注册 · ${getChannelName(opts.channel)}渠道`, zones.captionLine, tmpl);
+
+    // QR caption — matches route.tsx layout exactly
     ctx.save();
-    ctx.font = '12px system-ui, sans-serif';
-    ctx.fillStyle = tmpl.textColor;
-    ctx.globalAlpha = 0.7;
     ctx.textAlign = 'center';
-    ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', zones.captionLine.centerX, zones.captionLine.y + 28);
+    const cx = zones.captionLine.centerX;
+    let nextY = zones.captionLine.y;
+
+    // Line 1: 扫码注册 (bold 16px)
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.globalAlpha = 1;
+    ctx.fillText('扫码注册', cx, nextY);
+    nextY += 28;
+
+    // Line 2: camera hint (13px)
+    ctx.font = '13px system-ui, sans-serif';
+    ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', cx, nextY);
+    nextY += 28;
+
+    // Line 3: invite code (bold 15px)
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.fillText(`邀请码: ${opts.refCode}`, cx, nextY);
+    nextY += 22;
+
+    // Line 4: divider
+    const divW = width * 0.36;
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - divW / 2, nextY);
+    ctx.lineTo(cx + divW / 2, nextY);
+    ctx.stroke();
+    nextY += 16;
+
+    // Line 5: URL (12px, slightly transparent)
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.globalAlpha = 0.7;
+    ctx.fillText('www.koalaphd.com', cx, nextY);
+
     ctx.globalAlpha = 1;
     ctx.restore();
   } else {
     drawRefCodeBox(ctx, opts.refCode, zones.qrArea, tmpl);
   }
 
-  // 7. Bottom info bar
-  let nextUrlY = zones.urlText.y;
-  if (opts.showUrl) {
-    drawUrlText(ctx, { ...zones.urlText, y: nextUrlY }, tmpl);
-    nextUrlY += 20;
-  }
-  if (opts.showRefCode && opts.showQR) {
-    drawRefCodeLabel(ctx, opts.refCode, { x: zones.refCodeText.x, y: nextUrlY }, tmpl);
-  }
+  // 7. Channel badge (URL and refCode are now inline above QR)
   if (opts.showChannelBadge) {
     drawChannelBadge(ctx, opts.channel, zones.channelBadge, tmpl);
   }
