@@ -1,106 +1,101 @@
-import ReactPDF, { Font } from '@react-pdf/renderer';
+import ReactPDF from '@react-pdf/renderer';
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { getServerUser } from '../../../../lib/auth';
+import { registerPdfFonts } from '../../../../lib/server/pdf-fonts';
 
-Font.register({
-  family: 'NotoSerifSC',
-  fonts: [
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-serif-sc@latest/chinese-simplified-400-normal.woff2', fontWeight: 400 },
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-serif-sc@latest/chinese-simplified-700-normal.woff2', fontWeight: 700 },
-  ],
-});
-
-const styles = StyleSheet.create({
-  page: {
-    padding: 48,
-    paddingTop: 40,
-    paddingBottom: 40,
-    fontFamily: 'NotoSerifSC',
-    fontSize: 10.5,
-    lineHeight: 1.4,
-    color: '#1a1a1a',
-  },
-  name: {
-    fontSize: 20,
-    fontFamily: 'NotoSerifSC', fontWeight: 700,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  contactLine: {
-    fontSize: 9,
-    color: '#555',
-    textAlign: 'center',
-    marginBottom: 1.5,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontFamily: 'NotoSerifSC', fontWeight: 700,
-    borderBottomWidth: 0.8,
-    borderBottomColor: '#333',
-    paddingBottom: 2,
-    marginTop: 14,
-    marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 1,
-  },
-  itemTitle: {
-    fontSize: 10.5,
-    fontFamily: 'NotoSerifSC', fontWeight: 700,
-  },
-  itemSubtitle: {
-    fontSize: 10,
-    fontFamily: 'NotoSerifSC',
-    color: '#444',
-    marginBottom: 2,
-  },
-  itemDate: {
-    fontSize: 9.5,
-    color: '#555',
-    textAlign: 'right',
-    minWidth: 80,
-  },
-  bullet: {
-    fontSize: 10,
-    marginLeft: 12,
-    marginBottom: 1.5,
-  },
-  itemBlock: {
-    marginBottom: 6,
-  },
-  skillsRow: {
-    flexDirection: 'row',
-    marginBottom: 2,
-  },
-  skillLabel: {
-    fontSize: 10,
-    fontFamily: 'NotoSerifSC', fontWeight: 700,
-    width: 80,
-  },
-  skillValue: {
-    fontSize: 10,
-    flex: 1,
-  },
-  pubEntry: {
-    fontSize: 10,
-    marginBottom: 3,
-    marginLeft: 12,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 24,
-    left: 48,
-    right: 48,
-    textAlign: 'center',
-    fontSize: 7.5,
-    color: '#bbb',
-  },
-});
+function createStyles(fontFamily: string) {
+  return StyleSheet.create({
+    page: {
+      padding: 48,
+      paddingTop: 40,
+      paddingBottom: 40,
+      fontFamily,
+      fontSize: 10.5,
+      lineHeight: 1.4,
+      color: '#1a1a1a',
+    },
+    name: {
+      fontSize: 20,
+      fontFamily, fontWeight: 700,
+      textAlign: 'center',
+      marginBottom: 4,
+    },
+    contactLine: {
+      fontSize: 9,
+      color: '#555',
+      textAlign: 'center',
+      marginBottom: 1.5,
+    },
+    sectionTitle: {
+      fontSize: 12,
+      fontFamily, fontWeight: 700,
+      borderBottomWidth: 0.8,
+      borderBottomColor: '#333',
+      paddingBottom: 2,
+      marginTop: 14,
+      marginBottom: 6,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+    },
+    itemRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 1,
+    },
+    itemTitle: {
+      fontSize: 10.5,
+      fontFamily, fontWeight: 700,
+    },
+    itemSubtitle: {
+      fontSize: 10,
+      fontFamily,
+      color: '#444',
+      marginBottom: 2,
+    },
+    itemDate: {
+      fontSize: 9.5,
+      color: '#555',
+      textAlign: 'right',
+      minWidth: 80,
+    },
+    bullet: {
+      fontSize: 10,
+      marginLeft: 12,
+      marginBottom: 1.5,
+    },
+    itemBlock: {
+      marginBottom: 6,
+    },
+    skillsRow: {
+      flexDirection: 'row',
+      marginBottom: 2,
+    },
+    skillLabel: {
+      fontSize: 10,
+      fontFamily, fontWeight: 700,
+      width: 80,
+    },
+    skillValue: {
+      fontSize: 10,
+      flex: 1,
+    },
+    pubEntry: {
+      fontSize: 10,
+      marginBottom: 3,
+      marginLeft: 12,
+    },
+    footer: {
+      position: 'absolute',
+      bottom: 24,
+      left: 48,
+      right: 48,
+      textAlign: 'center',
+      fontSize: 7.5,
+      color: '#bbb',
+    },
+  });
+}
 
 interface CVContent {
   personal: { name?: string; email?: string; phone?: string; linkedin?: string };
@@ -112,7 +107,8 @@ interface CVContent {
   references?: Array<{ name: string; title?: string; university?: string; email?: string; relationship?: string }>;
 }
 
-function AcademicCVPdf({ cv }: { cv: CVContent }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function AcademicCVPdf({ cv, styles }: { cv: CVContent; styles: any }) {
   const p = cv.personal;
   const contactParts: string[] = [];
   if (p.email) contactParts.push(p.email);
@@ -122,12 +118,10 @@ function AcademicCVPdf({ cv }: { cv: CVContent }) {
   return React.createElement(Document, null,
     React.createElement(Page, { size: 'A4', style: styles.page },
 
-      // Name centered
       React.createElement(Text, { style: styles.name }, p.name || 'Name'),
       contactParts.length > 0 &&
         React.createElement(Text, { style: styles.contactLine }, contactParts.join('  |  ')),
 
-      // Education
       cv.education && cv.education.length > 0 && React.createElement(View, null,
         React.createElement(Text, { style: styles.sectionTitle }, 'EDUCATION'),
         ...cv.education.map((e, i) =>
@@ -144,7 +138,6 @@ function AcademicCVPdf({ cv }: { cv: CVContent }) {
         ),
       ),
 
-      // Research Experience
       cv.research && cv.research.length > 0 && React.createElement(View, null,
         React.createElement(Text, { style: styles.sectionTitle }, 'RESEARCH EXPERIENCE'),
         ...cv.research.map((r, i) =>
@@ -165,7 +158,6 @@ function AcademicCVPdf({ cv }: { cv: CVContent }) {
         ),
       ),
 
-      // Publications
       cv.publications && cv.publications.length > 0 && React.createElement(View, null,
         React.createElement(Text, { style: styles.sectionTitle }, 'PUBLICATIONS'),
         ...cv.publications.map((pub, i) => {
@@ -181,7 +173,6 @@ function AcademicCVPdf({ cv }: { cv: CVContent }) {
         }),
       ),
 
-      // Skills
       cv.skills && React.createElement(View, null,
         React.createElement(Text, { style: styles.sectionTitle }, 'SKILLS'),
         cv.skills.technical && cv.skills.technical.length > 0
@@ -204,7 +195,6 @@ function AcademicCVPdf({ cv }: { cv: CVContent }) {
           : null,
       ),
 
-      // Awards
       cv.awards && cv.awards.length > 0 && React.createElement(View, null,
         React.createElement(Text, { style: styles.sectionTitle }, 'AWARDS & HONOURS'),
         ...cv.awards.map((a, i) =>
@@ -217,7 +207,6 @@ function AcademicCVPdf({ cv }: { cv: CVContent }) {
         ),
       ),
 
-      // References
       cv.references && cv.references.length > 0 && React.createElement(View, null,
         React.createElement(Text, { style: styles.sectionTitle }, 'REFERENCES'),
         ...cv.references.map((r, i) =>
@@ -232,7 +221,6 @@ function AcademicCVPdf({ cv }: { cv: CVContent }) {
         ),
       ),
 
-      // Footer
       React.createElement(Text, { style: styles.footer, fixed: true },
         'Generated by Koala PhD · koalaphd.com'
       ),
@@ -251,7 +239,11 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Invalid CV content' }, { status: 400 });
     }
 
-    const element = React.createElement(AcademicCVPdf, { cv: content });
+    const allText = JSON.stringify(content);
+    const fontFamily = await registerPdfFonts(allText);
+    const styles = createStyles(fontFamily);
+
+    const element = React.createElement(AcademicCVPdf, { cv: content, styles });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pdfStream = await ReactPDF.renderToStream(element as any);
 

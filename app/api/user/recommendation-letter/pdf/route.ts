@@ -1,74 +1,34 @@
-import ReactPDF, { Font } from '@react-pdf/renderer';
+import ReactPDF from '@react-pdf/renderer';
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { getServerUser } from '../../../../lib/auth';
+import { registerPdfFonts } from '../../../../lib/server/pdf-fonts';
 
-Font.register({
-  family: 'NotoSerifSC',
-  fonts: [
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-serif-sc@latest/chinese-simplified-400-normal.woff2', fontWeight: 400 },
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-serif-sc@latest/chinese-simplified-700-normal.woff2', fontWeight: 700 },
-  ],
-});
+function createStyles(fontFamily: string) {
+  return StyleSheet.create({
+    page: {
+      padding: 54,
+      paddingTop: 50,
+      paddingBottom: 50,
+      fontFamily,
+      fontSize: 11,
+      lineHeight: 1.6,
+      color: '#1a1a1a',
+    },
+    header: { marginBottom: 24 },
+    date: { fontSize: 11, color: '#333', marginBottom: 18 },
+    salutation: { fontSize: 11, marginBottom: 12 },
+    paragraph: { fontSize: 11, lineHeight: 1.6, textAlign: 'justify', marginBottom: 10 },
+    closing: { marginTop: 24, fontSize: 11, lineHeight: 1.6 },
+    signature: { marginTop: 28, fontSize: 11 },
+    sigName: { fontFamily, fontWeight: 700, fontSize: 12 },
+    sigTitle: { fontSize: 10, color: '#555', marginTop: 2 },
+    footer: { position: 'absolute', bottom: 28, left: 54, right: 54, textAlign: 'center', fontSize: 7.5, color: '#bbb' },
+  });
+}
 
-const styles = StyleSheet.create({
-  page: {
-    padding: 54,
-    paddingTop: 50,
-    paddingBottom: 50,
-    fontFamily: 'NotoSerifSC',
-    fontSize: 11,
-    lineHeight: 1.6,
-    color: '#1a1a1a',
-  },
-  header: {
-    marginBottom: 24,
-  },
-  date: {
-    fontSize: 11,
-    color: '#333',
-    marginBottom: 18,
-  },
-  salutation: {
-    fontSize: 11,
-    marginBottom: 12,
-  },
-  paragraph: {
-    fontSize: 11,
-    lineHeight: 1.6,
-    textAlign: 'justify',
-    marginBottom: 10,
-  },
-  closing: {
-    marginTop: 24,
-    fontSize: 11,
-    lineHeight: 1.6,
-  },
-  signature: {
-    marginTop: 28,
-    fontSize: 11,
-  },
-  sigName: {
-    fontFamily: 'NotoSerifSC', fontWeight: 700,
-    fontSize: 12,
-  },
-  sigTitle: {
-    fontSize: 10,
-    color: '#555',
-    marginTop: 2,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 28,
-    left: 54,
-    right: 54,
-    textAlign: 'center',
-    fontSize: 7.5,
-    color: '#bbb',
-  },
-});
-
-function renderLetterBody(text: string) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function renderLetterBody(text: string, styles: any) {
   return text
     .split(/\n\n+/)
     .filter(p => p.trim())
@@ -81,10 +41,13 @@ function RecommendationLetterPDF({
   letter,
   recommenderName,
   recommenderTitle,
+  styles,
 }: {
   letter: string;
   recommenderName: string;
   recommenderTitle?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  styles: any;
 }) {
   const today = new Date().toLocaleDateString('en-AU', {
     day: 'numeric',
@@ -94,23 +57,16 @@ function RecommendationLetterPDF({
 
   return React.createElement(Document, null,
     React.createElement(Page, { size: 'A4', style: styles.page },
-      // Date
       React.createElement(View, { style: styles.header },
         React.createElement(Text, { style: styles.date }, today),
       ),
-
-      // Letter body
-      ...renderLetterBody(letter),
-
-      // Signature block
+      ...renderLetterBody(letter, styles),
       React.createElement(View, { style: styles.signature },
         React.createElement(Text, { style: styles.sigName }, recommenderName),
         recommenderTitle
           ? React.createElement(Text, { style: styles.sigTitle }, recommenderTitle)
           : null,
       ),
-
-      // Footer
       React.createElement(Text, { style: styles.footer, fixed: true },
         'Draft prepared with Koala PhD · koalaphd.com'
       ),
@@ -133,10 +89,12 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Missing letter or recommenderName' }, { status: 400 });
     }
 
+    const allText = [letter, recommenderName, recommenderTitle ?? ''].join(' ');
+    const fontFamily = await registerPdfFonts(allText);
+    const styles = createStyles(fontFamily);
+
     const element = React.createElement(RecommendationLetterPDF, {
-      letter,
-      recommenderName,
-      recommenderTitle,
+      letter, recommenderName, recommenderTitle, styles,
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

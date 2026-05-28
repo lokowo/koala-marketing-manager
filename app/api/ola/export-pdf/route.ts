@@ -1,33 +1,29 @@
-import ReactPDF, { Font } from '@react-pdf/renderer';
+import ReactPDF from '@react-pdf/renderer';
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { registerPdfFonts } from '../../../lib/server/pdf-fonts';
 
-Font.register({
-  family: 'NotoSansSC',
-  fonts: [
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-sans-sc@latest/chinese-simplified-400-normal.ttf', fontWeight: 400 },
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-sans-sc@latest/chinese-simplified-700-normal.ttf', fontWeight: 700 },
-  ],
-});
-
-const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: 'NotoSansSC', fontSize: 11 },
-  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
-  subtitle: { fontSize: 10, color: '#888', marginBottom: 20 },
-  msgRow: { marginBottom: 10 },
-  roleLabel: { fontSize: 9, fontWeight: 'bold', color: '#555', marginBottom: 2 },
-  userBubble: { backgroundColor: '#f0f0f0', borderRadius: 6, padding: 8 },
-  assistantBubble: { backgroundColor: '#e8f5e9', borderRadius: 6, padding: 8 },
-  msgText: { fontSize: 10, lineHeight: 1.5 },
-  footer: { position: 'absolute', bottom: 30, left: 40, right: 40, textAlign: 'center', fontSize: 8, color: '#aaa' },
-});
+function createStyles(fontFamily: string) {
+  return StyleSheet.create({
+    page: { padding: 40, fontFamily, fontSize: 11 },
+    title: { fontSize: 18, fontFamily, fontWeight: 700, marginBottom: 4 },
+    subtitle: { fontSize: 10, color: '#888', marginBottom: 20 },
+    msgRow: { marginBottom: 10 },
+    roleLabel: { fontSize: 9, fontFamily, fontWeight: 700, color: '#555', marginBottom: 2 },
+    userBubble: { backgroundColor: '#f0f0f0', borderRadius: 6, padding: 8 },
+    assistantBubble: { backgroundColor: '#e8f5e9', borderRadius: 6, padding: 8 },
+    msgText: { fontSize: 10, lineHeight: 1.5 },
+    footer: { position: 'absolute', bottom: 30, left: 40, right: 40, textAlign: 'center', fontSize: 8, color: '#aaa' },
+  });
+}
 
 interface ChatMsg {
   role: 'user' | 'assistant';
   content: string;
 }
 
-function ChatPDF({ messages, date }: { messages: ChatMsg[]; date: string }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ChatPDF({ messages, date, styles }: { messages: ChatMsg[]; date: string; styles: any }) {
   return React.createElement(Document, null,
     React.createElement(Page, { size: 'A4', style: styles.page },
       React.createElement(Text, { style: styles.title }, 'Ola AI 对话记录 — Koala PhD'),
@@ -76,7 +72,11 @@ export async function POST(req: Request) {
       hour: '2-digit', minute: '2-digit',
     });
 
-    const element = React.createElement(ChatPDF, { messages: chatMessages, date });
+    const allText = chatMessages.map(m => m.content).join(' ');
+    const fontFamily = await registerPdfFonts(allText);
+    const styles = createStyles(fontFamily);
+
+    const element = React.createElement(ChatPDF, { messages: chatMessages, date, styles });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pdfStream = await ReactPDF.renderToStream(element as any);
 

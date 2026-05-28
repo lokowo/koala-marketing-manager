@@ -1,89 +1,30 @@
-import ReactPDF, { Font } from '@react-pdf/renderer';
+import ReactPDF from '@react-pdf/renderer';
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { getServerUser } from '../../../../lib/auth';
+import { registerPdfFonts } from '../../../../lib/server/pdf-fonts';
 
-Font.register({
-  family: 'NotoSerifSC',
-  fonts: [
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-serif-sc@latest/chinese-simplified-400-normal.woff2', fontWeight: 400 },
-    { src: 'https://cdn.jsdelivr.net/fontsource/fonts/noto-serif-sc@latest/chinese-simplified-700-normal.woff2', fontWeight: 700 },
-  ],
-});
-
-const styles = StyleSheet.create({
-  page: {
-    padding: 54,
-    paddingTop: 44,
-    paddingBottom: 50,
-    fontFamily: 'NotoSerifSC',
-    fontSize: 11,
-    lineHeight: 1.5,
-    color: '#1a1a1a',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    borderBottomWidth: 0.8,
-    borderBottomColor: '#333',
-    paddingBottom: 6,
-    marginBottom: 18,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  headerRight: {
-    textAlign: 'right',
-  },
-  headerName: {
-    fontSize: 9,
-    color: '#555',
-  },
-  headerAffiliation: {
-    fontSize: 9,
-    color: '#555',
-    marginTop: 1,
-  },
-  title: {
-    fontSize: 16,
-    fontFamily: 'NotoSerifSC', fontWeight: 700,
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 1.35,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontFamily: 'NotoSerifSC', fontWeight: 700,
-    marginTop: 16,
-    marginBottom: 8,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#aaa',
-    paddingBottom: 2,
-  },
-  paragraph: {
-    fontSize: 11,
-    lineHeight: 1.55,
-    textAlign: 'justify',
-    marginBottom: 6,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 28,
-    left: 54,
-    right: 54,
-    textAlign: 'center',
-    fontSize: 7.5,
-    color: '#bbb',
-  },
-  pageNumber: {
-    position: 'absolute',
-    bottom: 28,
-    right: 54,
-    fontSize: 9,
-    color: '#999',
-  },
-});
+function createStyles(fontFamily: string) {
+  return StyleSheet.create({
+    page: {
+      padding: 54, paddingTop: 44, paddingBottom: 50,
+      fontFamily, fontSize: 11, lineHeight: 1.5, color: '#1a1a1a',
+    },
+    header: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+      borderBottomWidth: 0.8, borderBottomColor: '#333', paddingBottom: 6, marginBottom: 18,
+    },
+    headerLeft: { flex: 1 },
+    headerRight: { textAlign: 'right' },
+    headerName: { fontSize: 9, color: '#555' },
+    headerAffiliation: { fontSize: 9, color: '#555', marginTop: 1 },
+    title: { fontSize: 16, fontFamily, fontWeight: 700, textAlign: 'center', marginBottom: 20, lineHeight: 1.35 },
+    sectionTitle: { fontSize: 12, fontFamily, fontWeight: 700, marginTop: 16, marginBottom: 8, borderBottomWidth: 0.5, borderBottomColor: '#aaa', paddingBottom: 2 },
+    paragraph: { fontSize: 11, lineHeight: 1.55, textAlign: 'justify', marginBottom: 6 },
+    footer: { position: 'absolute', bottom: 28, left: 54, right: 54, textAlign: 'center', fontSize: 7.5, color: '#bbb' },
+    pageNumber: { position: 'absolute', bottom: 28, right: 54, fontSize: 9, color: '#999' },
+  });
+}
 
 interface ProposalContent {
   title: string;
@@ -102,7 +43,8 @@ const SECTION_TITLES: Record<string, string> = {
   timeline: '5. Timeline and Milestones',
 };
 
-function renderParagraphs(text: string) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function renderParagraphs(text: string, styles: any) {
   return text
     .split(/\n\n+/)
     .filter(p => p.trim())
@@ -112,49 +54,35 @@ function renderParagraphs(text: string) {
 }
 
 function ResearchProposalPDF({
-  proposal,
-  studentName,
-  professorName,
-  professorUniversity,
+  proposal, studentName, professorName, professorUniversity, styles,
 }: {
   proposal: ProposalContent;
   studentName?: string;
   professorName?: string;
   professorUniversity?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  styles: any;
 }) {
   const sections = ['background', 'research_questions', 'methodology', 'significance', 'timeline'] as const;
 
   return React.createElement(Document, null,
     React.createElement(Page, { size: 'A4', style: styles.page },
-      // Header
       React.createElement(View, { style: styles.header },
         React.createElement(View, { style: styles.headerLeft },
-          studentName
-            ? React.createElement(Text, { style: styles.headerName }, studentName)
-            : null,
+          studentName ? React.createElement(Text, { style: styles.headerName }, studentName) : null,
         ),
         React.createElement(View, { style: styles.headerRight },
-          professorName
-            ? React.createElement(Text, { style: styles.headerName }, `Supervisor: ${professorName}`)
-            : null,
-          professorUniversity
-            ? React.createElement(Text, { style: styles.headerAffiliation }, professorUniversity)
-            : null,
+          professorName ? React.createElement(Text, { style: styles.headerName }, `Supervisor: ${professorName}`) : null,
+          professorUniversity ? React.createElement(Text, { style: styles.headerAffiliation }, professorUniversity) : null,
         ),
       ),
-
-      // Title
       React.createElement(Text, { style: styles.title }, proposal.title),
-
-      // Sections
       ...sections.map(key =>
         React.createElement(View, { key, wrap: false },
           React.createElement(Text, { style: styles.sectionTitle }, SECTION_TITLES[key]),
-          ...renderParagraphs(proposal[key] || ''),
+          ...renderParagraphs(proposal[key] || '', styles),
         )
       ),
-
-      // Footer
       React.createElement(Text, { style: styles.footer, fixed: true },
         'Generated by Koala PhD · koalaphd.com'
       ),
@@ -183,11 +111,12 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Invalid proposal data' }, { status: 400 });
     }
 
+    const allText = JSON.stringify(proposal) + ' ' + [studentName, professorName, professorUniversity].join(' ');
+    const fontFamily = await registerPdfFonts(allText);
+    const styles = createStyles(fontFamily);
+
     const element = React.createElement(ResearchProposalPDF, {
-      proposal,
-      studentName,
-      professorName,
-      professorUniversity,
+      proposal, studentName, professorName, professorUniversity, styles,
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
