@@ -405,7 +405,11 @@ export default function OlaFloatingMascot() {
       setCurrentCaption(caption);
       setCurrentMeta(meta);
       setVideoError(false);
-      setAssetOpacity(1);
+      if (meta?.video_url) {
+        setTimeout(() => setAssetOpacity(o => o === 0 ? 1 : o), 2000);
+      } else {
+        setAssetOpacity(1);
+      }
     }, 300);
 
     if (user && !seenAssetsRef.current.has(assetId)) {
@@ -872,6 +876,7 @@ export default function OlaFloatingMascot() {
                     const v = e.currentTarget;
                     console.log('[OlaVideo] canPlay', { asset_id: currentMeta.asset_id, readyState: v.readyState, paused: v.paused });
                     if (v.paused) v.play().catch(() => {});
+                    setAssetOpacity(1);
                   }}
                   onEnded={handleVideoEnded}
                   onError={(e) => {
