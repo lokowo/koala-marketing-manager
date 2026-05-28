@@ -42,7 +42,7 @@ export async function GET() {
       db.from('sales_referrals').select('id', { count: 'exact', head: true }).eq('agent_id', agent.id).eq('is_test', false).gte('created_at', lastMonthStart).lte('created_at', lastMonthEnd),
       db.from('sales_commissions').select('commission_amount, status').eq('agent_id', agent.id).gte('created_at', monthStart).neq('status', 'rejected'),
       db.from('sales_commissions').select('commission_amount, status').eq('agent_id', agent.id).gte('created_at', lastMonthStart).lte('created_at', lastMonthEnd).neq('status', 'rejected'),
-      db.from('sales_kpi_targets').select('*').eq('agent_id', agent.id).lte('effective_from', now.toISOString().split('T')[0]).gte('effective_until', now.toISOString().split('T')[0]).maybeSingle(),
+      db.from('sales_kpi_targets').select('*').eq('agent_id', agent.id).lte('effective_from', now.toISOString().split('T')[0]).gte('effective_until', now.toISOString().split('T')[0]).order('effective_from', { ascending: false }).limit(1),
       db.from('sales_visits').select('visited_at').eq('agent_id', agent.id).eq('is_test', false).gte('visited_at', thirtyDaysAgo).order('visited_at', { ascending: true }),
       db.from('sales_referrals').select('created_at').eq('agent_id', agent.id).eq('is_test', false).gte('created_at', thirtyDaysAgo).order('created_at', { ascending: true }),
       db.from('sales_agents').select('id, name').eq('status', 'active'),
@@ -57,7 +57,7 @@ export async function GET() {
     const commsLastData = commsLast.data || [];
     const commissionThis = commsThisData.reduce((s: number, c: any) => s + (c.commission_amount || 0), 0);
     const commissionLast = commsLastData.reduce((s: number, c: any) => s + (c.commission_amount || 0), 0);
-    const target = targets.data;
+    const target = targets.data?.[0] || null;
 
     // Build 30-day trend
     const trend30d: { date: string; visits: number; registrations: number }[] = [];
