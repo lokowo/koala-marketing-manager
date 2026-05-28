@@ -19,7 +19,7 @@ import { DontKnowResponse } from '../components/ai/DontKnowResponse';
 import { UserAvatar } from '../components/KoalaAvatar';
 import { OlaAvatar } from '../components/ola/OlaAvatar';
 import { OlaWelcome } from '../components/ola/OlaWelcome';
-import { OlaChatMascot } from '../components/ola/OlaChatMascot';
+
 import { OlaRatingPrompt } from '../components/ola/OlaRatingPrompt';
 import { ChatHistorySidebar } from '../components/ola/ChatHistorySidebar';
 import { OlaHandoffCard } from '../components/ola/OlaHandoffCard';
@@ -1653,7 +1653,6 @@ function ChatPageInner() {
     }
   }, [latestEmotion]);
 
-  const showChatMascot = !(messages.length === 1 && messages[0].role === 'assistant' && !loading);
 
   const handleAvatarTap = useCallback((e: React.MouseEvent) => {
     const el = e.currentTarget as HTMLElement;
@@ -2246,13 +2245,6 @@ function ChatPageInner() {
         />
       )}
 
-      {showChatMascot && (
-        <OlaChatMascot
-          emotionTag={latestEmotion}
-          loading={loading}
-          listenPulse={listenPulse}
-        />
-      )}
       </div>
     </div>
   );
