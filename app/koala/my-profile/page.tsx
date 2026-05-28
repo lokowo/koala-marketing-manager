@@ -11,6 +11,7 @@ import { useTheme } from '../../lib/theme';
 import VoiceInputButton from '../../components/VoiceInputButton';
 import { SharePosterTrigger } from '../components/SharePoster';
 import { OlaAchievements } from '../components/ola/OlaAchievements';
+import { OlaCollectionGrid } from '../components/ola/OlaCollectionGrid';
 import { MobilePageHeader } from '../components/MobilePageHeader';
 
 // ─── timeAgo helper ────────────────────────
@@ -1491,6 +1492,9 @@ export default function MyProfilePage() {
 
           {/* Achievements */}
           {user && <OlaAchievements userId={user.id} />}
+
+          {/* Animation Collection */}
+          {user && <OlaCollectionGrid userId={user.id} />}
 
           {/* Saved professors */}
           <div className={`mx-4 lg:mx-0 mb-3 rounded-xl overflow-hidden ${CARD_CLS}`}>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { supabase } from '../../../lib/supabase/client';
+import { ImageZoom } from '../ImageZoom';
 
 export type OlaState = 'welcome' | 'thinking' | 'celebrate' | 'suggest' | 'sleepy' | 'cheer' | 'surprise' | 'focus';
 
@@ -88,9 +89,11 @@ interface OlaAvatarProps {
   className?: string;
   /** When true, clips image to a circle (default: auto-detect from asset prefix — h-* = true, b-* = false) */
   round?: boolean;
+  /** When true, clicking the image opens a full-screen zoom overlay (static images only) */
+  enableZoom?: boolean;
 }
 
-export function OlaAvatar({ assetId, emotionTag, state, size = 'md', className, round }: OlaAvatarProps) {
+export function OlaAvatar({ assetId, emotionTag, state, size = 'md', className, round, enableZoom }: OlaAvatarProps) {
   const px = SIZE_MAP[size];
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [resolvedAssetId, setResolvedAssetId] = useState<string | undefined>(assetId);
@@ -159,7 +162,7 @@ export function OlaAvatar({ assetId, emotionTag, state, size = 'md', className, 
   const isBodyImage = resolvedAssetId?.startsWith('b-');
   const shouldRound = round ?? !isBodyImage;
 
-  return (
+  const img = (
     <Image
       src={imageUrl}
       alt="Ola"
@@ -169,4 +172,10 @@ export function OlaAvatar({ assetId, emotionTag, state, size = 'md', className, 
       unoptimized
     />
   );
+
+  if (enableZoom) {
+    return <ImageZoom src={imageUrl} alt="Ola">{img}</ImageZoom>;
+  }
+
+  return img;
 }

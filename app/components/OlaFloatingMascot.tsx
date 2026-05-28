@@ -199,6 +199,9 @@ export default function OlaFloatingMascot() {
     : baseMascotSize;
   const [currentCaption, setCurrentCaption] = useState('');
   const [assetOpacity, setAssetOpacity] = useState(1);
+  // Animation unlock toast
+  const [unlockToast, setUnlockToast] = useState<{ credits: number; unlocked: number; total: number } | null>(null);
+  const seenAssetsRef = useRef<Set<string>>(new Set(['h-09-bubbly-boba-nobg']));
   const idleRotateTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastEmotionRef = useRef<string | null>(null);
   // Video playback state
@@ -390,7 +393,24 @@ export default function OlaFloatingMascot() {
       setVideoError(false);
       setAssetOpacity(1);
     }, 300);
-  }, [assetsReady]);
+
+    if (user && !seenAssetsRef.current.has(assetId)) {
+      seenAssetsRef.current.add(assetId);
+      fetch('/api/user/animation-unlocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assetId }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.newUnlock) {
+            setUnlockToast({ credits: data.creditsAwarded, unlocked: data.unlocked, total: data.total });
+            setTimeout(() => setUnlockToast(null), 4000);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [assetsReady, user]);
 
   // Resolve meta whenever assetId or assetsReady changes
   useEffect(() => {
@@ -444,11 +464,29 @@ export default function OlaFloatingMascot() {
     };
   }, [currentMeta?.video_url, muted]);
 
-  // Poll localStorage for emotion changes from chat page
+  // Poll localStorage for emotion/asset changes from chat page
   useEffect(() => {
     if (!initialized) return;
 
     const checkEmotion = () => {
+      // Priority 1: AI gave an explicit asset_id — use it directly
+      const directAsset = localStorage.getItem('ola-latest-asset');
+      if (directAsset && directAsset !== lastEmotionRef.current) {
+        localStorage.removeItem('ola-latest-asset');
+        lastEmotionRef.current = directAsset;
+
+        const meta = assetsReady ? getAssetMeta(directAsset) : null;
+        const isActionOrEmotion = meta?.video_url && (meta.play_mode === 'action' || meta.play_mode === 'emotion');
+        if (hidden && !isActionOrEmotion) return;
+        if (hidden && isActionOrEmotion) tempShow();
+
+        const mapped = Object.values(EMOTION_ASSET_MAP).find(m => m.assetId === directAsset);
+        const caption = mapped?.caption || IDLE_CAPTIONS[Math.floor(Math.random() * IDLE_CAPTIONS.length)];
+        switchAsset(directAsset, caption);
+        return;
+      }
+
+      // Priority 2: fallback — emotion tag → EMOTION_ASSET_MAP lookup
       const emotion = localStorage.getItem(EMOTION_STORAGE_KEY);
       if (emotion && emotion !== lastEmotionRef.current) {
         lastEmotionRef.current = emotion;
@@ -457,14 +495,8 @@ export default function OlaFloatingMascot() {
 
         const meta = assetsReady ? getAssetMeta(mapped.assetId) : null;
         const isActionOrEmotion = meta?.video_url && (meta.play_mode === 'action' || meta.play_mode === 'emotion');
-
-        // If hidden and not action/emotion, skip
         if (hidden && !isActionOrEmotion) return;
-
-        // Temporarily show mascot for action/emotion even when hidden
-        if (hidden && isActionOrEmotion) {
-          tempShow();
-        }
+        if (hidden && isActionOrEmotion) tempShow();
 
         const caption = mapped.caption || IDLE_CAPTIONS[Math.floor(Math.random() * IDLE_CAPTIONS.length)];
         switchAsset(mapped.assetId, caption);
@@ -870,6 +902,21 @@ export default function OlaFloatingMascot() {
           </div>
         )}
       </div>
+
+      {/* Animation unlock toast */}
+      {unlockToast && (
+        <div
+          className="fixed top-16 left-1/2 -translate-x-1/2 z-[10001] animate-[slideDown_0.3s_ease-out]"
+          style={{ pointerEvents: 'auto' }}
+        >
+          <style>{`@keyframes slideDown { from { opacity: 0; transform: translate(-50%, -20px); } to { opacity: 1; transform: translate(-50%, 0); } }`}</style>
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 text-white shadow-lg shadow-amber-500/30">
+            <span className="text-lg">🎉</span>
+            <span className="text-sm font-semibold">新形象解锁！+{unlockToast.credits}积分</span>
+            <span className="text-xs opacity-80">| 进度 {unlockToast.unlocked}/{unlockToast.total}</span>
+          </div>
+        </div>
+      )}
     </>
   );
 }

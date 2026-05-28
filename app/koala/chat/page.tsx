@@ -1701,6 +1701,18 @@ function ChatPageInner() {
     }
   }, [latestEmotion]);
 
+  const latestAssetId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'assistant' && messages[i].olaAssetId) return messages[i].olaAssetId;
+    }
+    return undefined;
+  }, [messages]);
+
+  useEffect(() => {
+    if (latestAssetId) {
+      try { localStorage.setItem('ola-latest-asset', latestAssetId); } catch {}
+    }
+  }, [latestAssetId]);
 
   const handleAvatarTap = useCallback((e: React.MouseEvent) => {
     const el = e.currentTarget as HTMLElement;
@@ -1836,7 +1848,7 @@ function ChatPageInner() {
           <div className="flex flex-col items-center justify-center h-full px-6 animate-[fadeIn_0.4s_ease-out]">
             <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }`}</style>
             <div key={currentMode.olaAssetId} className="animate-[fadeIn_0.3s_ease-out]">
-              <OlaAvatar assetId={currentMode.olaAssetId} size="xl" round={false} className="w-[220px] h-auto" />
+              <OlaAvatar assetId={currentMode.olaAssetId} size="xl" round={false} className="w-[220px] h-auto" enableZoom />
             </div>
             <h2 className="mt-5 text-xl font-bold text-gray-900 dark:text-[#e8e4dc]">
               {currentMode.landing.greeting}

@@ -19,7 +19,7 @@ export function OlaWelcome({ onSend, olaAssetId, quickActions }: OlaWelcomeProps
   return (
     <div className="flex flex-col items-center justify-center px-6 py-10">
       <div key={olaAssetId} style={{ animation: 'fadeIn 0.3s ease-out' }}>
-        <OlaAvatar assetId={olaAssetId ?? 'h-03-encouragement-nobg'} size="lg" round={false} className="w-[200px] h-auto" />
+        <OlaAvatar assetId={olaAssetId ?? 'h-03-encouragement-nobg'} size="lg" round={false} className="w-[200px] h-auto" enableZoom />
       </div>
       <h2 className="mt-4 text-lg font-bold text-gray-900 dark:text-[#e8e4dc]">
         嗨！我是学姐小欧 ✨
