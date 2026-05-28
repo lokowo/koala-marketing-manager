@@ -85,8 +85,8 @@ const COOLDOWN_AFTER_DISMISS = 24 * 60 * 60 * 1000;
 
 const MASCOT_SIZE_MOBILE = 150;
 const MASCOT_SIZE_DESKTOP = 200;
-const MASCOT_SIZE_MOBILE_FULL = 300;
-const MASCOT_SIZE_DESKTOP_FULL = 400;
+const MASCOT_SIZE_MOBILE_FULL = 280;
+const MASCOT_SIZE_DESKTOP_FULL = 350;
 
 function isFullBody(assetId: string): boolean {
   return assetId.startsWith('b-') || assetId.startsWith('c-');
@@ -818,11 +818,22 @@ export default function OlaFloatingMascot() {
                   src={currentMeta.video_url}
                   autoPlay
                   playsInline
-                  muted={muted}
+                  muted
+                  preload="auto"
                   loop={currentMeta.play_mode === 'idle' || currentMeta.play_mode === 'loop'}
+                  onCanPlay={() => {
+                    console.log('[OlaVideo] loaded', { asset_id: currentMeta.asset_id, video_url: currentMeta.video_url, status: 'loaded' });
+                    if (videoRef.current) {
+                      videoRef.current.muted = muted;
+                      videoRef.current.play().catch(() => {});
+                    }
+                  }}
                   onEnded={handleVideoEnded}
-                  onError={() => {
-                    console.warn('[OlaMascot] video load failed, falling back to image:', currentMeta.video_url);
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    const code = el.error?.code;
+                    const msg = el.error?.message;
+                    console.error('[OlaVideo] error', { asset_id: currentMeta.asset_id, video_url: currentMeta.video_url, status: 'error', code, msg });
                     setVideoError(true);
                   }}
                   className="w-full h-auto object-contain pointer-events-none"

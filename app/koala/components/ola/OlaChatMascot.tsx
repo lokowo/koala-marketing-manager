@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { supabase } from '../../../lib/supabase/client';
 import { EMOTION_IMAGE_MAP, type OlaEmotionTag } from '../../../lib/prompts/ola-persona';
 
-interface OlaAssetRow { asset_id: string; emotion_tag: string | null; image_url: string }
+interface OlaAssetRow { asset_id: string; emotion_tag: string | null; image_url: string; video_url: string | null; play_mode: string | null }
 
 const POS_KEY = 'ola-chat-mascot-pos';
 const HIDDEN_KEY = 'ola-chat-mascot-hidden';
@@ -20,6 +20,7 @@ const DRAG_BUBBLES = [
 ];
 
 let hCache: Map<string, string> | null = null;
+let hVideoCache: Map<string, { video_url: string; play_mode: string }> | null = null;
 let hFetchPromise: Promise<void> | null = null;
 
 async function fetchHAssets(): Promise<void> {
@@ -28,16 +29,20 @@ async function fetchHAssets(): Promise<void> {
     try {
       const { data } = await (supabase
         .from('ola_assets' as 'professors')
-        .select('asset_id, emotion_tag, image_url')
+        .select('asset_id, emotion_tag, image_url, video_url, play_mode')
         .eq('is_active', true as never));
       hCache = new Map();
+      hVideoCache = new Map();
       if (data) {
         for (const row of data as unknown as OlaAssetRow[]) {
           hCache.set(`id:${row.asset_id}`, row.image_url);
           if (row.emotion_tag) hCache.set(`emotion:${row.emotion_tag}`, row.image_url);
+          if (row.video_url) {
+            hVideoCache.set(row.asset_id, { video_url: row.video_url, play_mode: row.play_mode ?? 'static' });
+          }
         }
       }
-    } catch { hCache = new Map(); }
+    } catch { hCache = new Map(); hVideoCache = new Map(); }
   })();
   return hFetchPromise;
 }
@@ -61,6 +66,10 @@ interface Props {
 
 export function OlaChatMascot({ emotionTag, assetId, loading, listenPulse }: Props) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [videoInfo, setVideoInfo] = useState<{ video_url: string; play_mode: string } | null>(null);
+  const [videoError, setVideoError] = useState(false);
+  const [resolvedAssetId, setResolvedAssetId] = useState<string>(DEFAULT_ASSET);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [ready, setReady] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [mascotSize, setMascotSize] = useState(180);
@@ -114,14 +123,20 @@ export function OlaChatMascot({ emotionTag, assetId, loading, listenPulse }: Pro
   useEffect(() => {
     if (!ready || !hCache) return;
     let url: string | undefined;
-    if (assetId) url = hCache.get(`id:${assetId}`);
+    let resolved = DEFAULT_ASSET;
+    if (assetId) { url = hCache.get(`id:${assetId}`); if (url) resolved = assetId; }
     if (!url && emotionTag) {
       const mappedAssetId = EMOTION_IMAGE_MAP[emotionTag as OlaEmotionTag];
-      if (mappedAssetId) url = hCache.get(`id:${mappedAssetId}`);
+      if (mappedAssetId) { url = hCache.get(`id:${mappedAssetId}`); if (url) resolved = mappedAssetId; }
       if (!url) url = hCache.get(`emotion:${emotionTag}`);
     }
     if (!url) url = hCache.get(`id:${DEFAULT_ASSET}`);
     setImageUrl(url ?? null);
+    setResolvedAssetId(resolved);
+    setVideoError(false);
+    const vi = hVideoCache?.get(resolved) ?? null;
+    setVideoInfo(vi);
+    console.log('[OlaVideo] chatMascot', { asset_id: resolved, video_url: vi?.video_url ?? 'none', status: vi ? 'ready' : 'static' });
   }, [ready, emotionTag, assetId]);
 
   useEffect(() => {
@@ -263,14 +278,39 @@ export function OlaChatMascot({ emotionTag, assetId, loading, listenPulse }: Pro
           className="cursor-grab active:cursor-grabbing"
           style={{ ...animStyle, opacity: isMobile() ? 0.7 : 0.85 }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt="Ola学姐"
-            width={mascotSize}
-            className="object-contain object-bottom pointer-events-none drop-shadow-lg"
-            draggable={false}
-          />
+          {videoInfo && !videoError ? (
+            <video
+              ref={videoRef}
+              key={videoInfo.video_url}
+              src={videoInfo.video_url}
+              autoPlay
+              playsInline
+              muted
+              preload="auto"
+              loop={videoInfo.play_mode === 'idle' || videoInfo.play_mode === 'loop'}
+              onCanPlay={() => {
+                console.log('[OlaVideo] chatMascot loaded', { asset_id: resolvedAssetId, video_url: videoInfo.video_url, status: 'loaded' });
+              }}
+              onError={(e) => {
+                const code = e.currentTarget.error?.code;
+                const msg = e.currentTarget.error?.message;
+                console.error('[OlaVideo] chatMascot error', { asset_id: resolvedAssetId, video_url: videoInfo.video_url, status: 'error', code, msg });
+                setVideoError(true);
+              }}
+              width={mascotSize}
+              className="object-contain object-bottom pointer-events-none drop-shadow-lg"
+              style={{ background: 'transparent' }}
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imageUrl!}
+              alt="Ola学姐"
+              width={mascotSize}
+              className="object-contain object-bottom pointer-events-none drop-shadow-lg"
+              draggable={false}
+            />
+          )}
         </div>
       </div>
     </>
