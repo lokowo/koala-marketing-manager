@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '../../../lib/supabase/client';
+import { EMOTION_IMAGE_MAP, type OlaEmotionTag } from '../../../lib/prompts/ola-persona';
 
 interface OlaAssetRow { asset_id: string; emotion_tag: string | null; image_url: string }
 
@@ -28,8 +29,7 @@ async function fetchHAssets(): Promise<void> {
       const { data } = await (supabase
         .from('ola_assets' as 'professors')
         .select('asset_id, emotion_tag, image_url')
-        .eq('is_active', true as never)
-        .eq('category' as never, 'portrait-transparent' as never));
+        .eq('is_active', true as never));
       hCache = new Map();
       if (data) {
         for (const row of data as unknown as OlaAssetRow[]) {
@@ -115,7 +115,11 @@ export function OlaChatMascot({ emotionTag, assetId, loading, listenPulse }: Pro
     if (!ready || !hCache) return;
     let url: string | undefined;
     if (assetId) url = hCache.get(`id:${assetId}`);
-    if (!url && emotionTag) url = hCache.get(`emotion:${emotionTag}`);
+    if (!url && emotionTag) {
+      const mappedAssetId = EMOTION_IMAGE_MAP[emotionTag as OlaEmotionTag];
+      if (mappedAssetId) url = hCache.get(`id:${mappedAssetId}`);
+      if (!url) url = hCache.get(`emotion:${emotionTag}`);
+    }
     if (!url) url = hCache.get(`id:${DEFAULT_ASSET}`);
     setImageUrl(url ?? null);
   }, [ready, emotionTag, assetId]);
