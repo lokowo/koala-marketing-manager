@@ -54,6 +54,10 @@
     {
       "path": "/api/cron/ola-evolution",
       "schedule": "0 17 * * 0"
+    },
+    {
+      "path": "/api/cron/cleanup-conversations",
+      "schedule": "0 4 * * *"
     }
   ]
 }
