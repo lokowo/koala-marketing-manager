@@ -593,25 +593,82 @@ H指数：${prof.hIndex ?? '未知'}`;
     if (mode === 'research' && messages.length > 0) {
       const lastMsg = messages[messages.length - 1].content;
       try {
-        const [academicResult, knowledgeChunks, professors] = await Promise.all([
+        // Extract keywords for internal papers DB search
+        const kwRaw = lastMsg.replace(/[^\w一-鿿\s]/g, ' ').split(/\s+/).filter(w => w.length > 2);
+        const searchKeywords = kwRaw.slice(0, 3);
+
+        // Search internal papers table (12K+ real papers with DOIs)
+        const internalPapersPromise = (async () => {
+          try {
+            const { createClient } = await import('@supabase/supabase-js');
+            const papersDb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+            const orClauses = searchKeywords
+              .map(kw => `title.ilike.%${kw}%,abstract.ilike.%${kw}%`)
+              .join(',');
+            if (!orClauses) return [];
+            const { data } = await papersDb
+              .from('papers')
+              .select('id, title, journal, year, doi_url, citation_count, abstract, professor_id')
+              .or(orClauses)
+              .order('citation_count', { ascending: false })
+              .limit(10);
+            return data ?? [];
+          } catch { return []; }
+        })();
+
+        const [academicResult, knowledgeChunks, professors, paperAbstracts, internalPapers] = await Promise.all([
           searchAcademicSources(lastMsg, { limit: 15, yearFrom: new Date().getFullYear() - 4 }).catch(() => ({ papers: [], searchQueries: [], sources: [], totalFound: 0 })),
           searchKnowledgeBase(lastMsg, 8).catch(() => []),
           searchProfessorsByTags(lastMsg, 5).catch(() => []),
+          searchPaperAbstracts(lastMsg, 8).catch(() => []),
+          internalPapersPromise,
         ]);
 
+        console.log('[Research] internal papers:', internalPapers.length, 'external:', academicResult.papers.length, 'paperAbstracts:', paperAbstracts.length);
+
         allCitations = papersToCitations(academicResult.papers);
+
+        // Merge internal papers into citations (they have real DOIs)
+        const existingTitles = new Set(allCitations.map(c => c.title.toLowerCase()));
+        for (const ip of internalPapers as Array<{ title: string; journal: string | null; year: number | null; doi_url: string | null; citation_count: number; abstract: string | null }>) {
+          if (!existingTitles.has(ip.title.toLowerCase())) {
+            allCitations.push({
+              title: ip.title,
+              authors: '',
+              year: ip.year ?? 0,
+              journal: ip.journal ?? '',
+              doi: ip.doi_url ?? '',
+              url: ip.doi_url ?? '',
+              openAccessUrl: null,
+              arxivUrl: null,
+              citations: ip.citation_count,
+              abstract: ip.abstract ?? null,
+            });
+            existingTitles.add(ip.title.toLowerCase());
+          }
+        }
+
         academicSearchMeta = {
-          sources: academicResult.sources,
-          totalFound: academicResult.totalFound,
+          sources: [...academicResult.sources, ...(internalPapers.length > 0 ? ['Koala Papers DB'] : [])],
+          totalFound: academicResult.totalFound + internalPapers.length,
           queries: academicResult.searchQueries,
         };
 
-        const kbContext = assembleRAGContext({ knowledgeChunks, papers: [], professors });
+        const kbContext = assembleRAGContext({ knowledgeChunks: [...knowledgeChunks, ...paperAbstracts], papers: [], professors });
         // Full abstracts for research mode — gives Claude enough context for deep analysis
         const paperContext = papersToRAGContext(academicResult.papers, { fullAbstract: true, maxPapers: 12 });
 
-        if (kbContext || paperContext) {
-          extraContext += '\n\n' + [paperContext, kbContext].filter(Boolean).join('\n\n');
+        // Build internal papers context for Claude
+        let internalPaperContext = '';
+        if (internalPapers.length > 0) {
+          const ipLines = (internalPapers as Array<{ title: string; journal: string | null; year: number | null; doi_url: string | null; citation_count: number; abstract: string | null }>)
+            .map(ip => `- ${ip.title} (${ip.journal ?? 'unknown'}, ${ip.year ?? '?'}) [citations: ${ip.citation_count}]${ip.doi_url ? ` DOI: ${ip.doi_url}` : ''}${ip.abstract ? `\n  Abstract: ${ip.abstract.slice(0, 300)}` : ''}`)
+            .join('\n');
+          internalPaperContext = `## Koala 内部论文库匹配结果（真实DOI，优先引用）\n${ipLines}`;
+        }
+
+        if (kbContext || paperContext || internalPaperContext) {
+          extraContext += '\n\n' + [internalPaperContext, paperContext, kbContext].filter(Boolean).join('\n\n');
         }
       } catch (ragErr) {
         console.error('[RAG]', ragErr);

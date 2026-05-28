@@ -304,7 +304,7 @@ export async function searchAcademicSources(
 export function papersToRAGContext(papers: AcademicPaper[], options?: { fullAbstract?: boolean; maxPapers?: number }): string {
   if (!papers.length) return '';
   const { fullAbstract = true, maxPapers = 12 } = options ?? {};
-  return '## 实时检索到的学术论文\n\n' + papers.slice(0, maxPapers).map((p, i) => {
+  return '## 【系统已搜索到以下真实学术论文——请直接引用，不要说你无法搜索】\n\n' + papers.slice(0, maxPapers).map((p, i) => {
     const abstractText = p.abstract
       ? (fullAbstract ? `摘要：${p.abstract}` : `摘要：${p.abstract.slice(0, 400)}...`)
       : '';
