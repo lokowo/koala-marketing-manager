@@ -1039,6 +1039,7 @@ function ChatPageInner() {
     txt: string,
     currentMessages: Message[],
     professorId?: string,
+    imageData?: { base64: string; mediaType: string },
   ) => {
     const userMsg: Message = { id: msgId(), role: 'user', content: txt, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
@@ -1051,6 +1052,7 @@ function ChatPageInner() {
         mode,
         sessionId: sessionIdRef.current,
         messages: allMsgs.map(m => ({ role: m.role, content: m.content })),
+        imageData,
         userId: user?.id,
         userStyleProfile: {
           formality: tonePref === 'professional' ? 'formal' : tonePref === 'direct' ? 'mixed' : 'casual',
@@ -1303,7 +1305,27 @@ function ChatPageInner() {
         } catch { /* fall through */ }
       }
 
-      // For images or failed extraction, just note the file
+      // For images, convert to base64 and send via vision API
+      const isImage = /\.(png|jpe?g|gif|webp)$/i.test(file.name);
+      if (isImage) {
+        if (file.size > 5 * 1024 * 1024) {
+          setMessages(prev => [...prev, {
+            id: msgId(), role: 'assistant',
+            content: '图片太大了（超过 5MB），请压缩后再试～',
+            timestamp: new Date(),
+          }]);
+          return;
+        }
+        const buf = await file.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+        const mediaType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+        const enrichedMsg = txt || `[用户上传了图片：${file.name}] 请描述或分析这张图片`;
+        await callApi(enrichedMsg, messages, pendingProfessorId ?? undefined, { base64, mediaType });
+        return;
+      }
+
+      // Non-image file with failed extraction
       const enrichedMsg = `[用户上传了文件：${file.name}（${fileType}）]\n\n${txt}`;
       await callApi(enrichedMsg, messages, pendingProfessorId ?? undefined);
       return;

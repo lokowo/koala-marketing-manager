@@ -252,6 +252,7 @@ export async function POST(request: NextRequest) {
       userStyleProfile,
       professorId,
       studentProfile: studentMatchProfile,
+      imageData,
     }: {
       mode: AIMode;
       messages: ChatMessage[];
@@ -259,6 +260,7 @@ export async function POST(request: NextRequest) {
       userStyleProfile?: UserStyleProfile;
       professorId?: string;
       studentProfile?: { languagePreference?: string; personalityTags?: string[]; careerGoal?: string; preferredCity?: string[]; budget?: string };
+      imageData?: { base64: string; mediaType: string };
     } = body;
 
     if (!mode || !messages || !Array.isArray(messages)) {
@@ -734,10 +736,19 @@ H指数：${prof.hIndex ?? '未知'}`;
     // 3. Call Claude — with tool use for professor search
     const useTools = mode === 'path' || mode === 'chat' || mode === 'write' || mode === 'rp' || mode === 'interview';
 
-    const apiMessages: Anthropic.MessageParam[] = messages.map(m => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
-    }));
+    const apiMessages: Anthropic.MessageParam[] = messages.map((m, idx) => {
+      const isLastUser = idx === messages.length - 1 && m.role === 'user' && imageData?.base64;
+      if (isLastUser) {
+        return {
+          role: 'user' as const,
+          content: [
+            { type: 'image' as const, source: { type: 'base64' as const, media_type: imageData.mediaType as 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp', data: imageData.base64 } },
+            { type: 'text' as const, text: m.content },
+          ],
+        };
+      }
+      return { role: m.role as 'user' | 'assistant', content: m.content };
+    });
 
     const llmStartTime = Date.now();
     let rawReply = '';
