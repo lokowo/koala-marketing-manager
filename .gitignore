@@ -53,3 +53,4 @@ supabase/.temp/
 
 # Ola mascot source assets (uploaded to Supabase Storage)
 ola_assets/
+out/
