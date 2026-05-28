@@ -204,6 +204,10 @@ export default function OlaFloatingMascot() {
   const seenAssetsRef = useRef<Set<string>>(new Set(['h-09-bubbly-boba-nobg']));
   const idleRotateTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastEmotionRef = useRef<string | null>(null);
+  // Switch-rate guard: minimum display time per animation
+  const lastSwitchTime = useRef(0);
+  const playingAction = useRef(false);
+  const MIN_DISPLAY_MS = 5000;
   // Video playback state
   const [currentMeta, setCurrentMeta] = useState<OlaAssetMeta | null>(null);
   const [muted, setMuted] = useState(true);
@@ -384,12 +388,22 @@ export default function OlaFloatingMascot() {
   }, []);
 
   // ─── Emotion-based asset switching ───────────────
-  const switchAsset = useCallback((assetId: string, caption: string) => {
+  const switchAsset = useCallback((assetId: string, caption: string, force = false) => {
+    if (!force) {
+      if (playingAction.current) return;
+      if (Date.now() - lastSwitchTime.current < MIN_DISPLAY_MS) return;
+    }
+
+    const meta = assetsReady ? getAssetMeta(assetId) ?? null : null;
+    const isAction = meta?.video_url && (meta.play_mode === 'action' || meta.play_mode === 'emotion');
+    playingAction.current = !!isAction;
+    lastSwitchTime.current = Date.now();
+
     setAssetOpacity(0);
     setTimeout(() => {
       setCurrentAssetId(assetId);
       setCurrentCaption(caption);
-      setCurrentMeta(assetsReady ? getAssetMeta(assetId) ?? null : null);
+      setCurrentMeta(meta);
       setVideoError(false);
       setAssetOpacity(1);
     }, 300);
@@ -423,11 +437,12 @@ export default function OlaFloatingMascot() {
 
   const handleVideoEnded = useCallback(() => {
     const mode = currentMeta?.play_mode;
+    playingAction.current = false;
 
     if (mode === 'emotion' || mode === 'action') {
       setAssetOpacity(0);
       setTimeout(() => {
-        switchAsset('h-09-bubbly-boba-nobg', pickRandom(IDLE_CAPTIONS));
+        switchAsset('h-09-bubbly-boba-nobg', pickRandom(IDLE_CAPTIONS), true);
       }, 300);
     }
   }, [currentMeta, switchAsset]);
@@ -504,7 +519,7 @@ export default function OlaFloatingMascot() {
     };
 
     checkEmotion();
-    const interval = setInterval(checkEmotion, 2000);
+    const interval = setInterval(checkEmotion, 3000);
     return () => clearInterval(interval);
   }, [initialized, hidden, assetsReady, switchAsset, tempShow]);
 
