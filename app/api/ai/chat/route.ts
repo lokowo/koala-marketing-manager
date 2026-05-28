@@ -748,7 +748,7 @@ H指数：${prof.hIndex ?? '未知'}`;
 不要每条都加，只在自然合适时添加。`;
 
     // Build system prompt — use Ola persona as base, append mode-specific + extras
-    const systemPrompt = getOlaPersonaPrompt() + '\n\n---\n\n' + buildSystemPrompt(mode, extraContext);
+    const systemPrompt = getOlaPersonaPrompt(mode) + '\n\n---\n\n' + buildSystemPrompt(mode, extraContext);
 
     // 3. Call Claude — with tool use for professor search
     const useTools = mode === 'path' || mode === 'chat' || mode === 'write' || mode === 'rp' || mode === 'interview';
