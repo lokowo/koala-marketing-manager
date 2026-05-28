@@ -488,24 +488,34 @@ function SettingsPanel({
   );
 }
 
-const THINKING_MESSAGES = [
-  '小欧正在思考…',
-  '让我想想…',
-  '正在查询学者数据库…',
-  '小欧正在翻阅资料…',
-  '认真分析中…',
-  '小欧打了个哈欠，但还在认真工作…',
-];
+const MODE_THINKING: Record<string, string[]> = {
+  path: ['正在帮你匹配教授…', '翻阅导师数据库…', '分析你的背景…', '小欧在认真选导师…'],
+  research: ['🔬 正在检索论文…', '翻阅最新文献…', '查找相关研究…', '整理引用资料…'],
+  chat: ['嗯嗯…', '学姐在想…', '让我想想哦～', '思考中～'],
+  write: ['✉️ 正在构思信件…', '斟酌措辞中…', '学姐在帮你写…', '打磨用词…'],
+  rp: ['📝 分析研究方向…', '梳理框架中…', '学姐在认真看…', '整理思路…'],
+  interview: ['🎤 面试官在准备问题…', '翻看你的资料…', '设计追问…', '评估回答角度…'],
+};
+
+const MODE_THINKING_INTERVAL: Record<string, number> = {
+  chat: 2000,
+  path: 3000,
+  write: 3000,
+  research: 4000,
+  rp: 4000,
+  interview: 3500,
+};
 
 function ThinkingBubble({ mode }: { mode: string }) {
+  const msgs = MODE_THINKING[mode] || MODE_THINKING.chat;
+  const interval = MODE_THINKING_INTERVAL[mode] || 3000;
   const [msgIndex, setMsgIndex] = useState(0);
   useEffect(() => {
-    if (mode === 'research') return;
     const timer = setInterval(() => {
-      setMsgIndex(prev => (prev + 1) % THINKING_MESSAGES.length);
-    }, 3000);
+      setMsgIndex(prev => (prev + 1) % msgs.length);
+    }, interval);
     return () => clearInterval(timer);
-  }, [mode]);
+  }, [msgs.length, interval]);
 
   return (
     <div className="flex justify-start mb-1">
@@ -514,7 +524,7 @@ function ThinkingBubble({ mode }: { mode: string }) {
       </div>
       <div className="px-3.5 py-2.5 text-sm bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-[#8a8078]" style={{ borderRadius: '0.25rem 1rem 1rem 1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <span className="animate-pulse">
-          {mode === 'research' ? '🔬 正在检索论文…' : THINKING_MESSAGES[msgIndex]}
+          {msgs[msgIndex % msgs.length]}
         </span>
       </div>
     </div>
