@@ -59,6 +59,18 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Missing user_id' }, { status: 400 });
     }
 
+    // Fetch the user's profile to get display_name (required for sales_agents.name)
+    const { data: profile, error: profileErr } = await db
+      .from('user_profiles')
+      .select('display_name, email')
+      .eq('id', user_id)
+      .maybeSingle();
+
+    if (profileErr || !profile) {
+      console.error('[admin/sales-agents POST] user not found:', user_id, profileErr);
+      return Response.json({ error: '找不到该用户' }, { status: 404 });
+    }
+
     const { data: existing } = await db
       .from('sales_agents')
       .select('id')
@@ -82,10 +94,14 @@ export async function POST(req: Request) {
       attempts++;
     }
 
+    const agentName = profile.display_name || profile.email || 'Unknown';
+
     const { data, error } = await db
       .from('sales_agents')
       .insert({
         user_id,
+        name: agentName,
+        email: profile.email || null,
         referral_code: referralCode,
         status: 'active',
         tier: tier || 'standard',
@@ -93,7 +109,19 @@ export async function POST(req: Request) {
       .select('*, user_profiles:user_id(display_name, email, avatar_url)')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[admin/sales-agents POST] insert failed:', error);
+      throw error;
+    }
+
+    // Assign 'sales' role in user_roles (upsert to avoid duplicates)
+    const { error: roleErr } = await db
+      .from('user_roles')
+      .upsert({ user_id, role: 'sales' }, { onConflict: 'user_id' });
+
+    if (roleErr) {
+      console.error('[admin/sales-agents POST] user_roles upsert failed:', roleErr);
+    }
 
     return Response.json({ data });
   } catch (error) {
