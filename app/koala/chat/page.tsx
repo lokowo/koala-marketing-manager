@@ -1560,7 +1560,7 @@ function ChatPageInner() {
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i].role === 'assistant' && messages[i].olaEmotionTag) return messages[i].olaEmotionTag;
     }
-    return undefined;
+    return 'neutral';
   }, [messages]);
 
   useEffect(() => {
