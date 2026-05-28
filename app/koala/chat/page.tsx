@@ -131,6 +131,11 @@ function parseOlaState(text: string): { clean: string; assetId?: string; emotion
 
 interface QuickAction { icon: string; label: string; message: string }
 
+interface LandingConfig {
+  greeting: string;
+  buttons: { label: string; message: string }[];
+}
+
 const MODES: {
   key: AIMode;
   label: string;
@@ -141,6 +146,7 @@ const MODES: {
   initialReplies?: string[];
   olaAssetId: string;
   quickActions: QuickAction[];
+  landing: LandingConfig;
 }[] = [
   {
     key: 'path',
@@ -157,6 +163,13 @@ const MODES: {
       { icon: '🎯', label: '选校建议', message: '根据我的背景推荐适合的学校' },
       { icon: '💰', label: '奖学金', message: '有哪些PhD奖学金机会？' },
     ],
+    landing: {
+      greeting: '准备好规划 PhD 之路了吗？',
+      buttons: [
+        { label: '🎯 评估可行性', message: '帮我评估一下我的PhD申请可行性' },
+        { label: '🏫 选校推荐', message: '根据我的背景推荐适合的学校' },
+      ],
+    },
   },
   {
     key: 'research',
@@ -173,6 +186,13 @@ const MODES: {
       { icon: '🗺️', label: '梳理方向', message: '帮我梳理研究方向' },
       { icon: '📝', label: '文献综述', message: '帮我写一段文献综述' },
     ],
+    landing: {
+      greeting: '今天想研究什么课题？',
+      buttons: [
+        { label: '📚 搜文献', message: '帮我搜索相关领域的最新文献' },
+        { label: '🗺️ 找研究方向', message: '帮我梳理研究方向' },
+      ],
+    },
   },
   {
     key: 'chat',
@@ -189,6 +209,13 @@ const MODES: {
       { icon: '🤔', label: '问问题', message: '澳洲读博一般几年？' },
       { icon: '☕', label: '聊聊天', message: '学姐你今天喝什么咖啡？' },
     ],
+    landing: {
+      greeting: '来跟学姐聊聊天吧～',
+      buttons: [
+        { label: '👋 随便聊聊', message: '嗨学姐！最近怎么样？' },
+        { label: '😩 吐槽一下', message: '学姐我好累啊…' },
+      ],
+    },
   },
   {
     key: 'write',
@@ -205,6 +232,13 @@ const MODES: {
       { icon: '📋', label: '审SOP', message: '帮我审阅SOP' },
       { icon: '✍️', label: '推荐信', message: '帮我草拟一封推荐信请求' },
     ],
+    landing: {
+      greeting: '让我帮你写一封完美的邮件！',
+      buttons: [
+        { label: '✉️ 写套磁信', message: '帮我给教授写一封套磁信' },
+        { label: '📄 审CV', message: '帮我润色学术CV' },
+      ],
+    },
   },
   {
     key: 'rp',
@@ -221,6 +255,13 @@ const MODES: {
       { icon: '🗺️', label: '研究框架', message: '帮我设计研究框架' },
       { icon: '📊', label: '方法论', message: '帮我选择研究方法' },
     ],
+    landing: {
+      greeting: '研究计划是申请的灵魂！',
+      buttons: [
+        { label: '📝 开始写RP', message: '帮我写Research Proposal' },
+        { label: '🔍 看范文', message: '给我看一些RP范文参考' },
+      ],
+    },
   },
   {
     key: 'interview',
@@ -237,6 +278,13 @@ const MODES: {
       { icon: '🧠', label: '常见问题', message: 'PhD面试常见问题有哪些？' },
       { icon: '📋', label: '研究陈述', message: '帮我准备研究陈述' },
     ],
+    landing: {
+      greeting: '面试开始，准备好了吗？',
+      buttons: [
+        { label: '🎤 开始面试', message: '开始一次PhD面试模拟' },
+        { label: '💬 常见问题', message: 'PhD面试常见问题有哪些？' },
+      ],
+    },
   },
 ];
 
@@ -1791,10 +1839,10 @@ function ChatPageInner() {
               <OlaAvatar assetId={currentMode.olaAssetId} size="xl" round={false} className="w-[220px] h-auto" />
             </div>
             <h2 className="mt-5 text-xl font-bold text-gray-900 dark:text-[#e8e4dc]">
-              {getTimeGreeting()}
+              {currentMode.landing.greeting}
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-[#8a8078]">
-              我是学姐小欧，你的 PhD 申请 AI 顾问 ✨
+              {getTimeGreeting()} 我是学姐小欧 ✨
             </p>
             <div className="flex flex-col gap-3 mt-6 w-full max-w-[280px]">
               {historyLoaded && messages.some(m => m.role === 'user') && (
@@ -1805,16 +1853,15 @@ function ChatPageInner() {
                   继续上次对话
                 </button>
               )}
-              <button
-                onClick={handleNewChat}
-                className={`w-full py-3 rounded-xl text-sm font-medium transition-all active:scale-[0.97] ${
-                  historyLoaded && messages.some(m => m.role === 'user')
-                    ? 'bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-white/10'
-                    : 'bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]'
-                }`}
-              >
-                开始新聊天
-              </button>
+              {currentMode.landing.buttons.map((btn, i) => (
+                <button
+                  key={i}
+                  onClick={() => { handleNewChat(); setTimeout(() => sendMessage(btn.message), 100); }}
+                  className="w-full py-3 rounded-xl text-sm font-medium transition-all active:scale-[0.97] bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-[#e8e4dc] border border-gray-200 dark:border-white/10 hover:bg-gray-200 dark:hover:bg-white/[0.08]"
+                >
+                  {btn.label}
+                </button>
+              ))}
             </div>
             <p className="mt-4 text-[11px] text-gray-400 dark:text-[#5a5550]">
               历史对话都在左上角「最近」里哦～

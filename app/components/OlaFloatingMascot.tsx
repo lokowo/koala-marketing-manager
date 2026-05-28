@@ -821,13 +821,6 @@ export default function OlaFloatingMascot() {
                   muted
                   preload="auto"
                   loop={currentMeta.play_mode === 'idle' || currentMeta.play_mode === 'loop'}
-                  onCanPlay={() => {
-                    console.log('[OlaVideo] loaded', { asset_id: currentMeta.asset_id, video_url: currentMeta.video_url, status: 'loaded' });
-                    if (videoRef.current) {
-                      videoRef.current.muted = muted;
-                      videoRef.current.play().catch(() => {});
-                    }
-                  }}
                   onEnded={handleVideoEnded}
                   onError={(e) => {
                     const el = e.currentTarget;
@@ -836,8 +829,8 @@ export default function OlaFloatingMascot() {
                     console.error('[OlaVideo] error', { asset_id: currentMeta.asset_id, video_url: currentMeta.video_url, status: 'error', code, msg });
                     setVideoError(true);
                   }}
-                  className="w-full h-auto object-contain pointer-events-none"
-                  style={{ background: 'transparent' }}
+                  className="pointer-events-none"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', background: 'transparent' }}
                 />
               ) : (
                 <OlaAvatar assetId={currentAssetId} size="md" className="w-full h-auto object-contain pointer-events-none" />
@@ -864,21 +857,6 @@ export default function OlaFloatingMascot() {
         {currentMeta?.audio_url && (
           <audio ref={audioRef} src={currentMeta.audio_url} loop={currentMeta.play_mode === 'idle' || currentMeta.play_mode === 'loop'} muted={muted} />
         )}
-
-        {/* DEBUG — remove after fixing */}
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0,
-          background: 'rgba(0,0,0,0.85)', color: '#0f0', fontSize: 10,
-          fontFamily: 'monospace', padding: 4, borderRadius: 4,
-          pointerEvents: 'none', zIndex: 999, lineHeight: 1.4,
-          wordBreak: 'break-all' as const,
-        }}>
-          <div>asset: {currentAssetId}</div>
-          <div>video_url: {currentMeta?.video_url ? currentMeta.video_url.slice(-40) : 'NULL'}</div>
-          <div>error: {String(videoError)}</div>
-          <div>mode: {currentMeta?.play_mode ?? 'N/A'}</div>
-          <div>render: {currentMeta?.video_url && !videoError ? 'VIDEO' : 'IMAGE'}</div>
-        </div>
 
         {/* Caption below mascot */}
         {currentCaption && !dragging.current && (
