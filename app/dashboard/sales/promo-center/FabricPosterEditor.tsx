@@ -1,19 +1,18 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import html2canvas from 'html2canvas';
 import QRCode from 'qrcode';
 import { POSTER_FONTS, loadPosterFonts } from './poster-fonts';
 
 interface Props { referralCode: string; channel: string; }
-type PosterSize = '3:4' | '1:1' | '9:16';
 type ThemeId = 'minimal' | 'academic' | 'vibrant';
 type Variant = 'A' | 'B';
-type LayoutPreset = 'compact' | 'standard' | 'spacious';
 
 interface ThemeDef {
   id: ThemeId; name: string; desc: string; font: string;
   channels: string[]; isDark: boolean; swatches: string[];
-  variants: Record<Variant, { colors: string[]; label: string }>;
+  variants: Record<Variant, { bg: string; label: string }>;
 }
 
 const THEMES: ThemeDef[] = [
@@ -21,33 +20,30 @@ const THEMES: ThemeDef[] = [
     id: 'minimal', name: '简约', desc: '干净留白，适合正式推广',
     font: 'Noto Sans SC', channels: ['微信', '邮件', 'WhatsApp'],
     isDark: false, swatches: ['#FFFFFF', '#F1F5F9', '#E2E8F0'],
-    variants: { A: { colors: ['#FFFFFF'], label: '纯白' }, B: { colors: ['#F1F5F9', '#E2E8F0'], label: '浅灰' } },
+    variants: {
+      A: { bg: '#FFFFFF', label: '纯白' },
+      B: { bg: 'linear-gradient(135deg, #F1F5F9, #E2E8F0)', label: '浅灰' },
+    },
   },
   {
     id: 'academic', name: '学术', desc: '深沉专业，适合学术社群',
     font: 'Noto Serif SC', channels: ['知乎', 'LinkedIn', '学术群'],
     isDark: true, swatches: ['#0F172A', '#1E3A5F', '#1E40AF'],
-    variants: { A: { colors: ['#0F172A'], label: '深蓝' }, B: { colors: ['#0F172A', '#1E3A5F'], label: '渐变蓝' } },
+    variants: {
+      A: { bg: '#0F172A', label: '深蓝' },
+      B: { bg: 'linear-gradient(135deg, #0F172A, #1E3A5F)', label: '渐变蓝' },
+    },
   },
   {
     id: 'vibrant', name: '活力', desc: '吸睛醒目，适合社交媒体',
     font: 'ZCOOL KuaiLe', channels: ['小红书', '抖音', 'B站'],
     isDark: true, swatches: ['#F59E0B', '#EC4899', '#6366F1'],
-    variants: { A: { colors: ['#F59E0B', '#EC4899'], label: '橙粉' }, B: { colors: ['#6366F1', '#EC4899'], label: '紫粉' } },
+    variants: {
+      A: { bg: 'linear-gradient(135deg, #F59E0B, #EC4899)', label: '橙粉' },
+      B: { bg: 'linear-gradient(135deg, #6366F1, #EC4899)', label: '紫粉' },
+    },
   },
 ];
-
-const SIZE_CFG: Record<PosterSize, { w: number; h: number; label: string }> = {
-  '3:4': { w: 1080, h: 1440, label: '3:4' },
-  '1:1': { w: 1080, h: 1080, label: '1:1' },
-  '9:16': { w: 1080, h: 1920, label: '9:16' },
-};
-
-const LAYOUT_CFG: Record<LayoutPreset, { titleY: number; lineExtra: number; titleSubGap: number; subPtGap: number; ptGap: number; label: string; desc: string }> = {
-  compact:  { titleY: 0.11, lineExtra: 4,  titleSubGap: 4,  subPtGap: 24, ptGap: 28, label: '紧凑', desc: '内容多' },
-  standard: { titleY: 0.15, lineExtra: 14, titleSubGap: 8,  subPtGap: 50, ptGap: 40, label: '标准', desc: '默认' },
-  spacious: { titleY: 0.19, lineExtra: 24, titleSubGap: 20, subPtGap: 70, ptGap: 50, label: '宽松', desc: '简约风' },
-};
 
 const TITLE_SIZES = [36, 42, 48, 54, 60];
 const SUB_SIZES = [18, 22, 24, 28, 32];
@@ -73,231 +69,72 @@ const CH_LABELS: Record<string, string> = {
 };
 
 const DEFAULT_PTS = [
-  '✓ AI 智能匹配澳洲博士导师',
-  '✓ 一键生成个性化套磁信',
-  '✓ 教授论文对齐研究计划',
-  '✓ 全程申请进度追踪',
+  'AI 智能匹配澳洲博士导师',
+  '一键生成个性化套磁信',
+  '教授论文对齐研究计划',
+  '全程申请进度追踪',
 ];
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  const lines: string[] = [];
-  let line = '';
-  for (const char of text) {
-    const test = line + char;
-    if (ctx.measureText(test).width > maxWidth && line) {
-      lines.push(line);
-      line = char;
-    } else {
-      line = test;
-    }
-  }
-  if (line) lines.push(line);
-  return lines;
-}
+const PREVIEW_W = 540;
+const PREVIEW_H = 720;
 
 const inputCls = 'w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] text-[#111827] dark:text-[#F1F5F9]';
 const selectCls = inputCls;
 
 export default function FabricPosterEditor({ referralCode, channel }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const posterRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
   const [themeId, setThemeId] = useState<ThemeId>('academic');
   const [variant, setVariant] = useState<Variant>('A');
-  const [size, setSize] = useState<PosterSize>('3:4');
-  const [titleTxt, setTitleTxt] = useState('用 AI 找到你的理想 PhD 导师');
+  const [titleTxt, setTitleTxt] = useState('用 AI 找到你的\n理想 PhD 导师');
   const [titleSize, setTitleSize] = useState(48);
   const [titleColor, setTitleColor] = useState('#FFFFFF');
-  const [subTxt, setSubTxt] = useState('覆盖全澳38所大学导师与学者');
+  const [subTxt, setSubTxt] = useState('覆盖全澳 38 所大学导师与学者');
   const [subSize, setSubSize] = useState(24);
   const [pts, setPts] = useState(DEFAULT_PTS);
   const [ptSize, setPtSize] = useState(20);
   const [ch, setCh] = useState(channel);
   const [font, setFont] = useState(THEMES[1].font);
-  const [layout, setLayout] = useState<LayoutPreset>('standard');
-  const [vis, setVis] = useState({ qr: true, url: true, inviteCode: true, channel: true });
-  const [extraTexts, setExtraTexts] = useState<string[]>([]);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => { loadPosterFonts().then(() => setReady(true)); }, []);
 
   useEffect(() => {
-    if (!ready || !canvasRef.current) return;
-    let cancelled = false;
-    const canvas = canvasRef.current;
-    const theme = THEMES.find(t => t.id === themeId)!;
-    const { w, h } = SIZE_CFG[size];
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d')!;
-    const isDark = theme.isDark;
-    const fgSub = isDark ? 'rgba(255,255,255,0.8)' : 'rgba(31,41,55,0.6)';
-    const fgPt = isDark ? '#FFFFFF' : '#1F2937';
-    const lc = LAYOUT_CFG[layout];
+    QRCode.toDataURL(`https://koalaphd.com/?ref=${referralCode}`, {
+      width: 480, margin: 2, color: { dark: '#1a2332', light: '#FFFFFF' },
+    }).then(setQrDataUrl).catch(console.error);
+  }, [referralCode]);
 
-    (async () => {
-      // Background
-      const bgColors = theme.variants[variant].colors;
-      if (bgColors.length > 1) {
-        const grad = ctx.createLinearGradient(0, 0, w, h);
-        bgColors.forEach((c, i) => grad.addColorStop(i / (bgColors.length - 1), c));
-        ctx.fillStyle = grad;
-      } else {
-        ctx.fillStyle = bgColors[0];
-      }
-      ctx.fillRect(0, 0, w, h);
+  const theme = THEMES.find(t => t.id === themeId)!;
+  const isDark = theme.isDark;
+  const fgMain = isDark ? '#FFFFFF' : '#1F2937';
+  const fgSub = isDark ? 'rgba(255,255,255,0.75)' : 'rgba(31,41,55,0.6)';
+  const fgPt = isDark ? '#FFFFFF' : '#1F2937';
+  const bgStyle = theme.variants[variant].bg;
+  const isGradient = bgStyle.includes('gradient');
 
-      if (isDark) {
-        const shimmer = ctx.createLinearGradient(0, 0, 0, h * 0.25);
-        shimmer.addColorStop(0, 'rgba(255,255,255,0.06)');
-        shimmer.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.fillStyle = shimmer;
-        ctx.fillRect(0, 0, w, h * 0.25);
-      }
-
-      ctx.textBaseline = 'top';
-
-      // Logo
-      ctx.save();
-      ctx.font = `bold 18px "${font}", sans-serif`;
-      ctx.fillStyle = '#F59E0B';
-      ctx.textAlign = 'left';
-      if (isDark) { ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; }
-      ctx.fillText('Koala PhD 考拉博士', 60, 40);
-      ctx.restore();
-
-      // Title
-      ctx.save();
-      ctx.font = `bold ${titleSize}px "${font}", sans-serif`;
-      ctx.fillStyle = titleColor;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      if (isDark) { ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2; }
-      const titleLines = wrapText(ctx, titleTxt, w - 120);
-      const lineH = titleSize + lc.lineExtra;
-      let curY = h * lc.titleY;
-      for (const line of titleLines) { ctx.fillText(line, w / 2, curY); curY += lineH; }
-      ctx.restore();
-
-      // Subtitle
-      curY += lc.titleSubGap;
-      ctx.save();
-      ctx.font = `${subSize}px "${font}", sans-serif`;
-      ctx.fillStyle = fgSub;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      if (isDark) { ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; }
-      ctx.fillText(subTxt, w / 2, curY);
-      ctx.restore();
-
-      // Selling points
-      curY += lc.subPtGap;
-      ctx.save();
-      ctx.font = `${ptSize}px "${font}", sans-serif`;
-      ctx.fillStyle = fgPt;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      if (isDark) { ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; }
-      for (const pt of pts) { ctx.fillText(pt, 80, curY); curY += lc.ptGap; }
-      for (const txt of extraTexts) { ctx.fillText(txt, 80, curY); curY += lc.ptGap; }
-      ctx.restore();
-
-      if (cancelled) return;
-
-      // QR Code
-      const qrSz = Math.min(270, h * 0.19);
-      const qrPad = 20;
-      const qrCenterY = Math.max(h * 0.62, curY + qrSz / 2 + 30);
-
-      if (vis.qr) {
-        try {
-          const qrUrl = `https://koalaphd.com/?ref=${referralCode}`;
-          const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 480, margin: 2, color: { dark: '#1a2332', light: '#FFFFFF' } });
-          if (cancelled) return;
-          const qrImg = new Image();
-          qrImg.src = qrDataUrl;
-          await new Promise<void>((res, rej) => { qrImg.onload = () => res(); qrImg.onerror = rej; });
-          if (cancelled) return;
-          const qrX = (w - qrSz) / 2;
-          const qrY = qrCenterY - qrSz / 2;
-          ctx.save();
-          ctx.shadowColor = 'rgba(0,0,0,0.15)';
-          ctx.shadowBlur = 12;
-          ctx.shadowOffsetY = 4;
-          ctx.fillStyle = '#FFFFFF';
-          roundRect(ctx, qrX - qrPad, qrY - qrPad, qrSz + qrPad * 2, qrSz + qrPad * 2, 16);
-          ctx.fill();
-          ctx.restore();
-          ctx.drawImage(qrImg, qrX, qrY, qrSz, qrSz);
-        } catch (e) { console.error('QR failed', e); }
-      }
-
-      // Scan label + invite code
-      const qrBottomY = qrCenterY + qrSz / 2 + qrPad;
-      if (vis.qr) {
-        ctx.save();
-        ctx.font = `14px "${font}", sans-serif`;
-        ctx.fillStyle = fgSub;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        if (isDark) { ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; }
-        ctx.fillText('扫码注册', w / 2, qrBottomY + 16);
-        ctx.restore();
-        ctx.save();
-        ctx.font = `11px "${font}", sans-serif`;
-        ctx.fillStyle = fgSub;
-        ctx.globalAlpha = 0.5;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.fillText('📷 请使用手机相机扫码（微信扫码可能无法登录）', w / 2, qrBottomY + 36);
-        ctx.globalAlpha = 1;
-        ctx.restore();
-      }
-      if (vis.inviteCode) {
-        ctx.save();
-        ctx.font = `bold 16px "${font}", sans-serif`;
-        ctx.fillStyle = fgPt;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        if (isDark) { ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; }
-        ctx.fillText(`邀请码: ${referralCode}`, w / 2, qrBottomY + 44);
-        ctx.restore();
-      }
-
-      // Bottom bar
-      const bottomY = h - 60;
-      if (vis.url) {
-        ctx.save();
-        ctx.font = `12px "${font}", sans-serif`;
-        ctx.fillStyle = fgSub;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        if (isDark) { ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 2; ctx.shadowOffsetY = 1; }
-        ctx.fillText('koalaphd.com', 60, bottomY);
-        ctx.restore();
-      }
-      if (vis.channel) {
-        ctx.save();
-        ctx.font = `12px "${font}", sans-serif`;
-        ctx.fillStyle = fgSub;
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'top';
-        if (isDark) { ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 2; ctx.shadowOffsetY = 1; }
-        ctx.fillText(CH_LABELS[ch] || ch, w - 60, bottomY);
-        ctx.restore();
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [ready, themeId, variant, size, titleTxt, titleSize, titleColor, subTxt, subSize, pts, ptSize, ch, font, layout, vis, referralCode, extraTexts]);
+  const exportPNG = useCallback(async () => {
+    if (!posterRef.current || exporting) return;
+    setExporting(true);
+    try {
+      const canvas = await html2canvas(posterRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: null,
+        width: PREVIEW_W,
+        height: PREVIEW_H,
+      });
+      const link = document.createElement('a');
+      link.download = `koala-poster-${themeId}-${variant}-${referralCode}.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+    } catch (e) {
+      console.error('Export failed', e);
+    } finally {
+      setExporting(false);
+    }
+  }, [themeId, variant, referralCode, exporting]);
 
   function switchTheme(id: ThemeId) {
     setThemeId(id);
@@ -308,26 +145,18 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
   }
 
   function resetAll() {
-    setTitleTxt('用 AI 找到你的理想 PhD 导师');
+    setTitleTxt('用 AI 找到你的\n理想 PhD 导师');
     setTitleSize(48);
-    const theme = THEMES.find(t => t.id === themeId)!;
-    setTitleColor(theme.isDark ? '#FFFFFF' : '#1F2937');
-    setSubTxt('覆盖全澳38所大学导师与学者');
+    const t = THEMES.find(th => th.id === themeId)!;
+    setTitleColor(t.isDark ? '#FFFFFF' : '#1F2937');
+    setSubTxt('覆盖全澳 38 所大学导师与学者');
     setSubSize(24);
     setPts(DEFAULT_PTS);
     setPtSize(20);
-    setLayout('standard');
-    setExtraTexts([]);
   }
 
-  function exportPNG() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const link = document.createElement('a');
-    link.download = `koala-poster-${themeId}-${variant}-${referralCode}.png`;
-    link.href = canvas.toDataURL('image/png', 1.0);
-    link.click();
-  }
+  function addPt() { if (pts.length < 6) setPts(prev => [...prev, '新卖点']); }
+  function removePt(i: number) { if (pts.length > 1) setPts(prev => prev.filter((_, idx) => idx !== i)); }
 
   if (!ready) return <Loading />;
 
@@ -336,7 +165,7 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Top: 3 Design Package Cards */}
+      {/* Theme cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {THEMES.map(t => {
           const active = themeId === t.id;
@@ -374,12 +203,12 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
         })}
       </div>
 
-      {/* Bottom: Left Panel + Right Preview */}
+      {/* Editor: left panel + right preview */}
       <div className="flex flex-col lg:flex-row gap-4">
+        {/* Left controls */}
         <div className="w-full lg:w-[260px] shrink-0 space-y-3 max-h-[60vh] lg:max-h-[calc(100vh-200px)] overflow-y-auto pr-1">
-          {/* 1. Title controls */}
           <Sec title="主标题">
-            <input value={titleTxt} onChange={e => setTitleTxt(e.target.value)} className={inputCls} />
+            <textarea value={titleTxt} onChange={e => setTitleTxt(e.target.value)} rows={2} className={inputCls + ' resize-none'} />
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] shrink-0">字号</span>
               <select value={titleSize} onChange={e => setTitleSize(Number(e.target.value))} className={selectCls}>
@@ -398,7 +227,6 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
             </div>
           </Sec>
 
-          {/* 2. Subtitle controls */}
           <Sec title="副标题">
             <input value={subTxt} onChange={e => setSubTxt(e.target.value)} className={inputCls} />
             <div className="flex items-center gap-2">
@@ -409,100 +237,169 @@ export default function FabricPosterEditor({ referralCode, channel }: Props) {
             </div>
           </Sec>
 
-          {/* 3. Selling points */}
           <Sec title="卖点文字">
             {pts.map((pt, i) => (
-              <input key={i} value={pt} onChange={e => { const v = e.target.value; setPts(prev => prev.map((p, idx) => idx === i ? v : p)); }} className={inputCls} />
+              <div key={i} className="flex gap-1.5">
+                <input value={pt} onChange={e => { const v = e.target.value; setPts(prev => prev.map((p, idx) => idx === i ? v : p)); }} className={`flex-1 ${inputCls}`} />
+                {pts.length > 1 && (
+                  <button onClick={() => removePt(i)} className="px-2 py-1 rounded-lg text-[10px] bg-[#FEE2E2] dark:bg-[#7F1D1D]/30 text-[#991B1B] dark:text-[#F87171]">✕</button>
+                )}
+              </div>
             ))}
             <div className="flex items-center gap-2 mt-1">
               <span className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] shrink-0">字号</span>
               <select value={ptSize} onChange={e => setPtSize(Number(e.target.value))} className={selectCls}>
                 {PT_SIZES.map(s => <option key={s} value={s}>{s}px</option>)}
               </select>
+              {pts.length < 6 && (
+                <button onClick={addPt} className="px-2.5 py-1 rounded-lg text-[10px] font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#6B7280] dark:text-[#94A3B8] hover:bg-[#E5E7EB] dark:hover:bg-[#475569]">+ 添加</button>
+              )}
             </div>
           </Sec>
 
-          {/* 4. Extra text */}
-          <Sec title="添加文字">
-            <button onClick={() => setExtraTexts(prev => [...prev, '自定义文字'])}
-              className="w-full py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition flex items-center justify-center gap-1.5">+ 文字</button>
-            {extraTexts.map((txt, i) => (
-              <div key={i} className="flex gap-1.5 mt-2">
-                <input value={txt} onChange={e => { const v = e.target.value; setExtraTexts(prev => prev.map((t, idx) => idx === i ? v : t)); }} className={`flex-1 ${inputCls}`} />
-                <button onClick={() => setExtraTexts(prev => prev.filter((_, idx) => idx !== i))}
-                  className="px-2 py-1 rounded-lg text-[10px] bg-[#FEE2E2] dark:bg-[#7F1D1D]/30 text-[#991B1B] dark:text-[#F87171]">✕</button>
-              </div>
-            ))}
-          </Sec>
-
-          {/* 5. Channel + Font */}
           <Sec title="推广渠道">
             <select value={ch} onChange={e => setCh(e.target.value)} className={selectCls}>
               {CH_OPTS.map(c => <option key={c.v} value={c.v}>{c.l}</option>)}
             </select>
           </Sec>
+
           <Sec title="字体">
             <select value={font} onChange={e => setFont(e.target.value)} className={selectCls}>
               <optgroup label="中文">{zhF.map(f => <option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>
               <optgroup label="英文">{enF.map(f => <option key={f.family} value={f.family}>{f.label}</option>)}</optgroup>
             </select>
           </Sec>
-
-          {/* 6. Layout preset */}
-          <Sec title="布局预设">
-            <div className="flex gap-1.5">
-              {(Object.entries(LAYOUT_CFG) as [LayoutPreset, typeof LAYOUT_CFG['standard']][]).map(([k, cfg]) => (
-                <button key={k} onClick={() => setLayout(k)}
-                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium transition ${layout === k ? 'bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#92400E] dark:text-[#F59E0B]' : 'bg-[#F3F4F6] dark:bg-[#334155] text-[#6B7280] dark:text-[#94A3B8] hover:bg-[#E5E7EB] dark:hover:bg-[#475569]'}`}>
-                  {cfg.label}
-                  <span className="block text-[9px] opacity-70">{cfg.desc}</span>
-                </button>
-              ))}
-            </div>
-          </Sec>
-
-          {/* 7. Visibility toggles */}
-          <Sec title="显示开关">
-            {([['qr', '二维码'], ['url', '网址文字'], ['inviteCode', '邀请码'], ['channel', '渠道标识']] as const).map(([k, label]) => (
-              <label key={k} className="flex items-center gap-2 text-[11px] text-[#374151] dark:text-[#CBD5E1] cursor-pointer">
-                <input type="checkbox" checked={vis[k]} onChange={() => setVis(prev => ({ ...prev, [k]: !prev[k] }))} className="rounded border-[#D1D5DB] text-[#F59E0B] focus:ring-[#F59E0B]" />
-                {label}
-              </label>
-            ))}
-          </Sec>
-
-          {/* 8. Size */}
-          <Sec title="尺寸">
-            <div className="flex gap-1.5">
-              {(Object.entries(SIZE_CFG) as [PosterSize, typeof SIZE_CFG['3:4']][]).map(([k, cfg]) => (
-                <button key={k} onClick={() => setSize(k)}
-                  className={`flex-1 py-1.5 rounded-lg text-[11px] font-medium transition ${size === k ? 'bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#92400E] dark:text-[#F59E0B]' : 'bg-[#F3F4F6] dark:bg-[#334155] text-[#6B7280] dark:text-[#94A3B8] hover:bg-[#E5E7EB] dark:hover:bg-[#475569]'}`}>
-                  {cfg.label}
-                </button>
-              ))}
-            </div>
-          </Sec>
         </div>
 
-        {/* Right: Canvas Preview */}
+        {/* Right: HTML poster preview */}
         <div className="flex-1 min-w-0">
           <div className="rounded-xl bg-[#F9FAFB] dark:bg-[#0F172A] border border-[#E5E7EB] dark:border-[#334155] p-4 flex items-center justify-center">
-            <div style={{ width: '100%', maxWidth: 500, aspectRatio: `${SIZE_CFG[size].w} / ${SIZE_CFG[size].h}`, borderRadius: 12, overflow: 'hidden' }}>
-              <canvas ref={canvasRef} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+            <div
+              ref={posterRef}
+              style={{
+                width: PREVIEW_W,
+                height: PREVIEW_H,
+                background: isGradient ? bgStyle : bgStyle,
+                fontFamily: `"${font}", "Noto Sans SC", sans-serif`,
+                borderRadius: 12,
+                overflow: 'hidden',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Shimmer overlay for dark themes */}
+              {isDark && (
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, height: '25%',
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 100%)',
+                  pointerEvents: 'none',
+                }} />
+              )}
+
+              {/* Content area */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '30px 40px 0', position: 'relative', zIndex: 1 }}>
+                {/* Logo */}
+                <div style={{
+                  fontSize: 15, fontWeight: 700, color: '#F59E0B',
+                  marginBottom: 20,
+                  textShadow: isDark ? '0 1px 3px rgba(0,0,0,0.4)' : 'none',
+                }}>
+                  🐨 Koala PhD 考拉博士
+                </div>
+
+                {/* Title */}
+                <div style={{
+                  fontSize: titleSize * 0.5,
+                  fontWeight: 700,
+                  color: titleColor,
+                  lineHeight: 1.3,
+                  marginBottom: 10,
+                  whiteSpace: 'pre-line',
+                  textShadow: isDark ? '0 2px 6px rgba(0,0,0,0.5)' : 'none',
+                }}>
+                  {titleTxt}
+                </div>
+
+                {/* Subtitle */}
+                <div style={{
+                  fontSize: subSize * 0.5,
+                  color: fgSub,
+                  marginBottom: 20,
+                  textShadow: isDark ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
+                }}>
+                  {subTxt}
+                </div>
+
+                {/* Selling points */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+                  {pts.map((pt, i) => (
+                    <div key={i} style={{
+                      fontSize: ptSize * 0.5,
+                      color: fgPt,
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      textShadow: isDark ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
+                    }}>
+                      <span style={{ color: '#22C55E', fontWeight: 700, fontSize: ptSize * 0.5 + 2 }}>✓</span>
+                      {pt}
+                    </div>
+                  ))}
+                </div>
+
+                {/* QR section — flex-grow pushes it toward bottom */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 0 }}>
+                  {qrDataUrl && (
+                    <div style={{
+                      background: '#FFFFFF', borderRadius: 12, padding: 12,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      lineHeight: 0,
+                    }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={qrDataUrl} alt="QR" style={{ width: 120, height: 120, display: 'block' }} />
+                    </div>
+                  )}
+
+                  <div style={{ fontSize: 12, color: fgSub, fontWeight: 500, marginTop: 4 }}>扫码注册</div>
+
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#D4A843' }}>
+                    邀请码: {referralCode}
+                  </div>
+
+                  <div style={{ fontSize: 9, color: fgSub, opacity: 0.6, textAlign: 'center' }}>
+                    📷 请使用手机相机扫码（微信扫码可能无法登录）
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom bar — separated with divider */}
+              <div style={{
+                borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                padding: '10px 40px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                position: 'relative', zIndex: 1,
+              }}>
+                <div style={{ fontSize: 10, color: fgSub }}>koalaphd.com</div>
+                <div style={{ fontSize: 10, color: fgSub }}>{CH_LABELS[ch] || ch}</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom bar */}
+      {/* Action bar */}
       <div className="flex items-center justify-between gap-3 rounded-xl p-3 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
         <button onClick={resetAll} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#CBD5E1] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0111.47-2.47M14 8a6 6 0 01-11.47 2.47" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M14 2v4h-4M2 14v-4h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          重新生成
+          重置
         </button>
-        <button onClick={exportPNG} className="flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-xs font-medium bg-[#F59E0B] text-white hover:bg-[#D97706] transition shadow-sm">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2M8 2v9M5 8l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          下载 PNG
+        <button onClick={exportPNG} disabled={exporting}
+          className="flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-xs font-medium bg-[#F59E0B] text-white hover:bg-[#D97706] transition shadow-sm disabled:opacity-50">
+          {exporting ? (
+            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2M8 2v9M5 8l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          )}
+          下载 PNG (1080×1440)
         </button>
       </div>
     </div>
