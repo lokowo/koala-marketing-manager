@@ -276,10 +276,20 @@ export function ColdEmailCard({
         }
         const cvRes = await fetch('/api/user/generate-cv').then(r => r.json()).catch(() => ({ cv: null }));
         if (!cvRes.cv) return null;
-        const pdfRes = await fetch('/api/user/generate-cv-pdf', {
+        // Convert sections-style CV to flat structure for /api/user/cv/pdf
+        const sectionsCv = cvRes.cv as { header: { name: string; email?: string; phone?: string; linkedin?: string }; sections: Array<{ title: string; items: Array<{ title: string; subtitle?: string; date?: string; details?: string[] }> }>; skills?: { languages?: string[]; technical?: string[]; soft?: string[] } };
+        const eduSec = sectionsCv.sections.find(s => /education/i.test(s.title));
+        const resSec = sectionsCv.sections.find(s => /research/i.test(s.title));
+        const flatContent = {
+          personal: { name: sectionsCv.header.name, email: sectionsCv.header.email, phone: sectionsCv.header.phone, linkedin: sectionsCv.header.linkedin },
+          education: (eduSec?.items ?? []).map(it => ({ degree: it.subtitle ?? '', university: it.title, dates: it.date, gpa: it.details?.find(d => /gpa/i.test(d)) })),
+          research: (resSec?.items ?? []).map(it => ({ title: it.title, period: it.date, description: it.details?.join('\n') })),
+          skills: sectionsCv.skills ? { technical: sectionsCv.skills.technical, languages: sectionsCv.skills.languages, tools: sectionsCv.skills.soft } : undefined,
+        };
+        const pdfRes = await fetch('/api/user/cv/pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cv: cvRes.cv }),
+          body: JSON.stringify({ content: flatContent }),
         });
         if (!pdfRes.ok) return null;
         const buf = await pdfRes.arrayBuffer();

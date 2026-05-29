@@ -40,6 +40,22 @@ interface CVPreviewCardProps {
   photoUrl?: string;
 }
 
+function sectionsToFlat(cv: CVData) {
+  const eduSection = cv.sections.find(s => /education/i.test(s.title));
+  const resSection = cv.sections.find(s => /research/i.test(s.title));
+  const pubSection = cv.sections.find(s => /publication/i.test(s.title));
+  const awardSection = cv.sections.find(s => /award|honour/i.test(s.title));
+
+  return {
+    personal: { name: cv.header.name, email: cv.header.email ?? undefined, phone: cv.header.phone ?? undefined, linkedin: cv.header.linkedin ?? undefined },
+    education: (eduSection?.items ?? []).map(it => ({ degree: it.subtitle ?? '', university: it.title, gpa: it.details?.find(d => /gpa/i.test(d)), dates: it.date })),
+    research: (resSection?.items ?? []).map(it => ({ title: it.title, period: it.date, description: it.details?.join('\n') })),
+    publications: (pubSection?.items ?? []).map(it => ({ title: it.title })),
+    skills: cv.skills ? { technical: cv.skills.technical, languages: cv.skills.languages, tools: cv.skills.soft } : undefined,
+    awards: (awardSection?.items ?? []).map(it => ({ title: it.title, organization: it.subtitle ?? undefined })),
+  };
+}
+
 const VERSION_LABELS: Record<string, { label: string; desc: string }> = {
   supervisor: { label: '导师版', desc: '突出研究经历' },
   scholarship: { label: '奖学金版', desc: '突出荣誉成绩' },
@@ -60,10 +76,11 @@ export default function CVPreviewCard({ versions, onPhotoUpload, photoUrl }: CVP
   const handleDownloadPDF = async () => {
     setDownloading(true);
     try {
-      const res = await fetch('/api/user/generate-cv-pdf', {
+      const flat = sectionsToFlat(cv);
+      const res = await fetch('/api/user/cv/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cv, photoUrl }),
+        body: JSON.stringify({ content: flat }),
       });
       if (!res.ok) throw new Error();
       const blob = await res.blob();

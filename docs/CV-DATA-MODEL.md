@@ -35,29 +35,36 @@ type(cv|email|rp|package) / professor_id(目标教授,流程B填) / application_
 file_name / file_url / file_type / file_size / institution / ai_parsed(bool) / ai_summary(JSON字符串)
 
 ## 3. 统一 CV content schema (schema_version=1)
-所有生成 CV 的代码（聊天 route.ts、generate-cv、generate-cv-pdf）必须读写这一个结构。聊天端旧的 {personal,education,research} 扁平结构废弃。
+**权威结构为扁平式**（聊天 ai/chat 生成 → AcademicCVCard 编辑 → /api/user/cv/pdf 下载，全链路一致）。
+generate-cv 仍输出 sections 结构，但调用方已在前端转换为扁平结构后送 /api/user/cv/pdf。generate-cv-pdf 已删除。
 
 ```json
 {
-  "header": { "name": "英文名", "email": "", "phone": null, "address": null, "linkedin": null, "website": null },
-  "sections": [
-    { "title": "EDUCATION", "items": [
-      { "title": "South China University of Technology", "subtitle": "B.Eng. in Electrical Engineering", "date": "2019 - 2023", "details": ["GPA: 2.78/4.00"], "needs_enhancement": false }
-    ]},
-    { "title": "RESEARCH EXPERIENCE", "items": [] },
-    { "title": "WORK / INTERNSHIP", "items": [] },
-    { "title": "PUBLICATIONS", "items": [] },
-    { "title": "AWARDS & HONOURS", "items": [] }
+  "personal": { "name": "英文名", "email": "", "phone": null, "linkedin": null },
+  "education": [
+    { "degree": "B.Eng. in Electrical Engineering", "university": "South China University of Technology", "gpa": "2.78/4.00", "dates": "2019 - 2023", "thesis": null }
   ],
-  "skills": { "languages": [], "technical": [], "soft": [] }
+  "research": [
+    { "title": "Research Assistant", "lab": null, "supervisor": null, "period": "2022 - 2023", "description": "..." }
+  ],
+  "publications": [
+    { "title": "Paper Title", "journal": "Journal Name", "year": 2025, "authors": "...", "doi": "..." }
+  ],
+  "skills": { "technical": [], "languages": [], "tools": [] },
+  "awards": [
+    { "title": "Dean's List", "organization": "SCUT", "year": 2022 }
+  ],
+  "references": [
+    { "name": "Prof. XX", "title": "Associate Professor", "university": "University of Melbourne", "email": "xx@unimelb.edu.au", "relationship": "Thesis supervisor" }
+  ]
 }
 ```
 
 强制规则：
-1. 顶层只有 header / sections / skills 三个 key
-2. 学历、工作、研究全进 sections，每类一个 section，多条=多个 item（本科和硕士都必须在 EDUCATION 里）
+1. 顶层 key: personal / education / research / publications / skills / awards / references
+2. 本科和硕士都必须在 education 数组里（多条=多个 item）
 3. 全英文（学校名翻译成官方英文名，如 华南理工大学→South China University of Technology）。99% CV 全英文→PDF 用 Helvetica，无中文字体问题
-4. 内容过简(<15词)标 needs_enhancement:true
+4. 内容过简的条目由 AI 标注提醒，不在 JSON schema 中体现
 5. 缺失信息用 "[To be added]"，绝不编造
 
 ## 4. 两个 CV 工作流
@@ -83,9 +90,9 @@ ALTER TABLE work_history ADD COLUMN IF NOT EXISTS source text DEFAULT 'manual';
 ```
 
 ## 6. 代码修复清单
-1. [P0] lib/server/student-context.ts: 字段名 school→institution, degree→degree_type, start_date→start_year, end_date→end_year, order 同改
-2. [P0] api/ai/chat/route.ts: 聊天CV content 改输出§3统一schema（废弃扁平结构）
-3. [P1] api/user/generate-cv/route.ts: 确认与§3一致
-4. [P1] api/user/generate-cv-pdf/route.ts: 确认与§3一致
+1. [P0] ✅ lib/server/student-context.ts: 字段名 school→institution, degree→degree_type, start_date→start_year, end_date→end_year, order 同改（已修复 2026-05-29）
+2. [P0] ✅ 已对齐：聊天 CV 链路本来就用扁平结构，无需改（§3 已更正为扁平结构为权威）
+3. [P1] ✅ 已对齐：generate-cv 输出 sections 结构，前端调用方已加 sections→flat 转换
+4. [P1] ✅ generate-cv-pdf 已删除（死代码，调用方已改为 /api/user/cv/pdf）
 5. [P1] 去重: "新南威尔士大学"与"UNSW"识别为同一校
 6. [P1] 上传通道: 聊天上传PDF走原生document，解析成功才扣费
