@@ -216,7 +216,7 @@ export default function OlaFloatingMascot() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const loopCount = useRef(0);
-  const MAX_LOOPS = 10;
+  const MAX_LOOPS = 3;
   const hasInteracted = useRef(false);
 
   const dragging = useRef(false);
