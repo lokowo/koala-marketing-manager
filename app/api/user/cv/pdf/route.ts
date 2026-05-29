@@ -241,20 +241,29 @@ export async function POST(req: Request) {
 
     const allText = JSON.stringify(content);
     const fontFamily = await registerPdfFonts(allText);
-    const styles = createStyles(fontFamily);
 
-    const element = React.createElement(AcademicCVPdf, { cv: content, styles });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfStream = await ReactPDF.renderToStream(element as any);
+    const renderPdf = async (family: string) => {
+      const styles = createStyles(family);
+      const element = React.createElement(AcademicCVPdf, { cv: content, styles });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pdfStream = await ReactPDF.renderToStream(element as any);
+      const chunks: Buffer[] = [];
+      for await (const chunk of pdfStream) {
+        chunks.push(Buffer.from(chunk));
+      }
+      return Buffer.concat(chunks);
+    };
 
-    const chunks: Buffer[] = [];
-    for await (const chunk of pdfStream) {
-      chunks.push(Buffer.from(chunk));
+    let pdfBuffer: Buffer;
+    try {
+      pdfBuffer = await renderPdf(fontFamily);
+    } catch (renderErr) {
+      console.error('[cv/pdf] render failed with', fontFamily, '— retrying with Helvetica:', renderErr);
+      pdfBuffer = await renderPdf('Helvetica');
     }
-    const pdfBuffer = Buffer.concat(chunks);
 
     const nameSlug = (content.personal.name || 'cv').replace(/\s+/g, '_');
-    return new Response(pdfBuffer, {
+    return new Response(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="Academic_CV_${nameSlug}_${new Date().toISOString().slice(0, 10)}.pdf"`,
