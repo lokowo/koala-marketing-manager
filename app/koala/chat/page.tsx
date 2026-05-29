@@ -1435,12 +1435,29 @@ function ChatPageInner() {
           }]);
           return;
         }
-        const buf = await file.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-        const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
-        const mediaType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
-        const enrichedMsg = txt || `[用户上传了图片：${file.name}] 请描述或分析这张图片`;
-        await callApi(enrichedMsg, messages, pendingProfessorId ?? undefined, { base64, mediaType });
+        try {
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const result = reader.result as string;
+              resolve(result.split(',')[1]);
+            };
+            reader.onerror = () => reject(new Error('图片读取失败'));
+            reader.readAsDataURL(file);
+          });
+          const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+          const mediaType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+          const enrichedMsg = txt || `[用户上传了图片：${file.name}] 请描述或分析这张图片`;
+          await callApi(enrichedMsg, messages, pendingProfessorId ?? undefined, { base64, mediaType });
+        } catch (err) {
+          console.error('[IMAGE_UPLOAD]', err);
+          setMessages(prev => [...prev, {
+            id: msgId(), role: 'assistant',
+            content: '图片处理出错了，请换一张图片再试～',
+            timestamp: new Date(),
+          }]);
+          setLoading(false);
+        }
         return;
       }
 
