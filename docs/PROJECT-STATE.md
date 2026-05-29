@@ -409,6 +409,11 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [ ] 教授端 Dashboard 增强 (学生申请管理 + 数据分析)
 - [ ] AI 模型微调 (基于 chat_feedback + professor_feedback 数据)
 
+### 安全待办：用户提交教授信息入库缺审核机制
+现状：教授不在系统时，客户可提交网页链接作为证据，系统抓取该页面并将教授信息存入数据库，全程无审核/校验。
+风险：① 无 super admin 审核→可注入虚假/污染数据 ② 抓取任意 URL→SSRF ③ 无频率限制/去重→刷库 ④ 可能抓人脸图/PII，无合规控制。
+待加：① 提交后进 pending，须 super admin 审核才进正式 professors 表 ② URL 白名单+校验（仅大学官网/学术域名）③ 频率限制+去重 ④ 审计记录（提交人/来源URL/审核人）。
+
 ## 工作方法论（对 claude.ai 对话的强制规则）
 
 ### 每次对话必须遵守的流程
