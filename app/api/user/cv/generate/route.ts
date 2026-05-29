@@ -190,6 +190,18 @@ Output strictly this JSON structure (no markdown code blocks):
       return Response.json({ error: 'CV 缺少必要段落，请重试' }, { status: 500 });
     }
 
+    // Normalize variant keys the LLM may produce
+    if (Array.isArray(cvContent.awards)) {
+      for (const a of cvContent.awards as Record<string, unknown>[]) {
+        if (!a.organization && a.issuer) { a.organization = a.issuer; delete a.issuer; }
+      }
+    }
+    if (Array.isArray(cvContent.references)) {
+      for (const r of cvContent.references as Record<string, unknown>[]) {
+        if (!r.university && r.institution) { r.university = r.institution; delete r.institution; }
+      }
+    }
+
     const personal = cvContent.personal as { name?: string };
     const title = `Academic CV — ${personal.name || studentCtx.displayName || 'Untitled'}`;
 

@@ -103,8 +103,8 @@ interface CVContent {
   research?: Array<{ title: string; lab?: string; supervisor?: string; period?: string; description?: string }>;
   publications?: Array<{ title: string; journal?: string; year?: number; authors?: string; doi?: string }>;
   skills?: { technical?: string[]; languages?: string[]; tools?: string[] };
-  awards?: Array<{ title: string; organization?: string; year?: number }>;
-  references?: Array<{ name: string; title?: string; university?: string; email?: string; relationship?: string }>;
+  awards?: Array<{ title: string; organization?: string; issuer?: string; year?: number }>;
+  references?: Array<{ name: string; title?: string; university?: string; institution?: string; email?: string; relationship?: string }>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -201,7 +201,7 @@ function AcademicCVPdf({ cv, styles }: { cv: CVContent; styles: any }) {
           React.createElement(View, { key: i, style: styles.itemRow },
             React.createElement(Text, { style: styles.itemTitle }, a.title),
             React.createElement(Text, { style: styles.itemDate },
-              [a.organization, a.year ? String(a.year) : null].filter(Boolean).join(', ')
+              [a.organization ?? a.issuer, a.year ? String(a.year) : null].filter(Boolean).join(', ')
             ),
           )
         ),
@@ -213,7 +213,7 @@ function AcademicCVPdf({ cv, styles }: { cv: CVContent; styles: any }) {
           React.createElement(View, { key: i, style: styles.itemBlock },
             React.createElement(Text, { style: styles.itemTitle }, r.name),
             React.createElement(Text, { style: styles.itemSubtitle },
-              [r.title, r.university].filter(Boolean).join(', ')
+              [r.title, r.university ?? r.institution].filter(Boolean).join(', ')
             ),
             r.email ? React.createElement(Text, { style: styles.bullet }, r.email) : null,
             r.relationship ? React.createElement(Text, { style: styles.bullet }, `(${r.relationship})`) : null,

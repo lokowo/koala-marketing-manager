@@ -40,6 +40,7 @@ interface CVPublication {
 interface CVAward {
   title: string;
   organization?: string;
+  issuer?: string;
   year?: number;
 }
 
@@ -47,6 +48,7 @@ interface CVReference {
   name: string;
   title?: string;
   university?: string;
+  institution?: string;
   email?: string;
   relationship?: string;
 }
@@ -501,7 +503,7 @@ export default function AcademicCVCard({
                       <div className="grid grid-cols-3 gap-2">
                         <div className="col-span-2"><label className={labelCls}>Title</label><input value={award.title} onChange={e => updateArrayItem('awards', i, 'title', e.target.value)} className={inputCls} /></div>
                         <div><label className={labelCls}>Year</label><input type="number" value={award.year ?? ''} onChange={e => updateArrayItem('awards', i, 'year', e.target.value ? parseInt(e.target.value) : undefined)} className={inputCls} /></div>
-                        <div className="col-span-3"><label className={labelCls}>Organization</label><input value={award.organization || ''} onChange={e => updateArrayItem('awards', i, 'organization', e.target.value)} className={inputCls} /></div>
+                        <div className="col-span-3"><label className={labelCls}>Organization</label><input value={award.organization ?? award.issuer ?? ''} onChange={e => updateArrayItem('awards', i, 'organization', e.target.value)} className={inputCls} /></div>
                       </div>
                     </div>
                   ))}
@@ -513,7 +515,7 @@ export default function AcademicCVCard({
                       <div className="grid grid-cols-2 gap-2">
                         <div><label className={labelCls}>Name</label><input value={ref.name} onChange={e => updateArrayItem('references', i, 'name', e.target.value)} className={inputCls} /></div>
                         <div><label className={labelCls}>Title</label><input value={ref.title || ''} onChange={e => updateArrayItem('references', i, 'title', e.target.value)} className={inputCls} /></div>
-                        <div><label className={labelCls}>University</label><input value={ref.university || ''} onChange={e => updateArrayItem('references', i, 'university', e.target.value)} className={inputCls} /></div>
+                        <div><label className={labelCls}>University</label><input value={ref.university ?? ref.institution ?? ''} onChange={e => updateArrayItem('references', i, 'university', e.target.value)} className={inputCls} /></div>
                         <div><label className={labelCls}>Email</label><input value={ref.email || ''} onChange={e => updateArrayItem('references', i, 'email', e.target.value)} className={inputCls} /></div>
                         <div className="col-span-2"><label className={labelCls}>Relationship</label><input value={ref.relationship || ''} onChange={e => updateArrayItem('references', i, 'relationship', e.target.value)} className={inputCls} /></div>
                       </div>
