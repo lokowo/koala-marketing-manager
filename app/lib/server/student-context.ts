@@ -32,16 +32,16 @@ export interface StudentContext {
     major: string;
     degree: string;
     gpa?: string;
-    startDate?: string;
-    endDate?: string;
+    startYear?: number;
+    endYear?: number;
     isCurrent?: boolean;
     description?: string;
   }>;
   work: Array<{
     company: string;
     position: string;
-    startDate?: string;
-    endDate?: string;
+    startYear?: number;
+    endYear?: number;
     isCurrent?: boolean;
     description?: string;
   }>;
@@ -60,8 +60,8 @@ export async function getStudentContext(userId: string): Promise<StudentContext 
   try {
     const [profileRes, eduRes, workRes, docsRes] = await Promise.all([
       db.from('user_profiles').select('*').eq('id', userId).single(),
-      db.from('education_history').select('*').eq('user_id', userId).order('start_date', { ascending: false }),
-      db.from('work_history').select('*').eq('user_id', userId).order('start_date', { ascending: false }),
+      db.from('education_history').select('*').eq('user_id', userId).order('start_year', { ascending: false }),
+      db.from('work_history').select('*').eq('user_id', userId).order('start_year', { ascending: false }),
       db.from('user_documents').select('file_name, file_type, parsed_data, parse_status').eq('user_id', userId).eq('parse_status', 'done'),
     ]);
 
@@ -93,20 +93,20 @@ export async function getStudentContext(userId: string): Promise<StudentContext 
       personalityTags: p.personality_tags || undefined,
       languagePreference: p.language_preference || undefined,
       education: (eduRes.data ?? []).map((e: Record<string, unknown>) => ({
-        school: e.school as string,
-        major: e.major as string,
-        degree: e.degree as string,
+        school: (e.institution as string) || '',
+        major: (e.major as string) || '',
+        degree: (e.degree_type as string) || '',
         gpa: e.gpa != null ? String(e.gpa) : undefined,
-        startDate: e.start_date as string | undefined,
-        endDate: e.end_date as string | undefined,
-        isCurrent: e.is_current as boolean | undefined,
+        startYear: e.start_year as number | undefined,
+        endYear: e.end_year as number | undefined,
+        isCurrent: (e.status as string) === 'current',
         description: e.description as string | undefined,
       })),
       work: (workRes.data ?? []).map((w: Record<string, unknown>) => ({
-        company: w.company as string,
-        position: w.position as string,
-        startDate: w.start_date as string | undefined,
-        endDate: w.end_date as string | undefined,
+        company: (w.company as string) || '',
+        position: (w.position as string) || '',
+        startYear: w.start_year as number | undefined,
+        endYear: w.end_year as number | undefined,
         isCurrent: w.is_current as boolean | undefined,
         description: w.description as string | undefined,
       })),
@@ -171,7 +171,8 @@ export function buildStudentContextPrompt(ctx: StudentContext): string {
       const parts = [`${e.school} - ${e.major} (${e.degree})`];
       if (e.gpa) parts.push(`GPA: ${e.gpa}`);
       if (e.isCurrent) parts.push('在读');
-      else if (e.endDate) parts.push(`毕业: ${e.endDate}`);
+      else if (e.endYear) parts.push(`毕业: ${e.endYear}`);
+      if (e.startYear) parts.push(`${e.startYear}${e.endYear ? `-${e.endYear}` : '-至今'}`);
       if (e.description) parts.push(e.description);
       return '- ' + parts.join(', ');
     });
@@ -183,7 +184,8 @@ export function buildStudentContextPrompt(ctx: StudentContext): string {
     const workLines = ctx.work.map(w => {
       const parts = [`${w.company} - ${w.position}`];
       if (w.isCurrent) parts.push('在职');
-      else if (w.endDate) parts.push(`至 ${w.endDate}`);
+      else if (w.endYear) parts.push(`至 ${w.endYear}`);
+      if (w.startYear) parts.push(`${w.startYear}${w.endYear ? `-${w.endYear}` : '-至今'}`);
       if (w.description) parts.push(w.description);
       return '- ' + parts.join(', ');
     });
@@ -264,12 +266,12 @@ export function buildStudentBackgroundForEmail(ctx: StudentContext): string {
 
   if (ctx.education.length > 0) {
     const edu = ctx.education[0];
-    parts.push(`最高学历：${edu.school} ${edu.degree} ${edu.major}${edu.gpa ? ` (GPA: ${edu.gpa})` : ''}`);
+    parts.push(`最高学历：${edu.school} ${edu.degree} ${edu.major}${edu.gpa ? ` (GPA: ${edu.gpa})` : ''}${edu.startYear ? ` ${edu.startYear}${edu.endYear ? `-${edu.endYear}` : '-至今'}` : ''}`);
   }
 
   if (ctx.work.length > 0) {
     const w = ctx.work[0];
-    parts.push(`工作经历：${w.company} ${w.position}`);
+    parts.push(`工作经历：${w.company} ${w.position}${w.startYear ? ` ${w.startYear}${w.endYear ? `-${w.endYear}` : '-至今'}` : ''}`);
   }
 
   for (const doc of ctx.parsedDocuments) {

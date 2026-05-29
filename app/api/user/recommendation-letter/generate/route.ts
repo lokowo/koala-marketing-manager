@@ -211,7 +211,7 @@ function buildStudentSummary(ctx: NonNullable<Awaited<ReturnType<typeof getStude
   if (ctx.education?.length) {
     lines.push('\n### 教育经历');
     for (const e of ctx.education) {
-      lines.push(`- ${e.degree ?? ''} in ${e.major ?? ''} @ ${e.school ?? ''} (${e.startDate ?? ''}–${e.endDate ?? (e.isCurrent ? 'Present' : '')})`);
+      lines.push(`- ${e.degree ?? ''} in ${e.major ?? ''} @ ${e.school ?? ''} (${e.startYear ?? ''}–${e.endYear ?? (e.isCurrent ? 'Present' : '')})`);
       if (e.description) lines.push(`  ${e.description}`);
     }
   }
@@ -219,7 +219,7 @@ function buildStudentSummary(ctx: NonNullable<Awaited<ReturnType<typeof getStude
   if (ctx.work?.length) {
     lines.push('\n### 工作/研究经历');
     for (const w of ctx.work) {
-      lines.push(`- ${w.position ?? ''} @ ${w.company ?? ''} (${w.startDate ?? ''}–${w.endDate ?? (w.isCurrent ? 'Present' : '')})`);
+      lines.push(`- ${w.position ?? ''} @ ${w.company ?? ''} (${w.startYear ?? ''}–${w.endYear ?? (w.isCurrent ? 'Present' : '')})`);
       if (w.description) lines.push(`  ${w.description}`);
     }
   }
