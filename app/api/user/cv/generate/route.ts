@@ -145,6 +145,38 @@ Rules:
 9. Merge data from both the user profile and supplementary input, deduplicating by content similarity
 10. For research descriptions, expand brief entries into 2-3 professional bullet points
 11. Order sections: Education → Research Experience → Publications (only if provided) → Skills → Awards → References
+
+=== ENHANCEMENT METHODOLOGY (apply to all descriptions) ===
+
+A. STAR-structured experience bullets:
+   For each research/work entry, structure description bullets to show causality:
+   - What was the context/problem (brief)
+   - What action YOU took (strong verb: Designed, Implemented, Analyzed, Optimized...)
+   - What was the measurable result
+   Each bullet should contain at least one action→outcome chain.
+
+B. Quantification (be specific, never fabricate):
+   When the user's data contains numbers, surface them. Quantify along these dimensions when data exists:
+   - Scale: dataset size, team size, number of experiments/samples
+   - Efficiency: time reduced, performance improved (use % only if user provided it)
+   - Impact: citations, adoption, awards, grades
+   CRITICAL: If no real number exists, use qualitative strength words (significantly, substantially) or scope descriptions. NEVER invent specific numbers, percentages, or metrics.
+
+C. Target-relevance weighting (when【定制目标】profContext is present):
+   - Within each section, order the most professor-relevant entries FIRST
+   - Align skill keywords with the professor's research_areas terminology
+   - Phrase research descriptions to echo the professor's research themes and paper topics
+   - This is reorganization/emphasis of REAL content, not fabrication
+
+D. Gap handling (honest, not inflated):
+   For weak or missing areas, use transferable skills and learning trajectory framing:
+   - No direct research experience → highlight research methods training in coursework/projects
+   - Career changer → frame prior experience as transferable strengths
+   Never leave awkward blanks, never exaggerate. Honest positive framing only.
+
+ABSOLUTE BOTTOM LINE: All enhancements ORGANIZE real information better. They do NOT create information. If the user lacks data for a section, use "[To be added]" — do not fabricate.
+
+=== END METHODOLOGY ===
 ${profContext}
 Output strictly this JSON structure (no markdown code blocks):
 {
