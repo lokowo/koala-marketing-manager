@@ -5,7 +5,30 @@ import { supabaseAdmin } from '../../../lib/supabase/server';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
-const VALID_STATUS = ['pending', 'approved', 'rejected', 'all'] as const;
+const VALID_STATUS = ['pending', 'executed', 'needs_human', 'approved', 'rejected', 'failed', 'all'] as const;
+
+type FixRow = {
+  id: string;
+  report_id: string | null;
+  fix_type: string;
+  target: string;
+  section: string | null;
+  change_description: string;
+  data: unknown;
+  status: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  executed_at: string | null;
+  created_at: string;
+};
+
+type ReportRow = {
+  id: string;
+  week_number: number | null;
+  report_json: { summary?: string; stats?: { totalTurns?: number; uniqueUsers?: number } } | null;
+  created_at: string;
+};
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,45 +43,78 @@ export async function GET(req: NextRequest) {
     const statusRaw = (sp.get('status') ?? 'pending').toLowerCase();
     const status = (VALID_STATUS as readonly string[]).includes(statusRaw) ? statusRaw : 'pending';
     const page = Math.max(parseInt(sp.get('page') ?? '1', 10), 1);
-    const limit = Math.min(Math.max(parseInt(sp.get('limit') ?? '20', 10), 1), 100);
-    const category = sp.get('category');
+    const limit = Math.min(Math.max(parseInt(sp.get('limit') ?? '30', 10), 1), 100);
+    const fixType = sp.get('fix_type');
 
     let query = db
-      .from('ola_evolution_suggestions')
-      .select('id, category, title, suggestion, evidence, source_sample_count, status, reviewed_by, reviewed_at, review_note, created_at', { count: 'exact' })
+      .from('ola_pending_fixes')
+      .select(
+        'id, report_id, fix_type, target, section, change_description, data, status, reviewed_by, reviewed_at, review_note, executed_at, created_at',
+        { count: 'exact' }
+      )
       .order('created_at', { ascending: false })
       .range((page - 1) * limit, page * limit - 1);
 
     if (status !== 'all') query = query.eq('status', status);
-    if (category) query = query.eq('category', category);
+    if (fixType) query = query.eq('fix_type', fixType);
 
-    const { data, count, error } = await query;
+    const { data: fixesRaw, count, error } = await query;
     if (error) {
       console.error('[admin/evolution GET]', error);
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    const reviewerIds = Array.from(
-      new Set((data ?? []).map((r: { reviewed_by: string | null }) => r.reviewed_by).filter(Boolean))
-    ) as string[];
+    const fixes = (fixesRaw ?? []) as FixRow[];
 
+    // Reviewer name map
+    const reviewerIds = Array.from(new Set(fixes.map((r) => r.reviewed_by).filter((x): x is string => !!x)));
     const reviewers: Record<string, string> = {};
     if (reviewerIds.length > 0) {
       const { data: profiles } = await db
         .from('user_profiles')
         .select('id, display_name, email')
         .in('id', reviewerIds);
-      for (const p of profiles ?? []) {
+      for (const p of (profiles ?? []) as Array<{ id: string; display_name: string | null; email: string | null }>) {
         reviewers[p.id] = p.display_name || p.email || p.id.slice(0, 8);
       }
     }
 
+    // Report summary map
+    const reportIds = Array.from(new Set(fixes.map((r) => r.report_id).filter((x): x is string => !!x)));
+    const reports: Record<string, { week_number: number | null; summary: string | null; total_turns: number | null; unique_users: number | null; created_at: string }> = {};
+    if (reportIds.length > 0) {
+      const { data: reportRows } = await db
+        .from('ola_evolution_reports')
+        .select('id, week_number, report_json, created_at')
+        .in('id', reportIds);
+      for (const r of (reportRows ?? []) as ReportRow[]) {
+        reports[r.id] = {
+          week_number: r.week_number,
+          summary: r.report_json?.summary ?? null,
+          total_turns: r.report_json?.stats?.totalTurns ?? null,
+          unique_users: r.report_json?.stats?.uniqueUsers ?? null,
+          created_at: r.created_at,
+        };
+      }
+    }
+
+    // Status counts (always return for tab badges, independent of filter)
+    const { data: countsRaw } = await db
+      .from('ola_pending_fixes')
+      .select('status');
+    const counts: Record<string, number> = {};
+    for (const row of (countsRaw ?? []) as Array<{ status: string }>) {
+      counts[row.status] = (counts[row.status] ?? 0) + 1;
+    }
+
     return Response.json({
-      data: data ?? [],
+      data: fixes,
       total: count ?? 0,
       page,
       limit,
       reviewers,
+      reports,
+      counts,
       currentRole: role,
     });
   } catch (e) {
@@ -84,24 +140,31 @@ export async function PATCH(req: NextRequest) {
       return Response.json({ error: 'action must be approve or reject' }, { status: 400 });
     }
 
-    const { data: existing, error: fetchErr } = await db
-      .from('ola_evolution_suggestions')
-      .select('id, status, category, title')
+    const { data: existingRaw, error: fetchErr } = await db
+      .from('ola_pending_fixes')
+      .select('id, status, fix_type, target, section, change_description')
       .eq('id', id)
       .single();
 
-    if (fetchErr || !existing) {
-      return Response.json({ error: 'Suggestion not found' }, { status: 404 });
+    if (fetchErr || !existingRaw) {
+      return Response.json({ error: 'Fix not found' }, { status: 404 });
     }
+    const existing = existingRaw as { id: string; status: string; fix_type: string; target: string; section: string | null; change_description: string };
 
+    if (existing.fix_type !== 'prompt_update') {
+      return Response.json(
+        { error: `仅 prompt_update 类型的 fix 需要审批（当前 ${existing.fix_type}）` },
+        { status: 400 }
+      );
+    }
     if (existing.status !== 'pending') {
-      return Response.json({ error: `Already ${existing.status}, cannot change` }, { status: 409 });
+      return Response.json({ error: `当前状态为 ${existing.status}，不可再次审批` }, { status: 409 });
     }
 
     const newStatus = action === 'approve' ? 'approved' : 'rejected';
 
     const { data: updated, error: updErr } = await db
-      .from('ola_evolution_suggestions')
+      .from('ola_pending_fixes')
       .update({
         status: newStatus,
         reviewed_by: user.id,
@@ -110,7 +173,7 @@ export async function PATCH(req: NextRequest) {
       })
       .eq('id', id)
       .eq('status', 'pending')
-      .select('id, category, title, status, reviewed_at, review_note')
+      .select('id, fix_type, target, section, change_description, status, reviewed_at, review_note')
       .single();
 
     if (updErr || !updated) {
@@ -120,25 +183,28 @@ export async function PATCH(req: NextRequest) {
 
     await db.from('admin_work_logs').insert({
       admin_id: user.id,
-      action: `evolution_suggestion_${newStatus}`,
+      action: `evolution_fix_${newStatus}`,
       action_category: 'ola_evolution',
-      target_type: 'ola_evolution_suggestion',
+      target_type: 'ola_pending_fix',
       target_id: id,
-      target_name: existing.title,
+      target_name: `${existing.target}${existing.section ? ' · ' + existing.section : ''}`,
       details: {
-        role: 'admin',
-        category: existing.category,
-        title: existing.title,
+        role,
+        fix_type: existing.fix_type,
+        target: existing.target,
+        section: existing.section,
+        change_description: existing.change_description,
         review_note: review_note ?? null,
       },
     }).catch((e: unknown) => console.error('[admin/evolution audit]', e));
 
     return Response.json({
       success: true,
-      suggestion: updated,
-      message: newStatus === 'approved'
-        ? '已批准。该建议为人工/后续 Claude Code 指令的输入，本接口不会自动改 persona 或全局配置。请在 Claude Code 中指明该建议 ID 进行落地。'
-        : '已拒绝。',
+      fix: updated,
+      message:
+        newStatus === 'approved'
+          ? '已批准。本接口不会自动改 persona，请通过 Claude Code 指令落地此 persona 改动（引用此 fix ID）。'
+          : '已拒绝。该 fix 不会被落地。',
     });
   } catch (e) {
     console.error('[admin/evolution PATCH]', e);
