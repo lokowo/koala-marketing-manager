@@ -42,6 +42,8 @@ import {
   IconLogout,
   IconCrown,
   IconRefresh,
+  IconAffiliate,
+  IconBrain,
 } from '@tabler/icons-react';
 
 const ICON_PROPS = { size: 18, strokeWidth: 1.5 } as const;
@@ -133,6 +135,8 @@ function buildNavGroups(role: UserRole | null): { standalone: NavItem[]; groups:
       { icon: IconBolt, label: '触发器', href: '/dashboard/koala/ola-triggers' },
       { icon: IconCalendarEvent, label: '悉尼活动', href: '/dashboard/koala/events' },
       { icon: IconChartLine, label: 'Ola 分析', href: '/dashboard/koala/ola-analytics' },
+      { icon: IconAffiliate, label: '记忆图谱', href: '/dashboard/koala/memory-graph' },
+      { icon: IconBrain, label: '进化审核', href: '/dashboard/koala/evolution' },
       { icon: IconArrowsTransferDown, label: 'Handoff 队列', href: '/dashboard/koala/handoff' },
     ],
   });
