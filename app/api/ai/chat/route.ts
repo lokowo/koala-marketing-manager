@@ -19,7 +19,7 @@ import { getOlaPersonaPrompt } from '../../../lib/prompts/ola-persona';
 import { getDeadlineContext } from '../../../lib/ola/ola-deadlines';
 import { loadMemories, formatMemoriesForPrompt, extractMemories, saveMemories, syncToProfile } from '../../../lib/services/memoryService';
 import { logConversation, parseOlaStateTag, detectUserReaction } from '../../../lib/services/olaConversationLogger';
-import { getOrCreateMemory, updateIntimacy, updateMemoryFromConversation, buildOlaMemoryPrompt, type OlaUserMemory } from '../../../lib/services/olaMemoryService';
+import { getOrCreateMemory, updateIntimacy, updateMemoryFromConversation, buildOlaMemoryPrompt, processMbtiAnswer, type OlaUserMemory } from '../../../lib/services/olaMemoryService';
 import { buildLocalKnowledgePrompt } from '../../../lib/services/olaLocalKnowledgeService';
 import { createEmbedding } from '../../../lib/server/embedding';
 
@@ -1279,6 +1279,24 @@ Output strictly JSON (no markdown): {"personal":{"name":"","email":null},"educat
         olaAction = JSON.parse(olaActionMatch[1]) as { type: string; userId?: string };
       } catch { /* ignore parse errors */ }
       cleanedReply = cleanedReply.replace(/<!--\s*ola_action\s*:\s*\{[^}]*\}\s*-->/g, '').trim();
+    }
+
+    // Extract and strip mbti_answer tag (MBTI collection capture)
+    const mbtiMatch = cleanedReply.match(/<!--\s*mbti_answer\s*:\s*(\{[^}]*\})\s*-->/);
+    if (mbtiMatch) {
+      cleanedReply = cleanedReply.replace(/<!--\s*mbti_answer\s*:\s*\{[^}]*\}\s*-->/g, '').trim();
+      const mbtiUserId = trackingUserId || (body.userId as string | undefined);
+      if (mbtiUserId) {
+        try {
+          const parsed = JSON.parse(mbtiMatch[1]) as { questionId?: string; answer?: string };
+          if (parsed.questionId && parsed.answer && ['EI', 'TF', 'JP', 'SN'].includes(parsed.questionId)) {
+            const { createClient } = await import('@supabase/supabase-js');
+            const mbtiDb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+            const result = await processMbtiAnswer(mbtiDb, mbtiUserId, parsed.questionId, parsed.answer);
+            console.log(`[MBTI] captured ${parsed.questionId} for ${mbtiUserId}`, result);
+          }
+        } catch (err) { console.error('[MBTI] parse/save error', err); }
+      }
     }
 
     // Extract and strip personality update marker
