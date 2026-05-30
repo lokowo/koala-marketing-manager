@@ -36,6 +36,7 @@ export interface OlaUserMemory {
   last_visit_at: string | null;
   pain_points: string[] | null;
   personality_profile: PersonalityProfile | null;
+  chat_playbook: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -402,6 +403,11 @@ export function buildOlaMemoryPrompt(memory: OlaUserMemory): string {
   const stage = memory.sales_stage ?? 'warmup';
   const stageLabel = STAGE_LABELS[stage];
   parts.push(`## 🎯 当前销售阶段\n当前销售阶段：${stageLabel}。请严格按照第二章对应阶段的规则对话。\n用户已访问 ${memory.visit_count ?? 1} 次，累计 ${memory.total_turns ?? 0} 轮对话。${memory.pain_points?.length ? `\n已知痛点：${memory.pain_points.join('、')}。` : ''}`);
+
+  // Chat playbook (personalized strategy cheat-sheet)
+  if (memory.chat_playbook) {
+    parts.push(`\n## 📋 对这位用户的对话策略（速读小抄）\n${memory.chat_playbook}`);
+  }
 
   // Naming system
   if (memory.user_preferred_name || memory.ola_nickname) {

@@ -19,7 +19,7 @@ import { getOlaPersonaPrompt } from '../../../lib/prompts/ola-persona';
 import { getDeadlineContext } from '../../../lib/ola/ola-deadlines';
 import { loadMemories, formatMemoriesForPrompt, extractMemories, saveMemories, syncToProfile } from '../../../lib/services/memoryService';
 import { logConversation, parseOlaStateTag, detectUserReaction } from '../../../lib/services/olaConversationLogger';
-import { getOrCreateMemory, updateIntimacy, updateMemoryFromConversation, buildOlaMemoryPrompt, processMbtiAnswer, type OlaUserMemory } from '../../../lib/services/olaMemoryService';
+import { getOrCreateMemory, updateIntimacy, updateMemoryFromConversation, buildOlaMemoryPrompt, processMbtiAnswer, getMbtiLanguageStyle, type OlaUserMemory } from '../../../lib/services/olaMemoryService';
 import { buildLocalKnowledgePrompt } from '../../../lib/services/olaLocalKnowledgeService';
 import { createEmbedding } from '../../../lib/server/embedding';
 
@@ -1281,7 +1281,30 @@ Output strictly JSON (no markdown): {"personal":{"name":"","email":null},"educat
       cleanedReply = cleanedReply.replace(/<!--\s*ola_action\s*:\s*\{[^}]*\}\s*-->/g, '').trim();
     }
 
-    // Extract and strip mbti_answer tag (MBTI collection capture)
+    // Extract and strip mbti_set tag (user directly states their MBTI type)
+    const mbtiSetMatch = cleanedReply.match(/<!--\s*mbti_set\s*:\s*(\{[^}]*\})\s*-->/);
+    if (mbtiSetMatch) {
+      cleanedReply = cleanedReply.replace(/<!--\s*mbti_set\s*:\s*\{[^}]*\}\s*-->/g, '').trim();
+      const mbtiUserId = trackingUserId || (body.userId as string | undefined);
+      if (mbtiUserId) {
+        try {
+          const parsed = JSON.parse(mbtiSetMatch[1]) as { type?: string };
+          if (parsed.type && /^[EI][NS][TF][JP]$/i.test(parsed.type)) {
+            const mbtiType = parsed.type.toUpperCase();
+            const style = getMbtiLanguageStyle(mbtiType);
+            const { createClient } = await import('@supabase/supabase-js');
+            const mbtiDb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+            await (mbtiDb as unknown as { from: (t: string) => { update: (d: Record<string, unknown>) => { eq: (k: string, v: string) => Promise<unknown> } } })
+              .from('ola_user_memory')
+              .update({ mbti_type: mbtiType, language_style: style, updated_at: new Date().toISOString() })
+              .eq('user_id', mbtiUserId);
+            console.log(`[MBTI] direct set ${mbtiType} for ${mbtiUserId}`);
+          }
+        } catch (err) { console.error('[MBTI] set error', err); }
+      }
+    }
+
+    // Extract and strip mbti_answer tag (MBTI gradual collection capture)
     const mbtiMatch = cleanedReply.match(/<!--\s*mbti_answer\s*:\s*(\{[^}]*\})\s*-->/);
     if (mbtiMatch) {
       cleanedReply = cleanedReply.replace(/<!--\s*mbti_answer\s*:\s*\{[^}]*\}\s*-->/g, '').trim();
