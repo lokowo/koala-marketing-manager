@@ -1,5 +1,5 @@
 # Koala PhD 项目状态文档
-> 最后更新: 2026-05-26 | 版本: V5.0
+> 最后更新: 2026-05-30 | 版本: V5.0
 
 ## 项目概览
 **Koala PhD（考拉博士）** — 澳洲 PhD 留学 AI 智能顾问平台
@@ -431,3 +431,109 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - 跳过验证直接推进下一步
 - 对话后期忘记前期约定的规则
 - 不更新 PROJECT-STATE.md 就结束对话
+
+---
+
+## Session 2026-05-29/30
+> CV 系统大改造 + 颜色海报重构 | 接续 2026-05-28 动画/视频 session
+
+### 项目信息
+- 平台 koalaphd.com | Supabase geolbgirpkzxrdvozmqw | Vercel assa2/prj_4SHGAqd0QemSpJ9lc9kl04hlkNYQ
+- GitHub lokowo/koala-marketing-manager | 部署走 GitHub 自动触发（不用本地 CLI）
+
+---
+
+### ✅ 本次完成
+
+#### CV 系统彻底改造（核心工作）
+
+**背景**：用户上传中文 CV 后，下载 PDF 出现"越来越退化"——第1次本科丢失、第2次研究生乱码、第3次全空白、第4次点击无反应。彻底排查后定位为数据层 + 渲染层多重问题，而非单一 bug。
+
+**根因诊断（关键发现）**：
+1. `student-context.ts` 读 education_history 用错字段名（school/degree/start_date），实际是 institution/degree_type/start_year → 本科在源头丢失
+2. 存在两套 CV 数据结构打架：聊天存扁平 {personal,education,research}，死代码 generate-cv-pdf 用 {sections}
+3. 实际在用的链路（聊天生成 → AcademicCVCard 编辑 → /api/user/cv/pdf 下载）本来就统一用扁平结构；generate-cv-pdf 是无人调用的死代码
+4. 聊天上传 PDF 走 profile-parser 不返回 rawText → 内容丢失但扣了解析次数
+
+**修复（按 P0→P1→P2 推进）**：
+
+- **P0 准备** `9d31f92`：建 docs/CV-DATA-MODEL.md 数据模型规范（不新建表，定义 education_history/work_history 为权威源，generated_documents 存快照）。手动跑 Supabase 迁移加 3 辅助列（schema_version / source×2），删易子莱重复残缺学历记录。
+
+- **P0-1** `11b2094`：修 student-context.ts 字段名（school→institution, degree→degree_type, start_date→start_year, end_date→end_year, is_current→status==='current'）。同步修 recommendation-letter、research-proposal 两个下游。**根治本科丢失**。实测 admin 新生成 CV 含 2 个学历✓。
+
+- **P0-2** `cfbaeac`：删死代码 generate-cv-pdf；CVPreviewCard + ColdEmailCard 加 sectionsToFlat() 转换器统一调 /api/user/cv/pdf；文档 §3 改为扁平结构为权威。**真相：实际在用链路结构本就一致，4次退化是 PDF 渲染端字体 bug（昨晚已修），非结构打架**。
+
+- **P0-3** ⏸️ 下载 PDF 实测验证 — **挂起，待找人测**（清单已出）
+
+- **P1-B** `3eb782f` + `94cc103`：**导师匹配 → 定制 CV 打通**（OfferUnderway 核心价值本土化）
+  - ProfessorMatchCard 加"📄 定制 CV"按钮 + handleGenerateCV
+  - cv/generate 加可选 professorId：并行查教授 research_areas + 最新3篇论文 → 注入 prompt → 存储关联 professor_id + schema_version=1
+  - 无 professorId 时完全走老流程（向后兼容）
+  - 无底料检查：education_history count===0 → 返回 needsInfo:true → Ola 引导补全（不生成空 CV）
+
+- **P2** `a7e443c`：**OfferUnderway 方法论注入 CV prompt**（纯 prompt，+32行）
+  - A. STAR 结构化经历 bullet（context→action→result 因果链）
+  - B. 量化（真实数据才量化，绝不编造数字）
+  - C. 目标相关度加权（有教授时相关经历排前、技能对齐 research_areas）
+  - D. Gap 诚实处理（transferable skills / learning trajectory 框架）
+  - 底线：所有方法论是"更好组织真实信息"，不创造信息
+
+#### 颜色海报重构 `c812849`
+- 从纯 Canvas 2D 手动算 Y 坐标 → HTML/CSS flexbox + html2canvas 截图导出
+- 根治间距反复重叠问题（flexbox 自动排版，加减元素不再错位）
+- 三层区分：可改（标题/副标题/卖点）/ 固定（Logo/QR/扫码提示/网址）/ 自动（QR内容/邀请码/渠道）
+- 预览=导出零差异（同一 DOM，scale:2 → 1080px）
+
+#### 图片上传修复 `11ec45b`
+- 根因：btoa(String.fromCharCode(...spread)) 大文件参数过多爆栈 → 聊天空白
+- 改用 FileReader.readAsDataURL 流式 + try/catch 兜底
+
+#### 视频/PDF 字体（5/29 凌晨延续）
+- `759c65b` `cfed8c6` `c56eecd`：PDF 中文字体从 woff2 动态子集 → 托管 NotoSansSC TTF（woff2 是 react-pdf 崩溃根因，fontkit 无法解码）。Helvetica 兜底防 500。
+- `ada7670`：视频 loop 上限 3 次
+
+---
+
+### 🐛 已发现待修 BUG 清单（重要，勿忘）
+
+| # | Bug | 优先级 | 状态 |
+|---|-----|--------|------|
+| 1 | CV 下载 PDF 实测验证（本科在/英文/不乱码/不空白） | 🔴 | P0-3 挂起，待测 |
+| 2 | 聊天上传 PDF 扣费但内容丢失（profile-parser 不返回 rawText） | 🔴 | P1-A 前置，未修 |
+| 3 | 首页 "0 students helped" 计数器 | 🟡 | memory 记录，未修 |
+| 4 | 首页教授/大学数量硬编码不一致 | 🟡 | 未修 |
+| 5 | 首页联系方式错误 + 缺小红书渠道 | 🟡 | 未修 |
+| 6 | c-03 Storage 文件名拼写（DB已改，Storage没改） | 🟢 | 未修 |
+| 7 | Safari VP9 alpha 不支持（需 HEVC fallback） | 🟢 | 未修 |
+| 8 | 教授 looking_for / ai_bio_zh 字段全空（24495条全空，影响CV定制深度） | 🟢 | 数据缺口 |
+
+---
+
+### 📋 待办路线
+
+#### 紧接
+- **P0-3 实测**：找人按 CV-测试清单.md 测，回报结果
+- **P1-A 诊断式改写**：上传 CV → Ola 看懂 → 主动提问 → 改写。**前置：先修 bug#2（上传通道走原生 document + 扣费修正）**
+
+#### 中期
+- P3：首页真实 PhD offer 案例截图（OfferUnderway 学习点⑤）
+- LaTeX CV 模板选项（学习点⑥）
+- 首页对比表（Koala PhD vs ApplyKite vs 通用AI）
+- 修首页遗留 bug（#3/#4/#5）
+
+---
+
+### 数据库现状
+- professors 24,495 条（research_areas 92% 有值，looking_for/ai_bio_zh 全空）
+- professors 99.95% 有 research_embedding（匹配分系统基础扎实）
+- generated_documents：9 份 CV（P1-B 前 professor_id 全空，之后新建的会关联）
+- 3 辅助列已加：schema_version / education_history.source / work_history.source
+
+### 关键架构决策（本次新增）
+- [DECISION] CV 不新建表，复用 5 张现有表，education_history/work_history 为权威源
+- [DECISION] CV content 统一用扁平结构 {personal,education,research,publications,skills,awards,references}，schema_version=1
+- [DECISION] 实际 CV 链路：聊天生成 → AcademicCVCard 编辑 → /api/user/cv/pdf 下载（全扁平）
+- [DECISION] 定制 CV 入口在导师匹配卡（需求诞生现场），先单点验证再铺申请包
+- [DECISION] CV 全英文（学校名翻译），99% 英文 → Helvetica 渲染，规避中文字体问题
+- [DECISION] CV 方法论只组织真实信息，绝不编造数字（硬底线）
+- [DECISION] 部署走 GitHub 自动触发，本地不用 Vercel CLI（避免反复设备授权弹窗）
