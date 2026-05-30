@@ -20,39 +20,17 @@ interface ConversationRow {
   session_id: string;
 }
 
-interface AutoFix {
-  type: 'prompt_update' | 'knowledge_add';
-  target: string;
-  section?: string;
-  change_description: string;
-  data?: Record<string, unknown>;
+interface EvolutionSuggestion {
+  category: string;
+  title: string;
+  suggestion: string;
+  evidence: string;
+  source_sample_count: number;
 }
 
-interface HumanFix {
-  type: string;
-  description: string;
-}
-
-interface EvolutionReport {
+interface AnalysisOutput {
   summary: string;
-  metrics: {
-    total_conversations: number;
-    unique_users: number;
-    avg_depth: number;
-    feedback_ratio: { positive: number; neutral: number; negative: number };
-  };
-  top_modes: { mode: string; reason: string }[];
-  problem_modes: { mode: string; issue: string; suggestion: string }[];
-  negative_feedback_analysis: {
-    total_negative: number;
-    knowledge_gap: { topic: string; count: number; sample_conversation: string }[];
-    feature_disconnect: { feature: string; count: number; suggested_fix: string }[];
-    personality_mismatch: { issue: string; count: number; suggested_fix: string }[];
-  };
-  prompt_suggestions: string[];
-  auto_fixes: AutoFix[];
-  requires_human: HumanFix[];
-  priority_fixes: { type: string; action: string; urgency: string }[];
+  suggestions: EvolutionSuggestion[];
 }
 
 function getWeekNumber(date: Date): number {
@@ -144,17 +122,6 @@ export async function GET(req: Request) {
 
     const topLeftModes = modeBreakdown.filter(m => m.count >= 5).sort((a, b) => b.leftPct - a.leftPct).slice(0, 3);
 
-    const subscribedModeCounts = new Map<string, number>();
-    for (const r of rows) {
-      if (r.user_reaction === 'subscribed') {
-        const m = r.ola_mode ?? 'unknown';
-        subscribedModeCounts.set(m, (subscribedModeCounts.get(m) ?? 0) + 1);
-      }
-    }
-    const subscribedModes = [...subscribedModeCounts.entries()]
-      .map(([mode, count]) => ({ mode, count }))
-      .sort((a, b) => b.count - a.count);
-
     // ── Feedback analysis ──────────────────────────────────────────────────
 
     const feedbackCounts = { positive: 0, neutral: 0, negative: 0 };
@@ -187,11 +154,11 @@ export async function GET(req: Request) {
 
     const stats = {
       totalTurns, uniqueUsers, avgResponseTimeMs, avgDepth,
-      modeBreakdown, reactionBreakdown, topLeftModes, subscribedModes,
+      modeBreakdown, reactionBreakdown, topLeftModes,
       feedbackCounts, negativeFeedbackCount: negativeFeedbacks.length,
     };
 
-    // ── Step 2: Claude Haiku analysis with auto_fixes ──────────────────────
+    // ── Step 2: Claude analysis → 3-5 global improvement suggestions ───────
 
     const sampleSize = Math.min(20, rows.length);
     const step = Math.max(1, Math.floor(rows.length / sampleSize));
@@ -211,52 +178,41 @@ export async function GET(req: Request) {
 
     const analysis = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4000,
-      system: `你是 Koala PhD 平台的 AI 进化分析师。分析 Ola 学姐的每周对话数据，生成进化报告，并提出可自动执行的修复方案。
+      max_tokens: 3000,
+      system: `你是 Koala PhD 平台的"全局进化分析师"。分析 Ola 学姐近一周的对话数据，找出**通用模式**（许多用户都遇到的卡点、都问的问题、都反馈的偏好），总结成 3-5 条"全局改进建议"。
 
-对每条 negative 反馈做三分类归因：
+【铁律】
+- 你只产出"待审建议"。绝不直接修改 ola-persona.ts、知识库、prompt 或任何全局配置。
+- 每条建议都要写明依据(evidence)和样本量(source_sample_count)，方便 SA 判断是否值得落地。
+- 不要给个例小修小补，只挑跨用户的通用模式。
 
-类型 A：knowledge_gap — 学姐不知道这个信息
-修复方向：补充 ola_local_knowledge 表数据
+【category 取值】（选一个最贴切的）
+- persona: 学姐的语气、性格、人设
+- prompt: 系统 prompt / 模式切换 / 引导
+- knowledge: 知识盲区或事实错误
+- feature: 功能引导缺失或断链
+- flow: 对话节奏 / 多轮流转
 
-类型 B：feature_disconnect — 平台有但学姐没引导
-修复方向：更新 ola-persona.ts 的功能引导章节
-
-类型 C：personality_mismatch — 语气/模式/时机不对
-修复方向：调整 prompt 模式切换规则
-
-在 auto_fixes 中输出可安全自动执行的修复：
-- type="knowledge_add": 补充到 ola_local_knowledge 或 ola_calendar 表的数据（提供完整 data 对象）
-- type="prompt_update": 建议修改 ola-persona.ts 的具体章节和内容（提供 section 和 change_description）
-
-在 requires_human 中输出需要人工审批的项目（如接入新数据源、开发新功能）。
-
-回复必须是纯 JSON，不含其他文字。格式：
+【输出格式】纯 JSON，不带 markdown 包裹：
 {
-  "summary": "本周概要（2-3句话）",
-  "top_modes": [{"mode": "模式名", "reason": "原因"}],
-  "problem_modes": [{"mode": "模式名", "issue": "问题", "suggestion": "建议"}],
-  "negative_feedback_analysis": {
-    "total_negative": 0,
-    "knowledge_gap": [{"topic": "话题", "count": 0, "sample_conversation": "摘要"}],
-    "feature_disconnect": [{"feature": "功能", "count": 0, "suggested_fix": "修复方向"}],
-    "personality_mismatch": [{"issue": "问题", "count": 0, "suggested_fix": "调整方向"}]
-  },
-  "prompt_suggestions": ["具体建议"],
-  "auto_fixes": [
-    {"type": "knowledge_add", "target": "ola_local_knowledge", "change_description": "描述", "data": {"city": "sydney", "category": "...", "name": "...", "name_cn": "...", "vibe": "...", "ola_comment": "...", "best_for": "..."}},
-    {"type": "prompt_update", "target": "ola-persona.ts", "section": "第X章", "change_description": "具体改什么"}
-  ],
-  "requires_human": [
-    {"type": "new_feature", "description": "需要开发的功能"}
-  ],
-  "priority_fixes": [{"type": "knowledge_gap|feature_disconnect|personality_mismatch", "action": "动作", "urgency": "high|medium|low"}]
-}`,
+  "summary": "本周整体观察 1-2 句",
+  "suggestions": [
+    {
+      "category": "persona|prompt|knowledge|feature|flow",
+      "title": "≤30字简洁标题",
+      "suggestion": "具体改进建议（在 SA 看到后能直接判断该不该做）",
+      "evidence": "支持证据：哪类对话出现了什么模式，引用 1-2 个具体片段",
+      "source_sample_count": 5
+    }
+  ]
+}
+
+只输出 3-5 条最有价值的、跨用户的、可落地的建议。`,
       messages: [{
         role: 'user',
-        content: `Ola 学姐过去7天的对话统计、样本和 negative 反馈如下。请生成进化报告和修复建议。
+        content: `Ola 学姐过去 7 天的对话数据如下，请输出 3-5 条全局改进建议。
 
-## 统计数据
+## 统计
 ${JSON.stringify(stats, null, 2)}
 
 ## 对话样本（${sampleSize} 条）
@@ -267,138 +223,71 @@ ${negSampleText}`,
       }],
     });
 
-    let report: EvolutionReport;
+    let parsed: AnalysisOutput = { summary: '', suggestions: [] };
     const rawText = analysis.content[0].type === 'text' ? analysis.content[0].text : '';
 
     try {
-      report = JSON.parse(rawText);
-    } catch {
-      report = {
-        summary: rawText.slice(0, 500),
-        metrics: { total_conversations: totalTurns, unique_users: uniqueUsers, avg_depth: avgDepth, feedback_ratio: feedbackCounts },
-        top_modes: [], problem_modes: [],
-        negative_feedback_analysis: { total_negative: feedbackCounts.negative, knowledge_gap: [], feature_disconnect: [], personality_mismatch: [] },
-        prompt_suggestions: [], auto_fixes: [], requires_human: [], priority_fixes: [],
-      };
+      const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch (e) {
+      console.error('[ola-evolution] Failed to parse Claude output', e);
     }
 
-    // Backfill missing fields
-    if (!report.metrics) report.metrics = { total_conversations: totalTurns, unique_users: uniqueUsers, avg_depth: avgDepth, feedback_ratio: feedbackCounts };
-    if (!report.negative_feedback_analysis) report.negative_feedback_analysis = { total_negative: feedbackCounts.negative, knowledge_gap: [], feature_disconnect: [], personality_mismatch: [] };
-    if (!report.auto_fixes) report.auto_fixes = [];
-    if (!report.requires_human) report.requires_human = [];
-    if (!report.priority_fixes) report.priority_fixes = [];
+    if (!Array.isArray(parsed.suggestions)) parsed.suggestions = [];
 
-    // ── Step 3: Save report ────────────────────────────────────────────────
+    // ── Step 3: Save snapshot report ───────────────────────────────────────
 
     const weekNumber = getWeekNumber(now);
 
-    const { data: reportRow, error: insertErr } = await db
+    const { data: reportRow } = await db
       .from('ola_evolution_reports')
       .insert({
         week_number: weekNumber,
-        report_json: { stats, report },
+        report_json: { stats, summary: parsed.summary, suggestions: parsed.suggestions },
       })
       .select('id')
       .single();
 
-    if (insertErr) {
-      console.error('[ola-evolution] Failed to save report:', insertErr);
-    }
+    // ── Step 4: Insert suggestions as PENDING (no auto-apply) ──────────────
 
-    const reportId: string | null = reportRow?.id ?? null;
+    const VALID_CATEGORIES = ['persona', 'prompt', 'knowledge', 'feature', 'flow'];
 
-    // ── Step 4: Execute safe auto-fixes ────────────────────────────────────
+    const toInsert = parsed.suggestions
+      .filter(s => s && typeof s.title === 'string' && typeof s.suggestion === 'string')
+      .slice(0, 5)
+      .map(s => ({
+        category: VALID_CATEGORIES.includes(s.category) ? s.category : 'flow',
+        title: String(s.title).slice(0, 200),
+        suggestion: String(s.suggestion).slice(0, 4000),
+        evidence: String(s.evidence ?? '').slice(0, 4000),
+        source_sample_count: Number.isFinite(s.source_sample_count)
+          ? Math.max(1, Math.floor(s.source_sample_count))
+          : totalTurns,
+        status: 'pending' as const,
+      }));
 
-    const executedFixes: { fix: AutoFix; status: string }[] = [];
-
-    for (const fix of report.auto_fixes) {
-      try {
-        if (fix.type === 'knowledge_add' && fix.data) {
-          // Safe: INSERT data into knowledge tables
-          const table = fix.target === 'ola_calendar' ? 'ola_calendar' : 'ola_local_knowledge';
-          const { error: kErr } = await db.from(table).insert(fix.data);
-          if (kErr) {
-            console.error(`[ola-evolution] knowledge_add failed:`, kErr);
-            executedFixes.push({ fix, status: `error: ${kErr.message}` });
-          } else {
-            executedFixes.push({ fix, status: 'executed' });
-          }
-
-          // Record in pending_fixes as already executed
-          if (reportId) {
-            await db.from('ola_pending_fixes').insert({
-              report_id: reportId,
-              fix_type: fix.type,
-              target: fix.target,
-              section: fix.section ?? null,
-              change_description: fix.change_description,
-              data: fix.data,
-              status: kErr ? 'failed' : 'executed',
-              executed_at: kErr ? null : new Date().toISOString(),
-            });
-          }
-
-        } else if (fix.type === 'prompt_update') {
-          // Not safe to auto-execute: store as pending for Claude Code to pick up
-          if (reportId) {
-            await db.from('ola_pending_fixes').insert({
-              report_id: reportId,
-              fix_type: fix.type,
-              target: fix.target,
-              section: fix.section ?? null,
-              change_description: fix.change_description,
-              data: fix.data ?? null,
-              status: 'pending',
-            });
-          }
-          executedFixes.push({ fix, status: 'pending' });
-        }
-      } catch (err) {
-        console.error(`[ola-evolution] auto-fix error:`, err);
-        executedFixes.push({ fix, status: 'error' });
+    let insertedCount = 0;
+    if (toInsert.length > 0) {
+      const { data: inserted, error: insErr } = await db
+        .from('ola_evolution_suggestions')
+        .insert(toInsert)
+        .select('id');
+      if (insErr) {
+        console.error('[ola-evolution] Failed to insert suggestions:', insErr);
+      } else {
+        insertedCount = inserted?.length ?? 0;
       }
     }
-
-    // Record requires_human items
-    for (const item of report.requires_human) {
-      if (reportId) {
-        await db.from('ola_pending_fixes').insert({
-          report_id: reportId,
-          fix_type: 'requires_human',
-          target: item.type,
-          change_description: item.description,
-          status: 'needs_human',
-        }).catch(() => {});
-      }
-    }
-
-    // Update report with execution results
-    if (reportId) {
-      await db.from('ola_evolution_reports')
-        .update({ changes_applied: { executed: executedFixes, requires_human: report.requires_human } })
-        .eq('id', reportId);
-    }
-
-    // ── Step 5: Return summary ─────────────────────────────────────────────
-
-    const knowledgeAdded = executedFixes.filter(f => f.fix.type === 'knowledge_add' && f.status === 'executed').length;
-    const promptPending = executedFixes.filter(f => f.fix.type === 'prompt_update' && f.status === 'pending').length;
 
     return Response.json({
       ok: true,
       weekNumber,
-      reportId,
-      stats: {
-        totalTurns, uniqueUsers, avgDepth, avgResponseTimeMs,
-        feedbackCounts,
-      },
-      reportSummary: report.summary,
-      autoFixes: {
-        knowledgeAdded,
-        promptPending,
-        requiresHuman: report.requires_human.length,
-      },
+      reportId: reportRow?.id ?? null,
+      stats: { totalTurns, uniqueUsers, avgDepth, avgResponseTimeMs, feedbackCounts },
+      summary: parsed.summary,
+      suggestionsInserted: insertedCount,
+      suggestionsProposed: parsed.suggestions.length,
+      note: '所有建议为 pending，等待 super_admin 在 /dashboard/koala/evolution 审核',
     });
   } catch (error) {
     console.error('[ola-evolution]', error);

@@ -552,12 +552,13 @@ function Legend({ palette }: { palette: Record<Category, Palette> }) {
 
 // 高亮关键词（费用/截止/MBTI/数字等），其余正文按主题色
 function PlaybookText({ text }: { text: string }) {
-  const KEYWORD_RE = /(费用|价格|奖学金|预算|deadline|截止|时间紧|拒信|焦虑|迷茫|家里|父母|MBTI|INFJ|INTJ|ENFP|ENTP|ISTJ|ISFJ|ESTJ|ESFJ|INFP|INTP|ENFJ|ENTJ|ISTP|ISFP|ESTP|ESFP|warmup|discovery|value_demo|guided|converting|暖场|挖掘|价值|引导|水到渠成|\d+)/gi;
-  const parts = text.split(KEYWORD_RE);
+  const SPLIT_RE = /(费用|价格|奖学金|预算|deadline|截止|时间紧|拒信|焦虑|迷茫|家里|父母|MBTI|INFJ|INTJ|ENFP|ENTP|ISTJ|ISFJ|ESTJ|ESFJ|INFP|INTP|ENFJ|ENTJ|ISTP|ISFP|ESTP|ESFP|warmup|discovery|value_demo|guided|converting|暖场|挖掘|价值|引导|水到渠成|\d+)/gi;
+  const TEST_RE = /^(费用|价格|奖学金|预算|deadline|截止|时间紧|拒信|焦虑|迷茫|家里|父母|MBTI|INFJ|INTJ|ENFP|ENTP|ISTJ|ISFJ|ESTJ|ESFJ|INFP|INTP|ENFJ|ENTJ|ISTP|ISFP|ESTP|ESFP|warmup|discovery|value_demo|guided|converting|暖场|挖掘|价值|引导|水到渠成|\d+)$/i;
+  const parts = text.split(SPLIT_RE);
   return (
     <div className="text-[13px] text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
       {parts.map((p, i) =>
-        KEYWORD_RE.test(p) ? (
+        TEST_RE.test(p) ? (
           <span key={i} className="text-pink-700 dark:text-pink-300 font-medium">
             {p}
           </span>
