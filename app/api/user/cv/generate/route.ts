@@ -66,6 +66,19 @@ export async function POST(req: Request) {
 
     const body: CVInput = await req.json();
     const { professorId } = body;
+
+    const { count } = await db.from('education_history')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+
+    if (count === 0) {
+      return Response.json({
+        needsInfo: true,
+        message: '我需要先了解你的背景才能帮你定制CV～先告诉我：你本科/硕士是哪个学校、什么专业、什么时候读的？',
+        missingFields: ['education'],
+      });
+    }
+
     const studentCtx = await getStudentContext(user.id);
 
     if (!studentCtx) {

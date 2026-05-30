@@ -1791,6 +1791,14 @@ function ChatPageInner() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '生成失败');
 
+      if (data.needsInfo) {
+        setMessages(prev => prev.map(m => m.id === loadingMsg.id ? {
+          ...m,
+          content: data.message,
+        } : m));
+        return;
+      }
+
       const resultMsg: Message = {
         id: loadingMsg.id,
         role: 'assistant',
