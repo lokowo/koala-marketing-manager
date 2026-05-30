@@ -19,7 +19,7 @@ import { getOlaPersonaPrompt } from '../../../lib/prompts/ola-persona';
 import { getDeadlineContext } from '../../../lib/ola/ola-deadlines';
 import { loadMemories, formatMemoriesForPrompt, extractMemories, saveMemories, syncToProfile } from '../../../lib/services/memoryService';
 import { logConversation, parseOlaStateTag, detectUserReaction } from '../../../lib/services/olaConversationLogger';
-import { getOrCreateMemory, updateIntimacy, updateMemoryFromConversation, buildOlaMemoryPrompt, processMbtiAnswer, getMbtiLanguageStyle, type OlaUserMemory } from '../../../lib/services/olaMemoryService';
+import { getOrCreateMemory, updateIntimacy, updateMemoryFromConversation, buildOlaMemoryPrompt, getRelationshipContext, processMbtiAnswer, getMbtiLanguageStyle, type OlaUserMemory } from '../../../lib/services/olaMemoryService';
 import { buildLocalKnowledgePrompt } from '../../../lib/services/olaLocalKnowledgeService';
 import { createEmbedding } from '../../../lib/server/embedding';
 
@@ -601,6 +601,7 @@ export async function POST(request: NextRequest) {
           olaMemory = await getOrCreateMemory(olaDb, trackingUserId);
           const olaMemoryPrompt = buildOlaMemoryPrompt(olaMemory);
           extraContext += '\n\n' + olaMemoryPrompt;
+          extraContext += '\n\n' + getRelationshipContext(olaMemory);
         }
       } catch (err) {
         console.error('[olaMemory] Failed to load, continuing without:', err);
@@ -953,10 +954,13 @@ H指数：${prof.hIndex ?? '未知'}`;
 5=document_review 6=interview_prep 7=application_tracking 8=offer_celebration
 根据对话内容判断当前处于哪个阶段，每条回复都必须附加。`;
 
-    // Inject university deadline context if user has target universities
-    if (studentCtx?.targetUniversities) {
-      const deadlineCtx = await getDeadlineContext(studentCtx.targetUniversities);
+    // Inject university deadline context.
+    // If user has target universities → prioritized; otherwise → nearest few as general awareness.
+    try {
+      const deadlineCtx = await getDeadlineContext(studentCtx?.targetUniversities ?? null);
       if (deadlineCtx) extraContext += deadlineCtx;
+    } catch (err) {
+      console.error('[ola-deadlines] inject failed:', err);
     }
 
     // Suggestion chips directive

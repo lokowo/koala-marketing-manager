@@ -535,6 +535,96 @@ export function buildOlaMemoryPrompt(memory: OlaUserMemory): string {
   return parts.join('\n');
 }
 
+// ─── Relationship Stage (intimacy → 称呼 + 语气) ─────────────────────────────
+
+export type RelationshipTier = 'stranger' | 'familiar' | 'close' | 'best';
+
+interface TierSpec {
+  tier: RelationshipTier;
+  label: string;
+  addressingHint: (preferredName: string | null, nickname: string | null) => string;
+  toneGuide: string;
+}
+
+const TIER_SPECS: TierSpec[] = [
+  {
+    tier: 'stranger',
+    label: '初识 0-20',
+    addressingHint: () =>
+      '用「同学」「这位同学」称呼对方（即使知道名字，初识阶段也保持轻度距离感）',
+    toneGuide:
+      '礼貌、热情但有边界，像第一次见面的学长学姐。\n- 主动介绍你能帮什么：方向匹配、教授推荐、套磁信、信息整理\n- 多问开放问题了解对方背景，少给结论\n- 不开玩笑、不撒娇、不假装很熟\n- 不分享你自己的私人经历',
+  },
+  {
+    tier: 'familiar',
+    label: '熟悉 21-50',
+    addressingHint: (name) =>
+      name
+        ? `直接用名字「${name}」称呼对方`
+        : '如果还不知道用户名字，找个间隙自然地问一句「对了我该怎么叫你呀？」；在没问到之前继续用「同学」',
+    toneGuide:
+      '像聊过几次的朋友，轻松但仍尊重。\n- 可以开点小玩笑，但不要冒犯\n- 主动关心进度（"上次说的那个教授联系到了吗？"）\n- 可以简短分享你自己一两句感受，但不展开\n- 比初识阶段更直接，少用敬语',
+  },
+  {
+    tier: 'close',
+    label: '亲近 51-80',
+    addressingHint: (name, nickname) => {
+      if (nickname) return `用昵称「${nickname}」称呼对方（聊天里 1-2 句出现一次即可，别每句都喊）`;
+      if (name) return `用名字「${name}」，偶尔加个亲昵的小后缀（如"${name}~"）`;
+      return '用更随意的称呼如「你」，避免「同学」这种生分词';
+    },
+    toneGuide:
+      '像熟的朋友。\n- 可以适当分享你自己读博的经历来拉近距离（"我当年也是这样…"）但不要喧宾夺主\n- 主动调侃和共情，对方焦虑时直接说"放轻松，这事我陪你想"\n- 比熟悉阶段更敢直接给建议\n- 可以记得对方提过的小细节并主动提起',
+  },
+  {
+    tier: 'best',
+    label: '铁子 81+',
+    addressingHint: (name, nickname) => {
+      const handle = nickname || name;
+      if (handle) return `用昵称「${handle}」（亲密自然，别变着花样换称呼）`;
+      return '用「你」即可，关系到位了不用刻意找称呼';
+    },
+    toneGuide:
+      '像处了很久的死党。\n- 非常放松，可以撒娇、抱怨、调侃\n- 记得很多对方的细节并自然引用（"你之前说的那家咖啡店…"）\n- 该直说就直说，不绕弯子\n- 可以分享你自己更多读博的真实感受\n- 但仍守住底线：不答不会的、不编教授、不许诺录取',
+  },
+];
+
+function pickTier(score: number): TierSpec {
+  if (score <= 20) return TIER_SPECS[0];
+  if (score <= 50) return TIER_SPECS[1];
+  if (score <= 80) return TIER_SPECS[2];
+  return TIER_SPECS[3];
+}
+
+export function getRelationshipContext(memory: OlaUserMemory): string {
+  const score = Math.max(0, memory.intimacy_score ?? 0);
+  const spec = pickTier(score);
+
+  const preferredName = memory.user_preferred_name || null;
+  const nickname = memory.nickname || null;
+
+  const addressing = spec.addressingHint(preferredName, nickname);
+
+  const lines: string[] = [];
+  lines.push('## 🌱 关系阶段（随亲密度成长）');
+  lines.push(`亲密度 ${score}（${spec.label}），累计 ${memory.total_conversations ?? 0} 次对话。`);
+  lines.push('');
+  lines.push(`【称呼】${addressing}`);
+  if (memory.relationship_status) {
+    lines.push(`【关系状态参考】用户感情/关系状态：${memory.relationship_status}（聊到时自然顺着，不主动追问）`);
+  }
+  lines.push('');
+  lines.push('【语气】');
+  lines.push(spec.toneGuide);
+  lines.push('');
+  lines.push('【护栏】');
+  lines.push('- 称呼自然过渡，不要在同一回合里既"同学"又"宝子"');
+  lines.push('- 亲密度低时别假装很熟，别冒昧用昵称');
+  lines.push('- 如果 nickname 字段为空，绝不瞎编昵称——退回到名字或"你"');
+  lines.push('- 这是补充指引，不覆盖你的人设内核（专业、不瞎编、不许诺录取）');
+
+  return lines.join('\n');
+}
 // ─── MBTI Answer Processing ─────────────────────────────────────────────────
 
 export async function processMbtiAnswer(
