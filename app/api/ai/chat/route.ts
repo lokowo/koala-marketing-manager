@@ -326,9 +326,10 @@ async function runProfessorMatchScoring(interest: string, background?: string): 
     scored.sort((a: { scores: ProfMatchScores }, b: { scores: ProfMatchScores }) => b.scores.total - a.scores.total);
     const top5 = scored.slice(0, 5);
 
-    // Fetch latest papers
+    // Fetch latest papers + recruitment intel
     const profIds = top5.map((t: { row: Record<string, unknown> }) => t.row.id as string);
     let papersMap: Record<string, Array<{ title: string; year?: number | null }>> = {};
+    const recruitmentMap: Record<string, { accepting_students: string | null; recruitment_slots: number | null; recruitment_intel: string | null; recruitment_deadline: string | null }> = {};
     try {
       const { createClient } = await import('@supabase/supabase-js');
       const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -336,6 +337,18 @@ async function runProfessorMatchScoring(interest: string, background?: string): 
       for (const p of (paperData ?? []) as Array<{ professor_id: string; title: string; year: number | null }>) {
         if (!papersMap[p.professor_id]) papersMap[p.professor_id] = [];
         if (papersMap[p.professor_id].length < 3) papersMap[p.professor_id].push({ title: p.title, year: p.year });
+      }
+      const { data: recData } = await db
+        .from('professors')
+        .select('id, accepting_students, recruitment_slots, recruitment_intel, recruitment_deadline')
+        .in('id', profIds);
+      for (const r of (recData ?? []) as Array<{ id: string; accepting_students: string | null; recruitment_slots: number | null; recruitment_intel: string | null; recruitment_deadline: string | null }>) {
+        recruitmentMap[r.id] = {
+          accepting_students: r.accepting_students,
+          recruitment_slots: r.recruitment_slots,
+          recruitment_intel: r.recruitment_intel,
+          recruitment_deadline: r.recruitment_deadline,
+        };
       }
     } catch {}
 
@@ -346,14 +359,28 @@ async function runProfessorMatchScoring(interest: string, background?: string): 
     for (let i = 0; i < top5.length; i++) {
       const { row, scores } = top5[i] as { row: Record<string, unknown>; scores: ProfMatchScores };
       const papers = papersMap[row.id as string] ?? [];
-      const accepting = row.accepting_students as string;
-      const availLabel = accepting === 'yes' ? '✅ 招生中' : accepting === 'likely' ? '🟡 可能招生' : accepting === 'unknown' ? '❓ 未知' : '🔴 未招生';
+      const rec = recruitmentMap[row.id as string];
+      const accepting = (rec?.accepting_students ?? row.accepting_students) as string | null;
+      const availLabel = accepting === 'yes' ? '✅ 招生中' : accepting === 'likely' ? '🟡 可能招生' : accepting === 'maybe' ? '🟠 也许招生' : accepting === 'no' ? '🔴 不招生' : '❓ 未知';
+
+      const intelBits: string[] = [];
+      if (rec?.recruitment_slots !== null && rec?.recruitment_slots !== undefined) {
+        intelBits.push(`剩 ${rec.recruitment_slots} 个名额`);
+      }
+      if (rec?.recruitment_deadline) {
+        intelBits.push(`截止 ${rec.recruitment_deadline}`);
+      }
+      const intelLine = rec?.recruitment_intel
+        ? `\n   📋 内部情报：${rec.recruitment_intel}${intelBits.length ? `（${intelBits.join('、')}）` : ''}`
+        : intelBits.length
+          ? `\n   📋 内部情报：${intelBits.join('、')}`
+          : '';
 
       ctx += `${i + 1}. **${row.name}** — ${row.university}
    职位：${row.position_title || '未知'} | H-index: ${row.h_index ?? 'N/A'} | 论文数: ${row.paper_count ?? 'N/A'}
    综合匹配 ⭐ ${scores.total.toFixed(1)}/5
    研究契合 ${scores.research_fit.toFixed(1)} | 机会指数 ${scores.opportunity.toFixed(1)} | 发表活跃度 ${scores.publication.toFixed(1)} | 背景匹配 ${scores.student_fit.toFixed(1)} | 招生状态 ${availLabel}
-   研究方向：${(row.research_areas as string[] ?? []).slice(0, 5).join(', ')}
+   研究方向：${(row.research_areas as string[] ?? []).slice(0, 5).join(', ')}${intelLine}
    ${papers.length > 0 ? `最新论文：${papers.map(p => `${p.title}${p.year ? ` (${p.year})` : ''}`).join('；')}` : ''}
    ${row.profile_url ? `[查看主页](${row.profile_url})` : ''} ${row.google_scholar_url ? `[Google Scholar](${row.google_scholar_url})` : ''}
    教授ID: ${row.id}\n\n`;
@@ -362,8 +389,9 @@ async function runProfessorMatchScoring(interest: string, background?: string): 
     ctx += `回复格式要求：
 1. 用 🎯 开头列出匹配结果
 2. 每位教授显示：姓名、大学、综合匹配分（⭐ X.X/5）、5个维度分数、研究方向、最新论文、链接
-3. 招生状态用 emoji 标注：✅招生中、🟡可能招生、❓未知、🔴未招生
-4. 在末尾给出针对用户背景的选择建议`;
+3. 招生状态用 emoji 标注：✅招生中、🟡可能招生、🟠也许招生、🔴不招生、❓未知
+4. 如果某位教授有"内部情报"字段，必须自然地融入推荐话术（如"这位教授这学期还在招，剩 X 个名额，要 GPA…"），让用户感受到我们有一手内部消息
+5. 在末尾给出针对用户背景的选择建议`;
 
     return ctx;
   } catch (e) {

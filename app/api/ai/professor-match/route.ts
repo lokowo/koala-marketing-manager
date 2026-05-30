@@ -15,6 +15,14 @@ interface MatchScores {
   total: number;
 }
 
+interface RecruitmentIntel {
+  accepting_students: string | null;
+  recruitment_slots: number | null;
+  recruitment_intel: string | null;
+  recruitment_deadline: string | null;
+  recruitment_updated_at: string | null;
+}
+
 interface MatchedProfessor {
   id: string;
   name: string;
@@ -30,6 +38,7 @@ interface MatchedProfessor {
   google_scholar_url: string | null;
   scores: MatchScores;
   latest_papers: Array<{ title: string; journal: string | null; year: number | null; doi_url: string | null; citation_count: number }>;
+  recruitment: RecruitmentIntel | null;
 }
 
 const WEIGHTS = {
@@ -190,26 +199,51 @@ export async function POST(req: Request) {
     scored.sort((a, b) => b.scores.total - a.scores.total);
     const top = scored.slice(0, limit);
 
-    // Fetch latest papers for the top results
+    // Fetch latest papers + recruitment intel for the top results
     const topIds = top.map(t => t.row.id);
     const papersMap = await fetchLatestPapers(topIds);
 
-    const professors: MatchedProfessor[] = top.map(({ row, scores }) => ({
-      id: row.id,
-      name: row.name,
-      university: row.university,
-      faculty: row.faculty ?? '',
-      position_title: row.position_title ?? null,
-      research_areas: row.research_areas ?? [],
-      accepting_students: row.accepting_students ?? 'unknown',
-      h_index: row.h_index ?? null,
-      paper_count: row.paper_count ?? null,
-      ai_bio_zh: (row as Record<string, unknown>).ai_bio_zh as string | null ?? null,
-      profile_url: row.profile_url ?? null,
-      google_scholar_url: row.google_scholar_url ?? null,
-      scores,
-      latest_papers: papersMap[row.id] ?? [],
-    }));
+    const recruitmentMap: Record<string, RecruitmentIntel> = {};
+    if (topIds.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: recRows } = await (supabaseAdmin as any)
+        .from('professors')
+        .select('id, accepting_students, recruitment_slots, recruitment_intel, recruitment_deadline, recruitment_updated_at')
+        .in('id', topIds);
+      for (const r of (recRows ?? []) as Array<{ id: string } & RecruitmentIntel>) {
+        recruitmentMap[r.id] = {
+          accepting_students: r.accepting_students ?? null,
+          recruitment_slots: r.recruitment_slots ?? null,
+          recruitment_intel: r.recruitment_intel ?? null,
+          recruitment_deadline: r.recruitment_deadline ?? null,
+          recruitment_updated_at: r.recruitment_updated_at ?? null,
+        };
+      }
+    }
+
+    const professors: MatchedProfessor[] = top.map(({ row, scores }) => {
+      const rec = recruitmentMap[row.id] ?? null;
+      const accepting = rec?.accepting_students ?? row.accepting_students ?? 'unknown';
+      return {
+        id: row.id,
+        name: row.name,
+        university: row.university,
+        faculty: row.faculty ?? '',
+        position_title: row.position_title ?? null,
+        research_areas: row.research_areas ?? [],
+        accepting_students: accepting,
+        h_index: row.h_index ?? null,
+        paper_count: row.paper_count ?? null,
+        ai_bio_zh: (row as Record<string, unknown>).ai_bio_zh as string | null ?? null,
+        profile_url: row.profile_url ?? null,
+        google_scholar_url: row.google_scholar_url ?? null,
+        scores,
+        latest_papers: papersMap[row.id] ?? [],
+        recruitment: rec && (rec.recruitment_intel || rec.recruitment_slots !== null || rec.recruitment_deadline || rec.accepting_students)
+          ? rec
+          : null,
+      };
+    });
 
     return Response.json({ professors, query: interest });
   } catch (e) {

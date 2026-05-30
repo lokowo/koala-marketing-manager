@@ -19,7 +19,7 @@ export async function GET(req: Request) {
 
     let query = db
       .from('professors')
-      .select('id, name, university, data_sources, research_areas, verification_status, downgrade_reason, position_title, verified_at, downgraded_at', { count: 'exact' });
+      .select('id, name, university, data_sources, research_areas, verification_status, downgrade_reason, position_title, verified_at, downgraded_at, accepting_students, recruitment_slots, recruitment_intel, recruitment_deadline, recruitment_updated_at, recruitment_updated_by', { count: 'exact' });
 
     if (status === 'downgraded') {
       query = query.eq('verification_status', 'Pending').not('downgrade_reason', 'is', null);
@@ -36,7 +36,22 @@ export async function GET(req: Request) {
     const { data, count, error } = await query;
     if (error) return Response.json({ error: error.message }, { status: 500 });
 
-    return Response.json({ professors: data ?? [], total: count ?? 0, page, pageSize: PAGE_SIZE });
+    const rows = (data ?? []) as Array<{ recruitment_updated_by: string | null }>;
+    const updaterIds = Array.from(
+      new Set(rows.map(r => r.recruitment_updated_by).filter((x): x is string => !!x))
+    );
+    const updaters: Record<string, string> = {};
+    if (updaterIds.length > 0) {
+      const { data: profiles } = await db
+        .from('user_profiles')
+        .select('id, display_name, email')
+        .in('id', updaterIds);
+      for (const p of (profiles ?? []) as Array<{ id: string; display_name: string | null; email: string | null }>) {
+        updaters[p.id] = p.display_name || p.email || p.id.slice(0, 8);
+      }
+    }
+
+    return Response.json({ professors: data ?? [], total: count ?? 0, page, pageSize: PAGE_SIZE, updaters });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
     if (msg === 'Unauthorized' || msg === 'Forbidden') {

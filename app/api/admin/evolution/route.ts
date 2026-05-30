@@ -5,28 +5,20 @@ import { supabaseAdmin } from '../../../lib/supabase/server';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
-const VALID_STATUS = ['pending', 'executed', 'needs_human', 'approved', 'rejected', 'failed', 'all'] as const;
+const VALID_STATUS = ['pending', 'approved', 'rejected', 'all'] as const;
+const VALID_CATEGORIES = ['persona', 'prompt', 'knowledge', 'feature', 'flow'] as const;
 
-type FixRow = {
+type SuggestionRow = {
   id: string;
-  report_id: string | null;
-  fix_type: string;
-  target: string;
-  section: string | null;
-  change_description: string;
-  data: unknown;
+  category: string;
+  title: string;
+  suggestion: string;
+  evidence: string | null;
+  source_sample_count: number | null;
   status: string;
   reviewed_by: string | null;
   reviewed_at: string | null;
   review_note: string | null;
-  executed_at: string | null;
-  created_at: string;
-};
-
-type ReportRow = {
-  id: string;
-  week_number: number | null;
-  report_json: { summary?: string; stats?: { totalTurns?: number; uniqueUsers?: number } } | null;
   created_at: string;
 };
 
@@ -44,30 +36,31 @@ export async function GET(req: NextRequest) {
     const status = (VALID_STATUS as readonly string[]).includes(statusRaw) ? statusRaw : 'pending';
     const page = Math.max(parseInt(sp.get('page') ?? '1', 10), 1);
     const limit = Math.min(Math.max(parseInt(sp.get('limit') ?? '30', 10), 1), 100);
-    const fixType = sp.get('fix_type');
+    const categoryRaw = (sp.get('category') ?? '').toLowerCase();
+    const category = (VALID_CATEGORIES as readonly string[]).includes(categoryRaw) ? categoryRaw : null;
 
     let query = db
-      .from('ola_pending_fixes')
+      .from('ola_evolution_suggestions')
       .select(
-        'id, report_id, fix_type, target, section, change_description, data, status, reviewed_by, reviewed_at, review_note, executed_at, created_at',
+        'id, category, title, suggestion, evidence, source_sample_count, status, reviewed_by, reviewed_at, review_note, created_at',
         { count: 'exact' }
       )
       .order('created_at', { ascending: false })
       .range((page - 1) * limit, page * limit - 1);
 
     if (status !== 'all') query = query.eq('status', status);
-    if (fixType) query = query.eq('fix_type', fixType);
+    if (category) query = query.eq('category', category);
 
-    const { data: fixesRaw, count, error } = await query;
+    const { data: rowsRaw, count, error } = await query;
     if (error) {
       console.error('[admin/evolution GET]', error);
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    const fixes = (fixesRaw ?? []) as FixRow[];
+    const rows = (rowsRaw ?? []) as SuggestionRow[];
 
     // Reviewer name map
-    const reviewerIds = Array.from(new Set(fixes.map((r) => r.reviewed_by).filter((x): x is string => !!x)));
+    const reviewerIds = Array.from(new Set(rows.map((r) => r.reviewed_by).filter((x): x is string => !!x)));
     const reviewers: Record<string, string> = {};
     if (reviewerIds.length > 0) {
       const { data: profiles } = await db
@@ -79,28 +72,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Report summary map
-    const reportIds = Array.from(new Set(fixes.map((r) => r.report_id).filter((x): x is string => !!x)));
-    const reports: Record<string, { week_number: number | null; summary: string | null; total_turns: number | null; unique_users: number | null; created_at: string }> = {};
-    if (reportIds.length > 0) {
-      const { data: reportRows } = await db
-        .from('ola_evolution_reports')
-        .select('id, week_number, report_json, created_at')
-        .in('id', reportIds);
-      for (const r of (reportRows ?? []) as ReportRow[]) {
-        reports[r.id] = {
-          week_number: r.week_number,
-          summary: r.report_json?.summary ?? null,
-          total_turns: r.report_json?.stats?.totalTurns ?? null,
-          unique_users: r.report_json?.stats?.uniqueUsers ?? null,
-          created_at: r.created_at,
-        };
-      }
-    }
-
-    // Status counts (always return for tab badges, independent of filter)
+    // Status counts (for tab badges, independent of current filter)
     const { data: countsRaw } = await db
-      .from('ola_pending_fixes')
+      .from('ola_evolution_suggestions')
       .select('status');
     const counts: Record<string, number> = {};
     for (const row of (countsRaw ?? []) as Array<{ status: string }>) {
@@ -108,12 +82,11 @@ export async function GET(req: NextRequest) {
     }
 
     return Response.json({
-      data: fixes,
+      data: rows,
       total: count ?? 0,
       page,
       limit,
       reviewers,
-      reports,
       counts,
       currentRole: role,
     });
@@ -141,22 +114,16 @@ export async function PATCH(req: NextRequest) {
     }
 
     const { data: existingRaw, error: fetchErr } = await db
-      .from('ola_pending_fixes')
-      .select('id, status, fix_type, target, section, change_description')
+      .from('ola_evolution_suggestions')
+      .select('id, status, category, title, suggestion')
       .eq('id', id)
       .single();
 
     if (fetchErr || !existingRaw) {
-      return Response.json({ error: 'Fix not found' }, { status: 404 });
+      return Response.json({ error: 'Suggestion not found' }, { status: 404 });
     }
-    const existing = existingRaw as { id: string; status: string; fix_type: string; target: string; section: string | null; change_description: string };
+    const existing = existingRaw as { id: string; status: string; category: string; title: string; suggestion: string };
 
-    if (existing.fix_type !== 'prompt_update') {
-      return Response.json(
-        { error: `仅 prompt_update 类型的 fix 需要审批（当前 ${existing.fix_type}）` },
-        { status: 400 }
-      );
-    }
     if (existing.status !== 'pending') {
       return Response.json({ error: `当前状态为 ${existing.status}，不可再次审批` }, { status: 409 });
     }
@@ -164,7 +131,7 @@ export async function PATCH(req: NextRequest) {
     const newStatus = action === 'approve' ? 'approved' : 'rejected';
 
     const { data: updated, error: updErr } = await db
-      .from('ola_pending_fixes')
+      .from('ola_evolution_suggestions')
       .update({
         status: newStatus,
         reviewed_by: user.id,
@@ -173,7 +140,7 @@ export async function PATCH(req: NextRequest) {
       })
       .eq('id', id)
       .eq('status', 'pending')
-      .select('id, fix_type, target, section, change_description, status, reviewed_at, review_note')
+      .select('id, category, title, suggestion, status, reviewed_at, review_note')
       .single();
 
     if (updErr || !updated) {
@@ -183,28 +150,27 @@ export async function PATCH(req: NextRequest) {
 
     await db.from('admin_work_logs').insert({
       admin_id: user.id,
-      action: `evolution_fix_${newStatus}`,
+      action: `evolution_suggestion_${newStatus}`,
       action_category: 'ola_evolution',
-      target_type: 'ola_pending_fix',
+      target_type: 'ola_evolution_suggestion',
       target_id: id,
-      target_name: `${existing.target}${existing.section ? ' · ' + existing.section : ''}`,
+      target_name: `${existing.category} · ${existing.title}`,
       details: {
         role,
-        fix_type: existing.fix_type,
-        target: existing.target,
-        section: existing.section,
-        change_description: existing.change_description,
+        category: existing.category,
+        title: existing.title,
+        suggestion: existing.suggestion,
         review_note: review_note ?? null,
       },
     }).catch((e: unknown) => console.error('[admin/evolution audit]', e));
 
     return Response.json({
       success: true,
-      fix: updated,
+      suggestion: updated,
       message:
         newStatus === 'approved'
-          ? '已批准。本接口不会自动改 persona，请通过 Claude Code 指令落地此 persona 改动（引用此 fix ID）。'
-          : '已拒绝。该 fix 不会被落地。',
+          ? '已批准。本接口不会自动改 persona / prompt，请通过 Claude Code 指令落地此建议（引用建议 ID）。'
+          : '已拒绝。该建议不会被落地。',
     });
   } catch (e) {
     console.error('[admin/evolution PATCH]', e);

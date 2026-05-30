@@ -44,6 +44,7 @@ import {
   IconRefresh,
   IconAffiliate,
   IconBrain,
+  IconBellRinging,
 } from '@tabler/icons-react';
 
 const ICON_PROPS = { size: 18, strokeWidth: 1.5 } as const;
@@ -133,6 +134,7 @@ function buildNavGroups(role: UserRole | null): { standalone: NavItem[]; groups:
     color: '#EC4899',
     items: [
       { icon: IconBolt, label: '触发器', href: '/dashboard/koala/ola-triggers' },
+      { icon: IconBellRinging, label: '主动触达', href: '/dashboard/koala/triggers' },
       { icon: IconCalendarEvent, label: '悉尼活动', href: '/dashboard/koala/events' },
       { icon: IconChartLine, label: 'Ola 分析', href: '/dashboard/koala/ola-analytics' },
       { icon: IconAffiliate, label: '记忆图谱', href: '/dashboard/koala/memory-graph' },
