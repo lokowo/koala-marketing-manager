@@ -974,6 +974,7 @@ H指数：${prof.hIndex ?? '未知'}`;
     let rawReply = '';
     let toolSearchedProfessors: Professor[] = [];
     let toolPapersMap: Record<string, ToolPaper[]> = {};
+    let cvGenerated = false;
 
     // Determine max tokens: research mode and academic-intent get more room for deep answers
     const maxTokens = (mode === 'research' || currentIntent === 'academic') ? 4000 : 2000;
@@ -1193,8 +1194,9 @@ Output strictly JSON (no markdown): {"personal":{"name":"","email":null},"educat
                 title: cvTitle,
                 documentUrl: '/koala/my-documents',
                 sections,
-                message: `CV已生成并保存，包含：${sections}。用户可在"我的文档"查看和下载PDF。`,
+                message: `CV已生成并保存，包含：${sections}。用户可在"我的文档"查看和下载PDF。如果用户在 Overleaf 或其他地方改好了最终版，可以直接传回来存进档案库。`,
               });
+              cvGenerated = true;
             }
           } catch (err) {
             console.error('[generate_cv tool]', err);
@@ -1303,6 +1305,7 @@ Output strictly JSON (no markdown): {"personal":{"name":"","email":null},"educat
 
     // 5. Build response
     const result: Record<string, unknown> = { reply: cleanedReply };
+    if (cvGenerated) result.cvGenerated = true;
 
     if (olaAction) {
       result.olaAction = olaAction;

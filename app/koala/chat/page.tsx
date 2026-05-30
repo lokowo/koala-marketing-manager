@@ -821,6 +821,7 @@ function ChatPageInner() {
   const [coldEmailLoading, setColdEmailLoading] = useState(false);
   const [packageLoading, setPackageLoading] = useState(false);
   const [cvLoading, setCvLoading] = useState(false);
+  const cvJustGeneratedRef = useRef(false);
   const [expandedMatchMsgIds, setExpandedMatchMsgIds] = useState<Set<string>>(new Set());
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDismissed, setFeedbackDismissed] = useState(false);
@@ -1275,6 +1276,7 @@ function ChatPageInner() {
         return updated;
       });
       if (data.achievement) setToastAchievement(data.achievement);
+      if (data.cvGenerated) cvJustGeneratedRef.current = true;
       // Increment chat usage
       if (user?.id) incrementUsage(supabase, user.id, 'chat').catch(() => {});
 
@@ -1411,6 +1413,34 @@ function ChatPageInner() {
       const fileType = attachedFile.type;
       setAttachedFile(null);
 
+      // CV archive: user sends back final CV after generation — pure storage
+      const isPdfAttach = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+      const wantsAnalysis = /看看|分析|帮我看|检查|review|analyze/i.test(txt);
+      if (isPdfAttach && cvJustGeneratedRef.current && !wantsAnalysis) {
+        cvJustGeneratedRef.current = false;
+        const archiveFd = new FormData();
+        archiveFd.append('file', file);
+        archiveFd.append('fileType', 'cv_final');
+        const userMsg: Message = { id: msgId(), role: 'user', content: txt || `📎 上传最终版CV：${file.name}`, timestamp: new Date() };
+        setMessages(prev => [...prev, userMsg]);
+        try {
+          await fetch('/api/user/files', { method: 'POST', body: archiveFd });
+          setMessages(prev => [...prev, {
+            id: msgId(), role: 'assistant',
+            content: '已经帮你存好啦✅ 这份CV我放进你的档案库了，随时能下载。\n\n要不要我针对某位教授再帮你定制优化一版？告诉我教授名字或研究方向就行～',
+            quickReplies: ['帮我定制CV', '先匹配教授'],
+            timestamp: new Date(),
+          }]);
+        } catch {
+          setMessages(prev => [...prev, {
+            id: msgId(), role: 'assistant',
+            content: '文件保存失败了，请再试一次～',
+            timestamp: new Date(),
+          }]);
+        }
+        return;
+      }
+
       // Upload file
       const uploadFd = new FormData();
       uploadFd.append('file', file);
@@ -1537,6 +1567,31 @@ function ChatPageInner() {
       content: `📎 已上传：${file.name}，正在解析…`,
       timestamp: new Date(),
     }]);
+
+    // CV archive branch: after CV generation, user uploads final version — pure storage, no parse
+    const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+    if (isPdf && cvJustGeneratedRef.current) {
+      cvJustGeneratedRef.current = false;
+      const archiveFd = new FormData();
+      archiveFd.append('file', file);
+      archiveFd.append('fileType', 'cv_final');
+      try {
+        await fetch('/api/user/files', { method: 'POST', body: archiveFd });
+        setMessages(prev => [...prev, {
+          id: msgId(), role: 'assistant',
+          content: '已经帮你存好啦✅ 这份CV我放进你的档案库了，随时能下载。\n\n要不要我针对某位教授再帮你定制优化一版？告诉我教授名字或研究方向就行～',
+          quickReplies: ['帮我定制CV', '先匹配教授'],
+          timestamp: new Date(),
+        }]);
+      } catch {
+        setMessages(prev => [...prev, {
+          id: msgId(), role: 'assistant',
+          content: '文件保存失败了，请再试一次～',
+          timestamp: new Date(),
+        }]);
+      }
+      return;
+    }
 
     // Upload file to storage
     const uploadFd = new FormData();
@@ -1859,9 +1914,11 @@ function ChatPageInner() {
       const resultMsg: Message = {
         id: loadingMsg.id,
         role: 'assistant',
-        content: `📄 针对 ${professorName} 的学术 CV 已生成！已保存到 [我的文档](/koala/my-documents)，可随时查看和下载 PDF。`,
+        content: `📄 针对 ${professorName} 的学术 CV 已生成！已保存到 [我的文档](/koala/my-documents)，可随时查看和下载 PDF。\n\n如果你在 Overleaf 或其他地方改好了最终版，可以直接传回来给我，我帮你存进档案库，下次针对不同教授改版或下载都方便！`,
+        quickReplies: ['上传改好的CV', '帮我再针对另一位教授定制'],
         timestamp: new Date(),
       };
+      cvJustGeneratedRef.current = true;
       setMessages(prev => {
         const updated = prev.map(m => m.id === loadingMsg.id ? resultMsg : m);
         setLocalHistory(mode, updated);
