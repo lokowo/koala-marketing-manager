@@ -537,3 +537,60 @@ fabric.js 已移除，改用 HTML5 Canvas 2D API + CSS object-fit:contain 预览
 - [DECISION] CV 全英文（学校名翻译），99% 英文 → Helvetica 渲染，规避中文字体问题
 - [DECISION] CV 方法论只组织真实信息，绝不编造数字（硬底线）
 - [DECISION] 部署走 GitHub 自动触发，本地不用 Vercel CLI（避免反复设备授权弹窗）
+
+---
+
+## CV改造收尾 2026-05-30
+
+> 接续本日 session summary，记录 CV 改造全部完成 + 最终状态
+
+### CV 改造 — 全部功能完成并上线 ✅
+
+完整链路已跑通：
+**找教授 → 定制 CV → 方法论加持 → 下载 PDF/导出 LaTeX → 改好传回存档 → 衔接下一轮定制**
+
+| 功能 | commit | 状态 |
+|------|--------|------|
+| P0-1 本科丢失根治（student-context 字段名） | 11b2094 | ✅ 上线 |
+| P0-2 删CV死代码 + 扁平结构统一 | cfbaeac | ✅ 上线 |
+| P1-B 导师匹配→定制CV（按钮+教授方向注入+无底料引导） | 3eb782f / 94cc103 | ✅ 上线 |
+| P2 OfferUnderway方法论（STAR/量化/相关度/gap） | a7e443c | ✅ 上线 |
+| bug#2 上传扣费丢内容（原生document通道+扣费修正） | cf95705 | ✅ 上线 |
+| LaTeX导出（一键Overleaf+.tex兜底） | 34eee4e | ✅ 上线 |
+| 上传保存（方案C：存档不扣费+衔接定制） | cdd708f | ✅ 上线 |
+
+### OfferUnderway 学习点落地情况
+- ① Match Score 匹配分 — ✅（导师匹配分系统）
+- ② 一键定制 — ✅（P1-B 定制CV）
+- ③ 5合1申请包 — ✅（application-package）
+- ④ Gap 分析 — ✅（P2 prompt 方法论）
+- ⑤ 真实 Offer 案例展示 — ❌ 未做（首页展示，非CV核心，留待后续）
+- ⑥ LaTeX 模板 — ✅（一键Overleaf导出）
+
+### ⚠️ 关键：全部零实测
+以上 7 项功能 + P1-B/P2 **没有一项被真人验证过**。
+状态 = "开发完成，验证未开始"。
+测试清单 V2 已生成（含 A下载/B上传扣费/C定制/D套磁申请包/F LaTeX/G存档/E动画 七组），
+需找人跑一轮，重点 7 项：A2学历完整、B1上传读内容、B3扣费正确、C3定制不编造、C4无底料引导、F1 LaTeX无断点、G2存档不扣费。
+
+### 技术决策补充
+- [DECISION] LaTeX 不自建编译（Vercel serverless 装不下 TeX Live 几GB），用 Overleaf 公开 form POST 导入（无需API key），失败降级 .tex 下载
+- [DECISION] 上传保存走 user_documents（file_type='cv_final'），不混入 generated_documents，不触发解析扣费
+- [DECISION] 上传PDF智能分流：说"看看/分析"走对话通道（AI读全文），否则走存档分支
+- [DECISION] cvJustGeneratedRef 标志位区分"刚生成CV后的上传"=存档场景
+
+### 剩余 BUG 清单（延续，未动）
+| # | Bug | 优先级 |
+|---|-----|--------|
+| 1 | CV 下载 PDF 实测（P0-3） | 🔴 待测 |
+| 3 | 首页 "0 students helped" 计数器 | 🟡 |
+| 4 | 首页教授/大学数量硬编码不一致 | 🟡 |
+| 5 | 首页联系方式错误 + 缺小红书渠道 | 🟡 |
+| 6 | c-03 Storage 文件名拼写 | 🟢 |
+| 7 | Safari VP9 alpha 兼容 | 🟢 |
+| 8 | 教授 looking_for/ai_bio_zh 字段全空（影响CV定制深度） | 🟢 数据缺口 |
+
+### 下一步建议
+1. **先测试**：按 CV测试清单V2 跑一轮，别再堆未验证代码
+2. 测试结果回来 → 修补 → CV 真正画句号
+3. 之后可做：P1-A 诊断式改写（已有bug#2原生通道基础）/ ⑤真实offer案例 / 首页bug(#3#4#5)
