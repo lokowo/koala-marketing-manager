@@ -30,6 +30,7 @@ import {
   IconBooks,
   IconQuestionMark,
   IconBolt,
+  IconCalendarEvent,
   IconChartLine,
   IconFilter,
   IconArrowsTransferDown,
@@ -130,6 +131,7 @@ function buildNavGroups(role: UserRole | null): { standalone: NavItem[]; groups:
     color: '#EC4899',
     items: [
       { icon: IconBolt, label: '触发器', href: '/dashboard/koala/ola-triggers' },
+      { icon: IconCalendarEvent, label: '悉尼活动', href: '/dashboard/koala/events' },
       { icon: IconChartLine, label: 'Ola 分析', href: '/dashboard/koala/ola-analytics' },
       { icon: IconArrowsTransferDown, label: 'Handoff 队列', href: '/dashboard/koala/handoff' },
     ],
