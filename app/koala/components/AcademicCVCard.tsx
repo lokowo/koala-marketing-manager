@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Save, Check, Loader2, Download, Sparkles, ChevronDown, ChevronUp, Plus, Trash2, X, MessageSquare,
+  Save, Check, Loader2, Download, Sparkles, ChevronDown, ChevronUp, Plus, Trash2, X, MessageSquare, FileCode,
 } from 'lucide-react';
 import Link from 'next/link';
+import { cvToLatex } from '../../lib/cv-to-latex';
 
 interface CVPersonal {
   name?: string;
@@ -93,6 +94,8 @@ export default function AcademicCVCard({
   const [saved, setSaved] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [showLatexModal, setShowLatexModal] = useState(false);
+  const [latexToast, setLatexToast] = useState<string | null>(null);
 
   // AI enhance state
   const [enhancingKey, setEnhancingKey] = useState<string | null>(null);
@@ -213,6 +216,48 @@ export default function AcademicCVCard({
       // silent
     } finally {
       setDownloadingPdf(false);
+    }
+  };
+
+  const handleOpenOverleaf = () => {
+    try {
+      const tex = cvToLatex(content);
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = 'https://www.overleaf.com/docs';
+      form.target = '_blank';
+      const snip = document.createElement('input');
+      snip.type = 'hidden'; snip.name = 'snip'; snip.value = tex;
+      const snipName = document.createElement('input');
+      snipName.type = 'hidden'; snipName.name = 'snip_name'; snipName.value = 'Academic_CV.tex';
+      form.appendChild(snip);
+      form.appendChild(snipName);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+      setShowLatexModal(false);
+      setLatexToast('已在新标签页打开 Overleaf，点左上角 Recompile 即可生成 PDF');
+      setTimeout(() => setLatexToast(null), 6000);
+    } catch {
+      handleDownloadTex();
+      setLatexToast('Overleaf 打开失败，已为你下载 .tex 文件，可上传到 overleaf.com 编译');
+      setTimeout(() => setLatexToast(null), 6000);
+    }
+  };
+
+  const handleDownloadTex = () => {
+    try {
+      const tex = cvToLatex(content);
+      const blob = new Blob([tex], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Academic_CV_${(content.personal.name || 'draft').replace(/\s+/g, '_')}.tex`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setShowLatexModal(false);
+    } catch {
+      // silent
     }
   };
 
@@ -587,7 +632,51 @@ export default function AcademicCVCard({
             <><Download size={13} /> 下载 PDF</>
           )}
         </button>
+        <button
+          onClick={() => setShowLatexModal(true)}
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-emerald-200 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+        >
+          <FileCode size={13} /> LaTeX 版
+        </button>
       </div>
+
+      {/* LaTeX export modal */}
+      {showLatexModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowLatexModal(false)}>
+          <div className="bg-white dark:bg-[#1a1f2e] rounded-xl shadow-xl w-[340px] p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">导出 LaTeX</h3>
+              <button onClick={() => setShowLatexModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <X size={16} />
+              </button>
+            </div>
+            <button
+              onClick={handleOpenOverleaf}
+              className="w-full mb-3 p-3 rounded-lg border border-emerald-200 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors text-left"
+            >
+              <div className="text-sm font-medium text-emerald-700 dark:text-emerald-400">🚀 在 Overleaf 中打开（推荐）</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">一键跳转，已填好内容，点编译即得 PDF</div>
+            </button>
+            <button
+              onClick={handleDownloadTex}
+              className="w-full p-3 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-left"
+            >
+              <div className="text-sm font-medium text-gray-700 dark:text-gray-300">⬇ 下载 .tex 源文件</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">可用任意 LaTeX 编辑器打开</div>
+            </button>
+            <p className="mt-3 text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed">
+              ℹ️ LaTeX 是学术圈标准排版，教授更认。Overleaf 免费、无需安装。
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* LaTeX toast */}
+      {latexToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-sm px-4 py-2.5 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs shadow-lg text-center">
+          ✅ {latexToast}
+        </div>
+      )}
     </div>
   );
 }
