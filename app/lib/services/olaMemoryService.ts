@@ -37,6 +37,8 @@ export interface OlaUserMemory {
   pain_points: string[] | null;
   personality_profile: PersonalityProfile | null;
   chat_playbook: string | null;
+  chat_playbook_updated_at: string | null;
+  chat_playbook_last_turn: number;
   created_at: string;
   updated_at: string;
 }

@@ -1502,6 +1502,17 @@ Output strictly JSON (no markdown): {"personal":{"name":"","email":null},"educat
                 console.error('[olaMemory] intimacy update failed:', err));
               updateMemoryFromConversation(db, memUserId, lastUserMsg.content, cleanedReply).catch(err =>
                 console.error('[olaMemory] memory extraction failed:', err));
+
+              // Reflection: regenerate chat_playbook every 5 turns
+              if (olaMemory) {
+                const totalTurns = olaMemory.total_turns ?? 0;
+                const lastPlaybookTurn = olaMemory.chat_playbook_last_turn ?? 0;
+                if (totalTurns - lastPlaybookTurn >= 5) {
+                  import('../../../lib/services/olaReflectionService').then(({ generateChatPlaybook }) =>
+                    generateChatPlaybook(db, memUserId)
+                  ).catch(err => console.error('[REFLECT] trigger failed:', err));
+                }
+              }
             }).catch(() => {});
           }
         }
