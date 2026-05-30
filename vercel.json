@@ -49,7 +49,7 @@
     },
     {
       "path": "/api/cron/fetch-sydney-events",
-      "schedule": "0 18 * * 0"
+      "schedule": "0 18 * * *"
     },
     {
       "path": "/api/cron/ola-evolution",

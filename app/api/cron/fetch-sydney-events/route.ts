@@ -26,8 +26,8 @@ async function fetchCityOfSydneyEvents(): Promise<RawEvent[]> {
     if (!res.ok) return [];
     const html = await res.text();
     return parseCityOfSydney(html);
-  } catch {
-    console.log('[fetch-sydney-events] City of Sydney fetch failed, skipping');
+  } catch (err) {
+    console.error('[fetch-sydney-events] City of Sydney 源抓取失败:', err);
     return [];
   }
 }
@@ -109,8 +109,8 @@ async function fetchIvyEvents(): Promise<RawEvent[]> {
     if (!res.ok) return [];
     const html = await res.text();
     return parseIvy(html);
-  } catch {
-    console.log('[fetch-sydney-events] Ivy fetch failed, skipping');
+  } catch (err) {
+    console.error('[fetch-sydney-events] Ivy 源抓取失败:', err);
     return [];
   }
 }
@@ -286,9 +286,13 @@ export async function GET(req: Request) {
     ]);
 
     const allRaw = [...cityEvents, ...ivyEvents];
-    console.log(`[fetch-sydney-events] Scraped ${cityEvents.length} city + ${ivyEvents.length} ivy = ${allRaw.length} raw events`);
+
+    if (cityEvents.length === 0) console.error('[fetch-sydney-events] City of Sydney 源返回 0 条，可能改版或宕机');
+    if (ivyEvents.length === 0) console.error('[fetch-sydney-events] Ivy 源返回 0 条，可能改版或宕机');
+    console.log(`[fetch-sydney-events] 抓取统计: City of Sydney ${cityEvents.length} 条 | Ivy ${ivyEvents.length} 条 | 合计 ${allRaw.length} 条`);
 
     if (allRaw.length === 0) {
+      console.error('[fetch-sydney-events] ⚠️ 抓取 0 条，所有数据源可能改版');
       return Response.json({ ok: true, inserted: 0, expired: true, message: 'No events scraped' });
     }
 
@@ -337,7 +341,7 @@ export async function GET(req: Request) {
       return Response.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    console.log(`[fetch-sydney-events] Inserted ${rows.length} new events`);
+    console.log(`[fetch-sydney-events] 入库 ${rows.length} 条新活动 (City of Sydney ${cityEvents.length} | Ivy ${ivyEvents.length} | 去重后 ${newEvents.length})`);
     return Response.json({ ok: true, inserted: rows.length, expired: true });
   } catch (error) {
     console.error('[fetch-sydney-events]', error);
