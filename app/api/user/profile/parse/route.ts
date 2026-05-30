@@ -66,11 +66,14 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const profile = await parseStudentCV(buffer);
 
-    await incrementParseCount(user.id, tier).catch(err =>
-      console.error('[profile/parse] increment failed:', err)
-    );
+    const hasContent = profile && (profile.major || profile.university);
+    if (hasContent) {
+      await incrementParseCount(user.id, tier).catch(err =>
+        console.error('[profile/parse] increment failed:', err)
+      );
+    }
 
-    return Response.json({ profile, fileName: file.name, fileSize: file.size });
+    return Response.json({ profile, parsed: !!hasContent, fileName: file.name, fileSize: file.size });
   } catch (error) {
     console.error('[user/profile/parse]', error);
     return Response.json({ error: 'Failed to parse file' }, { status: 500 });

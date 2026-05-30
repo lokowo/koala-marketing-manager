@@ -385,6 +385,7 @@ export async function POST(request: NextRequest) {
       professorId,
       studentProfile: studentMatchProfile,
       imageData,
+      documentData,
     }: {
       mode: AIMode;
       messages: ChatMessage[];
@@ -393,6 +394,7 @@ export async function POST(request: NextRequest) {
       professorId?: string;
       studentProfile?: { languagePreference?: string; personalityTags?: string[]; careerGoal?: string; preferredCity?: string[]; budget?: string };
       imageData?: { base64: string; mediaType: string };
+      documentData?: { base64: string; mediaType: string; fileName: string };
     } = body;
 
     if (!mode || !messages || !Array.isArray(messages)) {
@@ -946,8 +948,17 @@ H指数：${prof.hIndex ?? '未知'}`;
     const useTools = mode === 'path' || mode === 'chat' || mode === 'write' || mode === 'rp' || mode === 'interview';
 
     const apiMessages: Anthropic.MessageParam[] = messages.map((m, idx) => {
-      const isLastUser = idx === messages.length - 1 && m.role === 'user' && imageData?.base64;
-      if (isLastUser) {
+      const isLastUser = idx === messages.length - 1 && m.role === 'user';
+      if (isLastUser && documentData?.base64) {
+        return {
+          role: 'user' as const,
+          content: [
+            { type: 'document' as const, source: { type: 'base64' as const, media_type: 'application/pdf' as const, data: documentData.base64 } },
+            { type: 'text' as const, text: m.content },
+          ],
+        };
+      }
+      if (isLastUser && imageData?.base64) {
         return {
           role: 'user' as const,
           content: [

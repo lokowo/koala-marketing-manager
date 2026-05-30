@@ -1164,6 +1164,7 @@ function ChatPageInner() {
     currentMessages: Message[],
     professorId?: string,
     imageData?: { base64: string; mediaType: string },
+    documentData?: { base64: string; mediaType: string; fileName: string },
   ) => {
     const userMsg: Message = { id: msgId(), role: 'user', content: txt, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
@@ -1177,6 +1178,7 @@ function ChatPageInner() {
         sessionId: sessionIdRef.current,
         messages: allMsgs.map(m => ({ role: m.role, content: m.content })),
         imageData,
+        documentData,
         userId: user?.id,
         userStyleProfile: {
           formality: tonePref === 'professional' ? 'formal' : tonePref === 'direct' ? 'mixed' : 'casual',
@@ -1415,8 +1417,38 @@ function ChatPageInner() {
       uploadFd.append('fileType', fileType);
       fetch('/api/user/files', { method: 'POST', body: uploadFd }).catch(() => {});
 
-      // For PDFs/docs, try to extract text via resume parser
-      if (file.name.endsWith('.pdf') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+      // For PDFs, send via Claude native document channel so AI reads the full file
+      if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+        try {
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve((reader.result as string).split(',')[1]);
+            reader.onerror = () => reject(new Error('PDF读取失败'));
+            reader.readAsDataURL(file);
+          });
+          const enrichedMsg = txt || `[用户上传了文件：${file.name}] 请阅读并分析这份文件`;
+          // Background: silently update structured profile (don't block chat, don't depend on result)
+          const parseFd = new FormData();
+          parseFd.append('file', file);
+          fetch('/api/user/profile/parse', { method: 'POST', body: parseFd }).catch(() => {});
+          await callApi(enrichedMsg, messages, pendingProfessorId ?? undefined, undefined, {
+            base64, mediaType: 'application/pdf', fileName: file.name,
+          });
+          return;
+        } catch (err) {
+          console.error('[PDF_UPLOAD]', err);
+          setMessages(prev => [...prev, {
+            id: msgId(), role: 'assistant',
+            content: 'PDF 处理出错了，请换一个文件再试～',
+            timestamp: new Date(),
+          }]);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // For other doc types (docx/doc), fall back to text extraction
+      if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
         try {
           const parseFd = new FormData();
           parseFd.append('file', file);
@@ -1512,7 +1544,32 @@ function ChatPageInner() {
     uploadFd.append('fileType', fileType);
     fetch('/api/user/files', { method: 'POST', body: uploadFd }).catch(() => {});
 
-    // Parse if it's a resume
+    // For PDF resumes, send via Claude native document channel
+    if (fileType === 'resume' && (file.type === 'application/pdf' || file.name.endsWith('.pdf'))) {
+      try {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve((reader.result as string).split(',')[1]);
+          reader.onerror = () => reject(new Error('PDF读取失败'));
+          reader.readAsDataURL(file);
+        });
+        // Background: silently update structured profile
+        const parseFd = new FormData();
+        parseFd.append('file', file);
+        fetch('/api/user/profile/parse', { method: 'POST', body: parseFd }).catch(() => {});
+        setParsedFile(file.name);
+        await callApi(
+          `[用户上传了简历：${file.name}] 请阅读这份简历，分析我的学术背景，告诉我有什么亮点和需要改进的地方。`,
+          messages, undefined, undefined,
+          { base64, mediaType: 'application/pdf', fileName: file.name },
+        );
+        return;
+      } catch (err) {
+        console.error('[HANDLE_FILE_PDF]', err);
+      }
+    }
+
+    // Non-PDF resume: use profile/parse text extraction
     if (fileType === 'resume') {
       try {
         const fd = new FormData();
