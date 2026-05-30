@@ -9,6 +9,7 @@ const db = supabaseAdmin as any;
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 interface CVInput {
+  professorId?: string;
   education?: Array<{
     degree: string;
     university: string;
@@ -64,10 +65,37 @@ export async function POST(req: Request) {
     }
 
     const body: CVInput = await req.json();
+    const { professorId } = body;
     const studentCtx = await getStudentContext(user.id);
 
     if (!studentCtx) {
       return Response.json({ error: '请先完善个人资料' }, { status: 400 });
+    }
+
+    let profContext = '';
+    let profName = '';
+    if (professorId) {
+      const [profRes, papersRes] = await Promise.all([
+        db.from('professors')
+          .select('name, university, research_areas, ai_bio_zh, looking_for')
+          .eq('id', professorId)
+          .maybeSingle(),
+        db.from('papers')
+          .select('title, year, abstract')
+          .eq('professor_id', professorId)
+          .order('year', { ascending: false })
+          .limit(3),
+      ]);
+      const prof = profRes.data;
+      const papers = papersRes.data ?? [];
+      if (prof) {
+        profName = prof.name;
+        const areas = (prof.research_areas ?? []).join('、');
+        const paperTitles = papers.map((p: { title: string; year: number | null }) => `"${p.title}" (${p.year ?? 'n/a'})`).join('; ');
+        profContext = `\n\n【定制目标】这份 CV 用于申请 ${prof.name}（${prof.university}）的 PhD。
+该教授研究方向：${areas}。${papers.length > 0 ? `最新论文主题：${paperTitles}。` : ''}${prof.looking_for ? `教授正在寻找：${prof.looking_for}。` : ''}
+请在不捏造的前提下，突出与该教授方向最相关的经历、课程、技能；弱化无关内容。研究经历的措辞要呼应教授的研究领域。`;
+      }
     }
 
     const profileData = JSON.stringify({
@@ -104,7 +132,7 @@ Rules:
 9. Merge data from both the user profile and supplementary input, deduplicating by content similarity
 10. For research descriptions, expand brief entries into 2-3 professional bullet points
 11. Order sections: Education → Research Experience → Publications (only if provided) → Skills → Awards → References
-
+${profContext}
 Output strictly this JSON structure (no markdown code blocks):
 {
   "personal": {
@@ -203,7 +231,9 @@ Output strictly this JSON structure (no markdown code blocks):
     }
 
     const personal = cvContent.personal as { name?: string };
-    const title = `Academic CV — ${personal.name || studentCtx.displayName || 'Untitled'}`;
+    const title = professorId && profName
+      ? `CV for ${profName}`
+      : `Academic CV — ${personal.name || studentCtx.displayName || 'Untitled'}`;
 
     const { data: doc, error: insertErr } = await db
       .from('generated_documents')
@@ -214,6 +244,8 @@ Output strictly this JSON structure (no markdown code blocks):
         content: cvContent,
         status: 'draft',
         credits_used: 1,
+        professor_id: professorId ?? null,
+        schema_version: 1,
       })
       .select('id')
       .single();

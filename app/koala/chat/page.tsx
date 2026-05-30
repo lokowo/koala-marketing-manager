@@ -314,7 +314,7 @@ function AcceptingBadge({ status }: { status?: string }) {
   return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400">🔴 暂不招生</span>;
 }
 
-function ProfessorMatchCard({ match, onGenerateEmail, onGeneratePackage }: { match: ProfessorMatch; onGenerateEmail?: (professorId: string, professorName: string) => void; onGeneratePackage?: (professorId: string, professorName: string) => void }) {
+function ProfessorMatchCard({ match, onGenerateEmail, onGeneratePackage, onGenerateCV }: { match: ProfessorMatch; onGenerateEmail?: (professorId: string, professorName: string) => void; onGeneratePackage?: (professorId: string, professorName: string) => void; onGenerateCV?: (professorId: string, professorName: string) => void }) {
   const score = match.matchScore;
   const color = score >= 75 ? '#5a8060' : score >= 50 ? '#D4A843' : '#b06040';
   return (
@@ -352,6 +352,12 @@ function ProfessorMatchCard({ match, onGenerateEmail, onGeneratePackage }: { mat
           className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg bg-[#5a8060] dark:bg-[#5a8060] text-white"
         >
           📦 申请包
+        </button>
+        <button
+          onClick={() => onGenerateCV?.(match.professorId, match.name)}
+          className="flex-1 text-center text-[11px] font-medium py-1.5 rounded-lg bg-[#5a8060] dark:bg-[#5a8060] text-white"
+        >
+          📄 定制CV
         </button>
       </div>
     </div>
@@ -814,6 +820,7 @@ function ChatPageInner() {
   const [attachedFile, setAttachedFile] = useState<{ file: File; type: string } | null>(null);
   const [coldEmailLoading, setColdEmailLoading] = useState(false);
   const [packageLoading, setPackageLoading] = useState(false);
+  const [cvLoading, setCvLoading] = useState(false);
   const [expandedMatchMsgIds, setExpandedMatchMsgIds] = useState<Set<string>>(new Set());
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDismissed, setFeedbackDismissed] = useState(false);
@@ -1759,6 +1766,52 @@ function ChatPageInner() {
     }
   }, [user, showLogin, packageLoading, mode]);
 
+  const handleGenerateCV = useCallback(async (professorId: string, professorName: string) => {
+    if (!user) { showLogin(); return; }
+    if (cvLoading) return;
+
+    const loadingMsg: Message = {
+      id: msgId(),
+      role: 'assistant',
+      content: `📄 正在为 ${professorName} 定制学术 CV…`,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, loadingMsg]);
+    setCvLoading(true);
+
+    try {
+      const res = await fetch('/api/user/cv/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ professorId, professorName }),
+      });
+
+      if (res.status === 401) { showLogin(); return; }
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '生成失败');
+
+      const resultMsg: Message = {
+        id: loadingMsg.id,
+        role: 'assistant',
+        content: `📄 针对 ${professorName} 的学术 CV 已生成！已保存到 [我的文档](/koala/my-documents)，可随时查看和下载 PDF。`,
+        timestamp: new Date(),
+      };
+      setMessages(prev => {
+        const updated = prev.map(m => m.id === loadingMsg.id ? resultMsg : m);
+        setLocalHistory(mode, updated);
+        return updated;
+      });
+    } catch (err) {
+      setMessages(prev => prev.map(m => m.id === loadingMsg.id ? {
+        ...m,
+        content: `CV 生成失败：${err instanceof Error ? err.message : '请稍后再试'}`,
+      } : m));
+    } finally {
+      setCvLoading(false);
+    }
+  }, [user, showLogin, cvLoading, mode]);
+
   const formatTime = (d: Date) => d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 
   const latestEmotion = useMemo(() => {
@@ -2003,6 +2056,7 @@ function ChatPageInner() {
                             match={p}
                             onGenerateEmail={handleGenerateColdEmail}
                             onGeneratePackage={handleGeneratePackage}
+                            onGenerateCV={handleGenerateCV}
                           />
                         ))}
                         {rest.length > 0 && !isExpanded && (
@@ -2031,6 +2085,7 @@ function ChatPageInner() {
                         match={msg.matchedProfessors[0]}
                         onGenerateEmail={handleGenerateColdEmail}
                         onGeneratePackage={handleGeneratePackage}
+                        onGenerateCV={handleGenerateCV}
                       />
                       {msg.matchedProfessors.length > 1 && (
                         <div className="relative mt-2">
