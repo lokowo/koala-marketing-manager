@@ -521,17 +521,38 @@ export async function POST(request: NextRequest) {
     // ── Resolve conversation subject (who Ola is helping in this turn) ─────
     // Default: { subjectType: 'self', subjectId: 登录userId } — academic writes hit the
     // logged-in account (original behavior, no regression for students).
-    // body.subject explicitly overrides (SA picks a customer; supplied by upcoming UI step).
+    // body.subject explicitly overrides (SA picks a customer via the chat header switcher).
     let subjectType: ConversationSubjectType = 'self';
     let subjectId: string | null = trackingUserId;
     const bodySubject = (body as { subject?: { type?: string; id?: string | null } }).subject;
-    if (
-      bodySubject &&
+    const subjectExplicit =
+      !!bodySubject &&
       typeof bodySubject.type === 'string' &&
-      ['self', 'registered_client', 'shadow_client'].includes(bodySubject.type)
-    ) {
-      subjectType = bodySubject.type as ConversationSubjectType;
-      subjectId = bodySubject.id ?? null;
+      ['self', 'registered_client', 'shadow_client'].includes(bodySubject.type);
+    if (subjectExplicit) {
+      subjectType = bodySubject!.type as ConversationSubjectType;
+      subjectId = bodySubject!.id ?? null;
+    }
+
+    // ── Proxy-account hard gate ───────────────────────────────────────────
+    // 代客能力账号(super_admin/admin/sales) in the "空窗期"(未显式选 subject) →
+    // 学术抽取与 CV 一律不写,彻底止 SA 账号被对话内容污染。
+    // 普通学生(role !== sa-class)不受影响,self 路径照常。
+    let isProxyAccount = false;
+    if (trackingUserId) {
+      try {
+        const { getUserRole } = await import('../../../lib/auth');
+        const role = await getUserRole(trackingUserId);
+        if (role === 'super_admin' || role === 'admin' || role === 'sales') {
+          isProxyAccount = true;
+        }
+      } catch (e) {
+        console.warn('[AI Chat] proxy-account role lookup failed:', e);
+      }
+    }
+    const noWrite = isProxyAccount && !subjectExplicit;
+    if (noWrite) {
+      console.log('[AI Chat] noWrite=true (proxy account without explicit subject)', { userId: trackingUserId });
     }
 
     const sessionId = (body.sessionId as string) || `session_${Date.now()}`;
@@ -1254,6 +1275,12 @@ H指数：${prof.hIndex ?? '未知'}`;
           try {
             if (!trackingUserId) {
               cvToolResult = JSON.stringify({ error: '用户未登录，无法生成CV。请引导用户先登录。' });
+            } else if (noWrite) {
+              // 代客账号未显式选客户 → 不 insert/不 merge/不扣分
+              cvToolResult = JSON.stringify({
+                error: '未选择服务对象',
+                message: '请先在顶部选择当前服务的客户，再生成 CV～',
+              });
             } else if (!cvInput.name || !Array.isArray(cvInput.education) || cvInput.education.length === 0) {
               cvToolResult = JSON.stringify({
                 error: '信息不足',
@@ -1658,8 +1685,11 @@ Output strictly JSON (no markdown): {"personal":{"name":"","email":null,"phone":
               const db = createClient(url, key);
               updateIntimacy(db, memUserId).catch(err =>
                 console.error('[olaMemory] intimacy update failed:', err));
-              updateMemoryFromConversation(db, memUserId, lastUserMsg.content, cleanedReply, subjectType, subjectId).catch(err =>
-                console.error('[olaMemory] memory extraction failed:', err));
+              // Hard gate: proxy accounts without an explicit subject — skip ALL memory writes.
+              if (!noWrite) {
+                updateMemoryFromConversation(db, memUserId, lastUserMsg.content, cleanedReply, subjectType, subjectId).catch(err =>
+                  console.error('[olaMemory] memory extraction failed:', err));
+              }
 
               // Reflection: regenerate chat_playbook every 5 turns
               if (olaMemory) {
