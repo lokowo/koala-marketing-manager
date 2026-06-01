@@ -233,11 +233,25 @@ const ACADEMIC_EXTRACTION_PROMPT = `从以下对话中提取用户的学术信�
 
 const ACADEMIC_CONTENT_RE = /PhD|phd|读博|博士|本科|硕士|学校|大学|专业|GPA|成绩|毕业|学位|university|bachelor|master|graduate|major|degree|我叫|名字是|my name/i;
 
+// ─── Conversation subject ───────────────────────────────────────────────────
+// 「在为谁服务」:学术抽取根据 subject 路由到正确的人,杜绝 SA 账号被客户资料污染。
+//   self              → 学生自用,academic 写登录用户(原行为)
+//   registered_client → SA 代客且客户已注册,academic 写客户 user_profiles/education_history
+//   shadow_client     → SA 代客且客户未注册,academic 合并到 sales_customers.subject_profile
+//   shadow_client + 无 id → SA 未显式选定客户,academic 一律不写库,仅保留对话层
+export type ConversationSubjectType = 'self' | 'registered_client' | 'shadow_client';
+
+export interface ConversationSubject {
+  type: ConversationSubjectType;
+  id?: string | null;   // registered_client: customer user_id;  shadow_client: sales_customers.id
+}
+
 export async function updateMemoryFromConversation(
   supabase: SupabaseClient,
   userId: string,
   userMessage: string,
   olaResponse: string,
+  subject: ConversationSubject = { type: 'self' },
 ): Promise<void> {
   const memory = await getOrCreateMemory(supabase, userId);
 
@@ -324,7 +338,7 @@ export async function updateMemoryFromConversation(
     .update(updates as never)
     .eq('user_id', userId);
 
-  // Academic info extraction — sync to user_profiles + education_history
+  // Academic info extraction — route to subject (NOT logged-in user) to prevent SA contamination
   if (ACADEMIC_CONTENT_RE.test(userMessage)) {
     try {
       const academicResult = await client.messages.create({
@@ -352,40 +366,157 @@ export async function updateMemoryFromConversation(
       if (academicInfo.degree_level) profileUpdates.degree_level = academicInfo.degree_level;
       if (academicInfo.gpa != null) profileUpdates.gpa = String(academicInfo.gpa);
 
-      if (Object.keys(profileUpdates).length > 0) {
-        await supabase
-          .from('user_profiles' as 'user_profiles')
-          .update(profileUpdates as never)
-          .eq('id', userId);
-      }
-
       const edu = academicInfo.education as { institution?: string; degree?: string; field?: string; start_year?: number; end_year?: number } | null;
-      if (edu?.institution) {
-        const { data: existing } = await supabase
-          .from('education_history' as 'user_profiles')
-          .select('id')
-          .eq('user_id', userId)
-          .ilike('institution', `%${edu.institution}%`)
-          .limit(1);
 
-        if (!existing || existing.length === 0) {
-          await supabase
-            .from('education_history' as 'user_profiles')
-            .insert({
-              user_id: userId,
-              institution: edu.institution,
-              degree_type: edu.degree || 'Other',
-              major: edu.field || null,
-              start_year: edu.start_year || null,
-              end_year: edu.end_year || null,
-              status: edu.end_year ? 'completed' : 'current',
-            } as never);
-        }
+      const hasProfileFields = Object.keys(profileUpdates).length > 0;
+      const hasEdu = !!edu?.institution;
+
+      if (!hasProfileFields && !hasEdu) {
+        // Nothing extracted, nothing to write
+      } else if (subject.type === 'self') {
+        // Student self-use: original behavior — write to logged-in user's profile + education_history
+        await writeAcademicToUser(supabase, userId, profileUpdates, edu, hasProfileFields);
+      } else if (subject.type === 'registered_client' && subject.id) {
+        // SA helping a registered client → write to that client's user_profiles / education_history
+        await writeAcademicToUser(supabase, subject.id, profileUpdates, edu, hasProfileFields);
+      } else if (subject.type === 'shadow_client' && subject.id) {
+        // SA helping an unregistered client → merge into sales_customers.subject_profile (jsonb)
+        await mergeAcademicIntoShadowCustomer(supabase, subject.id, profileUpdates, edu);
+      } else {
+        // shadow_client without id, or unrecognized subject — SA has not selected a customer.
+        // Do NOT touch any persisted profile; conversation layer (ola_user_memory) already updated above.
+        console.log('[olaMemory] academic info skipped: no subject selected (logged-in user', userId, ')');
       }
     } catch (err) {
       console.error('[olaMemory] academic info sync failed:', err);
     }
   }
+}
+
+// ─── Academic write helpers ─────────────────────────────────────────────────
+
+async function writeAcademicToUser(
+  supabase: SupabaseClient,
+  targetUserId: string,
+  profileUpdates: Record<string, unknown>,
+  edu: { institution?: string; degree?: string; field?: string; start_year?: number; end_year?: number } | null,
+  hasProfileFields: boolean,
+): Promise<void> {
+  if (hasProfileFields) {
+    await supabase
+      .from('user_profiles' as 'user_profiles')
+      .update(profileUpdates as never)
+      .eq('id', targetUserId);
+  }
+
+  if (edu?.institution) {
+    const { data: existing } = await supabase
+      .from('education_history' as 'user_profiles')
+      .select('id')
+      .eq('user_id', targetUserId)
+      .ilike('institution', `%${edu.institution}%`)
+      .limit(1);
+
+    if (!existing || existing.length === 0) {
+      await supabase
+        .from('education_history' as 'user_profiles')
+        .insert({
+          user_id: targetUserId,
+          institution: edu.institution,
+          degree_type: edu.degree || 'Other',
+          major: edu.field || null,
+          start_year: edu.start_year || null,
+          end_year: edu.end_year || null,
+          status: edu.end_year ? 'completed' : 'current',
+        } as never);
+    }
+  }
+}
+
+interface ShadowAcademicEducation {
+  institution: string;
+  degree?: string;
+  field?: string;
+  start_year?: number;
+  end_year?: number;
+}
+
+interface ShadowSubjectProfile {
+  display_name?: string;
+  university?: string;
+  major?: string;
+  degree_level?: string;
+  gpa?: string;
+  education?: ShadowAcademicEducation[];
+  // free-form: future extractors may add more keys
+  [k: string]: unknown;
+}
+
+async function mergeAcademicIntoShadowCustomer(
+  supabase: SupabaseClient,
+  customerRowId: string,
+  profileUpdates: Record<string, unknown>,
+  edu: { institution?: string; degree?: string; field?: string; start_year?: number; end_year?: number } | null,
+): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: row } = await (supabase as any)
+    .from('sales_customers')
+    .select('subject_profile, is_unregistered, customer_user_id')
+    .eq('id', customerRowId)
+    .single();
+
+  if (!row) {
+    console.warn('[olaMemory] shadow_client row not found:', customerRowId);
+    return;
+  }
+  // Defensive: shadow path must only fire for unregistered customers.
+  // If the row was upgraded to a registered customer in the meantime, refuse to write.
+  if (row.is_unregistered === false || row.customer_user_id) {
+    console.warn('[olaMemory] shadow path refused: customer already registered', customerRowId);
+    return;
+  }
+
+  const existing: ShadowSubjectProfile =
+    (row.subject_profile && typeof row.subject_profile === 'object')
+      ? (row.subject_profile as ShadowSubjectProfile)
+      : {};
+
+  const merged: ShadowSubjectProfile = { ...existing };
+  for (const [k, v] of Object.entries(profileUpdates)) {
+    if (v !== null && v !== undefined && v !== '') merged[k] = v;
+  }
+
+  if (edu?.institution) {
+    const list: ShadowAcademicEducation[] = Array.isArray(existing.education) ? [...existing.education] : [];
+    const dupIdx = list.findIndex(e => e.institution?.toLowerCase().includes(edu.institution!.toLowerCase()) || edu.institution!.toLowerCase().includes(e.institution?.toLowerCase() ?? ''));
+    const incoming: ShadowAcademicEducation = {
+      institution: edu.institution,
+      degree: edu.degree || undefined,
+      field: edu.field || undefined,
+      start_year: edu.start_year || undefined,
+      end_year: edu.end_year || undefined,
+    };
+    if (dupIdx === -1) {
+      list.push(incoming);
+    } else {
+      // overlay missing fields onto the existing entry without overwriting non-empty values
+      const cur = list[dupIdx];
+      list[dupIdx] = {
+        institution: cur.institution || incoming.institution,
+        degree: cur.degree || incoming.degree,
+        field: cur.field || incoming.field,
+        start_year: cur.start_year || incoming.start_year,
+        end_year: cur.end_year || incoming.end_year,
+      };
+    }
+    merged.education = list;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from('sales_customers')
+    .update({ subject_profile: merged })
+    .eq('id', customerRowId);
 }
 
 // ─── Prompt Builder ─────────────────────────────────────────────────────────

@@ -19,7 +19,7 @@ import { getOlaPersonaPrompt } from '../../../lib/prompts/ola-persona';
 import { getDeadlineContext } from '../../../lib/ola/ola-deadlines';
 import { loadMemories, formatMemoriesForPrompt, extractMemories, saveMemories, syncToProfile } from '../../../lib/services/memoryService';
 import { logConversation, parseOlaStateTag, detectUserReaction } from '../../../lib/services/olaConversationLogger';
-import { getOrCreateMemory, updateIntimacy, updateMemoryFromConversation, buildOlaMemoryPrompt, getRelationshipContext, processMbtiAnswer, getMbtiLanguageStyle, type OlaUserMemory } from '../../../lib/services/olaMemoryService';
+import { getOrCreateMemory, updateIntimacy, updateMemoryFromConversation, buildOlaMemoryPrompt, getRelationshipContext, processMbtiAnswer, getMbtiLanguageStyle, type OlaUserMemory, type ConversationSubject } from '../../../lib/services/olaMemoryService';
 import { buildLocalKnowledgePrompt } from '../../../lib/services/olaLocalKnowledgeService';
 import { createEmbedding } from '../../../lib/server/embedding';
 
@@ -446,6 +446,36 @@ export async function POST(request: NextRequest) {
     if (!trackingUserId && body.userId) {
       trackingUserId = body.userId as string;
       console.log('[AI Chat] using body.userId fallback:', trackingUserId);
+    }
+
+    // ── Resolve conversation subject (who Ola is helping in this turn) ─────
+    // Priority: body.subject (explicit SA selection) > role-based default.
+    //   - Student logged in           → subject = self (auto-write to own profile, original behavior)
+    //   - SA/admin logged in,
+    //     no selection                → subject = shadow_client w/ no id (no academic write)
+    //   - SA explicitly chose a customer → body.subject carries it
+    let conversationSubject: ConversationSubject = { type: 'self' };
+    const bodySubject = (body as { subject?: { type?: string; id?: string | null } }).subject;
+    if (
+      bodySubject &&
+      typeof bodySubject.type === 'string' &&
+      ['self', 'registered_client', 'shadow_client'].includes(bodySubject.type)
+    ) {
+      conversationSubject = {
+        type: bodySubject.type as ConversationSubject['type'],
+        id: bodySubject.id ?? null,
+      };
+    } else if (trackingUserId) {
+      try {
+        const { getUserRole } = await import('../../../lib/auth');
+        const role = await getUserRole(trackingUserId);
+        if (role === 'sales' || role === 'admin' || role === 'super_admin') {
+          // SA without explicit subject → do NOT auto-write academic info to SA's own profile
+          conversationSubject = { type: 'shadow_client', id: null };
+        }
+      } catch (e) {
+        console.warn('[AI Chat] role lookup failed for subject default:', e);
+      }
     }
 
     const sessionId = (body.sessionId as string) || `session_${Date.now()}`;
@@ -1527,7 +1557,7 @@ Output strictly JSON (no markdown): {"personal":{"name":"","email":null,"phone":
               const db = createClient(url, key);
               updateIntimacy(db, memUserId).catch(err =>
                 console.error('[olaMemory] intimacy update failed:', err));
-              updateMemoryFromConversation(db, memUserId, lastUserMsg.content, cleanedReply).catch(err =>
+              updateMemoryFromConversation(db, memUserId, lastUserMsg.content, cleanedReply, conversationSubject).catch(err =>
                 console.error('[olaMemory] memory extraction failed:', err));
 
               // Reflection: regenerate chat_playbook every 5 turns
