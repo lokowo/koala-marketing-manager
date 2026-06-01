@@ -830,6 +830,12 @@ function ChatPageInner() {
   const [profileCaptureStep, setProfileCaptureStep] = useState<number>(0);
   const [profileCaptureDone, setProfileCaptureDone] = useState(false);
   const [listenPulse, setListenPulse] = useState(0);
+  // Subject switcher (SA/super_admin only) — null = self, otherwise serving a registered client
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [subject, setSubject] = useState<{ type: 'registered_client'; id: string; name: string; school: string | null; major: string | null } | null>(null);
+  const [olaClients, setOlaClients] = useState<Array<{ id: string; customer_user_id: string | null; name: string; school: string | null; major: string | null }>>([]);
+  const [subjectMenuOpen, setSubjectMenuOpen] = useState(false);
+  const [subjectSearch, setSubjectSearch] = useState('');
   const [showLanding, setShowLanding] = useState<boolean>(() => {
     const action = searchParams.get('action');
     const msgParam = searchParams.get('msg');
@@ -846,6 +852,34 @@ function ChatPageInner() {
   const lastMessageTimeRef = useRef<number>(Date.now());
 
   const currentMode = MODES.find(m => m.key === mode)!;
+
+  // Detect role; if SA/super_admin, load their registered clients for the subject switcher
+  useEffect(() => {
+    if (!user) {
+      setUserRole(null);
+      setOlaClients([]);
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/admin/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d?.role) return;
+        setUserRole(d.role);
+        if (d.role === 'super_admin' || d.role === 'admin') {
+          fetch('/api/ola/clients')
+            .then((r) => (r.ok ? r.json() : null))
+            .then((j) => {
+              if (!cancelled && j?.clients) setOlaClients(j.clients);
+            })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -1197,6 +1231,9 @@ function ChatPageInner() {
           budget: profile.budget ?? undefined,
         };
       }
+      // SA/super_admin: if serving a registered client, inject the subject so the
+      // backend writes documents/credits to that client's account (id = customer_user_id).
+      if (subject) body.subject = { type: subject.type, id: subject.id };
 
       // If profile collection is pending, extract profile from user text in parallel
       const extractionPromise = profileCollectionPending && txt.length >= 20
@@ -2035,6 +2072,39 @@ function ChatPageInner() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* SA/super_admin: subject switcher (self / registered client) */}
+          {(userRole === 'super_admin' || userRole === 'admin') && (
+            <SubjectSwitcher
+              subject={subject}
+              clients={olaClients}
+              open={subjectMenuOpen}
+              onOpen={() => setSubjectMenuOpen(true)}
+              onClose={() => {
+                setSubjectMenuOpen(false);
+                setSubjectSearch('');
+              }}
+              search={subjectSearch}
+              onSearchChange={setSubjectSearch}
+              onSelectSelf={() => {
+                setSubject(null);
+                setSubjectMenuOpen(false);
+                setSubjectSearch('');
+              }}
+              onSelectClient={(c) => {
+                if (!c.customer_user_id) return;
+                setSubject({
+                  type: 'registered_client',
+                  id: c.customer_user_id,
+                  name: c.name,
+                  school: c.school,
+                  major: c.major,
+                });
+                setSubjectMenuOpen(false);
+                setSubjectSearch('');
+              }}
+              onClear={() => setSubject(null)}
+            />
+          )}
           {user && mode === 'write' && (
             <Link
               href="/koala/pricing#credits"
@@ -2066,6 +2136,21 @@ function ChatPageInner() {
           </button>
         </div>
       </div>
+
+      {/* Subject banner (SA/super_admin, when serving a registered client) */}
+      {subject && (userRole === 'super_admin' || userRole === 'admin') && (
+        <div className="flex items-center justify-between px-4 py-1.5 text-[11px] flex-shrink-0 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300">
+          <span>
+            代客中 · 资料与 CV 将归入 <span className="font-medium">{subject.name}</span> 的账号
+          </span>
+          <button
+            onClick={() => setSubject(null)}
+            className="text-amber-700 dark:text-amber-400 hover:underline"
+          >
+            切回自用
+          </button>
+        </div>
+      )}
 
       {/* Mode tabs — horizontally scrollable for 6 modes on mobile */}
       <div className="flex px-2 items-stretch flex-shrink-0 overflow-x-auto scrollbar-hide bg-gray-50 dark:bg-[#0d1520]" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -2560,6 +2645,147 @@ function ChatPageInner() {
       )}
 
       </div>
+    </div>
+  );
+}
+
+interface SubjectSwitcherProps {
+  subject: { type: 'registered_client'; id: string; name: string; school: string | null; major: string | null } | null;
+  clients: Array<{ id: string; customer_user_id: string | null; name: string; school: string | null; major: string | null }>;
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  search: string;
+  onSearchChange: (v: string) => void;
+  onSelectSelf: () => void;
+  onSelectClient: (c: { id: string; customer_user_id: string | null; name: string; school: string | null; major: string | null }) => void;
+  onClear: () => void;
+}
+
+function SubjectSwitcher({
+  subject,
+  clients,
+  open,
+  onOpen,
+  onClose,
+  search,
+  onSearchChange,
+  onSelectSelf,
+  onSelectClient,
+  onClear,
+}: SubjectSwitcherProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open, onClose]);
+
+  const filtered = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    if (!s) return clients;
+    return clients.filter(
+      (c) =>
+        c.name.toLowerCase().includes(s) ||
+        (c.school ?? '').toLowerCase().includes(s) ||
+        (c.major ?? '').toLowerCase().includes(s)
+    );
+  }, [clients, search]);
+
+  return (
+    <div ref={containerRef} className="relative">
+      {subject ? (
+        <div className="flex items-center gap-1 pl-2 pr-1 py-1 rounded-full text-[10px] font-medium border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/40">
+          <button onClick={onOpen} className="flex items-center gap-1">
+            <span>🧑‍🤝‍🧑</span>
+            <span className="max-w-[110px] truncate">代客中·{subject.name}</span>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onClear();
+            }}
+            className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full hover:bg-amber-200 dark:hover:bg-amber-900/60"
+            title="切回自用"
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={onOpen}
+          className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium border border-gray-200 dark:border-white/10 text-gray-700 dark:text-[#a8b8ac] bg-white dark:bg-[#0d1520] hover:bg-gray-50 dark:hover:bg-white/5"
+          title="切换当前服务客户"
+        >
+          <span>👤</span>
+          <span>自用</span>
+        </button>
+      )}
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 w-64 z-40 rounded-lg shadow-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0d1520] overflow-hidden">
+          <button
+            onClick={onSelectSelf}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-white/5 text-gray-900 dark:text-[#e8e4dc] text-left"
+          >
+            <span>👤</span>
+            <span className="flex-1">自用</span>
+            {!subject && <span className="text-emerald-600 dark:text-emerald-400">✓</span>}
+          </button>
+          <div className="px-2 py-1.5 border-y border-gray-200 dark:border-white/10">
+            <input
+              autoFocus
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="搜索客户姓名 / 学校 / 专业"
+              className="w-full px-2 py-1 text-xs rounded border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 text-gray-900 dark:text-[#e8e4dc] placeholder:text-gray-400 dark:placeholder:text-[#5a5550] focus:outline-none focus:ring-1 focus:ring-amber-400"
+            />
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-3 text-[11px] text-gray-400 dark:text-[#5a5550] text-center">
+                {clients.length === 0 ? '名下还没有已注册客户' : '没有匹配的客户'}
+              </div>
+            ) : (
+              filtered.map((c) => {
+                const active = subject?.id === c.customer_user_id;
+                const initial = c.name.charAt(0).toUpperCase();
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => onSelectClient(c)}
+                    disabled={!c.customer_user_id}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left ${
+                      active
+                        ? 'bg-amber-50 dark:bg-amber-950/30'
+                        : 'hover:bg-gray-50 dark:hover:bg-white/5'
+                    } ${!c.customer_user_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <span className="w-6 h-6 flex-shrink-0 rounded-full bg-amber-200 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 flex items-center justify-center text-[10px] font-medium">
+                      {initial}
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-gray-900 dark:text-[#e8e4dc] truncate">{c.name}</span>
+                      {(c.school || c.major) && (
+                        <span className="block text-[10px] text-gray-500 dark:text-[#8a8078] truncate">
+                          {[c.school, c.major].filter(Boolean).join(' · ')}
+                        </span>
+                      )}
+                    </span>
+                    {active && <span className="text-emerald-600 dark:text-emerald-400">✓</span>}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
