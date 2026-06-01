@@ -1160,14 +1160,10 @@ H指数：${prof.hIndex ?? '未知'}`;
             } else if (!studentCtx.education?.length && !studentCtx.university) {
               cvToolResult = JSON.stringify({ error: '缺少教育背景，请先询问学校和专业。', missing: ['education'] });
             } else {
+              // ⚠️ 反串号铁律:
+              // 已删除 email / existing_education / existing_work —— 这些在登录用户 ≠ CV 主人时会污染输出。
+              // 保留字段仅作"目标方向/研究兴趣"的语气参考,prompt 明确要求 Claude 不得复制到 CV 输出。
               const cvProfileData = JSON.stringify({
-                name: studentCtx.displayName,
-                email: studentCtx.email,
-                university: studentCtx.university,
-                major: studentCtx.major,
-                degree_level: studentCtx.degreeLevel,
-                gpa: studentCtx.gpa,
-                gpa_scale: studentCtx.gpaScale,
                 target_field: studentCtx.targetField,
                 english_level: studentCtx.englishLevel,
                 research_interests: studentCtx.researchInterests,
@@ -1176,8 +1172,6 @@ H指数：${prof.hIndex ?? '未知'}`;
                 has_publications: studentCtx.hasPublications,
                 publication_details: studentCtx.publicationDetails,
                 career_goal: studentCtx.careerGoal,
-                existing_education: studentCtx.education,
-                existing_work: studentCtx.work,
               }, null, 2);
 
               const cvSystemPrompt = `You are a professional academic CV consultant. Generate a polished academic CV in structured JSON format.
@@ -1187,7 +1181,8 @@ Rules:
 3. If no publications, do NOT generate a publications section. Never invent papers.
 4. Dates: "YYYY" or "YYYY - YYYY" or "YYYY - Present". GPA: "X.XX/Y.YY".
 5. Sections order: Education → Research → Publications (if any) → Skills → Awards → References.
-Output strictly JSON (no markdown): {"personal":{"name":"","email":null},"education":[{"degree":"","university":"","gpa":null,"dates":"","thesis":null}],"research":[{"title":"","lab":null,"supervisor":null,"period":"","description":""}],"publications":[],"skills":{"technical":[],"languages":[],"tools":[]},"awards":[],"references":[]}`;
+6. ⚠️ DATA SOURCE RULE: Use ONLY the supplementary input (from the prior conversation between user and assistant) for all CV content fields (name / email / phone / location / education / work / publications / skills / awards / references). The "user profile" block is metadata for tone/direction alignment ONLY — do NOT copy any profile field into the output. If a field is absent from supplementary, output null (for personal.email/phone/location) or "[To be added]" (for free-text), never backfill from the user profile.
+Output strictly JSON (no markdown): {"personal":{"name":"","email":null,"phone":null,"location":null,"linkedin":null},"education":[{"degree":"","university":"","gpa":null,"dates":"","thesis":null}],"research":[{"title":"","lab":null,"supervisor":null,"period":"","description":""}],"publications":[],"skills":{"technical":[],"languages":[],"tools":[]},"awards":[],"references":[]}`;
 
               const cvResponse = await client.messages.create({
                 model: 'claude-sonnet-4-6',

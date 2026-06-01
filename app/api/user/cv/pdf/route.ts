@@ -19,7 +19,7 @@ function createStyles(fontFamily: string) {
       fontSize: 20,
       fontFamily, fontWeight: 700,
       textAlign: 'center',
-      marginBottom: 4,
+      marginBottom: 10,
     },
     contactLine: {
       fontSize: 9,
@@ -98,7 +98,7 @@ function createStyles(fontFamily: string) {
 }
 
 interface CVContent {
-  personal: { name?: string; email?: string; phone?: string; linkedin?: string };
+  personal: { name?: string; email?: string; phone?: string; location?: string; linkedin?: string };
   education?: Array<{ degree: string; university: string; gpa?: string; dates?: string; thesis?: string }>;
   research?: Array<{ title: string; lab?: string; supervisor?: string; period?: string; description?: string }>;
   publications?: Array<{ title: string; journal?: string; year?: number; authors?: string; doi?: string }>;
@@ -110,9 +110,11 @@ interface CVContent {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function AcademicCVPdf({ cv, styles }: { cv: CVContent; styles: any }) {
   const p = cv.personal;
+  // 联系方式顺序: phone → email → location (linkedin 放最后,仅在有时显示)
   const contactParts: string[] = [];
-  if (p.email) contactParts.push(p.email);
   if (p.phone) contactParts.push(p.phone);
+  if (p.email) contactParts.push(p.email);
+  if (p.location) contactParts.push(p.location);
   if (p.linkedin) contactParts.push(p.linkedin);
 
   return React.createElement(Document, null,

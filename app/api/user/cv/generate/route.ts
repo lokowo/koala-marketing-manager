@@ -10,6 +10,14 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 interface CVInput {
   professorId?: string;
+  // ⚠️ CV 主人的身份信息 —— 只从此处取，绝不回填登录用户 profile
+  personal?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    linkedin?: string;
+  };
   education?: Array<{
     degree: string;
     university: string;
@@ -111,22 +119,17 @@ export async function POST(req: Request) {
       }
     }
 
+    // ⚠️ 反串号铁律:
+    // profileData 仅作为"语气/方向参考的元数据",绝不放任何会被复制进 CV 输出的身份字段。
+    // 已删除: email / existing_education / existing_work —— 这些字段在登录用户 ≠ CV 主人时会污染输出。
+    // CV 的所有正文内容(name/email/phone/education/work/...)只能从 supplementary 取。
     const profileData = JSON.stringify({
-      name: studentCtx.displayName,
-      email: studentCtx.email,
-      university: studentCtx.university,
-      major: studentCtx.major,
-      degree_level: studentCtx.degreeLevel,
-      gpa: studentCtx.gpa,
-      gpa_scale: studentCtx.gpaScale,
       target_field: studentCtx.targetField,
       english_level: studentCtx.englishLevel,
       research_interests: studentCtx.researchInterests,
       research_description: studentCtx.researchDescription,
       has_research_experience: studentCtx.hasResearchExperience,
       career_goal: studentCtx.careerGoal,
-      existing_education: studentCtx.education,
-      existing_work: studentCtx.work,
     }, null, 2);
 
     const supplementary = JSON.stringify(body, null, 2);
@@ -142,7 +145,7 @@ Rules:
 6. CRITICAL: If the user has no publications (has_publications is false, or publications array is empty/missing), do NOT generate a publications section at all. Never invent papers, journal names, or DOIs.
 7. Dates: "YYYY" or "YYYY - YYYY" or "YYYY - Present"
 8. GPA: "X.XX/Y.YY" format
-9. Merge data from both the user profile and supplementary input, deduplicating by content similarity
+9. ⚠️ DATA SOURCE RULE (critical): Use ONLY the supplementary input for all CV content fields (name / email / phone / location / education / work / publications / skills / awards / references). The "user profile" block is metadata for tone alignment ONLY — do NOT copy any profile field into the output. If a field is absent from supplementary, output null (for personal.email/phone/location) or "[To be added]" (for free-text fields), never backfill from the user profile.
 10. For research descriptions, expand brief entries into 2-3 professional bullet points
 11. Order sections: Education → Research Experience → Publications (only if provided) → Skills → Awards → References
 
@@ -184,6 +187,7 @@ Output strictly this JSON structure (no markdown code blocks):
     "name": "string",
     "email": "string or null",
     "phone": "string or null",
+    "location": "string or null",
     "linkedin": "string or null"
   },
   "education": [
