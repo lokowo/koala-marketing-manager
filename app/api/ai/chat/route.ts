@@ -65,11 +65,81 @@ const PROFESSOR_SEARCH_TOOL: Anthropic.Tool = {
 
 const GENERATE_CV_TOOL: Anthropic.Tool = {
   name: 'generate_cv',
-  description: '为用户生成学术 CV 并保存到"我的文档"。当用户说"帮我生成CV""写简历""做一份CV"时调用。前提：已知用户的姓名和教育背景（至少学校和专业）。如果信息不够，先向用户询问，不要调用此工具。',
+  description:
+    '为用户生成学术 CV 并保存到"我的文档"。当用户说"帮我生成CV""写简历""做一份CV"时调用。从当前对话抽取 CV 主体的全部已知信息填入；信息不足先询问（至少要拿到 name 和 education），不要带空字段调用。',
   input_schema: {
     type: 'object' as const,
-    properties: {},
-    required: [],
+    properties: {
+      name: { type: 'string', description: 'CV 主人的姓名（中文或英文均可，按对话原文）' },
+      email: { type: 'string', description: '邮箱，没提到则省略' },
+      phone: { type: 'string', description: '电话，没提到则省略' },
+      location: { type: 'string', description: '所在城市/国家' },
+      education: {
+        type: 'array',
+        description: '教育经历（最高学位优先）',
+        items: {
+          type: 'object',
+          properties: {
+            degree: { type: 'string', description: '如 Bachelor of Science / 硕士' },
+            university: { type: 'string' },
+            gpa: { type: 'string', description: '如 3.8/4.0 或 85/100' },
+            dates: { type: 'string', description: '如 2020 - 2024 或 2022 - Present' },
+            thesis: { type: 'string', description: '毕业论文/课题（可空）' },
+          },
+        },
+      },
+      research: {
+        type: 'array',
+        description: '科研经历',
+        items: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            lab: { type: 'string' },
+            supervisor: { type: 'string' },
+            period: { type: 'string' },
+            description: { type: 'string' },
+          },
+        },
+      },
+      work: {
+        type: 'array',
+        description: '工作/实习经历',
+        items: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            org: { type: 'string' },
+            period: { type: 'string' },
+            description: { type: 'string' },
+          },
+        },
+      },
+      publications: {
+        type: 'array',
+        description: '论文 / 出版物（用户明确提到的，不要编造）',
+        items: { type: 'string' },
+      },
+      skills: {
+        type: 'object',
+        properties: {
+          technical: { type: 'array', items: { type: 'string' } },
+          languages: { type: 'array', items: { type: 'string' } },
+          tools: { type: 'array', items: { type: 'string' } },
+        },
+      },
+      awards: {
+        type: 'array',
+        description: '奖项 / 荣誉',
+        items: { type: 'string' },
+      },
+      references: {
+        type: 'array',
+        description: '推荐人，如 "Prof. Zhang, Tsinghua, email"',
+        items: { type: 'string' },
+      },
+    },
+    required: ['name', 'education'],
   },
 };
 
@@ -1168,28 +1238,28 @@ H指数：${prof.hIndex ?? '未知'}`;
           continue;
         } else if (toolUseBlock && toolUseBlock.type === 'tool_use' && toolUseBlock.name === 'generate_cv') {
           let cvToolResult: string;
+          const cvInput = (toolUseBlock.input ?? {}) as {
+            name?: string;
+            email?: string;
+            phone?: string;
+            location?: string;
+            education?: unknown[];
+            research?: unknown[];
+            work?: unknown[];
+            publications?: unknown[];
+            skills?: unknown;
+            awards?: unknown[];
+            references?: unknown[];
+          };
           try {
             if (!trackingUserId) {
               cvToolResult = JSON.stringify({ error: '用户未登录，无法生成CV。请引导用户先登录。' });
-            } else if (!studentCtx?.displayName) {
-              cvToolResult = JSON.stringify({ error: '缺少用户姓名，请先询问。', missing: ['name'] });
-            } else if (!studentCtx.education?.length && !studentCtx.university) {
-              cvToolResult = JSON.stringify({ error: '缺少教育背景，请先询问学校和专业。', missing: ['education'] });
+            } else if (!cvInput.name || !Array.isArray(cvInput.education) || cvInput.education.length === 0) {
+              cvToolResult = JSON.stringify({
+                error: '信息不足',
+                message: '先告诉学姐 CV 主人的姓名和教育背景，我再生成～',
+              });
             } else {
-              // ⚠️ 反串号铁律:
-              // 已删除 email / existing_education / existing_work —— 这些在登录用户 ≠ CV 主人时会污染输出。
-              // 保留字段仅作"目标方向/研究兴趣"的语气参考,prompt 明确要求 Claude 不得复制到 CV 输出。
-              const cvProfileData = JSON.stringify({
-                target_field: studentCtx.targetField,
-                english_level: studentCtx.englishLevel,
-                research_interests: studentCtx.researchInterests,
-                research_description: studentCtx.researchDescription,
-                has_research_experience: studentCtx.hasResearchExperience,
-                has_publications: studentCtx.hasPublications,
-                publication_details: studentCtx.publicationDetails,
-                career_goal: studentCtx.careerGoal,
-              }, null, 2);
-
               const cvSystemPrompt = `You are a professional academic CV consultant. Generate a polished academic CV in structured JSON format.
 Rules:
 1. All text in English. Use strong action verbs. Quantify outcomes when possible.
@@ -1197,14 +1267,19 @@ Rules:
 3. If no publications, do NOT generate a publications section. Never invent papers.
 4. Dates: "YYYY" or "YYYY - YYYY" or "YYYY - Present". GPA: "X.XX/Y.YY".
 5. Sections order: Education → Research → Publications (if any) → Skills → Awards → References.
-6. ⚠️ DATA SOURCE RULE: Use ONLY the supplementary input (from the prior conversation between user and assistant) for all CV content fields (name / email / phone / location / education / work / publications / skills / awards / references). The "user profile" block is metadata for tone/direction alignment ONLY — do NOT copy any profile field into the output. If a field is absent from supplementary, output null (for personal.email/phone/location) or "[To be added]" (for free-text), never backfill from the user profile.
+6. ⚠️ DATA SOURCE RULE: Use ONLY the supplementary input (from the prior conversation between user and assistant) for all CV content fields (name / email / phone / location / education / work / publications / skills / awards / references). If a field is absent from supplementary, output null (for personal.email/phone/location) or "[To be added]" (for free-text). Never invent or backfill.
 Output strictly JSON (no markdown): {"personal":{"name":"","email":null,"phone":null,"location":null,"linkedin":null},"education":[{"degree":"","university":"","gpa":null,"dates":"","thesis":null}],"research":[{"title":"","lab":null,"supervisor":null,"period":"","description":""}],"publications":[],"skills":{"technical":[],"languages":[],"tools":[]},"awards":[],"references":[]}`;
 
               const cvResponse = await client.messages.create({
                 model: 'claude-sonnet-4-6',
                 max_tokens: 3000,
                 system: cvSystemPrompt,
-                messages: [{ role: 'user', content: `User profile:\n${cvProfileData}\n\nGenerate the academic CV JSON.` }],
+                messages: [
+                  {
+                    role: 'user',
+                    content: `Supplementary (from conversation):\n${JSON.stringify(cvInput, null, 2)}\n\nGenerate the academic CV JSON.`,
+                  },
+                ],
               });
 
               const cvText = cvResponse.content[0].type === 'text' ? cvResponse.content[0].text : '';
@@ -1213,19 +1288,55 @@ Output strictly JSON (no markdown): {"personal":{"name":"","email":null,"phone":
 
               const cvContent = JSON.parse(cvJsonMatch[0]) as Record<string, unknown>;
               const cvPersonal = cvContent.personal as { name?: string } | undefined;
-              const cvTitle = `Academic CV — ${cvPersonal?.name || studentCtx.displayName || 'Untitled'}`;
+              const cvTitle = `Academic CV — ${cvPersonal?.name || cvInput.name || 'Untitled'}`;
 
               const { createClient: createCvClient } = await import('@supabase/supabase-js');
               const cvDb = createCvClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-              const { data: cvDoc } = await cvDb
-                .from('generated_documents')
-                .insert({ user_id: trackingUserId, type: 'cv', title: cvTitle, content: cvContent, status: 'draft', credits_used: 1 })
-                .select('id')
-                .single();
+              // Subject-aware persistence
+              const targetUserId =
+                subjectType === 'registered_client' && subjectId ? subjectId : trackingUserId;
 
+              let cvDocId: string | null = null;
+
+              if (subjectType === 'shadow_client' && subjectId) {
+                // Shadow client: merge into sales_customers.subject_profile.cv
+                const { data: existing } = await cvDb
+                  .from('sales_customers')
+                  .select('subject_profile')
+                  .eq('id', subjectId)
+                  .maybeSingle();
+                const existingProfile = (existing?.subject_profile ?? {}) as Record<string, unknown>;
+                const mergedProfile = {
+                  ...existingProfile,
+                  cv: cvContent,
+                  cv_title: cvTitle,
+                  cv_updated_at: new Date().toISOString(),
+                };
+                await cvDb
+                  .from('sales_customers')
+                  .update({ subject_profile: mergedProfile })
+                  .eq('id', subjectId);
+              } else {
+                const { data: cvDoc, error: cvInsertErr } = await cvDb
+                  .from('generated_documents')
+                  .insert({
+                    user_id: targetUserId,
+                    type: 'cv',
+                    title: cvTitle,
+                    content: cvContent,
+                    status: 'draft',
+                    credits_used: 1,
+                  })
+                  .select('id')
+                  .single();
+                if (cvInsertErr) throw cvInsertErr;
+                cvDocId = cvDoc?.id ?? null;
+              }
+
+              // Charge credits only on successful save
               const { incrementUsage: incCvUsage } = await import('../../../lib/services/usageTracker');
-              await incCvUsage(cvDb, trackingUserId, 'cv');
+              await incCvUsage(cvDb, targetUserId, 'cv');
 
               const sections = Object.keys(cvContent)
                 .filter(k => k !== 'personal' && cvContent[k] && (Array.isArray(cvContent[k]) ? (cvContent[k] as unknown[]).length > 0 : typeof cvContent[k] === 'object'))
@@ -1233,11 +1344,15 @@ Output strictly JSON (no markdown): {"personal":{"name":"","email":null,"phone":
 
               cvToolResult = JSON.stringify({
                 success: true,
-                documentId: cvDoc?.id ?? null,
+                documentId: cvDocId,
                 title: cvTitle,
-                documentUrl: '/koala/my-documents',
+                documentUrl: subjectType === 'shadow_client' ? null : '/koala/my-documents',
                 sections,
-                message: `CV已生成并保存，包含：${sections}。用户可在"我的文档"查看和下载PDF。如果用户在 Overleaf 或其他地方改好了最终版，可以直接传回来存进档案库。`,
+                subject: subjectType,
+                message:
+                  subjectType === 'shadow_client'
+                    ? `CV 已生成并存入该影子客户档案，包含：${sections}。`
+                    : `CV已生成并保存，包含：${sections}。用户可在"我的文档"查看和下载PDF。如果用户在 Overleaf 或其他地方改好了最终版，可以直接传回来存进档案库。`,
               });
               cvGenerated = true;
             }
