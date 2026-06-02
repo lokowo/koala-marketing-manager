@@ -65,7 +65,9 @@ export async function POST(req: NextRequest) {
   }
 
   const profName = professor.name || professor.name_en || 'Unknown';
-  const university = professor.university || professor.institution || '';
+  // Mutable so the verification step can swap in the corrected current affiliation
+  // before article generation runs.
+  let university = professor.university || professor.institution || '';
   const faculty = professor.faculty || '';
   const positionTitle = professor.position_title || professor.title || 'Researcher';
   const researchAreas = (professor.research_areas || professor.research_tags || []).join(', ');
@@ -103,36 +105,65 @@ export async function POST(req: NextRequest) {
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-  // Step 3.5: Verify professor identity via web search (with timeout)
+  // Step 3.5: Verify professor identity via web search (with timeout).
+  //
+  // 历史误拦修复:
+  // - 教授换学校(如 Lemuria Carter: UNSW -> USYD)曾被 verified=false/warning 阻断生成。
+  // - 现在仅 identityMismatch===true(根本不是同一人)才阻断。
+  // - affiliationChanged + 官网佐证 → 自动 update professors.university + previous_affiliation,留痕。
   let verifiedProfileUrl = professor.profile_url || '';
   let verifiedGoogleScholarUrl = professor.google_scholar_url || '';
+  let affiliationInfo: {
+    affiliationChanged?: boolean;
+    previousAffiliation?: string | null;
+    currentUniversity?: string | null;
+    officialProfileConfirmed?: boolean;
+    affiliationUpdated?: boolean;
+    needsManualMerge?: boolean;
+    note?: string | null;
+  } = {};
   try {
     const verifyResponse = await withTimeout(anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
+      max_tokens: 1200,
       tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
       messages: [{
         role: 'user',
-        content: `Verify the following professor's identity and get accurate current information:
-    Name: ${profName}
-    University: ${university}
+        content: `Verify the following professor's identity and current institutional affiliation.
 
-    Search their official university staff page and Google Scholar.
-    Return JSON:
-    {
-      "verified": true/false,
-      "correctedInfo": {
-        "name": "correct name",
-        "university": "correct university",
-        "position": "correct position",
-        "faculty": "correct department",
-        "researchAreas": ["accurate research areas"],
-        "profileUrl": "official staff page URL",
-        "googleScholarUrl": "Google Scholar URL",
-        "email": "if publicly listed"
-      },
-      "warning": "any discrepancy found, e.g. 'This person is at Max Planck, not UNSW'"
-    }`,
+Name in our DB: ${profName}
+University in our DB: ${university}
+
+Priority data source: the official university staff page (e.g., sydney.edu.au, unsw.edu.au). Google Scholar and Wikipedia are secondary.
+
+Distinguish two cases carefully:
+  (A) WRONG PERSON — the search returned a different individual whose name/research/affiliation do not match.
+      Only in this case set identityMismatch=true.
+  (B) SAME RESEARCHER, MOVED INSTITUTION — name + research fields match our DB, but their CURRENT staff page is at a different university than what we have.
+      This is NOT a mismatch. Set identityMismatch=false, affiliationChanged=true, currentUniversity=<the official full name of the new university>,
+      previousAffiliation=<the old university name from our DB>, officialProfileConfirmed=true if you actually saw the new staff page, false otherwise.
+
+If you cannot confirm anything either way (no web result, ambiguous), set verified=false but DO NOT set identityMismatch=true. We will not block in that case.
+
+Return JSON ONLY:
+{
+  "verified": true|false,
+  "identityMismatch": true|false,
+  "affiliationChanged": true|false,
+  "officialProfileConfirmed": true|false,
+  "currentUniversity": "official full name, or null",
+  "previousAffiliation": "old university, or null",
+  "correctedInfo": {
+    "name": "correct name",
+    "position": "correct position",
+    "faculty": "correct department",
+    "researchAreas": ["accurate research areas"],
+    "profileUrl": "official staff page URL",
+    "googleScholarUrl": "Google Scholar URL",
+    "email": "if publicly listed"
+  },
+  "note": "one short sentence describing what you found (e.g. 'Confirmed on USYD staff page; previously at UNSW.')"
+}`,
       }],
     }), 60000, '教授身份验证');
 
@@ -141,22 +172,102 @@ export async function POST(req: NextRequest) {
       if (block.type === 'text') { verifyText = block.text; break; }
     }
     if (verifyText) {
-      const verifiedData = safeParseJSON(verifyText) as { verified?: boolean; warning?: string; correctedInfo?: { profileUrl?: string; googleScholarUrl?: string } };
-      if (verifiedData.warning || !verifiedData.verified) {
+      const verifiedData = safeParseJSON(verifyText) as {
+        verified?: boolean;
+        identityMismatch?: boolean;
+        affiliationChanged?: boolean;
+        officialProfileConfirmed?: boolean;
+        currentUniversity?: string | null;
+        previousAffiliation?: string | null;
+        note?: string | null;
+        correctedInfo?: { profileUrl?: string; googleScholarUrl?: string };
+      };
+
+      // 阻断条件:仅"根本不是同一人"。卡片已匹配(professor 行存在) → 默认视为通过。
+      if (verifiedData.identityMismatch === true) {
         return Response.json({
-          error: `身份验证警告：${verifiedData.warning || '无法确认该教授信息'}`,
+          error: `身份验证警告：${verifiedData.note || '搜索结果与该卡片不是同一位研究者'}`,
           suggestion: '请核实教授姓名和大学后重试',
         }, { status: 400 });
       }
+
       if (verifiedData.correctedInfo?.profileUrl) verifiedProfileUrl = verifiedData.correctedInfo.profileUrl;
       if (verifiedData.correctedInfo?.googleScholarUrl) verifiedGoogleScholarUrl = verifiedData.correctedInfo.googleScholarUrl;
 
+      // 自动补全 profile_url / google_scholar_url(仅在原本为空时)
       if (verifiedProfileUrl || verifiedGoogleScholarUrl) {
         const updates: Record<string, string> = {};
         if (verifiedProfileUrl && !professor.profile_url) updates.profile_url = verifiedProfileUrl;
         if (verifiedGoogleScholarUrl && !professor.google_scholar_url) updates.google_scholar_url = verifiedGoogleScholarUrl;
         if (Object.keys(updates).length > 0) {
           await db.from('professors').update(updates).eq('id', professorId);
+        }
+      }
+
+      // 机构变更自动更新 + 留痕
+      affiliationInfo = {
+        affiliationChanged: !!verifiedData.affiliationChanged,
+        previousAffiliation: verifiedData.previousAffiliation ?? null,
+        currentUniversity: verifiedData.currentUniversity ?? null,
+        officialProfileConfirmed: !!verifiedData.officialProfileConfirmed,
+        note: verifiedData.note ?? null,
+      };
+
+      if (
+        verifiedData.affiliationChanged &&
+        verifiedData.officialProfileConfirmed &&
+        verifiedData.currentUniversity &&
+        verifiedData.currentUniversity !== professor.university
+      ) {
+        const prevUniversity: string = professor.university || verifiedData.previousAffiliation || '';
+        const nowIso = new Date().toISOString();
+        try {
+          const { error: affUpdErr } = await db
+            .from('professors')
+            .update({
+              previous_affiliation: prevUniversity || null,
+              university: verifiedData.currentUniversity,
+              affiliation_updated_at: nowIso,
+            })
+            .eq('id', professorId);
+
+          if (affUpdErr) throw affUpdErr;
+
+          affiliationInfo.affiliationUpdated = true;
+          // Sync local var so article generation reflects the updated affiliation
+          university = verifiedData.currentUniversity;
+          await logAdminAction(user.id, 'professor_affiliation_updated', 'professor', professorId, {
+            from: prevUniversity || null,
+            to: verifiedData.currentUniversity,
+            source: 'official_profile',
+            profName,
+          });
+        } catch (affErr) {
+          const errCode = (affErr as { code?: string } | null)?.code;
+          const errMsg = (affErr as Error)?.message ?? '';
+          const isUniqueConflict = errCode === '23505' || /duplicate key|unique/i.test(errMsg);
+          if (isUniqueConflict) {
+            // 撞 (name, university) 唯一索引 → 目标 (name, currentUniversity) 已存在另一行。
+            // 跳过 university 改动,但仍记录 previous_affiliation,标注"需人工合并",绝不中断文章生成。
+            console.warn(
+              '[generate-professor] affiliation unique conflict — needs manual merge:',
+              { professorId, profName, from: prevUniversity, to: verifiedData.currentUniversity },
+            );
+            try {
+              await db.from('professors')
+                .update({
+                  previous_affiliation: prevUniversity || null,
+                  affiliation_updated_at: nowIso,
+                })
+                .eq('id', professorId);
+            } catch (e2) {
+              console.error('[generate-professor] previous_affiliation write failed:', (e2 as Error).message);
+            }
+            affiliationInfo.affiliationUpdated = false;
+            affiliationInfo.needsManualMerge = true;
+          } else {
+            console.error('[generate-professor] affiliation update failed (non-blocking):', errMsg);
+          }
         }
       }
     }
@@ -352,5 +463,10 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
 
   await logAdminAction(user.id, 'blog_generate_professor', 'blog_post', post?.id, { professorId, profName });
 
-  return Response.json({ success: true, post, title: zhData.titleZh });
+  return Response.json({
+    success: true,
+    post,
+    title: zhData.titleZh,
+    affiliation: affiliationInfo,
+  });
 }
