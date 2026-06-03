@@ -419,13 +419,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Clean the code from URL without reload
             url.searchParams.delete('code');
             window.history.replaceState({}, '', url.pathname + url.search);
-            // Fire-and-forget profile init
+            // await profile init / 销售归属完成后再继续，失败只记日志不阻断
             const ref = url.searchParams.get('ref') || '';
-            fetch('/api/auth/oauth-complete', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ref }),
-            }).catch(() => {});
+            try {
+              await fetch('/api/auth/oauth-complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ref }),
+              });
+            } catch (e) {
+              console.error('[AuthContext] oauth-complete failed (non-blocking):', e);
+            }
           }
         } catch {
           // code was invalid or already used — ignore

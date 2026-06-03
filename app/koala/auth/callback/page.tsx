@@ -49,11 +49,18 @@ function CallbackHandler() {
           log(`✅ exchange 成功: ${data.session?.user?.email || 'no email'}`);
 
           if (data?.session?.user) {
-            fetch('/api/auth/oauth-complete', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ref }),
-            }).catch(() => {});
+            // 必须 await 完成销售归属后再跳转，避免 POST 被 router.replace 打断。
+            // 失败只记日志不阻断登录。
+            try {
+              await fetch('/api/auth/oauth-complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ref }),
+              });
+              log('✅ oauth-complete 完成');
+            } catch (e) {
+              log(`⚠️ oauth-complete 失败(不阻断): ${e instanceof Error ? e.message : String(e)}`);
+            }
           }
         }
       } catch (e) {
