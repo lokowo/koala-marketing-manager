@@ -45,6 +45,28 @@ async function resolveUserId(customerId: string, metadata?: Stripe.Metadata | nu
   return data?.id || null;
 }
 
+// 更新 plan_type，并对"影响 0 行"（疑似 profile 缺失）告警，杜绝静默失败
+async function updatePlanType(userId: string, tier: string): Promise<void> {
+  const { data, error } = await db
+    .from('user_profiles')
+    .update({ plan_type: tier, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .select('id');
+  if (error) {
+    console.error('[webhook] plan_type 更新报错', { userId, tier, error });
+    return;
+  }
+  if (!data || data.length === 0) {
+    console.error('[webhook] plan_type 更新影响0行(疑似profile缺失)', { userId, tier });
+    await db.from('sales_audit_logs').insert({
+      actor_id: userId, actor_email: '', actor_role: 'system',
+      action: 'webhook_plan_update_zero_rows',
+      target_type: 'user_profile', target_id: userId,
+      details: { tier },
+    }).catch(() => {});
+  }
+}
+
 async function syncUsageTrackingTier(userId: string, tier: string) {
   const today = new Date().toISOString().slice(0, 10);
   const { data: existing } = await db
@@ -117,7 +139,7 @@ async function handleNewSubscription(session: Stripe.Checkout.Session, userId: s
     current_period_end: new Date(subscription.items.data[0].current_period_end * 1000).toISOString(),
     cancel_at_period_end: subscription.cancel_at_period_end, updated_at: new Date().toISOString(),
   }, { onConflict: 'stripe_subscription_id' });
-  await db.from('user_profiles').update({ plan_type: tier.id, updated_at: new Date().toISOString() }).eq('id', userId);
+  await updatePlanType(userId, tier.id);
   await syncUsageTrackingTier(userId, tier.id);
   await addCredits(userId, tier.monthlyCredits, 'subscription_credit', `${tier.label} 订阅首月 ${tier.monthlyCredits} 积分`, referenceId);
   const actualSubPaid = typeof session.amount_total === 'number' ? session.amount_total / 100 : tier.price;
@@ -182,7 +204,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     const { data: sub } = await db.from('subscriptions').select('user_id').eq('stripe_subscription_id', subscription.id).single();
     if (sub) {
       const effectiveTier = mappedStatus === 'active' ? newTierId : 'free';
-      await db.from('user_profiles').update({ plan_type: effectiveTier, updated_at: new Date().toISOString() }).eq('id', sub.user_id);
+      await updatePlanType(sub.user_id, effectiveTier);
       await syncUsageTrackingTier(sub.user_id, effectiveTier);
     }
   }
@@ -192,7 +214,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   await db.from('subscriptions').update({ status: 'canceled', cancel_at_period_end: false, updated_at: new Date().toISOString() }).eq('stripe_subscription_id', subscription.id);
   const { data: sub } = await db.from('subscriptions').select('user_id').eq('stripe_subscription_id', subscription.id).single();
   if (sub) {
-    await db.from('user_profiles').update({ plan_type: 'free', updated_at: new Date().toISOString() }).eq('id', sub.user_id);
+    await updatePlanType(sub.user_id, 'free');
     await syncUsageTrackingTier(sub.user_id, 'free');
     await db.from('sales_audit_logs').insert({
       actor_id: sub.user_id, actor_email: '', actor_role: 'system',
