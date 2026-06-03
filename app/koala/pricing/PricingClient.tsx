@@ -57,6 +57,8 @@ function PricingContent() {
   const [transactions, setTransactions] = useState<Array<{ id: string; amount: number; type: string; description: string; created_at: string; balance_after: number }>>([]);
   const [switchPreview, setSwitchPreview] = useState<PlanSwitchPreview | null>(null);
   const [confirmingSwitch, setConfirmingSwitch] = useState(false);
+  const [provisioning, setProvisioning] = useState<boolean>(false);
+  const [provisionDone, setProvisionDone] = useState<'success' | 'timeout' | null>(null);
 
   const fetchCredits = useCallback(async () => {
     try {
@@ -86,14 +88,71 @@ function PricingContent() {
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
-      setToast({ type: 'success', message: '支付成功！积分正在到账...' });
-      const poll = setInterval(fetchCredits, 2000);
-      const timeout = setTimeout(() => clearInterval(poll), 20000);
-      return () => { clearInterval(poll); clearTimeout(timeout); };
+      // 付款返回：进入"开通处理中"态，轮询订阅/积分，开通到位才显示成功，消除闪烁
+      setToast({ type: 'success', message: '支付成功！正在确认开通状态...' });
+      setProvisioning(true);
+
+      // 记录基线：当前余额与套餐（订阅场景基线通常为 free）
+      let baselineBalance: number | null = balance;
+      const baselinePlan: string = planType;
+      let stopped = false;
+      let poll: ReturnType<typeof setInterval>;
+      let timeout: ReturnType<typeof setTimeout>;
+
+      const tick = async () => {
+        if (stopped) return;
+        // 刷新积分 UI
+        await fetchCredits();
+
+        // 读取最新余额（用于积分包到账比对）
+        let newBalance: number | null = null;
+        try {
+          const cres = await fetch('/api/user/credits');
+          if (cres.ok) { const cd = await cres.json(); newBalance = typeof cd.balance === 'number' ? cd.balance : null; }
+        } catch { /* ignore */ }
+
+        // 内联拉订阅状态，同时更新 UI 的 planType
+        let newPlan: string = baselinePlan;
+        try {
+          const sres = await fetch('/api/stripe/subscription');
+          if (sres.ok) { const sd = await sres.json(); newPlan = sd.plan_type || 'free'; setPlanType(newPlan); }
+        } catch { /* ignore */ }
+
+        // 首次拿到余额且基线缺失时（挂载时 balance 可能为 null），先建立基线
+        if (baselineBalance === null && newBalance !== null) {
+          baselineBalance = newBalance;
+        }
+
+        const subscriptionActivated = newPlan !== 'free' && newPlan !== baselinePlan;
+        const creditsArrived = baselineBalance !== null && newBalance !== null && newBalance > baselineBalance;
+
+        if (subscriptionActivated || creditsArrived) {
+          stopped = true;
+          clearInterval(poll);
+          clearTimeout(timeout);
+          setProvisioning(false);
+          setProvisionDone('success');
+          setToast({ type: 'success', message: subscriptionActivated ? '订阅已开通' : '积分已到账' });
+        }
+      };
+
+      poll = setInterval(tick, 2000);
+      timeout = setTimeout(() => {
+        if (stopped) return;
+        stopped = true;
+        clearInterval(poll);
+        setProvisioning(false);
+        setProvisionDone('timeout');
+      }, 30000);
+      // 立即触发一次，缩短首屏等待
+      tick();
+
+      return () => { stopped = true; clearInterval(poll); clearTimeout(timeout); };
     }
     if (searchParams.get('canceled') === 'true') {
       setToast({ type: 'error', message: '支付已取消' });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, fetchCredits]);
 
   useEffect(() => {
@@ -212,6 +271,32 @@ function PricingContent() {
           toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
         }`}>
           {toast.message}
+        </div>
+      )}
+
+      {/* 开通处理中遮罩 */}
+      {provisioning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[#D4A843]/20 shadow-2xl p-6 text-center">
+            <Loader2 className="size-8 animate-spin mx-auto text-amber-600 dark:text-[#D4A843]" />
+            <h3 className="text-lg font-light mt-4 text-gray-900 dark:text-[#e8e4dc]">正在开通订阅…</h3>
+            <p className="text-xs mt-2 leading-relaxed text-gray-500 dark:text-[#6a7a7e]">支付已成功，正在为你开通权限，请稍候几秒。</p>
+          </div>
+        </div>
+      )}
+
+      {/* 超时兜底卡片 */}
+      {provisionDone === 'timeout' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#111c28] border border-gray-200 dark:border-[#D4A843]/20 shadow-2xl p-6">
+            <p className="text-xs leading-relaxed text-gray-700 dark:text-[#e8e4dc]">开通处理中——你的付款已成功，稍等片刻后刷新即可；若仍未显示，联系客服会马上处理。</p>
+            <button
+              onClick={() => { setProvisionDone(null); fetchSubscription(); fetchCredits(); }}
+              className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold bg-[#1A1A2E] dark:bg-[#D4A843] text-white dark:text-[#080c10]"
+            >
+              刷新查看
+            </button>
+          </div>
         </div>
       )}
 
