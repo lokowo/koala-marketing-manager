@@ -1,3 +1,5 @@
+> **UPDATE (week view removed):** The 本周/week toggle has been removed from the UI; the frontend always sends `period=month`. The API still accepts `period=week` (logic retained-but-inert). Week-related tasks below stay checked as historically implemented; the UI no longer exposes them.
+
 ## 1. API — query params & period boundaries
 
 - [x] 1.1 In `app/api/sales/dashboard-stats/route.ts`, change `GET()` to `GET(req: Request)` and parse `period` (`week|month`, default `month`) and `sort` (`rate|commission`, default `rate`) from `new URL(req.url).searchParams`. Validate against allow-lists; fall back to defaults on anything else.
@@ -20,7 +22,7 @@
 ## 4. Frontend — toggles, self bar, types
 
 - [x] 4.1 In `app/dashboard/sales/page.tsx`, extend `DashData` with `meta` and `team_ranking_full` types; add `period`/`sort` state (default `month`/`rate`).
-- [x] 4.2 Refetch `dashboard-stats?period=&sort=` when toggles change (update `loadData` to accept params). Render two toggle rows at the team-ranking card top: 时间档 (本周/本月) and 排序依据 (综合达成率/本月佣金), styled as segmented pills, dark-theme aware.
+- [x] 4.2 Refetch `dashboard-stats?period=month&sort=` when the sort toggle changes (update `loadData` to accept params). Render at the team-ranking card top: a static 「本月」 label (本周/本月 toggle removed) + a 排序依据 toggle (综合达成率/本月佣金), styled as segmented pills, dark-theme aware.
 - [x] 4.3 Render the self bar 「你当前第 {my_rank} 名 / 共 {total} 人 · 综合达成率 {X}%」 (show 「未设目标」 when the user has no targets; show dollar when sort=commission).
 
 ## 5. Frontend — per-agent rows (no emoji, DESIGN.md compliant)
@@ -35,7 +37,7 @@
 ## 6. Verification
 
 - [ ] 6.1 `curl '/api/sales/dashboard-stats'` (no params) returns 200 with both legacy `team_ranking` and new `team_ranking_full` + `meta` (defaults month/rate).
-- [ ] 6.2 `curl '...?period=week&sort=commission'` returns 200; weekly targets ≈ round(monthTarget*7/daysInMonth); ranking ordered by `commission_month`.
+- [ ] 6.2 `curl '...?period=month&sort=commission'` returns 200; ranking ordered by `commission_month`. (Week view removed from UI; `period=week` remains accepted by API but unused.)
 - [ ] 6.3 Agent with all targets=0 → `achievement_rate=null`, `has_targets=false`, appears last under sort=rate.
 - [x] 6.4 Achievement math spot-check: actuals/targets visits 48/50, reg 19/20, pay 9/10, offline 4/5 → completions .96/.95/.90/.80, weighted (.15·.96+.25·.95+.40·.90+.20·.80)/1.0 = 0.9015 → 90.
 - [ ] 6.5 UI: toggles switch period & sort; self bar + blue self-row highlight render; no emoji present; tier badge colors correct; KPI dots show 实际/目标.

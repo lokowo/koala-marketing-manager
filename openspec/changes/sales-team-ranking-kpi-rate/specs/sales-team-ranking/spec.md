@@ -31,14 +31,16 @@ For each active agent the endpoint MUST compute a 综合达成率 as a weighted 
 - **WHEN** an agent has all four KPI targets equal to 0
 - **THEN** `achievement_rate` is `null` and `has_targets` is `false`
 
-### Requirement: Week vs month time window
-When `period=month`, KPI actuals are counted from the first day of the month and each KPI target is the effective target column value. When `period=week`, actuals are counted from `weekStart` (Monday 00:00 of the current week) and each KPI weekly target = `round(monthTarget × 7 / daysInCurrentMonth)`. `commission_month` (本月佣金) MUST always reflect the calendar month regardless of `period`.
+### Requirement: Month time window (week view removed)
+> **UPDATE (week view removed):** The 本周/week view has been removed from the UI. The frontend always requests `period=month`. The API still accepts `period=week` (with the weekly-target folding logic below) for backward compatibility, but it is unused/inert. Only the month behavior below is in effect.
 
-#### Scenario: Weekly target derivation
+When `period=month`, KPI actuals are counted from the first day of the month and each KPI target is the effective target column value. (Retained-but-inert) When `period=week`, actuals are counted from `weekStart` (Monday 00:00 of the current week) and each KPI weekly target = `round(monthTarget × 7 / daysInCurrentMonth)`. `commission_month` (本月佣金) MUST always reflect the calendar month regardless of `period`.
+
+#### Scenario: Weekly target derivation (retained-but-inert; week view removed from UI)
 - **WHEN** `period=week`, a month KPI target is 31 and the current month has 31 days
 - **THEN** the weekly target = round(31 × 7 / 31) = 7
 
-#### Scenario: Weekly actuals start from Monday
+#### Scenario: Weekly actuals start from Monday (retained-but-inert; week view removed from UI)
 - **WHEN** `period=week`
 - **THEN** visits/registrations/payments/offline actuals only count records on or after Monday 00:00 of the current week
 
@@ -63,15 +65,15 @@ The response MUST include `team_ranking_full`, an array containing every active 
 - **THEN** their entry has `is_me=true` and `meta.my_rank` = 3
 
 ### Requirement: Team ranking UI with toggles, self bar, and KPI rows
-The Sales dashboard (`/dashboard/sales`) team-ranking card MUST provide a 时间档 toggle (本周 / 本月, default 本月) and a 排序依据 toggle (综合达成率 / 本月佣金, default 综合达成率). It MUST show a self bar 「你当前第 N 名 / 共 M 人 · 综合达成率 X%」. Each agent row MUST show: a rank badge (ranks 1–3 = gold/silver/bronze circle with an `IconCrown` icon, others = grey `#N`), the `display_name` + referral_code + tier badge, 本月佣金 (commission-green) with 累计佣金 (muted grey), the 综合达成率 in large type (the active sort key), and four KPI color dots (访问 blue / 注册 green / 付费 amber / 线下 purple) each showing 「actual/target」. The requesting agent's row MUST be blue-highlighted with a 「你」 tag. The UI MUST use the dark theme and the visual language of the existing 4 KPI cards and MUST NOT use emoji (icons/color blocks only, per DESIGN.md).
+The Sales dashboard (`/dashboard/sales`) team-ranking card MUST show a static 「本月」 label (the 本周/本月 toggle was removed — month only) and a 排序依据 toggle (综合达成率 / 本月佣金, default 综合达成率). It MUST show a self bar 「你当前第 N 名 / 共 M 人 · 综合达成率 X%」. Each agent row MUST show: a rank badge (ranks 1–3 = gold/silver/bronze circle with an `IconCrown` icon, others = grey `#N`), the `display_name` + referral_code + tier badge, 本月佣金 (commission-green) with 累计佣金 (muted grey), the 综合达成率 in large type (the active sort key), and four KPI color dots (访问 blue / 注册 green / 付费 amber / 线下 purple) each showing 「actual/target」. The requesting agent's row MUST be blue-highlighted with a 「你」 tag. The UI MUST use the dark theme and the visual language of the existing 4 KPI cards and MUST NOT use emoji (icons/color blocks only, per DESIGN.md).
 
 #### Scenario: Switching sort updates the ranking
 - **WHEN** the user switches 排序依据 from 综合达成率 to 本月佣金
 - **THEN** the rows reorder by 本月佣金 and the self bar reflects the new rank
 
-#### Scenario: Switching period updates KPI actuals/targets
-- **WHEN** the user switches 时间档 from 本月 to 本周
-- **THEN** each row's KPI 「actual/target」 dots and 综合达成率 reflect weekly values
+#### Scenario: Month-only time window (week toggle removed)
+- **WHEN** the team-ranking card renders
+- **THEN** a static 「本月」 label is shown instead of a 本周/本月 toggle, and all KPI 「actual/target」 dots and 综合达成率 reflect month values
 
 #### Scenario: Unset-target agent label
 - **WHEN** an agent has no targets (`has_targets=false`)

@@ -159,7 +159,6 @@ export default function SalesDashboard() {
   const [loading, setLoading] = useState(true);
   const [codeCopied, setCodeCopied] = useState<string | false>(false);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<'week' | 'month'>('month');
   const [sortBy, setSortBy] = useState<'rate' | 'commission'>('rate');
   const [rankLoading, setRankLoading] = useState(false);
 
@@ -191,8 +190,7 @@ export default function SalesDashboard() {
     });
   }, [router, loadData]);
 
-  function changePeriod(p: 'week' | 'month') { setPeriod(p); loadData(p, sortBy, true); }
-  function changeSort(s: 'rate' | 'commission') { setSortBy(s); loadData(period, s, true); }
+  function changeSort(s: 'rate' | 'commission') { setSortBy(s); loadData('month', s, true); }
 
   if (loading) {
     return <div className="flex items-center justify-center py-20"><p className="text-sm text-[#6B7280] dark:text-[#94A3B8]">加载中...</p></div>;
@@ -202,7 +200,7 @@ export default function SalesDashboard() {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <p className="text-sm text-[#991B1B] dark:text-[#F87171]">{error || '加载失败'}</p>
-        <button onClick={() => loadData(period, sortBy)} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#E2E8F0] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition">
+        <button onClick={() => loadData('month', sortBy)} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#E2E8F0] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition">
           重试
         </button>
       </div>
@@ -327,7 +325,7 @@ export default function SalesDashboard() {
           </div>
         </div>
 
-        {/* Team Ranking — KPI 综合达成率 / 本月佣金 双排序 + 本周/本月 */}
+        {/* Team Ranking — KPI 综合达成率 / 本月佣金 双排序（仅本月） */}
         <div className="lg:col-span-2 rounded-2xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
           <div className="flex items-center justify-between gap-2 mb-3">
             <h2 className="text-sm font-light tracking-tight text-[#374151] dark:text-[#E2E8F0]">团队排名</h2>
@@ -335,7 +333,7 @@ export default function SalesDashboard() {
           </div>
 
           <div className="flex items-center gap-2 mb-3">
-            <Segmented<'week' | 'month'> value={period} onChange={changePeriod} options={[['month', '本月'], ['week', '本周']]} />
+            <span className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-[#F1F5F9] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8]">本月</span>
             <Segmented<'rate' | 'commission'> value={sortBy} onChange={changeSort} options={[['rate', '达成率'], ['commission', '佣金']]} />
           </div>
 
