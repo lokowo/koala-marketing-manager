@@ -14,6 +14,7 @@ import {
   IconQrcode,
   IconHeartHandshake,
   IconChevronDown,
+  IconCrown,
 } from '@tabler/icons-react';
 
 const STATUS_CFG: Record<string, { label: string; bg: string; text: string; darkBg?: string; darkText?: string }> = {
@@ -57,6 +58,25 @@ const QUICK_CHANNELS = [
   { key: 'douyin', label: '抖音', icon: IconMusic, color: '#1E293B' },
 ];
 
+interface RankRow {
+  agent_id: string;
+  display_name: string;
+  referral_code: string;
+  tier: string;
+  is_me: boolean;
+  rank: number | null;
+  has_targets: boolean;
+  achievement_rate: number | null;
+  commission_month: number;
+  commission_total: number;
+  kpi: {
+    visits: { actual: number; target: number };
+    registrations: { actual: number; target: number };
+    payments: { actual: number; target: number };
+    offline: { actual: number; target: number };
+  };
+}
+
 interface DashData {
   agent: { display_name: string; referral_code: string; tier: string };
   kpi: {
@@ -68,6 +88,8 @@ interface DashData {
   };
   trend_30d: { date: string; visits: number; registrations: number }[];
   team_ranking: { rank: number; name: string; commission: number; is_me: boolean }[];
+  team_ranking_full: RankRow[];
+  meta: { period: 'week' | 'month'; sort: 'rate' | 'commission'; my_rank: number | null; total: number };
   channel_breakdown: { channel: string; visits: number; pct: number }[];
   funnel: { visits: number; registrations: number; payments: number; offline: number };
   recent_commissions: { date: string; user_name: string; product: string; amount: number; status: string }[];
@@ -80,40 +102,97 @@ function getKpiColor(pct: number) {
   return '#EF4444';
 }
 
+// Tier colors per DESIGN.md (Standard gray / Senior amber / Partner purple) — no emoji
+const RANK_TIER: Record<string, { label: string; color: string }> = {
+  standard: { label: 'Standard', color: '#64748B' },
+  senior: { label: 'Senior', color: '#F59E0B' },
+  partner: { label: 'Partner', color: '#8B5CF6' },
+};
+
+function RankBadge({ rank }: { rank: number | null }) {
+  if (rank === null) {
+    return <span className="size-7 shrink-0 flex items-center justify-center text-[#CBD5E1] dark:text-[#475569]">—</span>;
+  }
+  const medal = rank <= 3 ? ['#F59E0B', '#94A3B8', '#D97706'][rank - 1] : null; // gold / silver / bronze
+  if (medal) {
+    return (
+      <span className="size-7 shrink-0 rounded-full flex items-center justify-center" style={{ background: medal }}>
+        <IconCrown size={14} className="text-white" />
+      </span>
+    );
+  }
+  return <span className="size-7 shrink-0 flex items-center justify-center text-xs font-semibold text-[#94A3B8] dark:text-[#64748B]">#{rank}</span>;
+}
+
+function TierBadge({ tier }: { tier: string }) {
+  const t = RANK_TIER[tier] || RANK_TIER.standard;
+  return (
+    <span className="text-[9px] px-1.5 py-0.5 rounded font-medium shrink-0" style={{ background: t.color + '1A', color: t.color }}>
+      {t.label}
+    </span>
+  );
+}
+
+function Segmented<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: [T, string][] }) {
+  return (
+    <div className="inline-flex rounded-lg bg-[#F1F5F9] dark:bg-[#0F172A] p-0.5">
+      {options.map(([val, label]) => (
+        <button
+          key={val}
+          onClick={() => onChange(val)}
+          className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition ${
+            value === val
+              ? 'bg-white dark:bg-[#334155] text-[#1E293B] dark:text-[#E2E8F0] shadow-sm'
+              : 'text-[#64748B] dark:text-[#94A3B8]'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function SalesDashboard() {
   const router = useRouter();
   const [data, setData] = useState<DashData | null>(null);
   const [loading, setLoading] = useState(true);
   const [codeCopied, setCodeCopied] = useState<string | false>(false);
   const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState<'week' | 'month'>('month');
+  const [sortBy, setSortBy] = useState<'rate' | 'commission'>('rate');
+  const [rankLoading, setRankLoading] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  // silent=true: refresh in place (ranking toggle) without blanking the whole page
+  const loadData = useCallback(async (p: 'week' | 'month' = 'month', s: 'rate' | 'commission' = 'rate', silent = false) => {
+    if (silent) setRankLoading(true); else { setLoading(true); setError(null); }
     try {
-      const res = await fetch('/api/sales/dashboard-stats');
+      const res = await fetch(`/api/sales/dashboard-stats?period=${p}&sort=${s}`);
       if (res.ok) {
         setData(await res.json());
       } else if (res.status === 401) {
         router.replace('/login');
         return;
-      } else if (res.status === 403) {
+      } else if (!silent && res.status === 403) {
         setError('你还不是活跃的销售人员，请联系管理员开通权限。');
-      } else {
+      } else if (!silent) {
         setError('加载仪表盘数据失败，请刷新页面重试。');
       }
     } catch {
-      setError('网络连接失败，请检查网络后重试。');
+      if (!silent) setError('网络连接失败，请检查网络后重试。');
     }
-    setLoading(false);
+    if (silent) setRankLoading(false); else setLoading(false);
   }, [router]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) { router.replace('/login'); return; }
-      loadData();
+      loadData('month', 'rate');
     });
   }, [router, loadData]);
+
+  function changePeriod(p: 'week' | 'month') { setPeriod(p); loadData(p, sortBy, true); }
+  function changeSort(s: 'rate' | 'commission') { setSortBy(s); loadData(period, s, true); }
 
   if (loading) {
     return <div className="flex items-center justify-center py-20"><p className="text-sm text-[#6B7280] dark:text-[#94A3B8]">加载中...</p></div>;
@@ -123,15 +202,25 @@ export default function SalesDashboard() {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <p className="text-sm text-[#991B1B] dark:text-[#F87171]">{error || '加载失败'}</p>
-        <button onClick={loadData} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#E2E8F0] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition">
+        <button onClick={() => loadData(period, sortBy)} className="text-xs px-4 py-2 rounded-lg bg-[#F3F4F6] dark:bg-[#334155] text-[#374151] dark:text-[#E2E8F0] hover:bg-[#E5E7EB] dark:hover:bg-[#475569] transition">
           重试
         </button>
       </div>
     );
   }
 
-  const { agent, kpi, trend_30d, team_ranking, channel_breakdown, funnel, recent_commissions } = data;
+  const { agent, kpi, trend_30d, channel_breakdown, funnel, recent_commissions } = data;
   const tierCfg = TIER_CFG[agent.tier] || TIER_CFG.standard;
+
+  const ranking = data.team_ranking_full || [];
+  const meta = data.meta;
+  const myRow = ranking.find(r => r.is_me);
+  const myRankText = sortBy === 'rate'
+    ? (meta?.my_rank ? `第 ${meta.my_rank} 名` : '未排名（未设目标）')
+    : `第 ${meta?.my_rank ?? '—'} 名`;
+  const selfMetric = sortBy === 'commission'
+    ? `本月佣金 $${myRow?.commission_month ?? 0}`
+    : (myRow?.has_targets ? `综合达成率 ${myRow.achievement_rate}%` : '未设目标');
 
   function copyCode(text: string, key: string) {
     navigator.clipboard.writeText(text);
@@ -238,32 +327,89 @@ export default function SalesDashboard() {
           </div>
         </div>
 
-        {/* Team Ranking — gold/silver/bronze borders */}
+        {/* Team Ranking — KPI 综合达成率 / 本月佣金 双排序 + 本周/本月 */}
         <div className="lg:col-span-2 rounded-2xl p-5 bg-white dark:bg-[#1E293B] border border-[#E5E7EB] dark:border-[#334155]">
-          <h2 className="text-sm font-light tracking-tight text-[#374151] dark:text-[#E2E8F0] mb-3">团队排名</h2>
-          {team_ranking.length > 0 ? (
-            <div className="space-y-1.5">
-              {team_ranking.map(r => {
-                const medal = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : `#${r.rank}`;
-                const rankBg = r.is_me
-                  ? 'bg-[#FEF3C7] dark:bg-[#F59E0B]/10 border-l-4 border-[#F59E0B]'
-                  : r.rank === 1
-                    ? 'bg-gradient-to-r from-[#FEF3C7] to-[#FFFBEB] dark:from-[#F59E0B]/10 dark:to-transparent border-l-4 border-[#F59E0B]'
-                    : r.rank === 2
-                      ? 'bg-[#F8FAFC] dark:bg-[#334155]/50 border-l-4 border-[#94A3B8]'
-                      : r.rank === 3
-                        ? 'bg-[#FEF3C7]/50 dark:bg-[#D97706]/10 border-l-4 border-[#D97706]'
-                        : 'bg-[#F9FAFB] dark:bg-[#334155]/30';
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h2 className="text-sm font-light tracking-tight text-[#374151] dark:text-[#E2E8F0]">团队排名</h2>
+            {rankLoading && <span className="text-[10px] text-[#94A3B8] dark:text-[#64748B]">更新中…</span>}
+          </div>
+
+          <div className="flex items-center gap-2 mb-3">
+            <Segmented<'week' | 'month'> value={period} onChange={changePeriod} options={[['month', '本月'], ['week', '本周']]} />
+            <Segmented<'rate' | 'commission'> value={sortBy} onChange={changeSort} options={[['rate', '达成率'], ['commission', '佣金']]} />
+          </div>
+
+          {/* Self bar */}
+          <div className="mb-3 rounded-lg px-3 py-2 bg-[#EFF6FF] dark:bg-[#3B82F6]/10 border border-[#3B82F6]/20 text-[11px] text-[#1D4ED8] dark:text-[#93C5FD]">
+            你当前{myRankText} · 共 {meta?.total ?? ranking.length} 人 · {selfMetric}
+          </div>
+
+          {ranking.length > 0 ? (
+            <div className="space-y-2">
+              {ranking.map(r => {
+                const me = r.is_me;
+                const rateColor = r.has_targets ? getKpiColor(r.achievement_rate as number) : '#94A3B8';
+                const dots = [
+                  { c: '#3B82F6', v: r.kpi.visits },
+                  { c: '#22C55E', v: r.kpi.registrations },
+                  { c: '#F59E0B', v: r.kpi.payments },
+                  { c: '#8B5CF6', v: r.kpi.offline },
+                ];
                 return (
                   <div
-                    key={r.rank + r.name}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs ${rankBg}`}
+                    key={r.agent_id}
+                    className={`rounded-xl p-3 ${me ? 'bg-[#EFF6FF] dark:bg-[#3B82F6]/10 ring-1 ring-[#3B82F6]/40' : 'bg-[#F9FAFB] dark:bg-[#334155]/30'}`}
                   >
-                    <span className="w-6 text-center font-bold text-[#F59E0B]">{medal}</span>
-                    <span className={`flex-1 ${r.is_me ? 'font-bold text-[#111827] dark:text-[#F1F5F9]' : 'text-[#374151] dark:text-[#CBD5E1]'}`}>
-                      {r.name} {r.is_me && <span className="text-[10px] text-[#F59E0B]">(我)</span>}
-                    </span>
-                    <span className="font-semibold text-[#059669] dark:text-[#34D399]">${r.commission}</span>
+                    <div className="flex items-center gap-2.5">
+                      <RankBadge rank={r.rank} />
+                      <div className="size-7 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold bg-[#F59E0B]/10 text-[#F59E0B]">
+                        {(r.display_name || '?')[0].toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-sm font-medium truncate ${me ? 'text-[#1D4ED8] dark:text-[#93C5FD]' : 'text-[#111827] dark:text-[#F1F5F9]'}`}>
+                            {r.display_name}
+                          </span>
+                          {me && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#3B82F6] text-white font-medium shrink-0">你</span>}
+                          <TierBadge tier={r.tier} />
+                        </div>
+                        <div className="font-mono text-[10px] text-[#94A3B8] dark:text-[#64748B] truncate">{r.referral_code}</div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {sortBy === 'commission' ? (
+                          <div className="text-2xl font-light tabular-nums leading-none text-[#16a34a] dark:text-[#4ade80]">
+                            <span className="text-sm">$</span>{r.commission_month}
+                          </div>
+                        ) : r.has_targets ? (
+                          <div className="text-2xl font-light tabular-nums leading-none" style={{ color: rateColor }}>
+                            {r.achievement_rate}<span className="text-xs">%</span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#F1F5F9] dark:bg-[#334155] text-[#94A3B8]">未设目标</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 mt-2 pl-[38px]">
+                      <div className="text-[11px] whitespace-nowrap">
+                        {sortBy === 'commission' ? (
+                          <span className="text-[#64748B] dark:text-[#94A3B8]">
+                            达成率 {r.has_targets ? <span style={{ color: rateColor }} className="font-medium">{r.achievement_rate}%</span> : '未设目标'}
+                          </span>
+                        ) : (
+                          <span className="font-semibold tabular-nums text-[#16a34a] dark:text-[#4ade80]">${r.commission_month}</span>
+                        )}
+                        <span className="text-[#94A3B8] dark:text-[#64748B] ml-1.5">累计 ${r.commission_total}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        {dots.map((d, i) => (
+                          <span key={i} className="flex items-center gap-1 text-[10px] tabular-nums text-[#64748B] dark:text-[#94A3B8]">
+                            <span className="size-1.5 rounded-full" style={{ background: d.c }} />
+                            {d.v.actual}/{d.v.target}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 );
               })}

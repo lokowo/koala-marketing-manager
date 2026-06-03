@@ -4,7 +4,7 @@ import { supabaseAdmin } from '../../../lib/supabase/server';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const result = await getServerUserWithRole();
     if (!result) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,6 +23,16 @@ export async function GET() {
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59).toISOString();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString();
+
+    // Team-ranking params (additive; defaults month/rate). Only affect team_ranking_full + meta.
+    const sp = new URL(req.url).searchParams;
+    const period: 'week' | 'month' = sp.get('period') === 'week' ? 'week' : 'month';
+    const sortMode: 'rate' | 'commission' = sp.get('sort') === 'commission' ? 'commission' : 'rate';
+    const dow = now.getDay(); // 0=Sun..6=Sat
+    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((dow + 6) % 7)).toISOString(); // Monday 00:00
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const periodStart = period === 'week' ? weekStart : monthStart;
+    const todayStr = now.toISOString().split('T')[0];
 
     const [
       visitsThis, visitsLast,
@@ -45,7 +55,7 @@ export async function GET() {
       db.from('sales_kpi_targets').select('*').eq('agent_id', agent.id).lte('effective_from', now.toISOString().split('T')[0]).gte('effective_until', now.toISOString().split('T')[0]).order('effective_from', { ascending: false }).limit(1),
       db.from('sales_visits').select('visited_at').eq('agent_id', agent.id).eq('is_test', false).gte('visited_at', thirtyDaysAgo).order('visited_at', { ascending: true }),
       db.from('sales_referrals').select('created_at').eq('agent_id', agent.id).eq('is_test', false).gte('created_at', thirtyDaysAgo).order('created_at', { ascending: true }),
-      db.from('sales_agents').select('id, name').eq('status', 'active'),
+      db.from('sales_agents').select('id, name, display_name, referral_code, tier').eq('status', 'active'),
       db.from('sales_visits').select('channel').eq('agent_id', agent.id).eq('is_test', false).gte('visited_at', monthStart),
       db.from('sales_commissions').select('created_at, commission_amount, status, product_type, sales_referrals(referred_user_id, user_profiles:referred_user_id(display_name, email))').eq('agent_id', agent.id).order('created_at', { ascending: false }).limit(5),
       db.from('sales_commissions').select('id', { count: 'exact', head: true }).eq('agent_id', agent.id).gte('created_at', monthStart).neq('status', 'rejected'),
@@ -102,6 +112,80 @@ export async function GET() {
           teamRanking.push({ rank: myIdx + 1, name: agentMap[agent.id] || '未知', commission: Math.round((byAgent[agent.id] || 0) * 100) / 100, is_me: true });
         }
       }
+    }
+
+    // ===== Full team ranking: KPI 综合达成率 + commission, week/month, dual sort =====
+    type RankRow = {
+      agent_id: string; display_name: string; referral_code: string; tier: string;
+      is_me: boolean; rank: number | null; has_targets: boolean; achievement_rate: number | null;
+      commission_month: number; commission_total: number;
+      kpi: Record<'visits' | 'registrations' | 'payments' | 'offline', { actual: number; target: number }>;
+    };
+    let teamRankingFull: RankRow[] = [];
+    let meta = { period, sort: sortMode, my_rank: null as number | null, total: 0 };
+    if (agentIds.length > 0) {
+      const [visitRows, refRows, payRows, offRows, monthCommRows, totalCommRows, targetRows] = await Promise.all([
+        db.from('sales_visits').select('agent_id').in('agent_id', agentIds).eq('is_test', false).gte('visited_at', periodStart),
+        db.from('sales_referrals').select('agent_id').in('agent_id', agentIds).eq('is_test', false).gte('created_at', periodStart),
+        db.from('sales_commissions').select('agent_id').in('agent_id', agentIds).neq('status', 'rejected').gte('created_at', periodStart),
+        db.from('sales_referrals').select('agent_id').in('agent_id', agentIds).eq('is_test', false).eq('offline_converted', true).gte('offline_converted_at', periodStart),
+        db.from('sales_commissions').select('agent_id, commission_amount').in('agent_id', agentIds).neq('status', 'rejected').gte('created_at', monthStart),
+        db.from('sales_commissions').select('agent_id, commission_amount').in('agent_id', agentIds).neq('status', 'rejected'),
+        db.from('sales_kpi_targets').select('agent_id, kpi_1_visits, kpi_2_registrations, kpi_3_payments, kpi_4_offline, effective_from').in('agent_id', agentIds).lte('effective_from', todayStr).gte('effective_until', todayStr).order('effective_from', { ascending: false }),
+      ]);
+      const countBy = (rows: any[]) => { const m: Record<string, number> = {}; for (const r of rows || []) m[r.agent_id] = (m[r.agent_id] || 0) + 1; return m; };
+      const sumBy = (rows: any[]) => { const m: Record<string, number> = {}; for (const r of rows || []) m[r.agent_id] = (m[r.agent_id] || 0) + (r.commission_amount || 0); return m; };
+      const visitC = countBy(visitRows.data), refC = countBy(refRows.data), payC = countBy(payRows.data), offC = countBy(offRows.data);
+      const monthComm = sumBy(monthCommRows.data), totalComm = sumBy(totalCommRows.data);
+      const targetBy: Record<string, any> = {};
+      for (const t of (targetRows.data || [])) { if (!targetBy[t.agent_id]) targetBy[t.agent_id] = t; } // rows ordered desc → first = latest effective
+
+      const WEIGHTS: Record<string, number> = { visits: 0.15, registrations: 0.25, payments: 0.40, offline: 0.20 };
+      const wk = (m: number) => Math.round((m || 0) * 7 / daysInMonth); // weekly target from month target
+
+      teamRankingFull = (allAgents.data || []).map((a: any) => {
+        const t = targetBy[a.id];
+        const monthT = { visits: t?.kpi_1_visits || 0, registrations: t?.kpi_2_registrations || 0, payments: t?.kpi_3_payments || 0, offline: t?.kpi_4_offline || 0 };
+        const tgt = period === 'week'
+          ? { visits: wk(monthT.visits), registrations: wk(monthT.registrations), payments: wk(monthT.payments), offline: wk(monthT.offline) }
+          : monthT;
+        const act = { visits: visitC[a.id] || 0, registrations: refC[a.id] || 0, payments: payC[a.id] || 0, offline: offC[a.id] || 0 };
+        let wsum = 0, acc = 0;
+        (['visits', 'registrations', 'payments', 'offline'] as const).forEach(k => {
+          if (tgt[k] > 0) { wsum += WEIGHTS[k]; acc += WEIGHTS[k] * Math.min(act[k] / tgt[k], 1.5); } // drop zero-target, cap 150%
+        });
+        const has_targets = wsum > 0;
+        return {
+          agent_id: a.id,
+          display_name: a.display_name || a.name || '未知',
+          referral_code: a.referral_code || '',
+          tier: a.tier || 'standard',
+          is_me: a.id === agent.id,
+          rank: null,
+          has_targets,
+          achievement_rate: has_targets ? Math.round((acc / wsum) * 100) : null, // null (not 0) when no targets
+          commission_month: Math.round((monthComm[a.id] || 0) * 100) / 100,
+          commission_total: Math.round((totalComm[a.id] || 0) * 100) / 100,
+          kpi: {
+            visits: { actual: act.visits, target: tgt.visits },
+            registrations: { actual: act.registrations, target: tgt.registrations },
+            payments: { actual: act.payments, target: tgt.payments },
+            offline: { actual: act.offline, target: tgt.offline },
+          },
+        };
+      });
+
+      if (sortMode === 'commission') {
+        teamRankingFull.sort((a, b) => b.commission_month - a.commission_month);
+        teamRankingFull.forEach((r, i) => { r.rank = i + 1; });
+      } else {
+        const withT = teamRankingFull.filter(r => r.has_targets).sort((a, b) => (b.achievement_rate! - a.achievement_rate!) || (b.commission_month - a.commission_month));
+        const without = teamRankingFull.filter(r => !r.has_targets).sort((a, b) => b.commission_month - a.commission_month);
+        withT.forEach((r, i) => { r.rank = i + 1; }); // unset-target agents keep rank=null, appended last
+        teamRankingFull = [...withT, ...without];
+      }
+
+      meta = { period, sort: sortMode, total: teamRankingFull.length, my_rank: teamRankingFull.find(r => r.is_me)?.rank ?? null };
     }
 
     // Channel breakdown
@@ -164,6 +248,8 @@ export async function GET() {
       },
       trend_30d: trend30d,
       team_ranking: teamRanking,
+      team_ranking_full: teamRankingFull,
+      meta,
       channel_breakdown: channelBreakdown,
       funnel,
       recent_commissions: (recentComms.data || []).map((c: any) => ({

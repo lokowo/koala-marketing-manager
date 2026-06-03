@@ -17,7 +17,7 @@ For each active agent the endpoint MUST compute a 综合达成率 as a weighted 
 
 #### Scenario: All four KPIs have targets
 - **WHEN** an agent has visits 48/50, registrations 19/20, payments 9/10, offline 4/5
-- **THEN** completions are 0.96, 0.95, 0.90, 0.80 and the weighted rate = (0.15·0.96 + 0.25·0.95 + 0.40·0.90 + 0.20·0.80) / 1.0 = 0.8915 → `achievement_rate` 89
+- **THEN** completions are 0.96, 0.95, 0.90, 0.80 and the weighted rate = (0.15·0.96 + 0.25·0.95 + 0.40·0.90 + 0.20·0.80) / 1.0 = 0.9015 → `achievement_rate` 90
 
 #### Scenario: A KPI target is zero (dropped + renormalized)
 - **WHEN** offline target is 0 and visits 50/50, registrations 20/20, payments 10/10
