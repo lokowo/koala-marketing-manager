@@ -213,11 +213,11 @@ export default function OlaFloatingMascot() {
   const [muted, setMuted] = useState(true);
   const [assetsReady, setAssetsReady] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [showSoundHint, setShowSoundHint] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const loopCount = useRef(0);
   const MAX_LOOPS = 3;
-  const hasInteracted = useRef(false);
 
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -390,23 +390,6 @@ export default function OlaFloatingMascot() {
     ensureAssetsLoaded().then(() => setAssetsReady(true));
   }, []);
 
-  // ─── Track user interaction for auto-unmute ──────
-  useEffect(() => {
-    const markInteracted = () => {
-      hasInteracted.current = true;
-      if (videoRef.current && videoRef.current.muted) {
-        videoRef.current.muted = false;
-        setMuted(false);
-      }
-    };
-    document.addEventListener('click', markInteracted);
-    document.addEventListener('touchstart', markInteracted);
-    return () => {
-      document.removeEventListener('click', markInteracted);
-      document.removeEventListener('touchstart', markInteracted);
-    };
-  }, []);
-
   // ─── Emotion-based asset switching ───────────────
   const switchAsset = useCallback((assetId: string, caption: string, force = false) => {
     if (!force) {
@@ -491,6 +474,8 @@ export default function OlaFloatingMascot() {
   }, [currentMeta]);
 
   const toggleMuted = useCallback(() => {
+    setShowSoundHint(false);
+    try { localStorage.setItem('ola_sound_hint_seen', '1'); } catch { /* ignore */ }
     setMuted(prev => {
       const next = !prev;
       if (videoRef.current) videoRef.current.muted = next;
@@ -521,6 +506,20 @@ export default function OlaFloatingMascot() {
       video.removeEventListener('ended', syncPause);
     };
   }, [currentMeta?.video_url, muted]);
+
+  // 首次出现动画时,提示一次"可手动开声"
+  useEffect(() => {
+    if (!currentMeta?.video_url) return;
+    try {
+      if (localStorage.getItem('ola_sound_hint_seen')) return;
+    } catch { /* ignore */ }
+    setShowSoundHint(true);
+    const t = setTimeout(() => {
+      setShowSoundHint(false);
+      try { localStorage.setItem('ola_sound_hint_seen', '1'); } catch { /* ignore */ }
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [currentMeta?.video_url]);
 
   // Poll localStorage for emotion/asset changes from chat page
   useEffect(() => {
@@ -914,10 +913,7 @@ export default function OlaFloatingMascot() {
                     const v = e.currentTarget;
                     console.log('[OlaVideo] canPlay', { asset_id: currentMeta.asset_id, readyState: v.readyState, paused: v.paused });
                     if (v.paused) v.play().catch(() => {});
-                    if (hasInteracted.current) {
-                      v.muted = false;
-                      setMuted(false);
-                    }
+                    v.muted = muted;
                     setAssetOpacity(1);
                   }}
                   onEnded={handleVideoEnded}
@@ -937,18 +933,33 @@ export default function OlaFloatingMascot() {
             </div>
           </div>
 
-          {/* Sound toggle button */}
+          {/* Sound toggle button — 常驻可见 */}
           {currentMeta?.video_url && (
             <button
               data-close-btn
               onClick={(e) => { e.stopPropagation(); toggleMuted(); }}
-              className="absolute -bottom-1.5 -right-1.5 z-10 flex items-center justify-center size-5 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-sm transition-opacity opacity-0 group-hover:opacity-100"
+              className="absolute -bottom-1.5 -right-1.5 z-10 flex items-center gap-1 rounded-full bg-white dark:bg-[#1a2332] border border-gray-200 dark:border-white/10 shadow-sm px-1.5 py-0.5"
               aria-label={muted ? '开启声音' : '关闭声音'}
             >
-              {muted
-                ? <VolumeOff className="size-3 text-gray-400" />
-                : <Volume2 className="size-3 text-blue-500" />}
+              {muted ? (
+                <>
+                  <VolumeOff className="size-3 text-gray-400" />
+                  <span className="text-[10px] leading-none text-gray-500 dark:text-gray-300">静音</span>
+                </>
+              ) : (
+                <Volume2 className="size-3 text-blue-500" />
+              )}
             </button>
+          )}
+
+          {/* 首次开声提示气泡 */}
+          {currentMeta?.video_url && showSoundHint && (
+            <div className="absolute right-0 bottom-full mb-2 z-20 w-40 pointer-events-none">
+              <div className="relative ml-auto w-fit max-w-40 rounded-[10px] bg-white dark:bg-[#1f2c40] border border-gray-200 dark:border-white/10 shadow-sm px-2.5 py-2 text-[11.5px] leading-snug text-gray-700 dark:text-[#dbe5f2]">
+                想听小欧说话?点右下角开启声音
+                <span className="absolute -bottom-1 right-5 size-2 rotate-45 bg-white dark:bg-[#1f2c40] border-r border-b border-gray-200 dark:border-white/10" />
+              </div>
+            </div>
           )}
         </div>
 
