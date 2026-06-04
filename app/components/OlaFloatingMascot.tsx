@@ -517,7 +517,7 @@ export default function OlaFloatingMascot() {
     const t = setTimeout(() => {
       setShowSoundHint(false);
       try { localStorage.setItem('ola_sound_hint_seen', '1'); } catch { /* ignore */ }
-    }, 5000);
+    }, 15000);
     return () => clearTimeout(t);
   }, [currentMeta?.video_url]);
 
