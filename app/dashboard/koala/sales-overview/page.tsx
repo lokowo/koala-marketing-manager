@@ -50,6 +50,7 @@ export default function SalesOverviewPage() {
   const [data, setData] = useState<KpiOverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sortKey, setSortKey] = useState<'kpi1'|'kpi2'|'kpi3'|'kpi4'|'overall'|'revenue'>('overall');
 
   useEffect(() => {
     fetch('/api/admin/sales-kpi-overview')
@@ -78,6 +79,9 @@ export default function SalesOverviewPage() {
   }
 
   const { team_totals, agents } = data;
+
+  const sortVal = (a: AgentKpi) => sortKey === 'overall' ? a.overall_pct : sortKey === 'revenue' ? a.revenue : a[sortKey].pct;
+  const sortedAgents = [...agents].sort((x, y) => sortVal(y) - sortVal(x));
 
   const chartData = agents.map(a => ({
     name: a.name,
@@ -126,6 +130,28 @@ export default function SalesOverviewPage() {
         })}
       </div>
 
+      {/* 前三名领奖台 */}
+      {sortedAgents.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          {[1, 0, 2].map(rankIdx => {
+            const a = sortedAgents[rankIdx];
+            if (!a) return <div key={rankIdx} />;
+            const medalBg = ['#FBBF24', '#CBD5E1', '#F0997B'][rankIdx];
+            const medalFg = ['#422006', '#334155', '#4A1B0C'][rankIdx];
+            const val = sortKey === 'revenue' ? `A$${a.revenue.toFixed(2)}` : sortKey === 'overall' ? `${a.overall_pct}%` : `${a[sortKey].pct}%`;
+            const isFirst = rankIdx === 0;
+            return (
+              <div key={a.id} className={`bg-white dark:bg-[#1E293B] rounded-2xl border p-4 text-center ${isFirst ? 'border-blue-400/50' : 'border-[#E5E7EB] dark:border-[#334155] mt-3'}`}>
+                <div className="size-8 rounded-full mx-auto mb-2 flex items-center justify-center font-bold text-sm" style={{ background: medalBg, color: medalFg }}>{rankIdx + 1}</div>
+                <div className="text-sm font-medium text-[#111827] dark:text-[#F1F5F9] truncate">{a.name}</div>
+                <div className="text-[10px] text-[#94A3B8] dark:text-[#64748B] font-mono mb-1">{a.referral_code}</div>
+                <div className="text-base font-semibold text-blue-500">{val}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Per-Agent KPI Detail Table */}
       <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E5E7EB] dark:border-[#334155] overflow-hidden">
         <h2 className="text-sm font-semibold text-[#111827] dark:text-[#F1F5F9] px-5 py-4 border-b border-[#E5E7EB] dark:border-[#334155]">
@@ -139,15 +165,16 @@ export default function SalesOverviewPage() {
               <thead>
                 <tr className="bg-gray-50 dark:bg-[#0F172A] text-[#94A3B8] dark:text-[#64748B]">
                   <th className="text-left px-5 py-3 font-medium">销售</th>
-                  <th className="text-center px-4 py-3 font-medium">KPI 1 扫码</th>
-                  <th className="text-center px-4 py-3 font-medium">KPI 2 注册</th>
-                  <th className="text-center px-4 py-3 font-medium">KPI 3 付费</th>
-                  <th className="text-center px-4 py-3 font-medium">KPI 4 线下</th>
-                  <th className="text-center px-4 py-3 font-medium">总完成率</th>
+                  <th onClick={() => setSortKey('kpi1')} className={`text-center px-4 py-3 font-medium cursor-pointer select-none hover:text-blue-500 ${sortKey === 'kpi1' ? 'text-blue-500' : ''}`}>KPI 1 扫码{sortKey === 'kpi1' ? ' ↓' : ''}</th>
+                  <th onClick={() => setSortKey('kpi2')} className={`text-center px-4 py-3 font-medium cursor-pointer select-none hover:text-blue-500 ${sortKey === 'kpi2' ? 'text-blue-500' : ''}`}>KPI 2 注册{sortKey === 'kpi2' ? ' ↓' : ''}</th>
+                  <th onClick={() => setSortKey('kpi3')} className={`text-center px-4 py-3 font-medium cursor-pointer select-none hover:text-blue-500 ${sortKey === 'kpi3' ? 'text-blue-500' : ''}`}>KPI 3 付费{sortKey === 'kpi3' ? ' ↓' : ''}</th>
+                  <th onClick={() => setSortKey('kpi4')} className={`text-center px-4 py-3 font-medium cursor-pointer select-none hover:text-blue-500 ${sortKey === 'kpi4' ? 'text-blue-500' : ''}`}>KPI 4 线下{sortKey === 'kpi4' ? ' ↓' : ''}</th>
+                  <th onClick={() => setSortKey('overall')} className={`text-center px-4 py-3 font-medium cursor-pointer select-none hover:text-blue-500 ${sortKey === 'overall' ? 'text-blue-500' : ''}`}>总完成率{sortKey === 'overall' ? ' ↓' : ''}</th>
+                  <th onClick={() => setSortKey('revenue')} className={`text-center px-4 py-3 font-medium cursor-pointer select-none hover:text-blue-500 ${sortKey === 'revenue' ? 'text-blue-500' : ''}`}>佣金{sortKey === 'revenue' ? ' ↓' : ''}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E5E7EB] dark:divide-[#334155]">
-                {agents.map(agent => (
+                {sortedAgents.map(agent => (
                   <tr key={agent.id} className="hover:bg-gray-50 dark:hover:bg-[#0F172A]/50">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2.5">
@@ -173,6 +200,9 @@ export default function SalesOverviewPage() {
                       <span className="text-sm font-bold" style={{ color: getKpiColor(agent.overall_pct) }}>
                         {agent.overall_pct}%
                       </span>
+                    </td>
+                    <td className="text-center px-4 py-3">
+                      <span className="text-sm font-medium text-[#111827] dark:text-[#F1F5F9]">A${agent.revenue.toFixed(2)}</span>
                     </td>
                   </tr>
                 ))}
