@@ -164,6 +164,7 @@ export default function SalesOverviewPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-50 dark:bg-[#0F172A] text-[#94A3B8] dark:text-[#64748B]">
+                  <th className="text-center px-4 py-3 font-medium w-12">名次</th>
                   <th className="text-left px-5 py-3 font-medium">销售</th>
                   <th onClick={() => setSortKey('kpi1')} className={`text-center px-4 py-3 font-medium cursor-pointer select-none hover:text-blue-500 ${sortKey === 'kpi1' ? 'text-blue-500' : ''}`}>KPI 1 扫码{sortKey === 'kpi1' ? ' ↓' : ''}</th>
                   <th onClick={() => setSortKey('kpi2')} className={`text-center px-4 py-3 font-medium cursor-pointer select-none hover:text-blue-500 ${sortKey === 'kpi2' ? 'text-blue-500' : ''}`}>KPI 2 注册{sortKey === 'kpi2' ? ' ↓' : ''}</th>
@@ -174,8 +175,17 @@ export default function SalesOverviewPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E5E7EB] dark:divide-[#334155]">
-                {sortedAgents.map(agent => (
+                {sortedAgents.map((agent, i) => (
                   <tr key={agent.id} className="hover:bg-gray-50 dark:hover:bg-[#0F172A]/50">
+                    <td className="text-center px-4 py-3 w-12">
+                      {i < 3 ? (
+                        <span className="inline-flex items-center justify-center size-6 rounded-full text-[11px] font-bold" style={{ background: ['#FBBF24', '#CBD5E1', '#F0997B'][i], color: ['#422006', '#334155', '#4A1B0C'][i] }}>
+                          {i + 1}
+                        </span>
+                      ) : (
+                        <span className="text-[#94A3B8] dark:text-[#64748B] font-bold">{i + 1}</span>
+                      )}
+                    </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2.5">
                         <div className="size-7 rounded-full bg-gray-100 dark:bg-[#334155] flex items-center justify-center text-[10px] font-bold text-[#94A3B8]">
