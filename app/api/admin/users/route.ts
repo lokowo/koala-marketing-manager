@@ -44,10 +44,13 @@ export async function PATCH(req: NextRequest) {
     const { user: caller } = await requireSuperAdmin();
     const { userId, role } = await req.json();
 
-    if (!userId || !role) {
-      return Response.json({ error: 'Missing userId or role' }, { status: 400 });
+    // role 为空字符串 = 移除角色（恢复普通用户）
+    const removing = !role;
+
+    if (!userId) {
+      return Response.json({ error: 'Missing userId' }, { status: 400 });
     }
-    if (!['super_admin', 'admin', 'sales', 'viewer'].includes(role)) {
+    if (!removing && !['super_admin', 'admin', 'sales', 'viewer'].includes(role)) {
       return Response.json({ error: 'Invalid role' }, { status: 400 });
     }
     if (userId === caller.id) {
@@ -63,6 +66,40 @@ export async function PATCH(req: NextRequest) {
     const existing = existingRaw as { role: string } | null;
     if (existing?.role === 'super_admin') {
       return Response.json({ error: 'Cannot modify another super_admin' }, { status: 403 });
+    }
+
+    const roleLabels: Record<string, string> = { super_admin: '超级管理员', admin: '管理员', sales: '销售', viewer: '只读' };
+
+    // 移除角色：删除 user_roles 行 + 清空 user_profiles 的 role/role_status
+    if (removing) {
+      const { error: delError } = await db
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (delError) throw delError;
+
+      const { error: profileError } = await db
+        .from('user_profiles')
+        .update({ role: null, role_status: null, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+
+      if (profileError) throw profileError;
+
+      await logWork({
+        userId: caller.id,
+        role: 'admin',
+        action: 'user_role_change',
+        actionCategory: 'user_management',
+        targetType: 'user',
+        targetId: userId,
+        details: { newRole: null, oldRole: existing?.role },
+      }).catch(() => {});
+
+      await notifyUser(userId, '角色变更', '你的角色已被移除，已恢复为普通用户。').catch(() => {});
+      await notifySuperAdmins('用户角色变更', `用户 ${userId} 的角色已被移除（恢复为普通用户）。`).catch(() => {});
+
+      return Response.json({ success: true });
     }
 
     // Ensure user_profiles row exists (FK requirement for user_roles)
@@ -83,7 +120,6 @@ export async function PATCH(req: NextRequest) {
 
     if (error) throw error;
 
-    const roleLabels: Record<string, string> = { super_admin: '超级管理员', admin: '管理员', sales: '销售', viewer: '只读' };
     await logWork({
       userId: caller.id,
       role: 'admin',
