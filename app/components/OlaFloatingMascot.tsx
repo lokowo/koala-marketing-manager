@@ -83,9 +83,9 @@ const SESSION_COUNT_KEY = 'ola-sales-session-count';
 const MAX_SALES_PER_SESSION = 2;
 const COOLDOWN_AFTER_DISMISS = 24 * 60 * 60 * 1000;
 
-const MASCOT_SIZE_MOBILE = 150;
+const MASCOT_SIZE_MOBILE = 80;
 const MASCOT_SIZE_DESKTOP = 200;
-const MASCOT_SIZE_MOBILE_FULL = 280;
+const MASCOT_SIZE_MOBILE_FULL = 160;
 const MASCOT_SIZE_DESKTOP_FULL = 350;
 
 function isFullBody(assetId: string): boolean {
