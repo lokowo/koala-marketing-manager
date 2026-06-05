@@ -233,6 +233,8 @@ export default function OlaFloatingMascot() {
   const hasDragged = useRef(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressReady = useRef(false);
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
+  const DRAG_THRESHOLD = 8;
   const dragBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const interactBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tapBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -594,45 +596,31 @@ export default function OlaFloatingMascot() {
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('[data-close-btn]')) return;
 
-    const startX = e.clientX;
-    const startY = e.clientY;
     const currentPos = posRef.current;
-
-    if (isMobile()) {
-      longPressReady.current = false;
-      hasDragged.current = false;
-      longPressTimer.current = setTimeout(() => {
-        longPressReady.current = true;
-        dragging.current = true;
-        dragOffset.current = {
-          x: startX - currentPos.x,
-          y: startY - currentPos.y,
-        };
-        vibrate(30);
-        showDragBubble();
-        if (mascotRef.current) mascotRef.current.style.transition = 'none';
-        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-      }, LONG_PRESS_MS);
-    } else {
-      dragging.current = true;
-      hasDragged.current = false;
-      dragOffset.current = {
-        x: e.clientX - currentPos.x,
-        y: e.clientY - currentPos.y,
-      };
-      if (mascotRef.current) mascotRef.current.style.transition = 'none';
-      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-    }
-  }, [showDragBubble]);
+    hasDragged.current = false;
+    dragging.current = false;
+    pointerDownPos.current = { x: e.clientX, y: e.clientY };
+    dragOffset.current = {
+      x: e.clientX - currentPos.x,
+      y: e.clientY - currentPos.y,
+    };
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (longPressTimer.current && !longPressReady.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
+    if (!pointerDownPos.current) return;
+
+    if (!dragging.current) {
+      const dx = e.clientX - pointerDownPos.current.x;
+      const dy = e.clientY - pointerDownPos.current.y;
+      if (Math.sqrt(dx * dx + dy * dy) < DRAG_THRESHOLD) return;
+      dragging.current = true;
+      hasDragged.current = true;
+      if (mascotRef.current) mascotRef.current.style.transition = 'none';
+      if (isMobile()) vibrate(30);
+      showDragBubble();
     }
 
-    if (!dragging.current) return;
-    hasDragged.current = true;
     const estimatedHeight = mascotSize * 1.5;
     const nx = Math.max(0, Math.min(window.innerWidth - mascotSize, e.clientX - dragOffset.current.x));
     const ny = Math.max(0, Math.min(window.innerHeight - estimatedHeight, e.clientY - dragOffset.current.y));
@@ -641,23 +629,10 @@ export default function OlaFloatingMascot() {
       mascotRef.current.style.left = `${nx}px`;
       mascotRef.current.style.top = `${ny}px`;
     }
-
-    if (isMobile()) {
-      vibrate(30);
-    }
-
-    if (!dragBubbleText && Math.random() < 0.02) {
-      showDragBubble();
-    }
-  }, [mascotSize, dragBubbleText, showDragBubble]);
+  }, [mascotSize, showDragBubble]);
 
   const onPointerUp = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-    longPressReady.current = false;
-
+    pointerDownPos.current = null;
     if (!dragging.current) return;
     dragging.current = false;
     if (mascotRef.current) {
