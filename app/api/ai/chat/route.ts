@@ -804,6 +804,31 @@ export async function POST(request: NextRequest) {
           outreachProfessor = prof;
 
           if (mode === 'write') {
+            // 拉真实论文做事实底座，杜绝模型凭空编造论文标题
+            let realPapersBlock = '';
+            let hasRealPapers = false;
+            try {
+              const { createClient } = await import('@supabase/supabase-js');
+              const sbPapers = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+              const { data: profPapers } = await sbPapers
+                .from('papers')
+                .select('title, year, journal')
+                .eq('professor_id', activeProfId)
+                .order('year', { ascending: false })
+                .limit(5);
+              if (profPapers && profPapers.length > 0) {
+                hasRealPapers = true;
+                realPapersBlock = '\n真实论文（只能引用以下列表中的论文，逐字使用标题，不得改写）：\n' +
+                  (profPapers as Array<{ title: string; year: number | null; journal: string | null }>)
+                    .map(p => `- "${p.title}"${p.year ? ` (${p.year})` : ''}${p.journal ? `, ${p.journal}` : ''}`)
+                    .join('\n');
+              }
+            } catch { /* papers unavailable */ }
+
+            const paperRule = hasRealPapers
+              ? '2. 引用上面"真实论文"列表中的至少一篇（逐字使用论文标题，绝不改写或杜撰），并说明为什么这篇引起学生兴趣'
+              : '2. ⚠️ 系统未提供该教授的具体论文。绝对不要编造、杜撰任何论文标题、期刊名或发表年份。只围绕"研究方向"和"潜在研究课题"展开，谈学生与这些方向的契合点';
+
             extraContext += `\n\n## 套磁目标教授（完整资料）
 姓名：${prof.name}
 大学：${prof.university}
@@ -816,13 +841,14 @@ H指数：${prof.hIndex ?? '未知'}，论文数：${prof.paperCount ?? '未知'
 大学主页：${prof.profileUrl || '无'}
 Google Scholar：${prof.googleScholarUrl || '无'}
 适合学生背景：${prof.suitableStudentBackgrounds.join('；') || '未知'}
-潜在研究课题：${prof.potentialRpTopics.join('；') || '未知'}
+潜在研究课题：${prof.potentialRpTopics.join('；') || '未知'}${realPapersBlock}
 
 请根据以上真实资料为用户生成个性化申请信。邮件中必须：
 1. 引用该教授的具体研究方向（不要泛泛而谈）
-2. 说明与学生研究兴趣的契合点
+${paperRule}
 3. 提到该教授所在大学和院系
-4. 语气专业但不过分拘谨`;
+4. 语气专业但不过分拘谨
+⚠️ 铁律：邮件里出现的任何论文标题都必须来自上面"真实论文"列表并逐字引用。没有列表就绝不提具体论文标题。绝不允许凭记忆或想象编造任何文献。`;
           } else {
             extraContext += `\n\n## 用户正在了解的教授
 姓名：${prof.name}

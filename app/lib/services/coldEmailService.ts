@@ -200,6 +200,7 @@ export async function generateColdEmailForProfessor(
 
   const studentInfo = buildStudentSummary(profile);
   const professorInfo = buildProfessorSummary(professor, papers, grants);
+  const hasPapers = papers.length > 0;
 
   const generatePrompt = `You are a PhD application cold email specialist. Generate a concise, professional cold email from a prospective PhD student to an Australian professor.
 
@@ -211,12 +212,13 @@ ${professorInfo}
 
 ## Requirements
 1. First paragraph: brief self-introduction based on the student profile (university, major, research experience)
-2. Second paragraph: reference at least one specific recent paper from the professor's publication list. Mention the paper title and explain why it interests the student.
+2. ${hasPapers ? "Second paragraph: reference at least one specific paper from the professor's 'Recent papers' list above — use the EXACT paper title verbatim, never alter or invent it. Explain why it interests the student." : "Second paragraph: NO specific papers are available for this professor. Do NOT invent or cite any paper title, journal name, or publication year. Instead, engage with the professor's research areas and potential RP topics in general terms."}
 3. Third paragraph: identify research intersections between the student's interests and the professor's potential RP topics (${professor.potentialRpTopics.join(', ') || 'general research areas'}). Be specific about shared methodologies or questions.
 4. Closing: express interest in PhD supervision, mention attaching CV, and propose a brief meeting.
 5. Total length: 250-350 words in English.
 6. Tone: professional but personable — not overly formal.
 7. Subject line: specific, referencing the research area.
+8. CRITICAL ANTI-FABRICATION RULE: Only reference papers that explicitly appear in the Professor Profile's "Recent papers" list above. Never fabricate paper titles, journals, years, DOIs, or any publication details. If no papers are listed, discuss research directions only.
 
 ## Output Format
 Return a valid JSON object with exactly this structure (no markdown fencing):
