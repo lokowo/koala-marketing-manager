@@ -133,7 +133,6 @@ export default function TermsPage() {
           <div className="rounded-xl bg-[#1E293B] border border-[#334155] p-4 text-sm space-y-1">
             <p className="text-white font-medium">Koala Study Advisors</p>
             <p className="text-[#CBD5E1]">Email: <a href="mailto:info@koalastudyadvisors.net" className="text-[#F59E0B] hover:underline">info@koalastudyadvisors.net</a></p>
-            <p className="text-[#CBD5E1]">Suite 22/26A Lime St, Sydney NSW 2000, Australia</p>
           </div>
         </Section>
 

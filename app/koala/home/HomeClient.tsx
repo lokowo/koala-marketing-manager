@@ -311,7 +311,7 @@ export default function HomeClient({ initialProfessors, initialUserCount, initia
 
             <div className="flex flex-col md:flex-row md:items-center">
               <div className="order-2 md:order-1 px-6 py-6 md:py-8 lg:py-12 lg:px-10 relative z-10 md:w-[45%]">
-                <div className="inline-flex items-center text-xs font-medium mb-4 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-transparent text-amber-700 dark:text-[#D4A843]/50 border border-amber-200 dark:border-transparent">
+                <div className="inline-flex items-center text-xs font-medium mb-4 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-[#D4A843]/10 text-amber-700 dark:text-[#D4A843] border border-amber-200 dark:border-[#D4A843]/20">
                   AI 导师匹配 · 免费使用
                 </div>
                 <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold leading-snug mb-3 text-[#1A1A2E] dark:text-[#e8e4dc]">
@@ -326,7 +326,7 @@ export default function HomeClient({ initialProfessors, initialUserCount, initia
                 >
                   开始匹配 <ArrowRight className="size-4" />
                 </Link>
-                <div className="mt-4 text-[11px] text-center md:text-left text-amber-700 dark:text-[#D4A843]/40">
+                <div className="mt-4 text-[11px] text-center md:text-left text-amber-700 dark:text-[#D4A843]/75">
                   {initialUserCount >= 10
                     ? `已帮助 ${initialUserCount.toLocaleString()} 位同学匹配理想导师`
                     : '覆盖全澳 38 所大学'}
@@ -750,7 +750,7 @@ export default function HomeClient({ initialProfessors, initialUserCount, initia
           </div>
         </div>
         <div className="text-center text-[10px] mt-4 text-gray-300 dark:text-[#6a7a7e]/60">
-          &copy; 2026 Koala PhD 考拉博士 &middot; {BRAND.address}
+          &copy; 2026 Koala PhD 考拉博士
         </div>
       </footer>
 
