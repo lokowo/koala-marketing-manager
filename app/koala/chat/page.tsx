@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Settings, Plus, Send, Sparkles, Mic, MicOff } from 'lucide-react';
+import { ChevronLeft, Settings, Plus, Send, Square, Sparkles, Mic, MicOff } from 'lucide-react';
 import VoiceInputButton from '../../components/VoiceInputButton';
 import Link from 'next/link';
 import { useAuth } from '../components/AuthContext';
@@ -850,6 +850,7 @@ function ChatPageInner() {
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMessageTimeRef = useRef<number>(Date.now());
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const currentMode = MODES.find(m => m.key === mode)!;
 
@@ -1017,9 +1018,11 @@ function ChatPageInner() {
 
     const fullText = stripHtmlComments(msg.content);
     let charIndex = 0;
+    let cancelled = false;
     setTypewriterText('');
 
     function tick() {
+      if (cancelled) return;
       charIndex += 1;
       if (charIndex <= fullText.length) {
         setTypewriterText(fullText.slice(0, charIndex));
@@ -1029,6 +1032,7 @@ function ChatPageInner() {
       }
     }
     requestAnimationFrame(tick);
+    return () => { cancelled = true; };
   }, [typewriterMsgId]);
 
   // PDF export handler
@@ -1244,11 +1248,13 @@ function ChatPageInner() {
           }).then(r => r.ok ? r.json() : null).catch(() => null)
         : Promise.resolve(null);
 
+      abortControllerRef.current = new AbortController();
       const [res, extractionResult] = await Promise.all([
         fetch('/api/ai/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
+          signal: abortControllerRef.current.signal,
         }),
         extractionPromise,
       ]);
@@ -1336,7 +1342,8 @@ function ChatPageInner() {
       }
 
       lastMessageTimeRef.current = Date.now();
-    } catch {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       const errMsg: Message = {
         id: msgId(), role: 'assistant',
         content: '抱歉，网络出了点问题。请稍后再试。',
@@ -1578,6 +1585,16 @@ function ChatPageInner() {
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); sendMessage(); }
+  }
+
+  function handleStop() {
+    if (loading) {
+      abortControllerRef.current?.abort();
+      setLoading(false);
+    }
+    if (typewriterMsgId) {
+      setTypewriterMsgId(null);
+    }
   }
 
   function setFeedback(id: string, rating: FeedbackRating) {
@@ -2611,13 +2628,22 @@ function ChatPageInner() {
             size="md"
             maxDuration={30}
           />
-          <button
-            onClick={() => sendMessage()}
-            disabled={!input.trim() || loading || !historyLoaded || anonLimitReached}
-            className={`size-11 shrink-0 rounded-full flex justify-center items-center ${input.trim() && !loading && historyLoaded && !anonLimitReached ? 'bg-[#1A1A2E] dark:bg-[#D4A843]' : 'bg-gray-200 dark:bg-white/[0.08]'}`}
-          >
-            <Send className="size-4 fill-white text-white" />
-          </button>
+          {(loading || typewriterMsgId) ? (
+            <button
+              onClick={handleStop}
+              className="size-11 shrink-0 rounded-full flex justify-center items-center bg-[#1A1A2E] dark:bg-[#D4A843]"
+            >
+              <Square className="size-4 fill-white text-white" />
+            </button>
+          ) : (
+            <button
+              onClick={() => sendMessage()}
+              disabled={!input.trim() || loading || !historyLoaded || anonLimitReached}
+              className={`size-11 shrink-0 rounded-full flex justify-center items-center ${input.trim() && !loading && historyLoaded && !anonLimitReached ? 'bg-[#1A1A2E] dark:bg-[#D4A843]' : 'bg-gray-200 dark:bg-white/[0.08]'}`}
+            >
+              <Send className="size-4 fill-white text-white" />
+            </button>
+          )}
         </div>
         <p className="text-center text-[10px] pb-2 text-gray-400 dark:text-[#5a5550]">
           Koala 可能出错，重要决策请咨询人工顾问
