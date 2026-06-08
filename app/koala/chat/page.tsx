@@ -1577,7 +1577,7 @@ function ChatPageInner() {
   }, [input, loading, historyLoaded, messages, mode, callApi, pendingProfessorId, attachedFile, sidebarOpen, sidebarAutoCollapsed]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); sendMessage(); }
   }
 
   function setFeedback(id: string, rating: FeedbackRating) {
