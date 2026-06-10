@@ -51,7 +51,7 @@ function parseMeta(html: string, metaName: string): string | null {
 }
 
 type FetchResult =
-  | { kind: 'ok'; faculty: string | null; fields: string[] }
+  | { kind: 'ok'; faculty: string | null }
   | { kind: '404' }
   | { kind: 'failed' };
 
@@ -80,9 +80,7 @@ async function fetchAndParse(profileUrl: string): Promise<FetchResult> {
     if (r.status === 404) return { kind: '404' };
     if (r.status >= 200 && r.status < 300) {
       const faculty = parseMeta(r.html, 'unsw.people.faculty');
-      const forRaw = parseMeta(r.html, 'unsw.people.fieldsofresearch');
-      const fields = forRaw ? forRaw.split('|').map(s => s.trim()).filter(Boolean) : [];
-      return { kind: 'ok', faculty, fields };
+      return { kind: 'ok', faculty };
     }
     // 其他非 2xx（5xx 等）：重试
     if (attempt < 2) { await sleep(backoff[attempt]); continue; }
@@ -113,8 +111,17 @@ async function main() {
   const total = targets.length;
   console.log(`Candidates(UNSW research.unsw): ${candidates.length}, dirty targets: ${total}. DRY_RUN=${DRY_RUN}`);
 
-  let updated_faculty = 0, filled_research_areas = 0, skipped_404 = 0, skipped_no_meta = 0, failed = 0;
-  const samples: Array<{ name: string | null; old_faculty: string | null; new_faculty: string | null; research_areas_filled: boolean }> = [];
+  const snapshotPath = join(process.cwd(), 'scripts/.refetch-unsw-faculty-targets.json');
+  writeFileSync(snapshotPath, JSON.stringify({
+    created_at: new Date().toISOString(),
+    mode: DRY_RUN ? 'DRY_RUN' : 'EXECUTE',
+    total,
+    targets,
+  }, null, 2), 'utf8');
+
+  let updated_faculty = 0, skipped_404 = 0, skipped_no_meta = 0, failed = 0;
+  const facultyDist: Record<string, number> = {};
+  const samples: Array<{ name: string | null; old_faculty: string | null; new_faculty: string | null }> = [];
 
   // 3. 并发池（上限 4，每请求间隔 ~250ms）
   const CONCURRENCY = 4;
@@ -133,18 +140,15 @@ async function main() {
       else if (result.kind === 'failed') { failed++; }
       else if (!result.faculty) { skipped_no_meta++; }
       else {
-        // 成功解析出非空 faculty
-        const fillRA = (!r.research_areas || r.research_areas.length === 0) && result.fields.length > 0;
         if (!DRY_RUN) {
           const upd: any = { faculty: result.faculty, updated_at: new Date().toISOString() };
-          if (fillRA) upd.research_areas = result.fields;
           const { error: updErr } = await db.from('professors').update(upd).eq('id', r.id);
           if (updErr) { console.error('UPDATE error', r.name, updErr.message); failed++; continue; }
         }
         updated_faculty++;
-        if (fillRA) filled_research_areas++;
+        facultyDist[result.faculty] = (facultyDist[result.faculty] || 0) + 1;
         if (samples.length < 20) {
-          samples.push({ name: r.name, old_faculty: r.faculty, new_faculty: result.faculty, research_areas_filled: fillRA });
+          samples.push({ name: r.name, old_faculty: r.faculty, new_faculty: result.faculty });
         }
       }
 
@@ -156,7 +160,10 @@ async function main() {
   await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
 
   // 4. 报告
-  const report = { total, updated_faculty, filled_research_areas, skipped_404, skipped_no_meta, failed, samples };
+  const faculty_distribution = Object.entries(facultyDist)
+    .sort((a, b) => b[1] - a[1])
+    .map(([faculty, count]) => ({ faculty, count }));
+  const report = { total, updated_faculty, skipped_404, skipped_no_meta, failed, snapshotPath, faculty_distribution, samples };
   const reportPath = join(process.cwd(), 'scripts/.refetch-unsw-faculty-report.json');
   writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf8');
 
@@ -164,13 +171,15 @@ async function main() {
   console.log('mode:', DRY_RUN ? 'DRY RUN (no writes)' : 'EXECUTED (writes applied)');
   console.log('total targets:', total);
   console.log('updated_faculty:', updated_faculty);
-  console.log('filled_research_areas:', filled_research_areas);
   console.log('skipped_404:', skipped_404);
   console.log('skipped_no_meta:', skipped_no_meta);
   console.log('failed:', failed);
+  console.log('snapshot written to:', snapshotPath);
   console.log('report written to:', reportPath);
+  console.log('top faculty distribution:');
+  for (const item of faculty_distribution.slice(0, 20)) console.log(`  ${item.faculty}: ${item.count}`);
   console.log('first 20 samples:');
-  for (const s of samples) console.log(`  ${s.name}: [${s.old_faculty}] -> [${s.new_faculty}]${s.research_areas_filled ? ' (+RA)' : ''}`);
+  for (const s of samples) console.log(`  ${s.name}: [${s.old_faculty}] -> [${s.new_faculty}]`);
 }
 
 main().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
