@@ -20,14 +20,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // Check if a published blog already exists for this professor
   const { data: existingBlog } = await db
     .from('blog_posts')
-    .select('id, slug, title')
+    .select('id, slug, title_zh')
     .eq('professor_id', id)
     .eq('status', 'published')
     .limit(1)
     .maybeSingle();
 
   if (existingBlog) {
-    return Response.json({ exists: true, blog: existingBlog });
+    return Response.json({ exists: true, blog: { ...existingBlog, title: existingBlog.title_zh } });
   }
 
   // Check first-time-free: has this user ever generated a professor blog?
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       blog: {
         id: result.post?.id,
         slug: result.post?.slug,
-        title: result.title,
+        title: result.title || result.post?.title_zh,
       },
       firstTimeFree: isFirstTime,
     });
