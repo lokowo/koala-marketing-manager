@@ -44,8 +44,18 @@ const isTopJournal = (journal: string) =>
   TOP_JOURNALS.some(t => journal?.toLowerCase().includes(t.toLowerCase()));
 
 export async function POST(req: NextRequest) {
-  const user = await getServerUser();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  const internalSecret = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').slice(0, 32);
+  const headerSecret = req.headers.get('x-internal-secret') || '';
+  const headerUserId = req.headers.get('x-internal-user-id') || '';
+
+  let userId: string;
+  if (headerSecret && headerSecret === internalSecret && headerUserId) {
+    userId = headerUserId;
+  } else {
+    const user = await getServerUser();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    userId = user.id;
+  }
 
   const { professorId } = await req.json().catch(() => ({ professorId: null }));
 
@@ -236,7 +246,7 @@ Return JSON ONLY:
           affiliationInfo.affiliationUpdated = true;
           // Sync local var so article generation reflects the updated affiliation
           university = verifiedData.currentUniversity;
-          await logAdminAction(user.id, 'professor_affiliation_updated', 'professor', professorId, {
+          await logAdminAction(userId, 'professor_affiliation_updated', 'professor', professorId, {
             from: prevUniversity || null,
             to: verifiedData.currentUniversity,
             source: 'official_profile',
@@ -461,7 +471,7 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
     }).catch(err => console.error('[generate-professor] Auto illustrate failed:', err));
   }
 
-  await logAdminAction(user.id, 'blog_generate_professor', 'blog_post', post?.id, { professorId, profName });
+  await logAdminAction(userId, 'blog_generate_professor', 'blog_post', post?.id, { professorId, profName });
 
   return Response.json({
     success: true,

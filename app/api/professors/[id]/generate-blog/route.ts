@@ -98,16 +98,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
   }
 
-  // Forward to the generate-professor endpoint with cookie passthrough
+  // Forward to the generate-professor endpoint via internal auth (cookie passthrough不适用server-to-server)
   try {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || `http://localhost:${process.env.PORT || 3000}`;
-    const cookie = req.headers.get('cookie') || '';
+    const internalSecret = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').slice(0, 32);
 
     const genResponse = await fetch(`${baseUrl}/api/blog/generate-professor`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Cookie': cookie,
+        'x-internal-secret': internalSecret,
+        'x-internal-user-id': user.id,
       },
       body: JSON.stringify({ professorId: id }),
     });
