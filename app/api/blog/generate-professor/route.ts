@@ -49,7 +49,8 @@ export async function POST(req: NextRequest) {
   const headerUserId = req.headers.get('x-internal-user-id') || '';
 
   let userId: string;
-  if (headerSecret && headerSecret === internalSecret && headerUserId) {
+  const isInternalCall = !!(headerSecret && headerSecret === internalSecret && headerUserId);
+  if (isInternalCall) {
     userId = headerUserId;
   } else {
     const user = await getServerUser();
@@ -445,7 +446,7 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
     seo_keywords_zh: seo.seoKeywordsZh || null,
     reading_time_zh: readingTimeZh,
     cover_image_url: null,
-    cover_image_status: !!process.env.OPENAI_API_KEY ? 'generating' : 'none',
+    cover_image_status: isInternalCall ? 'pending' : (!!process.env.OPENAI_API_KEY ? 'generating' : 'none'),
   };
 
   const { data: post, error } = await db.from('blog_posts').insert(row).select().single();
@@ -455,7 +456,7 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
   }
 
   const imageAvailable = !!process.env.OPENAI_API_KEY;
-  if (post?.id && imageAvailable) {
+  if (post?.id && imageAvailable && !isInternalCall) {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     const cookieHeader = req.headers.get('cookie') || '';
     fetch(`${baseUrl}/api/blog/generate-cover`, {
