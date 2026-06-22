@@ -25,8 +25,8 @@ export default async function ProfessorDetailPage({ params }: { params: Promise<
 
   const { data: relatedBlogs } = await db
     .from('blog_posts')
-    .select('id, slug, title, category, cover_image')
-    .or(`title.ilike.%${professor.name}%,professor_id.eq.${id}`)
+    .select('id, slug, title_zh, category, cover_image_url')
+    .or(`title_zh.ilike.%${professor.name}%,professor_id.eq.${id}`)
     .eq('status', 'published')
     .limit(3);
 
@@ -64,7 +64,7 @@ export default async function ProfessorDetailPage({ params }: { params: Promise<
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ProfessorDetailClient professor={professor} papers={papers} relatedBlogs={relatedBlogs ?? []} similarProfessors={similarProfs ?? []} />
+      <ProfessorDetailClient professor={professor} papers={papers} relatedBlogs={(relatedBlogs ?? []).map((b: { id: string; slug: string; title_zh: string; category: string; cover_image_url: string | null }) => ({ id: b.id, slug: b.slug, title: b.title_zh, category: b.category, cover_image: b.cover_image_url }))} similarProfessors={similarProfs ?? []} />
     </>
   );
 }
