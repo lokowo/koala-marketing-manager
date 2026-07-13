@@ -26,6 +26,32 @@ function safeParseJSON(text: string): Record<string, unknown> {
   }
 }
 
+function parseArticleResponse(text: string): { titleZh: string; excerptZh: string; contentZh: string; tags: string[]; imageKeywords?: string[] } {
+  const SEP = '---CONTENT---';
+  const idx = text.indexOf(SEP);
+  if (idx === -1) {
+    // 兼容旧格式：整体还是一个 JSON（含 contentZh）
+    const obj = safeParseJSON(text) as Record<string, unknown>;
+    return {
+      titleZh: String(obj.titleZh || ''),
+      excerptZh: String(obj.excerptZh || ''),
+      contentZh: String(obj.contentZh || ''),
+      tags: Array.isArray(obj.tags) ? (obj.tags as string[]) : [],
+      imageKeywords: Array.isArray(obj.imageKeywords) ? (obj.imageKeywords as string[]) : undefined,
+    };
+  }
+  const metaPart = text.slice(0, idx);
+  const contentPart = text.slice(idx + SEP.length).trim();
+  const meta = safeParseJSON(metaPart) as Record<string, unknown>;
+  return {
+    titleZh: String(meta.titleZh || ''),
+    excerptZh: String(meta.excerptZh || ''),
+    contentZh: contentPart,
+    tags: Array.isArray(meta.tags) ? (meta.tags as string[]) : [],
+    imageKeywords: Array.isArray(meta.imageKeywords) ? (meta.imageKeywords as string[]) : undefined,
+  };
+}
+
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
     promise,
@@ -106,8 +132,8 @@ export async function POST(req: NextRequest) {
     const zhResponse = await withTimeout(
       anthropic.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 5000,
-        messages: [{ role: 'user', content: `请根据以下主题写一篇博客文章。\n\n主题：${topic}\n分类：${catLabel}\n${stylePrompt}\n\n要求：\n- Markdown格式，1200-2000字\n- 80%是主题本身的深度分析，20%自然关联到澳洲PhD申请\n- 包含真实数据和统计（如有）\n- 自然融入SEO关键词：澳洲、PhD、博士、留学、scholarship、申请、supervisor\n- Koala PhD提及最多1-2句放在文章末尾\n- 语气像考拉学长：温暖专业的学长分享\n\n请返回JSON格式：\n{"titleZh": "中文标题", "excerptZh": "100字摘要", "contentZh": "正文markdown", "tags": ["标签1","标签2",...], "imageKeywords": ["封面图关键词"]}` }],
+        max_tokens: 16000,
+        messages: [{ role: 'user', content: `请根据以下主题写一篇博客文章。\n\n主题：${topic}\n分类：${catLabel}\n${stylePrompt}\n\n要求：\n- Markdown格式，1200-2000字\n- 80%是主题本身的深度分析，20%自然关联到澳洲PhD申请\n- 包含真实数据和统计（如有）\n- 自然融入SEO关键词：澳洲、PhD、博士、留学、scholarship、申请、supervisor\n- Koala PhD提及最多1-2句放在文章末尾\n- 语气像考拉学长：温暖专业的学长分享\n\n请严格按以下格式返回，不要加任何代码围栏（不要 \`\`\`）：\n\n首先返回一行 JSON（只包含元数据，不含正文）：\n{"titleZh": "中文标题", "excerptZh": "100字摘要", "tags": ["标签1","标签2"], "imageKeywords": ["封面图关键词"]}\n\n然后另起一行，输出这一行分隔符：\n---CONTENT---\n\n然后输出正文 markdown 原文（不要转义、不要包在 JSON 里）。` }],
         system: SYSTEM_PROMPT,
       }),
       120000,
@@ -117,8 +143,20 @@ export async function POST(req: NextRequest) {
     const zhText = zhResponse.content[0].type === 'text' ? zhResponse.content[0].text : '';
     let zhData: { titleZh: string; excerptZh: string; contentZh: string; tags: string[]; imageKeywords?: string[] };
 
+    const stopReason = zhResponse.stop_reason;
+    const outTokens = zhResponse.usage?.output_tokens;
+    console.log('[blog/generate] zh stop_reason:', stopReason, 'output_tokens:', outTokens, 'text_len:', zhText.length);
+
+    if (stopReason === 'max_tokens') {
+      console.error('[blog/generate] TRUNCATED by max_tokens — output_tokens:', outTokens);
+      return Response.json(
+        { error: '文章内容过长被截断，请缩短主题或重试', stop_reason: stopReason, output_tokens: outTokens },
+        { status: 500 },
+      );
+    }
+
     try {
-      zhData = safeParseJSON(zhText) as typeof zhData;
+      zhData = parseArticleResponse(zhText);
     } catch {
       try {
         const fixResponse = await withTimeout(
@@ -127,7 +165,7 @@ export async function POST(req: NextRequest) {
             max_tokens: 6000,
             messages: [{
               role: 'user',
-              content: `The following text is malformed JSON. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), contentZh (string), tags (array of strings), imageKeywords (array of strings, optional). Ensure all string values properly escape quotes and newlines.\n\n${zhText.slice(0, 8000)}`,
+              content: `The following text is malformed JSON metadata for a blog article. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), tags (array of strings), imageKeywords (array of strings, optional). Do NOT include the article body — only the metadata fields. Ensure all string values properly escape quotes.\n\n${zhText.slice(0, 8000)}`,
             }],
             system: 'Return ONLY valid JSON. No markdown, no explanation, no code fences.',
           }),
@@ -135,9 +173,9 @@ export async function POST(req: NextRequest) {
           'JSON修复',
         );
         const fixText = fixResponse.content[0].type === 'text' ? fixResponse.content[0].text : '';
-        zhData = safeParseJSON(fixText) as typeof zhData;
+        zhData = parseArticleResponse(fixText);
       } catch {
-        console.error('[blog/generate] JSON fix failed — zhText length:', zhText.length, 'preview:', zhText.slice(0, 100));
+        console.error('[blog/generate] JSON fix failed — zhText length:', zhText.length, 'stop_reason:', stopReason, 'output_tokens:', outTokens, 'preview:', zhText.slice(0, 100));
         return Response.json({ error: 'AI 返回格式异常，请重试', raw: zhText.slice(0, 200) }, { status: 500 });
       }
     }
