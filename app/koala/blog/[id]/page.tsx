@@ -55,14 +55,14 @@ export default async function BlogDetailPage({ params }: { params: Promise<{ id:
     '@type': 'Article',
     headline: post.title_zh || post.title_en,
     description: post.excerpt_zh || post.excerpt_en,
-    image: post.cover_image_url || 'https://koalaphd.com/og-image.png',
+    image: post.cover_image_url || 'https://www.koalaphd.com/og-image.png',
     datePublished: post.published_at,
     ...(post.updated_at && { dateModified: post.updated_at }),
-    author: { '@type': 'Organization', name: 'Koala PhD', url: 'https://koalaphd.com' },
+    author: { '@type': 'Organization', name: 'Koala PhD', url: 'https://www.koalaphd.com' },
     publisher: {
       '@type': 'Organization',
       name: 'Koala PhD',
-      logo: { '@type': 'ImageObject', url: 'https://koalaphd.com/og-image.png' },
+      logo: { '@type': 'ImageObject', url: 'https://www.koalaphd.com/og-image.png' },
     },
   };
 
@@ -70,8 +70,8 @@ export default async function BlogDetailPage({ params }: { params: Promise<{ id:
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: '首页', item: 'https://koalaphd.com' },
-      { '@type': 'ListItem', position: 2, name: '博客', item: 'https://koalaphd.com/koala/blog' },
+      { '@type': 'ListItem', position: 1, name: '首页', item: 'https://www.koalaphd.com' },
+      { '@type': 'ListItem', position: 2, name: '博客', item: 'https://www.koalaphd.com/koala/blog' },
       { '@type': 'ListItem', position: 3, name: post.title_zh || post.title_en },
     ],
   };

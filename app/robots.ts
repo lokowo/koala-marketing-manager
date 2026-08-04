@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/dashboard/', '/api/', '/koala/my-profile', '/koala/matches', '/koala/auth/', '/s/', '/login'],
       },
     ],
-    sitemap: 'https://koalaphd.com/sitemap.xml',
+    sitemap: 'https://www.koalaphd.com/sitemap.xml',
   };
 }

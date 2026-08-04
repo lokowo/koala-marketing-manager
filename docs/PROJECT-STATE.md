@@ -3,6 +3,20 @@
 
 ## 结构变更日志
 
+### 2026-08-04 — 修正教授页 canonical 指向 404 + 统一 www 域名
+- **诊断结论（先判断，非拍脑袋）**：`/professor/[slug]` 路由**存在且已部署且可用**——线上 `www.koalaphd.com/professor/steve-shu`（Verified）返回 **200**。因此**不是路由缺失、也不是未部署**，而是 **canonical 指向过宽 + 域名不一致**：
+  - `professors` 表 slug 填充率 7852/25133；`verification_status='Verified'` 3899。其中 **slug 有但非 Verified 的 3967 条**，其 canonical 指向的公开页会 `notFound()` → **404**（线上 `www.koalaphd.com/professor/anne-keogh`（Pending）实测 **404**）。根因：`/koala/professors/[id]/layout.tsx` 只要有 slug 就把 canonical 指向 `/professor/{slug}`，但该公开页只渲染 `verification_status='Verified'` 的教授。
+  - 站点在平台层强制 www：`koalaphd.com/*` **307 → www**（middleware.ts / next.config.ts 无 www 跳转规则，方向由 Vercel 域名配置统一为 www）。但代码中 canonical/og:url 全用非 www，声明了一个会 307 的 URL。
+- **修复**：
+  - `app/koala/professors/[id]/layout.tsx`：canonical 仅在 `slug && verification_status==='Verified'`（公开页确实 200）时跨指向 `/professor/{slug}`，否则自指向真实详情页 `/koala/professors/{id}`，杜绝 canonical→404；select 增补 `verification_status`。
+  - **统一 www**：canonical / og:url / twitter / JSON-LD / breadcrumb 全量非 www → www，覆盖 SEO 面：
+    `app/layout.tsx`(metadataBase+canonical)、`koala/professors/[id]/layout.tsx`+`page.tsx`、`professor/[slug]/page.tsx`、`koala/professors/page.tsx`、`koala/blog/[id]/layout.tsx`+`page.tsx`、`koala/blog/layout.tsx`、`sitemap.ts`、`robots.ts`。方向与平台 307 一致（都朝 www）。
+- **同类排查**：
+  - 博客详情页 `koala/blog/[id]/layout.tsx` canonical `/koala/blog/{slug}` 路径正确（不 404），仅域名非 www → 已一并改 www。
+  - 教授库列表页 `koala/professors/page.tsx` 路径正确（线上 200），仅域名非 www → 已改 www。
+  - `sitemap.ts` 只输出 `Verified`+slug 的 `/professor/{slug}`（不含 404 URL），仅 baseUrl 非 www → 已改 www。
+- **未改（有意）**：邮件模板 / PDF 页脚 / 二维码·推荐·Stripe·API 链接中的非 www（功能性链接，非 SEO canonical，且 307 可正常跳转）；`BlogDetailClient.tsx` 分享链接（`NEXT_PUBLIC_SITE_URL` 兜底，env 驱动）。`npm run build` 通过。
+
 ### 2026-08-04 — 教授文章查重下沉核心 API + 积分改为成功后再扣（代码层第 2 步）
 - **核心 API** `app/api/blog/generate-professor/route.ts`
   - Step 0 生成前查重：`blog_posts` 中 `category='professor_spotlight'` 且 `professor_id` 匹配（**不限 status，draft/published 均算已存在**）→ 命中直接 `409 { code:'ALREADY_EXISTS', postId, slug, status }`，不调用 LLM、不扣积分。覆盖 Admin 与 C 端两个入口。

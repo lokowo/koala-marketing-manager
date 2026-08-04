@@ -66,7 +66,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       title: `${prof.name} — ${prof.university}`,
       description: `${prof.position_title || 'Researcher'}. Research: ${areas}`,
       type: 'profile',
-      url: `https://koalaphd.com/professor/${slug}`,
+      url: `https://www.koalaphd.com/professor/${slug}`,
     },
     twitter: {
       card: 'summary',
@@ -74,7 +74,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       description,
     },
     alternates: {
-      canonical: `https://koalaphd.com/professor/${slug}`,
+      canonical: `https://www.koalaphd.com/professor/${slug}`,
     },
   };
 }
@@ -122,7 +122,7 @@ export default async function ProfessorPublicPage({ params }: { params: Promise<
       '@type': 'Organization',
       name: prof.university,
     },
-    url: `https://koalaphd.com/professor/${prof.slug}`,
+    url: `https://www.koalaphd.com/professor/${prof.slug}`,
     ...(sameAs.length > 0 && { sameAs }),
     ...(prof.research_areas.length > 0 && { knowsAbout: prof.research_areas }),
   };
@@ -131,8 +131,8 @@ export default async function ProfessorPublicPage({ params }: { params: Promise<
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://koalaphd.com' },
-      { '@type': 'ListItem', position: 2, name: 'Professors', item: 'https://koalaphd.com/koala/professors' },
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.koalaphd.com' },
+      { '@type': 'ListItem', position: 2, name: 'Professors', item: 'https://www.koalaphd.com/koala/professors' },
       { '@type': 'ListItem', position: 3, name: prof.name },
     ],
   };

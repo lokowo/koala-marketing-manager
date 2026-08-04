@@ -30,7 +30,7 @@ async function fetchAllProfessors(): Promise<Array<{ slug: string; last_synced_a
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://koalaphd.com';
+  const baseUrl = 'https://www.koalaphd.com';
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },

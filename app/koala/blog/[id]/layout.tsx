@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const description = post.seo_description_zh || post.excerpt_zh || post.excerpt_en || '';
     const image = post.cover_image_url || '/og-image.png';
 
-    const canonical = `https://koalaphd.com/koala/blog/${post.slug || id}`;
+    const canonical = `https://www.koalaphd.com/koala/blog/${post.slug || id}`;
 
     return {
       title,

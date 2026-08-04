@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://koalaphd.com'),
+  metadataBase: new URL('https://www.koalaphd.com'),
   title: {
     default: 'Koala PhD | 澳洲PhD申请AI平台 — 导师匹配·套磁信·奖学金',
     template: '%s | Koala PhD',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   description: '澳洲PhD申请AI平台。覆盖全澳38所大学教授数据库，AI智能导师匹配，一键生成套磁信。免费PhD路径评估、科研方向深潜、奖学金信息。Find your ideal Australian PhD supervisor with AI-powered matching.',
   keywords: ['澳洲PhD', 'PhD申请', '澳洲博士', '教授匹配', 'AI申请', '套磁信', '导师推荐', 'PhD supervisor', 'Australian PhD', 'scholarship Australia'],
   alternates: {
-    canonical: 'https://koalaphd.com',
+    canonical: 'https://www.koalaphd.com',
   },
   verification: {
     google: 'MNBTFnPgqdYoqogqXdHbKauY1flu9aA5YKvsDLb97bo',

@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const { data: prof } = await db
     .from('professors')
-    .select('name, university, position_title, research_areas, h_index, slug')
+    .select('name, university, position_title, research_areas, h_index, slug, verification_status')
     .eq('id', id)
     .single();
 
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: `${prof.name} — ${prof.university}`,
       description: `研究方向：${areas}`,
       type: 'profile',
-      url: `https://koalaphd.com/koala/professors/${id}`,
+      url: `https://www.koalaphd.com/koala/professors/${id}`,
     },
     twitter: {
       card: 'summary',
@@ -36,9 +36,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: `研究方向：${areas}`,
     },
     alternates: {
-      canonical: prof.slug
-        ? `https://koalaphd.com/professor/${prof.slug}`
-        : `https://koalaphd.com/koala/professors/${id}`,
+      // 仅当公开页 /professor/{slug} 确实会渲染(有 slug 且 verification_status='Verified')时才
+      // 跨指向它做 SEO 合并；否则自指向当前真实详情页，避免 canonical 指向 404。
+      canonical: (prof.slug && prof.verification_status === 'Verified')
+        ? `https://www.koalaphd.com/professor/${prof.slug}`
+        : `https://www.koalaphd.com/koala/professors/${id}`,
     },
   };
 }
@@ -56,8 +58,8 @@ export default async function ProfessorDetailLayout({ params, children }: { para
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: '首页', item: 'https://koalaphd.com' },
-      { '@type': 'ListItem', position: 2, name: '教授', item: 'https://koalaphd.com/koala/professors' },
+      { '@type': 'ListItem', position: 1, name: '首页', item: 'https://www.koalaphd.com' },
+      { '@type': 'ListItem', position: 2, name: '教授', item: 'https://www.koalaphd.com/koala/professors' },
       ...(prof ? [{ '@type': 'ListItem', position: 3, name: prof.name }] : []),
     ],
   };

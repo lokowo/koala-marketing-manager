@@ -53,7 +53,7 @@ export default async function ProfessorDetailPage({ params }: { params: Promise<
       '@type': 'Organization',
       name: professor.university,
     },
-    url: `https://koalaphd.com/koala/professors/${id}`,
+    url: `https://www.koalaphd.com/koala/professors/${id}`,
     ...(sameAs.length > 0 && { sameAs }),
     ...(professor.researchAreas.length > 0 && { knowsAbout: professor.researchAreas }),
   };
