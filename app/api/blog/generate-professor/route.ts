@@ -64,6 +64,25 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'professorId required' }, { status: 400 });
   }
 
+  // Step 0: Dedup gate — 覆盖 Admin 与 C 端两个入口。
+  // 不限 status：draft/published 均视为已存在。命中直接 409，不调用 LLM、不扣积分。
+  const { data: existingArticle } = await db
+    .from('blog_posts')
+    .select('id, slug, status')
+    .eq('category', 'professor_spotlight')
+    .eq('professor_id', professorId)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingArticle) {
+    return Response.json({
+      code: 'ALREADY_EXISTS',
+      postId: existingArticle.id,
+      slug: existingArticle.slug,
+      status: existingArticle.status,
+    }, { status: 409 });
+  }
+
   // Step 1: Read professor
   const { data: professor, error: profError } = await db
     .from('professors')
@@ -452,6 +471,26 @@ ${grantsContext ? `GRANTS & FUNDING (${grants.length} total):\n${grantsContext}`
   const { data: post, error } = await db.from('blog_posts').insert(row).select().single();
 
   if (error) {
+    // 唯一索引冲突(23505 / idx_blog_posts_prof_unique)：并发下另一个请求抢先建了同教授文章。
+    // 不透传成 500，转为 409 + ALREADY_EXISTS，回查已存在记录返回给调用方。
+    const errCode = (error as { code?: string } | null)?.code;
+    const isProfUniqueConflict =
+      errCode === '23505' && /idx_blog_posts_prof_unique|professor_id/i.test(error.message || '');
+    if (isProfUniqueConflict) {
+      const { data: raced } = await db
+        .from('blog_posts')
+        .select('id, slug, status')
+        .eq('category', 'professor_spotlight')
+        .eq('professor_id', professorId)
+        .limit(1)
+        .maybeSingle();
+      return Response.json({
+        code: 'ALREADY_EXISTS',
+        postId: raced?.id ?? null,
+        slug: raced?.slug ?? null,
+        status: raced?.status ?? null,
+      }, { status: 409 });
+    }
     return Response.json({ error: error.message }, { status: 500 });
   }
 

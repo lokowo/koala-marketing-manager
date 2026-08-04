@@ -69,6 +69,7 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs:
   const [relatedBlogs, setRelatedBlogs] = useState(initialRelatedBlogs);
   const [blogGenerating, setBlogGenerating] = useState(false);
   const [blogError, setBlogError] = useState<string | null>(null);
+  const [blogNotice, setBlogNotice] = useState<string | null>(null);
   const [creditShortfall, setCreditShortfall] = useState<{ needed: number; balance: number } | null>(null);
 
   useEffect(() => {
@@ -126,6 +127,7 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs:
     }
     setBlogGenerating(true);
     setBlogError(null);
+    setBlogNotice(null);
     setCreditShortfall(null);
     try {
       const res = await fetch(`/api/professors/${professor.id}/generate-blog`, {
@@ -134,6 +136,13 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs:
       const data = await res.json();
       if (res.status === 402) {
         setCreditShortfall({ needed: data.needed, balance: data.balance });
+        return;
+      }
+      // 已有这位教授的文章：不报错，直接打开已存在的文章
+      if (res.status === 409 || data.code === 'ALREADY_EXISTS') {
+        setBlogNotice('已有这位教授的介绍文章，正在为你打开');
+        const target = data.slug || data.postId;
+        if (target) router.push(`/koala/blog/${target}`);
         return;
       }
       if (!res.ok) {
@@ -449,6 +458,9 @@ export default function ProfessorDetailClient({ professor, papers, relatedBlogs:
           )}
           {blogError && (
             <p className="text-xs mb-2 text-red-500">{blogError}</p>
+          )}
+          {blogNotice && (
+            <p className="text-xs mb-2 text-[#5a8060] dark:text-[#7fae86]">{blogNotice}</p>
           )}
           <button
             onClick={handleGenerateBlog}

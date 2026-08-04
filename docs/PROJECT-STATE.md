@@ -3,6 +3,19 @@
 
 ## 结构变更日志
 
+### 2026-08-04 — 教授文章查重下沉核心 API + 积分改为成功后再扣（代码层第 2 步）
+- **核心 API** `app/api/blog/generate-professor/route.ts`
+  - Step 0 生成前查重：`blog_posts` 中 `category='professor_spotlight'` 且 `professor_id` 匹配（**不限 status，draft/published 均算已存在**）→ 命中直接 `409 { code:'ALREADY_EXISTS', postId, slug, status }`，不调用 LLM、不扣积分。覆盖 Admin 与 C 端两个入口。
+  - insert 命中唯一索引冲突（23505 / `idx_blog_posts_prof_unique`）→ 回查已存在记录，转 `409 ALREADY_EXISTS`，不再透传成 500。
+- **C 端包装** `app/api/professors/[id]/generate-blog/route.ts`
+  - 移除本层自有的「published 存量」查重，统一由核心 API 兜底。
+  - **积分时机改为「生成成功后再扣」**：先只预判首免/Elite/余额（余额不足仍 402 快速拦截），转发核心 API；成功后才扣 10 积分/记流水。失败或 409 时本层未扣费，无需回滚。
+  - 扣费/记账 try-catch 兜底：文章已生成但记账失败时写 `console.error`（含 userId/professorId/postId），不静默吞掉，需人工核对补账。
+  - 收到核心 API 409 时原样透传给前端。
+- **C 端前端** `app/koala/professors/[id]/ProfessorDetailClient.tsx`
+  - 收到 409 不再报错，改为 `router.push('/koala/blog/{slug|postId}')`，文案「已有这位教授的介绍文章，正在为你打开」（绿色 notice，非红色 error）。
+- **Admin 入口逻辑未改**，由核心 API 统一兜底。`npm run build` 通过。
+
 ### 2026-08-04 — 教授文章 professor_id 唯一索引 + 清理重复存量
 - **migration**: `supabase/migrations/20260804_blog_professor_unique.sql`
 - **新增索引**: `idx_blog_posts_prof_unique` — 部分唯一索引
