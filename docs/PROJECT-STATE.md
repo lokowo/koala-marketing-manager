@@ -3,6 +3,17 @@
 
 ## 结构变更日志
 
+### 2026-08-04 — 新闻选题层去重止血（第 1 步，不动存量、不加 DB 约束）
+- **背景**：`docs/blog-news-duplication-audit.md` 查出 65 篇新闻类文章重复严重（cos>0.85 配对 122 对，0.90 阈值 7 个近重复簇），根因是选题层无查重 + LLM 兜底凭记忆反复生成同母题。
+- **`app/api/blog/topics/route.ts`**：
+  1. **移除 LLM 兜底路径**：web_search 无近 48h 新闻时直接返回 `topics: []`，不再回落 `FALLBACK_PROMPT` 凭模型记忆造题；返回体加 `reason` 说明为何无选题。
+  2. **排除清单注入**：查 `blog_posts` 中 `category!='professor_spotlight'` 的全部标题，作为明确 EXCLUSION LIST 注入选题 prompt；标题数 >100 时只取最近 6 个月控制预算。
+  3. **候选向量闸门**：对候选选题与已有文章（title+excerpt）分别 `text-embedding-3-small` embedding，余弦 >0.88 判重丢弃，命中写 `console.warn`（选题文本 + 命中文章 id + 相似度）。闸门异常时降级放行但标注 reason，不静默。
+  4. **返回体加 `filtered`**：`{ count, reasons, details[] }`，报告被排除候选数与原因分布。
+- **`app/api/blog/batch-generate/route.ts`**：空 `topics` 数组从 400 报错改为 200 正常跳过（`{success:true,total:0,skipped:'no topics'}`）。
+- **`app/dashboard/koala/ai-content/batch/page.tsx`**：空选题时展示 `reason`；有过滤时顶部提示"已自动过滤 N 个高相似候选"。
+- 不动存量文章、不加数据库唯一约束（留待第 2 步）。`npm run build` 通过。
+
 ### 2026-08-04 — 修正教授页 canonical 指向 404 + 统一 www 域名
 - **诊断结论（先判断，非拍脑袋）**：`/professor/[slug]` 路由**存在且已部署且可用**——线上 `www.koalaphd.com/professor/steve-shu`（Verified）返回 **200**。因此**不是路由缺失、也不是未部署**，而是 **canonical 指向过宽 + 域名不一致**：
   - `professors` 表 slug 填充率 7852/25133；`verification_status='Verified'` 3899。其中 **slug 有但非 Verified 的 3967 条**，其 canonical 指向的公开页会 `notFound()` → **404**（线上 `www.koalaphd.com/professor/anne-keogh`（Pending）实测 **404**）。根因：`/koala/professors/[id]/layout.tsx` 只要有 slug 就把 canonical 指向 `/professor/{slug}`，但该公开页只渲染 `verification_status='Verified'` 的教授。

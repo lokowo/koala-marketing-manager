@@ -8,8 +8,13 @@ export async function POST(req: NextRequest) {
   try {
     const { topics, publishMode, imageCount } = await req.json();
 
-    if (!Array.isArray(topics) || topics.length === 0) {
+    if (!Array.isArray(topics)) {
       return Response.json({ error: 'topics array required' }, { status: 400 });
+    }
+
+    // 空数组正常跳过（选题层无近况新闻/候选全被查重拦截时会返回空），不报错
+    if (topics.length === 0) {
+      return Response.json({ success: true, total: 0, successCount: 0, results: [], skipped: 'no topics' });
     }
 
     if (topics.length > 10) {

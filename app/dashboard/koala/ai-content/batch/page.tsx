@@ -43,6 +43,8 @@ export default function BatchGeneratePage() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [newsCount, setNewsCount] = useState(0);
+  const [topicsReason, setTopicsReason] = useState<string | null>(null);
+  const [filteredCount, setFilteredCount] = useState(0);
   const [loadingTopics, setLoadingTopics] = useState(false);
   const [publishMode, setPublishMode] = useState('draft');
   const [imageCount, setImageCount] = useState(0);
@@ -66,6 +68,8 @@ export default function BatchGeneratePage() {
       setTopics(loadedTopics);
       setSelectedIds(new Set());
       setNewsCount(data.newsCount || 0);
+      setTopicsReason(data.reason || null);
+      setFilteredCount(data.filtered?.count || 0);
     } catch { /* ignore */ }
     setLoadingTopics(false);
   }
@@ -311,9 +315,15 @@ export default function BatchGeneratePage() {
           ) : topics.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-8 text-center">
               <p className="text-slate-500">暂无推荐主题，请点击刷新</p>
+              {topicsReason && <p className="text-xs text-slate-400 mt-2">{topicsReason}</p>}
             </div>
           ) : (
             <div className="space-y-2">
+              {filteredCount > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700">
+                  已自动过滤 {filteredCount} 个与站内已有文章高度相似（&gt;0.88）的候选选题。
+                </div>
+              )}
               {topics.map(topic => (
                 <div
                   key={topic.id}
