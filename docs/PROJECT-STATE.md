@@ -1,5 +1,17 @@
 # Koala PhD 项目状态文档
-> 最后更新: 2026-05-30 | 版本: V5.0
+> 最后更新: 2026-08-04 | 版本: V5.0
+
+## 结构变更日志
+
+### 2026-08-04 — 教授文章 professor_id 唯一索引 + 清理重复存量
+- **migration**: `supabase/migrations/20260804_blog_professor_unique.sql`
+- **新增索引**: `idx_blog_posts_prof_unique` — 部分唯一索引
+  `UNIQUE (professor_id) WHERE professor_id IS NOT NULL AND category='professor_spotlight'`
+  （已在生产库 geolbgirpkzxrdvozmqw 应用，`indisvalid=true`、`indisunique=true`）。
+- **DB 层去重生效**: 同一教授在 `professor_spotlight` 分类下最多一篇；`professor_id` 为空的多教授综述文不受约束。
+- **清理存量**: 删除 Bryan Boruff 的重复文 `ada7885f-…`（view_count=37，2026-05-26），保留 `b5469fae-…`（view_count=55，2026-05-22）。清理后 professor_spotlight 共 35 篇、重复组 0。
+- **未回填**: `professor_id IS NULL` 的 1 篇（`01884bb3-…`「教授视角：什么样的中国学生最容易获得澳洲导师青睐？」）为多教授综述文，保持为空。
+- 背景与完整链路见 `docs/professor-article-audit.md`。业务代码层查重（Admin 入口/核心 API）留待后续步骤。
 
 ## 项目概览
 **Koala PhD（考拉博士）** — 澳洲 PhD 留学 AI 智能顾问平台
