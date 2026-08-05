@@ -154,7 +154,11 @@ export default function BatchGeneratePage() {
             } : item
           ));
         } else {
-          const friendlyError = res.status === 504
+          const friendlyError = data.rejected
+            ? (data.matchedId
+                ? `已跳过：正文与已有文章高度相似（cos ${data.similarity}），未入库`
+                : (data.reason || '已跳过：正文查重拒绝入库'))
+            : res.status === 504
             ? '生成超时，请减少批量数量或重试'
             : res.status === 429
             ? '操作太频繁，请稍后重试'

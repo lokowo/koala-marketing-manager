@@ -3,6 +3,25 @@
 
 ## 结构变更日志
 
+### 2026-08-05 — 新闻类文章去重 · 第 3 步之二（正文闸门 + 双向量入库 + CTA 变体轮换）
+- **去重常量/工具抽公共模块** `app/lib/server/dedup.ts`（新增）
+  - 单一事实来源：`TOPIC_SIM_THRESHOLD=0.68`、`BODY_SIM_THRESHOLD=0.875`、`cosine()`、`parseVector()`。
+  - `app/api/blog/topics/route.ts` 改为 import（别名 `TOPIC_SIM_THRESHOLD as SIM_THRESHOLD`），删除本地重复定义与原预留常量，逻辑不变。
+- **正文闸门** `app/api/blog/generate/route.ts`
+  - 正文生成完毕后、写库之前：对正文全文 `createEmbedding`，与库内 `content_embedding`（非教授类、非空，≤1000 篇）比对，最大余弦 > `BODY_SIM_THRESHOLD(0.875)` → **拒绝入库**，返回 `{ rejected:true, matchedId, similarity }`（409），写 `console.warn`。
+  - **fail-closed（与选题闸门一致）**：正文 embedding 不可用 / 读库失败 → 拒绝入库（503, `{rejected:true, reason}`），不静默放行。库内暂无可比对向量时 `console.warn` 并放行（首篇/未回填场景）。
+  - 闸门置于翻译/SEO 之前，重复文章早拒、省成本。
+- **双向量入库**（同文件）
+  - 通过闸门后，insert 同时写入 `content_embedding`（正文核心，复用闸门已算向量）与 `topic_embedding`（title+excerpt 现算），避免新文章成为后续比对盲区。
+  - 预生成 `id = randomUUID()` 作主键（供 CTA 哈希），`db` 为 service_role，字段经 `as any` 绕过类型。
+- **CTA 收敛**（同文件）
+  - 抽出结尾 CTA 为常量 `CTA_VARIANTS`（4 个中英变体），按 `ctaIndexFromId(postId)` 哈希轮换追加到正文；移除 SYSTEM_PROMPT / 用户 prompt 中「让 LLM 自写结尾 Koala CTA」的指令，改由系统统一追加。
+  - `content_embedding` **只对正文核心（不含 CTA）** 计算，避免 CTA 模板噪声污染去重信号；stored `content_zh/en` = 核心 + 对应变体 CTA。
+- **调用方适配**（避免把「查重拒绝」误报为「生成失败」）
+  - `app/api/blog/batch-generate/route.ts`：识别 `rejected` → status `'rejected'` + 明确文案，返回体加 `rejectedCount`。
+  - `app/dashboard/koala/ai-content/page.tsx` / `ai-content/batch/page.tsx`：识别 `rejected` 显示「已跳过：正文与已有文章高度相似（cos X）」，不再笼统「生成失败」（仅文案/控制流改动，无样式变更）。
+- ⚠️ 生效前提：正文闸门依赖库内 `content_embedding`，需先执行 3 步之一的 DDL + 回填；未回填时库内无向量，闸门 `console.warn` 放行（不拦截）。`npm run build` 通过。
+
 ### 2026-08-05 — 新闻类文章去重 · 第 3 步之一（阈值落地 + 拦截可观测性）
 - **阈值按标定结果落地** `app/api/blog/topics/route.ts`
   - `SIM_THRESHOLD` **0.88 → 0.68**（title 空间，Youden 建议值；TPR 100% / FPR 3.6%）。修复了「0.88 在 title 空间拦不住任何重复」的问题。

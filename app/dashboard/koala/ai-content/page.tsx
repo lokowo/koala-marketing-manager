@@ -59,9 +59,18 @@ export default function AIContentPage() {
         body: JSON.stringify({ topic, category, style, publishMode, imageCount }),
       });
       const data = await res.json();
-      setResult(data);
-      setGenStep(data.success ? 'done' : 'error');
-      if (data.success) setTopic('');
+      if (data.rejected) {
+        // 正文查重闸门拒绝入库（重复或 fail-closed），给出明确原因而非笼统「生成失败」
+        const msg = data.matchedId
+          ? `已跳过：正文与已有文章高度相似（cos ${data.similarity}），未入库`
+          : (data.reason || '正文查重拒绝入库');
+        setResult({ ...data, error: msg });
+        setGenStep('error');
+      } else {
+        setResult(data);
+        setGenStep(data.success ? 'done' : 'error');
+        if (data.success) setTopic('');
+      }
     } catch (e) {
       setResult({ error: String(e) });
       setGenStep('error');

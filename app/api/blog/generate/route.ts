@@ -1,9 +1,12 @@
+import { randomUUID } from 'crypto';
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { getServerUser } from '../../../lib/auth';
 import { logAdminAction } from '../../../lib/worklog';
 import { aiLimiter, safeLimit } from '../../../lib/ratelimit';
+import { createEmbedding } from '../../../lib/server/embedding';
+import { BODY_SIM_THRESHOLD, cosine, parseVector } from '../../../lib/server/dedup';
 
 export const maxDuration = 300;
 
@@ -91,6 +94,36 @@ const STYLE_PROMPTS: Record<string, string> = {
   news: '写作风格：新闻报道 — 事实为主，配专家解读，客观中立。',
 };
 
+// ── 结尾 CTA 收敛（第 3 步之二）──
+// 审计发现约 40/65 篇结尾共用同一句 Koala CTA 模板，严重污染段落级相似度。
+// 改为：LLM 不再自写结尾 CTA（见 SYSTEM_PROMPT / 用户 prompt），由系统追加下列 4 个受控变体之一，
+// 按文章 id 哈希轮换，避免全站结尾雷同。content_embedding 只对正文核心（不含 CTA）做，避免 CTA 噪声。
+const CTA_VARIANTS: { zh: string; en: string }[] = [
+  {
+    zh: '> 如果你正在规划澳洲 PhD 申请，想找到真正 match 你研究方向的 supervisor，欢迎来 Koala PhD（koalaphd.com）——我们收录了全澳高校在研项目与导师资源，帮你把研究方向精准对上现有课题。',
+    en: '> Planning a PhD in Australia and looking for a supervisor who genuinely matches your research direction? Koala PhD (koalaphd.com) maps active projects and supervisors across Australian universities to help you align your interests with real, funded research.',
+  },
+  {
+    zh: '> 想更精准地把自己的研究方向与澳洲现有课题资助对上号？Koala PhD（koalaphd.com）整理了各高校在研项目与导师数据库，可以帮你快速定位合适的 supervisor。',
+    en: '> Want to align your research direction with Australia\'s active funded projects more precisely? Koala PhD (koalaphd.com) maintains a database of ongoing projects and supervisors to help you quickly find the right fit.',
+  },
+  {
+    zh: '> 澳洲 PhD 的第一步，往往是找到对的导师。Koala PhD（koalaphd.com）用 AI 帮你从全澳高校的在研项目里匹配研究方向契合的 supervisor，让套磁更有的放矢。',
+    en: '> The first step of an Australian PhD is often finding the right supervisor. Koala PhD (koalaphd.com) uses AI to match your research direction with active projects across Australian universities, so your outreach lands where it counts.',
+  },
+  {
+    zh: '> 从选方向到联系导师，如果你需要一点澳洲本地的学术内线，Koala PhD（koalaphd.com）汇集了各校在研课题与导师资源，帮你把 PhD 申请规划得更清楚。',
+    en: '> From choosing a direction to reaching out to supervisors, if you could use a local academic insider in Australia, Koala PhD (koalaphd.com) brings together active projects and supervisor resources to help you plan your PhD application.',
+  },
+];
+
+// 按文章 id（uuid）稳定哈希轮换 CTA 变体
+function ctaIndexFromId(id: string, n: number): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h % n;
+}
+
 const SYSTEM_PROMPT = `You are 考拉学长 (Koala Senior), the content voice of Koala PhD (koalaphd.com) — an academic matching platform connecting Chinese students with Australian PhD supervisors.
 
 PERSONALITY: Warm, professional, like a senior PhD student sharing real experience. Supportive but data-driven.
@@ -99,7 +132,7 @@ CONTENT RATIO: 80% deep analysis of the topic itself, 20% natural connection to 
 DATA FORMATTING: When presenting statistics, rankings, comparisons, or any numerical data, you MUST use markdown tables (| Header | ... | format). Never dump numbers in plain text paragraphs. Example: | 大学 | QS排名 | PhD名额 |\n|---|---|---|\n| Melbourne | 14 | 200+ |
 
 BRAND RULES:
-- Mention Koala PhD at most 1-2 sentences, placed at the end of the article
+- Do NOT write any Koala PhD closing call-to-action. Do NOT mention koalaphd.com or invite readers to Koala PhD at the end — a standardized CTA paragraph is appended automatically after your article.
 - Never hard-sell or sound like an ad
 - Use CONNECTION FRAMEWORK to link topics naturally:
   * Geopolitics → research funding → scholarship opportunities
@@ -133,7 +166,7 @@ export async function POST(req: NextRequest) {
       anthropic.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 16000,
-        messages: [{ role: 'user', content: `请根据以下主题写一篇博客文章。\n\n主题：${topic}\n分类：${catLabel}\n${stylePrompt}\n\n要求：\n- Markdown格式，1200-2000字\n- 80%是主题本身的深度分析，20%自然关联到澳洲PhD申请\n- 包含真实数据和统计（如有）\n- 自然融入SEO关键词：澳洲、PhD、博士、留学、scholarship、申请、supervisor\n- Koala PhD提及最多1-2句放在文章末尾\n- 语气像考拉学长：温暖专业的学长分享\n\n请严格按以下格式返回，不要加任何代码围栏（不要 \`\`\`）：\n\n首先返回一行 JSON（只包含元数据，不含正文）：\n{"titleZh": "中文标题", "excerptZh": "100字摘要", "tags": ["标签1","标签2"], "imageKeywords": ["封面图关键词"]}\n\n然后另起一行，输出这一行分隔符：\n---CONTENT---\n\n然后输出正文 markdown 原文（不要转义、不要包在 JSON 里）。` }],
+        messages: [{ role: 'user', content: `请根据以下主题写一篇博客文章。\n\n主题：${topic}\n分类：${catLabel}\n${stylePrompt}\n\n要求：\n- Markdown格式，1200-2000字\n- 80%是主题本身的深度分析，20%自然关联到澳洲PhD申请\n- 包含真实数据和统计（如有）\n- 自然融入SEO关键词：澳洲、PhD、博士、留学、scholarship、申请、supervisor\n- 不要在结尾添加任何 Koala PhD 推广/引导语或 koalaphd.com（系统会自动追加标准化 CTA）\n- 语气像考拉学长：温暖专业的学长分享\n\n请严格按以下格式返回，不要加任何代码围栏（不要 \`\`\`）：\n\n首先返回一行 JSON（只包含元数据，不含正文）：\n{"titleZh": "中文标题", "excerptZh": "100字摘要", "tags": ["标签1","标签2"], "imageKeywords": ["封面图关键词"]}\n\n然后另起一行，输出这一行分隔符：\n---CONTENT---\n\n然后输出正文 markdown 原文（不要转义、不要包在 JSON 里）。` }],
         system: SYSTEM_PROMPT,
       }),
       120000,
@@ -180,6 +213,59 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── 正文闸门（第 3 步之二）：正文生成完毕后、写库之前，与库内 content_embedding 比对 ──
+    // 与选题闸门保持一致：embedding / 读库不可用 → fail-closed（拒绝入库，不静默放行）。
+    let bodyEmbedding: number[];
+    try {
+      bodyEmbedding = await createEmbedding(zhData.contentZh || '');
+    } catch (e) {
+      console.error('[blog/generate] body embedding failed — fail closed:', (e as Error).message);
+      return Response.json(
+        { rejected: true, reason: `正文查重 embedding 不可用，已拒绝入库（fail-closed）：${(e as Error).message}` },
+        { status: 503 },
+      );
+    }
+
+    let existingBodies: { id: string; content_embedding: unknown }[] = [];
+    try {
+      const { data, error: exErr } = await db
+        .from('blog_posts')
+        .select('id, content_embedding')
+        .neq('category', 'professor_spotlight')
+        .not('content_embedding', 'is', null)
+        .limit(1000);
+      if (exErr) throw exErr;
+      existingBodies = data || [];
+    } catch (e) {
+      console.error('[blog/generate] load content_embedding failed — fail closed:', (e as Error).message);
+      return Response.json(
+        { rejected: true, reason: `正文查重读库失败，已拒绝入库（fail-closed）：${(e as Error).message}` },
+        { status: 503 },
+      );
+    }
+
+    let maxSim = -1;
+    let matchedId = '';
+    for (const ex of existingBodies) {
+      const vec = parseVector(ex.content_embedding);
+      if (!vec || vec.length === 0) continue;
+      const sim = cosine(bodyEmbedding, vec);
+      if (sim > maxSim) { maxSim = sim; matchedId = ex.id; }
+    }
+    if (existingBodies.length === 0) {
+      console.warn('[blog/generate] body gate: 库内暂无 content_embedding 可比对（需先跑 backfill 脚本），本次放行。');
+    }
+    if (maxSim > BODY_SIM_THRESHOLD) {
+      console.warn('[blog/generate] body gate REJECTED (dup):', { topic, matchedId, similarity: +maxSim.toFixed(4) });
+      return Response.json({ rejected: true, matchedId, similarity: +maxSim.toFixed(4) }, { status: 409 });
+    }
+    console.log('[blog/generate] body gate PASSED:', { topic, maxSim: +maxSim.toFixed(4), matchedId });
+
+    // 文章 id 预生成（供 CTA 哈希轮换 + 入库主键）。CTA 只追加到正文文本，不参与 content_embedding（避免 CTA 噪声）。
+    const postId = randomUUID();
+    const cta = CTA_VARIANTS[ctaIndexFromId(postId, CTA_VARIANTS.length)];
+    const finalContentZh = `${(zhData.contentZh || '').trim()}\n\n${cta.zh}`;
+
     const [enResponse, seoZhResponse, seoEnResponse] = await withTimeout(
       Promise.all([
         anthropic.messages.create({
@@ -217,9 +303,21 @@ export async function POST(req: NextRequest) {
     try { seoZh = safeParseJSON(seoZhText) as typeof seoZh; } catch { /* use defaults */ }
     try { seoEn = safeParseJSON(seoEnText) as typeof seoEn; } catch { /* use defaults */ }
 
-    const charCount = (zhData.contentZh || '').length;
+    // 英文正文追加对应 CTA 变体（与中文同一变体，保持双语一致）
+    const finalContentEn = enData.contentEn ? `${enData.contentEn.trim()}\n\n${cta.en}` : '';
+
+    // topic_embedding（title+excerpt）与 content_embedding 一并入库，避免新文章成为后续比对盲区
+    const topicText = `${zhData.titleZh}${zhData.excerptZh ? '。' + zhData.excerptZh : ''}`;
+    let topicEmbedding: number[] | null = null;
+    try {
+      topicEmbedding = await createEmbedding(topicText);
+    } catch (e) {
+      console.error('[blog/generate] topic embedding failed (插入时 topic_embedding 置空，可由 backfill 补齐):', (e as Error).message);
+    }
+
+    const charCount = finalContentZh.length;
     const readingTimeZh = Math.max(3, Math.ceil(charCount / 400));
-    const wordCount = (enData.contentEn || '').split(/\s+/).length;
+    const wordCount = (finalContentEn || '').split(/\s+/).length;
     const readingTimeEn = Math.max(2, Math.ceil(wordCount / 200));
 
     const status = publishMode === 'publish' ? 'published' : 'draft';
@@ -235,13 +333,16 @@ export async function POST(req: NextRequest) {
     const slug = slugBase + '-' + Date.now();
 
     const row = {
+      id: postId,
       slug,
       title_zh: zhData.titleZh,
       title_en: enData.titleEn,
       excerpt_zh: zhData.excerptZh,
       excerpt_en: enData.excerptEn,
-      content_zh: zhData.contentZh,
-      content_en: enData.contentEn,
+      content_zh: finalContentZh,
+      content_en: finalContentEn,
+      content_embedding: JSON.stringify(bodyEmbedding),
+      topic_embedding: topicEmbedding ? JSON.stringify(topicEmbedding) : null,
       category: category || 'phd_guide',
       tags: zhData.tags || [],
       status,

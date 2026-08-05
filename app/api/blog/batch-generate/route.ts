@@ -43,6 +43,12 @@ export async function POST(req: NextRequest) {
         const data = await res.json();
         if (data.success) {
           results.push({ title: topic.title || topic, status: 'success', id: data.post?.id });
+        } else if (data.rejected) {
+          // 正文查重闸门拒绝（重复或 fail-closed），非报错，单独标记 rejected
+          const msg = data.matchedId
+            ? `正文与已有文章高度相似（cos ${data.similarity}），已拒绝入库`
+            : (data.reason || '正文查重拒绝入库');
+          results.push({ title: topic.title || topic, status: 'rejected', error: msg });
         } else {
           results.push({ title: topic.title || topic, status: 'error', error: data.error });
         }
@@ -52,7 +58,8 @@ export async function POST(req: NextRequest) {
     }
 
     const successCount = results.filter(r => r.status === 'success').length;
-    return Response.json({ success: true, total: topics.length, successCount, results });
+    const rejectedCount = results.filter(r => r.status === 'rejected').length;
+    return Response.json({ success: true, total: topics.length, successCount, rejectedCount, results });
   } catch (error) {
     console.error('[blog/batch-generate]', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
