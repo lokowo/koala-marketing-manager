@@ -3,6 +3,49 @@
 
 ## 结构变更日志
 
+### 2026-08-05 — 新闻类文章去重 · 第 3 步之一（阈值落地 + 拦截可观测性）
+- **阈值按标定结果落地** `app/api/blog/topics/route.ts`
+  - `SIM_THRESHOLD` **0.88 → 0.68**（title 空间，Youden 建议值；TPR 100% / FPR 3.6%）。修复了「0.88 在 title 空间拦不住任何重复」的问题。
+  - 新增预留常量 `BODY_SIM_THRESHOLD = 0.875`（body 空间，取正样本 min 0.901 与负样本 max 0.848 的空隙中点并留余量；正文级闸门尚未接入，标 eslint-disable 保留）。
+  - 两常量分开定义，注释标注标定来源（`docs/threshold-calibration.md`）与日期。
+- **口径偏差与后续计划（注释固化）**：title 阈值为**临时值**——标定用 (title+excerpt)↔(title+excerpt)，线上候选是**裸标题**（无摘要），口径偏低故取 0.68 保召回；**待正文级 body 闸门上线后，title 阈值应上调至约 0.74，退居「预筛」角色**。
+- **拦截可观测性**：选题闸门对每个候选（无论 FILTERED 还是 KEPT）都记录 `{候选标题, 最高相似度 bestSim, 命中文章 id, 当前阈值}` 到日志，便于后续用真实线上（裸标题）分布重新标定。
+- 本批（含上一版 3 步之一全部改动）已 `git add`/`commit`/`push`：`feat: 博客去重双向量落库与阈值标定`。**DDL 仍需人工执行、回填脚本仍需手动跑**。`npm run build` 通过。
+
+### 2026-08-05 — 新闻类文章去重 · 第 3 步之一（补充：topic_embedding 同粒度比对 + 阈值标定）
+- **动机**：上一版把闸门改成「候选标题 ↔ 正文向量 content_embedding」，粒度不匹配（标题 vs 正文相似度整体偏低）。本补充改为**同粒度**：候选标题 ↔ 标题+摘要向量 topic_embedding。
+- **Migration 增补**（同批，同文件 `supabase/migrations/20260805_blog_content_embedding.sql`，DDL 仍人工执行）
+  - 再增列 `topic_embedding vector(1536)`（标题+摘要向量），与 `content_embedding` 同批增列、各建 ivfflat 索引（`blog_posts_topic_embedding_idx` / `blog_posts_content_embedding_idx`）。
+- **回填脚本增补** `scripts/backfill-blog-content-embedding-20260805.ts`
+  - 同一脚本内同时回填两列：`topic_embedding`(title_zh+excerpt_zh) 与 `content_embedding`(正文全文)。
+  - **两列各自独立幂等判空**（分别只取该列 IS NULL 行），断点续跑；文本退化各自记日志。
+- **选题闸门改同粒度** `app/api/blog/topics/route.ts`
+  - select 与比对从 `content_embedding` 改为 `topic_embedding`；候选标题 ↔ topic_embedding，恢复与旧即时 embedding 一致的粒度（只是改为读库）。fail-closed / 缺向量记日志逻辑不变。
+- **阈值标定脚本（新增，只读，不写库）** `scripts/calibrate-dedup-threshold-20260805.ts`
+  - 正样本 = 审计第 3 节 28 对（>0.90）；负样本 = 同池随机等量（mulberry32 固定种子 20260805，可复现）。
+  - 分别算 title↔title 与 body↔body 余弦分布（min/max/均值/分位数）+ Youden's J 建议阈值，写 `docs/threshold-calibration.md`。
+  - **已运行**（66 篇池，28 正/28 负）。关键结论：**title 空间真重复对最高仅 0.873，当前 `SIM_THRESHOLD=0.88` 实际拦不住任何重复**；建议 title 阈值≈**0.68**（TPR 100% / FPR 3.6%，正负有轻微重叠：正 min 0.688 vs 负 max 0.737）。body 空间正样本 min 0.901、建议 0.848（完全可分）。
+- **`SIM_THRESHOLD` 本次未改（仍 0.88）**，待人工据标定结果确认后调整。代码/文件改动，未执行 DDL、未跑回填、未部署。`npm run build` 通过。
+
+### 2026-08-05 — 新闻类文章去重 · 第 3 步之一（正文向量落库 + 选题闸门读库 + fail-closed）
+- **背景**：`/api/blog/topics` 选题闸门此前每次请求都即时对全部非教授文章（title+excerpt）做 embedding 再比对，成本高、粒度浅，且 embedding 失败时降级放行（可能放过重复选题）。本步把正文向量落库，闸门改为读库，并把失败语义改为 fail-closed。
+- **Migration（人工执行 DDL）** `supabase/migrations/20260805_blog_content_embedding.sql`
+  - `blog_posts` 增列 `content_embedding vector(1536)`（维度对齐 `app/lib/server/embedding.ts` 的 `EMBEDDING_DIMS`）。
+  - 建 ivfflat 索引 `blog_posts_content_embedding_idx`（`vector_cosine_ops`，`lists=100`，与 `knowledge_chunks` 一致）。**注明执行顺序：先增列 → 跑回填 → 再建索引**（ivfflat 建索引时按现有数据训练，空表召回差）。
+- **回填脚本** `scripts/backfill-blog-content-embedding-20260805.ts`
+  - 对全部 `category!='professor_spotlight'` 文章用**正文全文**生成 `text-embedding-3-small(1536)` 写入 `content_embedding`。
+  - **幂等 + 断点续跑**：只取 `content_embedding IS NULL` 行；**正文为空退化用摘要（再退化用标题），均显式记日志**；三者全空跳过并告警。
+  - 运行：`npx tsx scripts/backfill-blog-content-embedding-20260805.ts`。
+- **选题闸门改读库** `app/api/blog/topics/route.ts`
+  - 已有文章查询 select 增补 `content_embedding`；闸门比对**改用已落库正文向量**，不再即时 embedding 全部文章（候选选题仍需即时 embedding，因其只有标题、尚未入库）。
+  - **缺 embedding 的文章记日志不静默跳过**（`console.warn` 输出缺失 id 列表）。
+  - **口径变化**：比对从「候选标题 vs 已有(标题+摘要)」变为「候选标题 vs 已有正文向量」，标题-正文粒度不同、相似度整体偏低，`SIM_THRESHOLD=0.88` 后续可能需按实测重新标定（留待第 3 步之二）。
+- **闸门失败改为 fail-closed**（同文件）
+  - embedding 服务不可用 → **中止本次选题，返回 `topics:[]` + reason，不再降级放行**。
+  - 语料存在但**无任何可用向量**（未回填）→ 同样 fail-closed，reason 提示先跑 backfill 脚本，避免「无可比对却全部放行」的静默降级。
+  - 移除原 `gateNote` 降级放行分支。
+- 仅前 4 项代码/文件改动，**未执行 DDL、未跑回填、未部署**（DDL 由人工执行）。`npm run build` 通过。
+
 ### 2026-08-04 — 新闻选题层去重止血（第 1 步，不动存量、不加 DB 约束）
 - **背景**：`docs/blog-news-duplication-audit.md` 查出 65 篇新闻类文章重复严重（cos>0.85 配对 122 对，0.90 阈值 7 个近重复簇），根因是选题层无查重 + LLM 兜底凭记忆反复生成同母题。
 - **`app/api/blog/topics/route.ts`**：

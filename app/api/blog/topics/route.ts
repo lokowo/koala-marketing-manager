@@ -1,13 +1,27 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { supabaseAdmin } from '../../../lib/supabase/server';
-import { createEmbedding, createEmbeddingsBatch } from '../../../lib/server/embedding';
+import { createEmbeddingsBatch } from '../../../lib/server/embedding';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabaseAdmin as any;
 
-// 候选选题与已有文章的余弦相似度超过此阈值 → 判为重复，丢弃
-const SIM_THRESHOLD = 0.88;
+// ── 选题查重阈值 ──
+// 标定来源：scripts/calibrate-dedup-threshold-20260805.ts / docs/threshold-calibration.md（2026-08-05 标定）。
+//
+// title 空间（选题闸门实际使用）：候选标题 ↔ 已落库 topic_embedding(title+excerpt) 余弦 > 阈值 → 判重丢弃。
+// 取标定 Youden's J 建议值 0.68（TPR 100% / FPR 3.6%，正负样本轻微重叠）。
+// ⚠️ 临时值 + 口径偏差：标定用 (title+excerpt)↔(title+excerpt)，而线上候选是「裸标题」（无摘要），
+//    候选侧信息更少、真实相似度会略低，故先取偏低的 0.68 以保召回。
+// ⚠️ 待正文级闸门（body 空间, content_embedding）上线后，本 title 阈值应上调至约 0.74，
+//    退居「预筛」角色（title 先粗筛、body 做精判），减少 title 口径偏差带来的误伤。
+const SIM_THRESHOLD = 0.68;
+
+// body 空间（正文级去重，暂预留、闸门尚未接入）：正文向量 content_embedding 两两余弦阈值。
+// 取正/负样本空隙中点：标定中正样本 min≈0.901、负样本 max≈0.848 → 中点约 0.875，
+// 高于负样本上限并留余量（非贴 0.848），供后续正文级闸门接入时使用。
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const BODY_SIM_THRESHOLD = 0.875;
 // 排除清单标题数超过此值 → 只取最近 6 个月，控制 prompt 预算
 const MAX_EXCLUSION_TITLES = 100;
 
@@ -27,6 +41,15 @@ function cosine(a: number[], b: number[]): number {
   for (let i = 0; i < a.length; i++) { dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
   if (na === 0 || nb === 0) return 0;
   return dot / (Math.sqrt(na) * Math.sqrt(nb));
+}
+
+// content_embedding 经 PostgREST 序列化后通常是字符串（形如 "[0.1,0.2,...]"），也可能已是数组。
+function parseVector(v: unknown): number[] | null {
+  if (Array.isArray(v)) return v as number[];
+  if (typeof v === 'string' && v.length > 0) {
+    try { const arr = JSON.parse(v); return Array.isArray(arr) ? (arr as number[]) : null; } catch { return null; }
+  }
+  return null;
 }
 
 interface Candidate {
@@ -127,11 +150,11 @@ Return as a numbered list. Reject anything older than ${cutoffStr}.`,
     }
 
     // ── 步骤 2：读取已有非教授类文章标题，作为明确排除清单注入 prompt ──
-    let existing: { id: string; title_zh: string | null; excerpt_zh: string | null; published_at: string | null }[] = [];
+    let existing: { id: string; title_zh: string | null; excerpt_zh: string | null; published_at: string | null; topic_embedding: unknown }[] = [];
     try {
       const { data } = await db
         .from('blog_posts')
-        .select('id, title_zh, excerpt_zh, published_at')
+        .select('id, title_zh, excerpt_zh, published_at, topic_embedding')
         .neq('category', 'professor_spotlight')
         .order('published_at', { ascending: false })
         .limit(500);
@@ -193,40 +216,63 @@ ${exclusionList || '（暂无已发布文章）'}`;
       });
     }
 
-    // ── 步骤 3：候选选题向量闸门 —— 与已有文章 embedding 比对，> 0.88 丢弃 ──
+    // ── 步骤 3：候选选题向量闸门 —— 读库比对已落库的 topic_embedding（候选标题↔topic_embedding，同粒度）──
     const filteredDetails: { topic: string; matchedArticleId: string; similarity: number }[] = [];
     let kept: Candidate[] = candidates;
-    let gateNote: string | null = null;
 
     if (existing.length > 0) {
-      try {
-        const existingVecs = await createEmbeddingsBatch(
-          existing.map(r => `${r.title_zh}${r.excerpt_zh ? '。' + r.excerpt_zh : ''}`),
-        );
-        const candVecs = await createEmbeddingsBatch(candidates.map(c => c.title));
-
-        kept = [];
-        candidates.forEach((cand, ci) => {
-          let bestSim = -1;
-          let bestId = '';
-          for (let ei = 0; ei < existing.length; ei++) {
-            const sim = cosine(candVecs[ci], existingVecs[ei]);
-            if (sim > bestSim) { bestSim = sim; bestId = existing[ei].id; }
-          }
-          if (bestSim > SIM_THRESHOLD) {
-            const detail = { topic: cand.title, matchedArticleId: bestId, similarity: +bestSim.toFixed(3) };
-            filteredDetails.push(detail);
-            console.warn('[blog/topics] candidate filtered as duplicate:', detail);
-          } else {
-            kept.push(cand);
-          }
-        });
-      } catch (e) {
-        // 向量闸门失败 → 降级放行候选，但明确标注，避免静默
-        gateNote = `向量查重闸门执行失败，已跳过该闸门（候选未做相似度过滤）：${(e as Error).message}`;
-        console.error('[blog/topics] embedding gate failed (degraded, candidates NOT filtered):', (e as Error).message);
-        kept = candidates;
+      // 拆分：已落库向量 vs 缺 embedding 的文章（后者记日志，绝不静默跳过）
+      const withVec: { id: string; vec: number[] }[] = [];
+      const missingVec: string[] = [];
+      for (const r of existing) {
+        const vec = parseVector(r.topic_embedding);
+        if (vec && vec.length > 0) withVec.push({ id: r.id, vec });
+        else missingVec.push(r.id);
       }
+      if (missingVec.length > 0) {
+        console.warn(
+          `[blog/topics] ${missingVec.length}/${existing.length} 篇文章缺 topic_embedding，未纳入查重比对（需跑 backfill 脚本回填）：`,
+          missingVec.join(', '),
+        );
+      }
+
+      // 语料存在、但无任何可用向量 → 无法查重。fail-closed：中止本次选题，不放行候选。
+      if (withVec.length === 0) {
+        const reason = `选题查重闸门无可用语料向量（${existing.length} 篇非教授类文章均未回填 topic_embedding），已中止本次选题（fail-closed，不降级放行）。请先执行 scripts/backfill-blog-content-embedding-20260805.ts。`;
+        console.error('[blog/topics] gate has zero corpus vectors — fail closed.');
+        return Response.json({ topics: [], newsCount, dateRange, reason, filtered: emptyFiltered });
+      }
+
+      // 候选仍需即时 embedding（候选是尚未入库的新选题，只有标题文本）。
+      // embedding 服务不可用 → fail-closed：中止本次选题，不再降级放行。
+      let candVecs: number[][];
+      try {
+        candVecs = await createEmbeddingsBatch(candidates.map(c => c.title));
+      } catch (e) {
+        const reason = `Embedding 服务不可用，无法执行选题查重闸门，已中止本次选题（fail-closed，不降级放行）：${(e as Error).message}`;
+        console.error('[blog/topics] candidate embedding failed — fail closed:', (e as Error).message);
+        return Response.json({ topics: [], newsCount, dateRange, reason, filtered: emptyFiltered });
+      }
+
+      kept = [];
+      candidates.forEach((cand, ci) => {
+        let bestSim = -1;
+        let bestId = '';
+        for (const ex of withVec) {
+          const sim = cosine(candVecs[ci], ex.vec);
+          if (sim > bestSim) { bestSim = sim; bestId = ex.id; }
+        }
+        // 可观测性：无论拦截还是放行，都记录候选标题 / 最高相似度 / 命中文章 id，
+        // 便于后续用真实线上分布（裸标题口径）重新标定 SIM_THRESHOLD。
+        const obs = { topic: cand.title, bestSim: +bestSim.toFixed(4), matchedArticleId: bestId, threshold: SIM_THRESHOLD };
+        if (bestSim > SIM_THRESHOLD) {
+          filteredDetails.push({ topic: cand.title, matchedArticleId: bestId, similarity: +bestSim.toFixed(3) });
+          console.warn('[blog/topics] candidate FILTERED (dup):', obs);
+        } else {
+          kept.push(cand);
+          console.log('[blog/topics] candidate KEPT:', obs);
+        }
+      });
     }
 
     // ── 步骤 4：报告拦截情况 ──
@@ -234,8 +280,8 @@ ${exclusionList || '（暂无已发布文章）'}`;
     if (filteredDetails.length > 0) reasons[`similar_to_existing_gt_${SIM_THRESHOLD}`] = filteredDetails.length;
     const filtered = { count: filteredDetails.length, reasons, details: filteredDetails };
 
-    let reason: string | null = gateNote;
-    if (!reason && kept.length === 0 && candidates.length > 0) {
+    let reason: string | null = null;
+    if (kept.length === 0 && candidates.length > 0) {
       reason = `全部 ${candidates.length} 个候选与已有文章高度相似（>${SIM_THRESHOLD}），已全部拦截。`;
     }
 
