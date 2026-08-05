@@ -3,6 +3,15 @@
 
 ## 结构变更日志
 
+### 2026-08-05 — 新闻类文章去重 · 第 3 步之一/二 上线（DDL + 回填已应用生产库 + 闸门验证通过）
+- **DDL 已应用生产库 geolbgirpkzxrdvozmqw**：`blog_posts` 增列 `topic_embedding`/`content_embedding`(vector 1536)，并建 ivfflat 索引 `blog_posts_topic_embedding_idx`/`blog_posts_content_embedding_idx`（回填后再建，vector_cosine_ops, lists=100）。
+- **回填已跑**：非教授类 65 篇，`topic_embedding` 65/65、`content_embedding` 65/65（1 篇正文为空退化用摘要：`c9ce10f2`，已记日志）。覆盖 100%。
+- **正文闸门验证**（只读脚本 `scripts/verify-body-gate-20260805.ts`，复刻 generate 闸门逻辑）：
+  - A｜重复投稿：重提交 `cae95b41` 正文 → 最大余弦 **0.9442**（命中 `9992522d`）> 0.875 → **REJECTED ✅**。
+  - B｜全新投稿：无关正文 → 最大余弦 **0.2034** → **PASSED ✅**（不误伤）。
+  - C｜语料最近邻自扫：min 0.601 / 中位 0.885 / max 0.948；**40/65 篇最近邻 > 0.875**（这些主题被重写投稿会被拦下，与审计的重复密度一致）。
+- 注：阈值 0.875 恰在语料最近邻中位（0.885）附近，当前语料重复度高故拦截面较大；待第 2 步存量清理后语料密度下降，拦截会自然收敛。选题闸门（topic_embedding）现也有数据可比对，不再 fail-closed 空跑。
+
 ### 2026-08-05 — 新闻类文章去重 · 第 3 步之二（正文闸门 + 双向量入库 + CTA 变体轮换）
 - **去重常量/工具抽公共模块** `app/lib/server/dedup.ts`（新增）
   - 单一事实来源：`TOPIC_SIM_THRESHOLD=0.68`、`BODY_SIM_THRESHOLD=0.875`、`cosine()`、`parseVector()`。
