@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
 
     let imageB64: string | undefined;
     const usedModel = 'gpt-image-2';
+    let upstreamError: { status?: number; message: string } | null = null;
 
     try {
       console.log('[generate-cover] Trying model: gpt-image-2');
@@ -133,15 +134,26 @@ export async function POST(req: NextRequest) {
       }
     } catch (err) {
       const errDetail = err instanceof Error ? err.message : String(err);
+      const errStatus = err && typeof err === 'object' && 'status' in err ? (err as { status: number }).status : undefined;
       console.error('[generate-cover] gpt-image-2 failed:', errDetail);
-      if (err && typeof err === 'object' && 'status' in err) {
-        console.error('[generate-cover] HTTP status:', (err as { status: number }).status);
+      if (errStatus !== undefined) {
+        console.error('[generate-cover] HTTP status:', errStatus);
       }
+      upstreamError = { status: errStatus, message: errDetail };
     }
 
     if (!imageB64) {
       await db.from('blog_posts').update({ cover_image_status: 'failed' }).eq('id', postId);
-      return Response.json({ error: '封面图生成失败，请检查 OpenAI API key 是否有效' }, { status: 500 });
+      // 透传上游真实错误（如 OpenAI「Billing hard limit has been reached」），
+      // 不再用「请检查 API key」这种误导性文案掩盖真实原因。
+      const detail = upstreamError
+        ? `图片生成接口报错${upstreamError.status ? `（HTTP ${upstreamError.status}）` : ''}：${upstreamError.message}`
+        : '图片生成未返回结果';
+      return Response.json({
+        error: `封面图生成失败 — ${detail}`,
+        upstreamStatus: upstreamError?.status ?? null,
+        upstreamMessage: upstreamError?.message ?? null,
+      }, { status: 500 });
     }
 
     // Step 3: Upload to Supabase Storage
