@@ -3,6 +3,16 @@
 
 ## 结构变更日志
 
+### 2026-08-05 — 非 Verified 教授页加 noindex（薄内容防大规模进索引）
+- **背景**：教授总数 25,133，仅 3,899 Verified（~15.5%）。非 Verified 页为模板化 AI 简介 + 分档罐头句，属薄内容。
+- **改动** `app/koala/professors/[id]/layout.tsx` generateMetadata：`verification_status!=='Verified'` → `robots: { index:false, follow:true }`（noindex 但保 follow，链接权重继续传导）；Verified → `{ index:true, follow:true }` 不变。仅此一处代码改动。
+- **列表页/内链现状（步骤 2，仅报告、未改）**：
+  - 列表 `/koala/professors` 走 RPC `search_professors_v2`：**不排除**非 Verified，但排序已 **Verified 优先**（`CASE WHEN verification_status='Verified' THEN 0 ELSE 1` 为第一排序键），故首页/首屏以 Verified 为主；分页深翻/宽泛搜索仍会输出非 Verified 链接（占比高，~84%）。
+  - 详情页「该方向其他教授」`similarProfs`（`app/koala/professors/[id]/page.tsx`）：`overlaps(research_areas).neq(id).order(opportunity_score desc).limit(3)`，**未**做 Verified 优先，会surface 非 Verified。
+  - 判断：非 Verified 占比过高（先不改）。且这些内链现在都指向 noindex 页，爬虫跟随后不会收录薄内容；`follow` 保权重。后续如需，可给 similarProfs 加 Verified 优先排序（留待独立变更）。
+- **sitemap（步骤 3）**：`app/sitemap.ts` 的 `fetchAllProfessors` 仍 `.eq('verification_status','Verified').not('slug','is',null)` → 只输出 `/professor/{slug}`，逻辑未变、不受影响。
+- **验证（步骤 4）**：抽查 Verified `ecaf51ac`(Li Zhang) 与非 Verified `0000b080`(Xiaozhou Liao, Pending) 两页 robots meta（部署后 curl，见提交后验证）。`npm run build` 通过。
+
 ### 2026-08-05 — 新闻类文章去重 · 第 2 步存量清理（删重复 + 301 重定向）
 - **聚类与保留决定**：完全连接 @0.92 得 6 个成簇（另 3d67ceea 生活成本簇执行前已被外部移除）。簇 2（AI工具 4 篇团）经确认**保留 cae95b41（view 28）**、删 9992522d/adc8988e/009b372c；其余 5 单对按方案。
 - **备份** `docs/removed-posts-20260805.json`：删除前完整备份被删文章全部字段（剔除两列 1536 维向量，可由 backfill 再生）。原计划 8 篇，**实删 7 篇**（`3d67ceea` 规划后已从库消失，无法备份，其 301 仍配置）。

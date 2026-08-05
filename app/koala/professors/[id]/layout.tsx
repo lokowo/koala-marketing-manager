@@ -21,9 +21,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `${prof.name} — ${prof.university} | 澳洲PhD导师`;
   const description = `${prof.name}，${prof.university} ${prof.position_title || '教授'}。研究方向：${areas}。H-index: ${prof.h_index || '未知'}。查看论文、研究方向和联系方式。`;
 
+  // 非 Verified 教授页为模板化 AI 简介 + 分档罐头句，属薄内容，noindex 避免大规模进索引拖累整站权重。
+  // follow 保留，让内链权重继续传导。Verified 页保持 index,follow。
+  const isVerified = prof.verification_status === 'Verified';
+
   return {
     title,
     description,
+    robots: isVerified ? { index: true, follow: true } : { index: false, follow: true },
     openGraph: {
       title: `${prof.name} — ${prof.university}`,
       description: `研究方向：${areas}`,
