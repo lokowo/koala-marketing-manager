@@ -3,6 +3,14 @@
 
 ## 结构变更日志
 
+### 2026-08-05 — 新闻类文章去重 · 第 2 步存量清理（删重复 + 301 重定向）
+- **聚类与保留决定**：完全连接 @0.92 得 6 个成簇（另 3d67ceea 生活成本簇执行前已被外部移除）。簇 2（AI工具 4 篇团）经确认**保留 cae95b41（view 28）**、删 9992522d/adc8988e/009b372c；其余 5 单对按方案。
+- **备份** `docs/removed-posts-20260805.json`：删除前完整备份被删文章全部字段（剔除两列 1536 维向量，可由 backfill 再生）。原计划 8 篇，**实删 7 篇**（`3d67ceea` 规划后已从库消失，无法备份，其 301 仍配置）。
+- **301 重定向** `next.config.ts`：新增 `async redirects()`，8 条 `/koala/blog/{被删slug}` → `/koala/blog/{保留slug}`，用 `statusCode: 301`（Next 支持 statusCode 覆盖 permanent，产出真 301 而非 308）。含 3d67ceea 的 slug（已 404，301 保 SEO）。
+- **删除**（生产库 geolbgirpkzxrdvozmqw）：`DELETE` 7 篇。前置校验：3 张引用表（blog_images/blog_in_article_images/automation_logs）对这 7 篇**引用行均为 0**，无 FK 阻塞、无孤儿。
+- **验证**：保留篇存活 6/6 ✓；被删篇残留 0/7 ✓；非教授类 65→**58**。分类分布：application 5 / news 8 / phd_guide 13 / research 10 / scholarship 7 / student_life 10 / supervisor 1 / visa 4。（phd_guide 较方案 +1、student_life 计入 3d67ceea 已消失，均因本 session 期间存在外部并发改库——calibration 曾见 66、backfill 见 65。）
+- 301 生效需部署后验证（本条推送后 curl 抽查）。
+
 ### 2026-08-05 — 新闻类文章去重 · 第 3 步之一/二 上线（DDL + 回填已应用生产库 + 闸门验证通过）
 - **DDL 已应用生产库 geolbgirpkzxrdvozmqw**：`blog_posts` 增列 `topic_embedding`/`content_embedding`(vector 1536)，并建 ivfflat 索引 `blog_posts_topic_embedding_idx`/`blog_posts_content_embedding_idx`（回填后再建，vector_cosine_ops, lists=100）。
 - **回填已跑**：非教授类 65 篇，`topic_embedding` 65/65、`content_embedding` 65/65（1 篇正文为空退化用摘要：`c9ce10f2`，已记日志）。覆盖 100%。
