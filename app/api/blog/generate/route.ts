@@ -29,30 +29,62 @@ function safeParseJSON(text: string): Record<string, unknown> {
   }
 }
 
-function parseArticleResponse(text: string): { titleZh: string; excerptZh: string; contentZh: string; tags: string[]; imageKeywords?: string[] } {
+interface ParsedArticle {
+  titleZh: string;
+  excerptZh: string;
+  contentZh: string;
+  tags: string[];
+  imageKeywords?: string[];
+  metaOk: boolean;   // 元数据是否成功解析（false → 需 Haiku 修复元数据，但正文已保留）
+  rawMeta: string;   // 元数据原始文本（供 Haiku 修复；正文绝不进入此字段）
+}
+
+// 分段独立解析：先按 ---CONTENT--- 切分，正文直接取用，元数据解析失败绝不连坐正文。
+function parseArticleResponse(text: string): ParsedArticle {
   const SEP = '---CONTENT---';
   const idx = text.indexOf(SEP);
+
   if (idx === -1) {
-    // 兼容旧格式：整体还是一个 JSON（含 contentZh）
-    const obj = safeParseJSON(text) as Record<string, unknown>;
-    return {
-      titleZh: String(obj.titleZh || ''),
-      excerptZh: String(obj.excerptZh || ''),
-      contentZh: String(obj.contentZh || ''),
-      tags: Array.isArray(obj.tags) ? (obj.tags as string[]) : [],
-      imageKeywords: Array.isArray(obj.imageKeywords) ? (obj.imageKeywords as string[]) : undefined,
-    };
+    // 兼容旧格式：整体是一个 JSON（含 contentZh）。此格式下正文与元数据同源，
+    // 只能整体解析；失败则正文无法从裸文本恢复，交由后续"正文非空校验"拦截。
+    try {
+      const obj = safeParseJSON(text) as Record<string, unknown>;
+      return {
+        titleZh: String(obj.titleZh || ''),
+        excerptZh: String(obj.excerptZh || ''),
+        contentZh: String(obj.contentZh || ''),
+        tags: Array.isArray(obj.tags) ? (obj.tags as string[]) : [],
+        imageKeywords: Array.isArray(obj.imageKeywords) ? (obj.imageKeywords as string[]) : undefined,
+        metaOk: true,
+        rawMeta: text,
+      };
+    } catch {
+      return { titleZh: '', excerptZh: '', contentZh: '', tags: [], metaOk: false, rawMeta: text };
+    }
   }
+
+  // 新格式：正文是分隔符之后的裸 markdown，独立取用，不受元数据解析结果影响。
   const metaPart = text.slice(0, idx);
   const contentPart = text.slice(idx + SEP.length).trim();
-  const meta = safeParseJSON(metaPart) as Record<string, unknown>;
-  return {
-    titleZh: String(meta.titleZh || ''),
-    excerptZh: String(meta.excerptZh || ''),
-    contentZh: contentPart,
-    tags: Array.isArray(meta.tags) ? (meta.tags as string[]) : [],
-    imageKeywords: Array.isArray(meta.imageKeywords) ? (meta.imageKeywords as string[]) : undefined,
-  };
+
+  try {
+    const meta = safeParseJSON(metaPart) as Record<string, unknown>;
+    return {
+      titleZh: String(meta.titleZh || ''),
+      excerptZh: String(meta.excerptZh || ''),
+      contentZh: contentPart,
+      tags: Array.isArray(meta.tags) ? (meta.tags as string[]) : [],
+      imageKeywords: Array.isArray(meta.imageKeywords) ? (meta.imageKeywords as string[]) : undefined,
+      metaOk: true,
+      rawMeta: metaPart,
+    };
+  } catch {
+    // 元数据 JSON 非法（如含未转义裸引号）：正文已在 contentPart 中，绝不丢弃。
+    return {
+      titleZh: '', excerptZh: '', contentZh: contentPart, tags: [],
+      metaOk: false, rawMeta: metaPart,
+    };
+  }
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -174,8 +206,6 @@ export async function POST(req: NextRequest) {
     );
 
     const zhText = zhResponse.content[0].type === 'text' ? zhResponse.content[0].text : '';
-    let zhData: { titleZh: string; excerptZh: string; contentZh: string; tags: string[]; imageKeywords?: string[] };
-
     const stopReason = zhResponse.stop_reason;
     const outTokens = zhResponse.usage?.output_tokens;
     console.log('[blog/generate] zh stop_reason:', stopReason, 'output_tokens:', outTokens, 'text_len:', zhText.length);
@@ -188,9 +218,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    try {
-      zhData = parseArticleResponse(zhText);
-    } catch {
+    // 分段解析：正文（分隔符之后的裸 markdown）永远优先保住，元数据解析失败不连坐正文。
+    const zhData = parseArticleResponse(zhText);
+
+    // Haiku 修复路径收窄：仅在元数据解析失败时调用，只回填元数据字段，绝不覆盖正文。
+    if (!zhData.metaOk) {
+      console.warn('[blog/generate] metadata parse FAILED — invoking Haiku metadata fix (正文已保留), content_len:', zhData.contentZh.length);
       try {
         const fixResponse = await withTimeout(
           anthropic.messages.create({
@@ -198,7 +231,7 @@ export async function POST(req: NextRequest) {
             max_tokens: 6000,
             messages: [{
               role: 'user',
-              content: `The following text is malformed JSON metadata for a blog article. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), tags (array of strings), imageKeywords (array of strings, optional). Do NOT include the article body — only the metadata fields. Ensure all string values properly escape quotes.\n\n${zhText.slice(0, 8000)}`,
+              content: `The following text is malformed JSON metadata for a blog article. Fix it and return ONLY valid JSON with fields: titleZh (string), excerptZh (string), tags (array of strings), imageKeywords (array of strings, optional). Do NOT include the article body — only the metadata fields. Ensure all string values properly escape quotes.\n\n${zhData.rawMeta.slice(0, 8000)}`,
             }],
             system: 'Return ONLY valid JSON. No markdown, no explanation, no code fences.',
           }),
@@ -206,11 +239,29 @@ export async function POST(req: NextRequest) {
           'JSON修复',
         );
         const fixText = fixResponse.content[0].type === 'text' ? fixResponse.content[0].text : '';
-        zhData = parseArticleResponse(fixText);
-      } catch {
-        console.error('[blog/generate] JSON fix failed — zhText length:', zhText.length, 'stop_reason:', stopReason, 'output_tokens:', outTokens, 'preview:', zhText.slice(0, 100));
-        return Response.json({ error: 'AI 返回格式异常，请重试', raw: zhText.slice(0, 200) }, { status: 500 });
+        const fixed = safeParseJSON(fixText) as Record<string, unknown>;
+        // 只回填元数据，正文保持原样（zhData.contentZh 不动）
+        zhData.titleZh = String(fixed.titleZh || zhData.titleZh || '');
+        zhData.excerptZh = String(fixed.excerptZh || zhData.excerptZh || '');
+        if (Array.isArray(fixed.tags)) zhData.tags = fixed.tags as string[];
+        if (Array.isArray(fixed.imageKeywords)) zhData.imageKeywords = fixed.imageKeywords as string[];
+        console.log('[blog/generate] Haiku metadata fix SUCCEEDED — title_len:', zhData.titleZh.length, 'excerpt_len:', zhData.excerptZh.length, '正文保留 len:', zhData.contentZh.length);
+      } catch (e) {
+        // 修复失败也绝不丢正文：元数据留空，正文继续走后续"非空校验"。
+        console.error('[blog/generate] Haiku metadata fix FAILED:', (e as Error).message, '— 正文保留 len:', zhData.contentZh.length, 'stop_reason:', stopReason, 'output_tokens:', outTokens);
       }
+    }
+
+    // ── 正文非空校验：CTA 尚未追加，此处 zhData.contentZh 即正文核心 ──
+    // 低于 500 字视为正文缺失（解析丢失/模型异常），拒绝入库并写明原因，绝不静默通过。
+    const coreLen = (zhData.contentZh || '').trim().length;
+    const MIN_BODY_LEN = 500;
+    if (coreLen < MIN_BODY_LEN) {
+      console.error('[blog/generate] body too short — REJECTED:', { topic, coreLen, min: MIN_BODY_LEN, metaOk: zhData.metaOk, text_len: zhText.length });
+      return Response.json(
+        { rejected: true, reason: `正文核心长度 ${coreLen} 字，低于最低阈值 ${MIN_BODY_LEN} 字，疑似正文缺失，已拒绝入库`, coreLen },
+        { status: 422 },
+      );
     }
 
     // ── 正文闸门（第 3 步之二）：正文生成完毕后、写库之前，与库内 content_embedding 比对 ──

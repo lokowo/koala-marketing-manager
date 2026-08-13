@@ -1,7 +1,18 @@
 # Koala PhD 项目状态文档
-> 最后更新: 2026-08-04 | 版本: V5.0
+> 最后更新: 2026-08-14 | 版本: V5.1
 
 ## 结构变更日志
+
+### 2026-08-14 — 修复：元数据解析失败不再连坐丢弃正文 + 空正文校验
+- **背景**：诊断报告 `docs/blog-content-missing-debug.md`。08-13 生成的 `c90ef045`（心理健康支持体系）只剩 CTA 引用块、正文缺失（`content_zh` 仅 86 字 = `\n\n` + CTA#4）。根因：元数据 JSON 含未转义裸引号 → `safeParseJSON` 抛错 → 旧 `parseArticleResponse` **整体抛错**，把分隔符 `---CONTENT---` 之后本已完好的裸 markdown 正文一并丢弃 → Haiku 修复只补元数据（prompt 明确"不含正文"）→ `contentZh=''`，且修复成功不打日志（静默降级）。LLM 实际返回 3093 字、`end_turn` 未截断（Vercel 日志佐证）。
+- **改动 `app/api/blog/generate/route.ts`**：
+  1. **分段独立解析**（核心）：`parseArticleResponse` 先按 `---CONTENT---` 切分，**正文（contentPart）直接取用**，元数据解析放入独立 try/catch；元数据失败只置 `metaOk=false` 并保留 `rawMeta`，**绝不丢正文**。返回新增 `metaOk`/`rawMeta` 字段。
+  2. **Haiku 修复路径收窄**：仅当 `metaOk=false` 时调用，只用 `rawMeta`（不含正文）修复，**只回填元数据字段**（title/excerpt/tags/imageKeywords），正文 `zhData.contentZh` 保持原样绝不覆盖；修复**触发/成功/失败均写日志**（成功也写）。
+  3. **入库前正文非空校验**：CTA 追加前，`contentZh.trim().length < 500` → 返回 `422 { rejected:true, reason, coreLen }`，写 error 日志，不静默通过。调用方（batch-generate、ai-content 单篇/批量页）已有 `data.rejected` + `data.reason` 分支，自动兼容。
+- **改动 `app/lib/server/embedding.ts`**：`createEmbedding` 传入空串/纯空白 → 直接抛错，禁止空正文穿过查重闸门（fail-closed 兜底）。其余 20 处调用均传构造好的非空文本，不受影响。
+- **数据处理**：删除草稿 `c90ef045`（未发布，正文缺失，已 DELETE RETURNING 确认）。
+  - ⚠️ **待决策**：`c9ce10f2`（08-02，**已发布**，`content_zh` 长度 **0**，纯空正文、无 CTA，早于 08-05 CTA 改造，属独立历史遗留；有封面、content_embedding 系当时用摘要退化回填见本文件 08-05 条目）。当前线上处于"标题+封面+摘要、无正文"状态，需人工决定删除 / 重新生成 / 下线。
+- **验证**：`npm run build` 通过。受影响文章统计从 2 篇（`c90ef045` + `c9ce10f2`）→ 删 1、留 1 待决策。
 
 ### 2026-08-05 — 非 Verified 教授页加 noindex（薄内容防大规模进索引）
 - **背景**：教授总数 25,133，仅 3,899 Verified（~15.5%）。非 Verified 页为模板化 AI 简介 + 分档罐头句，属薄内容。
