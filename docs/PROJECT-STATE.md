@@ -1,7 +1,17 @@
 # Koala PhD 项目状态文档
-> 最后更新: 2026-08-14 | 版本: V5.1
+> 最后更新: 2026-08-14 | 版本: V5.2
 
 ## 结构变更日志
+
+### 2026-08-14 — 手机端底部导航恢复「博客」入口（方案 A）
+- **背景**：诊断报告 `docs/mobile-nav-blog-debug.md`。博客底部入口自 2026-05-26 `c11b957` 起被移除、第 2 格留为 Ola 占位空格；加之顶栏 `hidden lg:flex`（仅桌面），手机端一直无任何进入 `/koala/blog` 的入口。
+- **改动 `app/koala/components/BottomTabBar.tsx`（唯一文件）**：
+  1. import 增加 `BookOpen`（lucide-react，符合 DESIGN.md §9「仅用 Lucide 图标」）。
+  2. 将第 2 格空占位 `<div className="flex-1" />` 还原为「博客」`<Link href="/koala/blog">`：图标 `BookOpen`、文案「博客」，**样式/字号/间距/选中态与其余四格逐字一致**（`text-[10px] tracking-wide`、`size-5`、`gap-1`、选中 `text-[#1A1A2E] dark:text-[#D4A843] font-semibold`、strokeWidth 2.2/1.5）。
+- **Ola 位置零位移**：Ola 为 `absolute -top-5 left-1/2 -translate-x-1/2`，与 flow 子项解耦；空占位与博客项同为 `flex-1`，flow 仍是 4 项（首页/博客/教授库/我的），Ola 锚点与层级完全不变。
+- **375px 几何核对**（脚本计算）：内容宽 343px、每格 85.75px；博客图标右缘 154.6 ↔ Ola 左缘 159.5，**间隙 4.9px 无重叠**；与右侧「教授库↔Ola」间隙 4.9px **完全对称**（即沿用教授库既有、线上已验证的安全间距）。「博客」2 字 text-[10px] 不换行不截断。选中 `/koala/blog`（含详情页，`pathname.startsWith` 命中）高亮正常。
+- **布局前后差异**：`首页 | [空格] | (Ola) | 教授库 | 我的` → `首页 | 博客 | (Ola) | 教授库 | 我的`；Ola 与其余四格视觉位置不变，仅第 2 格由空变为博客入口，整体恢复左右对称。
+- **验证**：`npm run build` 通过。
 
 ### 2026-08-14 — 修复：元数据解析失败不再连坐丢弃正文 + 空正文校验
 - **背景**：诊断报告 `docs/blog-content-missing-debug.md`。08-13 生成的 `c90ef045`（心理健康支持体系）只剩 CTA 引用块、正文缺失（`content_zh` 仅 86 字 = `\n\n` + CTA#4）。根因：元数据 JSON 含未转义裸引号 → `safeParseJSON` 抛错 → 旧 `parseArticleResponse` **整体抛错**，把分隔符 `---CONTENT---` 之后本已完好的裸 markdown 正文一并丢弃 → Haiku 修复只补元数据（prompt 明确"不含正文"）→ `contentZh=''`，且修复成功不打日志（静默降级）。LLM 实际返回 3093 字、`end_turn` 未截断（Vercel 日志佐证）。

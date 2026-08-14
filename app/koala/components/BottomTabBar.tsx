@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, UserCircle, CreditCard, Mail, ClipboardList, FileText, Bell, Settings } from 'lucide-react';
+import { Home, BookOpen, Users, UserCircle, CreditCard, Mail, ClipboardList, FileText, Bell, Settings } from 'lucide-react';
 import { APP_VERSION } from '../../lib/version';
 import { useTheme } from '../../lib/theme';
 import { useAuth } from './AuthContext';
@@ -111,8 +111,11 @@ export default function BottomTabBar() {
             <span className={`font-semibold text-[9px] ${olaActive ? 'text-white dark:text-[#0a0e14]' : 'text-white dark:text-[#D4A843]'}`}>Ola</span>
           </Link>
 
-          {/* Center spacer for Ola button */}
-          <div className="flex-1" />
+          {/* 博客（占位槽还原为入口；Ola 为 absolute 定位，此项为 flex-1 flow 项，不影响 Ola 位置） */}
+          <Link href="/koala/blog" className="flex flex-col items-center flex-1 gap-1 no-underline">
+            <BookOpen className={`size-5 ${isActive('/koala/blog') ? 'text-[#1A1A2E] dark:text-[#D4A843]' : 'text-gray-400 dark:text-[#5a6a6e]'}`} strokeWidth={isActive('/koala/blog') ? 2.2 : 1.5} />
+            <span className={`text-[10px] tracking-wide ${isActive('/koala/blog') ? 'text-[#1A1A2E] dark:text-[#D4A843] font-semibold' : 'text-gray-400 dark:text-[#5a6a6e]'}`}>博客</span>
+          </Link>
 
           {/* 教授库 */}
           <Link href="/koala/professors" className="flex flex-col items-center flex-1 gap-1 no-underline">
