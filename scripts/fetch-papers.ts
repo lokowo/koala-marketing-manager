@@ -551,7 +551,7 @@ async function main() {
 
     const { error: pe } = await supabase
       .from('papers')
-      .upsert(rows, { onConflict: 'semantic_scholar_id' });
+      .upsert(rows, { onConflict: 'professor_id,semantic_scholar_id' });
 
     if (pe) {
       console.log(` ⚠️ ${pe.message}`);

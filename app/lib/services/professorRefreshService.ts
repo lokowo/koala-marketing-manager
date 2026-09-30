@@ -64,7 +64,7 @@ export async function refreshProfessorData(
             ss_url: p.url ?? null,
             abstract: p.abstract ?? null,
           },
-          { onConflict: 'semantic_scholar_id' },
+          { onConflict: 'professor_id,semantic_scholar_id' },
         );
       }
     }

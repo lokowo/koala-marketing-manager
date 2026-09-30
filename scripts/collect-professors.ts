@@ -546,7 +546,7 @@ async function main() {
             ss_url: p.url ?? null,
             abstract: (p.abstract ?? '').slice(0, 2000),
           }));
-          const { error: pe } = await supabase.from('papers').upsert(paperRows, { onConflict: 'semantic_scholar_id' });
+          const { error: pe } = await supabase.from('papers').upsert(paperRows, { onConflict: 'professor_id,semantic_scholar_id' });
           if (!pe) {
             totalPapers += papers.length;
             process.stdout.write(` +${papers.length}p`);

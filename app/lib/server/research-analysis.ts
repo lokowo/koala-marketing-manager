@@ -182,7 +182,7 @@ export async function enrichProfessorResearch(professorId: string): Promise<Rese
     abstract: (p.abstract ?? '').slice(0, 2000),
   }));
 
-  await db.from('papers').upsert(newPaperRows, { onConflict: 'semantic_scholar_id' });
+  await db.from('papers').upsert(newPaperRows, { onConflict: 'professor_id,semantic_scholar_id' });
 
   const chunksToEmbed = papers
     .filter(p => p.abstract)
