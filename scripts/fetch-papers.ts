@@ -423,6 +423,10 @@ async function main() {
     if (opts.ssId) {
       ssId = opts.ssId;
       matchedVia = '--ss-id';
+      // Persist the manual override so future runs don't re-search / re-hit a bad stored id
+      if (!opts.dryRun && prof.semantic_scholar_id !== opts.ssId) {
+        await supabase.from('professors').update({ semantic_scholar_id: opts.ssId }).eq('id', prof.id);
+      }
     } else if (prof.semantic_scholar_id && /^\d+$/.test(prof.semantic_scholar_id)) {
       ssId = prof.semantic_scholar_id;
       matchedVia = 'stored-id';
