@@ -97,6 +97,7 @@ export default async function ProfessorPublicPage({ params }: { params: Promise<
     .from('papers')
     .select('id, title, year, citation_count, journal, doi_url')
     .eq('professor_id', prof.id)
+    .order('citation_count', { ascending: false })
     .order('year', { ascending: false })
     .limit(10);
 
