@@ -123,21 +123,149 @@ async function fetchSSPapers(authorId: string): Promise<SSPaper[]> {
   } catch { return []; }
 }
 
+// ─── CLI argument parsing ──────────────────────────────────────────────────────
+
+interface CliOptions {
+  id: string | null;
+  slug: string | null;
+  verifiedMissing: boolean;
+  limit: number | null;
+}
+
+function printUsage() {
+  console.error(`
+Usage: npx tsx scripts/fetch-papers.ts [options]
+
+Options:
+  --id=<uuid>          只处理这一位教授（professors.id）
+  --slug=<slug>        只处理这一位教授（professors.slug）
+  --verified-missing   只处理 verification_status = 'Verified' 且 papers 表中还没有任何记录的教授
+  --limit=<n>          最多处理 n 位教授（可与其他任意一个组合）
+
+不带任何参数时处理全部教授，按 opportunity_score 降序。
+--id 与 --slug 互斥，只能二选一。
+
+Examples:
+  npx tsx scripts/fetch-papers.ts --id=bd582183-1092-4947-981e-a0cbdeb337aa
+  npx tsx scripts/fetch-papers.ts --slug=amin-beheshti
+  npx tsx scripts/fetch-papers.ts --verified-missing --limit=100
+`);
+}
+
+function parseArgs(argv: string[]): CliOptions {
+  const opts: CliOptions = { id: null, slug: null, verifiedMissing: false, limit: null };
+
+  for (const token of argv) {
+    if (token.startsWith('--id=')) {
+      opts.id = token.slice('--id='.length);
+    } else if (token.startsWith('--slug=')) {
+      opts.slug = token.slice('--slug='.length);
+    } else if (token === '--verified-missing') {
+      opts.verifiedMissing = true;
+    } else if (token.startsWith('--limit=')) {
+      const raw = token.slice('--limit='.length);
+      if (!/^[1-9]\d*$/.test(raw)) {
+        console.error(`❌ --limit 必须是正整数，收到：${raw}`);
+        printUsage();
+        process.exit(1);
+      }
+      opts.limit = parseInt(raw, 10);
+    } else {
+      console.error(`❌ 无法识别的参数：${token}`);
+      printUsage();
+      process.exit(1);
+    }
+  }
+
+  if (opts.id && opts.slug) {
+    console.error('❌ --id 与 --slug 只能二选一');
+    printUsage();
+    process.exit(1);
+  }
+
+  return opts;
+}
+
+// ─── Paginated fetch (avoid Supabase 1000-row cap) ──────────────────────────────
+
+interface ProfessorRow { id: string; name: string; university: string; semantic_scholar_id: string | null }
+
+const PAGE_SIZE = 1000;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchAllPages<T>(build: (from: number, to: number) => any): Promise<T[]> {
+  const all: T[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await build(from, from + PAGE_SIZE - 1);
+    if (error) { console.error('❌ Query failed:', error.message); process.exit(1); }
+    const rows = (data ?? []) as T[];
+    all.push(...rows);
+    if (rows.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
+// ─── Resolve the professor set to process based on CLI options ──────────────────
+
+async function resolveProfessors(opts: CliOptions): Promise<{ mode: string; professors: ProfessorRow[] }> {
+  // single: --id / --slug
+  if (opts.id || opts.slug) {
+    const col = opts.id ? 'id' : 'slug';
+    const val = opts.id ?? opts.slug;
+    const { data, error } = await supabase
+      .from('professors')
+      .select('id, name, university, semantic_scholar_id')
+      .eq(col, val)
+      .maybeSingle();
+    if (error) { console.error('❌ Failed to fetch professor:', error.message); process.exit(1); }
+    if (!data) { console.error(`❌ 找不到教授（${col}=${val}）`); process.exit(1); }
+    return { mode: 'single', professors: [data as ProfessorRow] };
+  }
+
+  // verified-missing: Verified professors with no papers rows yet
+  if (opts.verifiedMissing) {
+    const paperProfIds = await fetchAllPages<{ professor_id: string }>((from, to) =>
+      supabase.from('papers').select('professor_id').range(from, to)
+    );
+    const withPapers = new Set(paperProfIds.map(r => r.professor_id));
+
+    const verified = await fetchAllPages<ProfessorRow>((from, to) =>
+      supabase
+        .from('professors')
+        .select('id, name, university, semantic_scholar_id')
+        .eq('verification_status', 'Verified')
+        .order('opportunity_score', { ascending: false })
+        .range(from, to)
+    );
+    return { mode: 'verified-missing', professors: verified.filter(p => !withPapers.has(p.id)) };
+  }
+
+  // all: full professor set, opportunity_score desc
+  const professors = await fetchAllPages<ProfessorRow>((from, to) =>
+    supabase
+      .from('professors')
+      .select('id, name, university, semantic_scholar_id')
+      .order('opportunity_score', { ascending: false })
+      .range(from, to)
+  );
+  return { mode: 'all', professors };
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
+  const opts = parseArgs(process.argv.slice(2));
+
   console.log('╔══════════════════════════════════════╗');
   console.log('║   🦘 Koala Paper Fetcher v2.0        ║');
   console.log('╚══════════════════════════════════════╝');
   console.log(`SS API key: ${SS_API_KEY ? '✅ set' : '⚠️  not set (1 req/s limit)'}\n`);
 
-  const { data: professors, error } = await supabase
-    .from('professors')
-    .select('id, name, university, semantic_scholar_id')
-    .order('opportunity_score', { ascending: false });
+  const { mode, professors: resolved } = await resolveProfessors(opts);
+  const professors = opts.limit != null ? resolved.slice(0, opts.limit) : resolved;
 
-  if (error) { console.error('❌ Failed to fetch professors:', error.message); process.exit(1); }
-  console.log(`Found ${professors.length} professors to process\n`);
+  console.log(`Filter mode: ${mode}`);
+  console.log(`Will process ${professors.length} professor(s)\n`);
 
   let totalPapers = 0;
   let noId = 0;
